@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kove-engine"
+version = "0.1.0"
+description = "Local video analysis engine for K.O.V.E."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0",
+    "opencv-python>=4.8",
+    "numpy>=1.24",
+    "librosa>=0.10",
+    "scipy>=1.11",
+    "webrtcvad>=2.0.10",
+    "mediapipe>=0.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "ruff",
+]
+
+[project.scripts]
+kove-engine = "kove_engine.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kove_engine"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
