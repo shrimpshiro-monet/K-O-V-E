@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
 import { Check, X, Maximize2 } from "@/icons/lucide-compat";
-import type { Clip } from "@openreel/core";
+import type { Clip } from "@kove-advanced/core";
 
 interface CropModeViewProps {
   clip: Clip;

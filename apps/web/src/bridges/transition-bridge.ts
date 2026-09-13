@@ -2,9 +2,9 @@ import {
   TransitionEngine,
   createTransitionEngine,
   type TransitionValidationResult,
-} from "@openreel/core";
-import type { Transition, Clip, Track, TransitionEdge } from "@openreel/core";
-import type { TransitionType, TransitionParams } from "@openreel/core";
+} from "@kove-advanced/core";
+import type { Transition, Clip, Track, TransitionEdge } from "@kove-advanced/core";
+import type { TransitionType, TransitionParams } from "@kove-advanced/core";
 
 /**
  * Result of a transition operation

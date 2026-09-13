@@ -1,7 +1,7 @@
 import type { MulticamEditPolicy } from "./automatic-edit";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
-export const MULTICAM_MANIFEST_SPEC = "openreel-multicam/v1" as const;
+export const MULTICAM_MANIFEST_SPEC = "kove-advanced-multicam/v1" as const;
 
 export type MulticamCameraType =
   | "closeup"
@@ -25,7 +25,7 @@ export interface MulticamManifestCamera {
   subject: string;
   /** Original file hint used to resolve/relink the camera source. */
   file: string;
-  /** Optional resolved OpenReel timeline clip id. */
+  /** Optional resolved Kove Advanced timeline clip id. */
   clipId?: string;
   /** Runtime angle mapping; camera id/file remain the shoot-authored identity. */
   angleId?: string;

@@ -6,8 +6,8 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@openreel/core": ["./src/index.ts"],
-      "@openreel/core/*": ["./src/*"]
+      "@kove-advanced/core": ["./src/index.ts"],
+      "@kove-advanced/core/*": ["./src/*"]
     }
   },
   "include": ["src"],

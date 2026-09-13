@@ -1,12 +1,12 @@
 import React, { useCallback, useRef, useState } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftFileDropControl as FileInput } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftFileDropControl as FileInput } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { PropertySlider } from "./shell/PropertySlider";
 import { Upload, X, AlertCircle } from "@/icons/lucide-compat";
-import type { LUTData } from "@openreel/core";
+import type { LUTData } from "@kove-advanced/core";
 
 interface LUTLoaderProps {
   lutData: LUTData | null;

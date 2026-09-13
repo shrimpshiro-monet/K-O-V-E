@@ -1,8 +1,8 @@
 import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { Bot, X, Undo2, Plus, History, Sparkles, ShieldCheck, FlaskConical } from "@/icons/lucide-compat";
 import { useChatStore } from "../../../stores/chat-store";
 import { useProjectStore } from "../../../stores/project-store";
@@ -26,13 +26,9 @@ const SUGGESTIONS: ReadonlyArray<string> = [
   "List everything currently on my timeline",
 ];
 
-function EmptyState({
-  hasOpenProject,
-}: {
-  hasOpenProject: boolean;
-}): JSX.Element {
+function EmptyState(): JSX.Element {
   const send = useChatStore((s) => s.send);
-  const provider = useSettingsStore((s) => s.defaultLlmProvider);
+  const provider = useSettingsStore((s) => s.defaultLlmProvider) ?? "cloudflare";
   const openSettings = useSettingsStore((s) => s.openSettings);
   const settingsOpen = useSettingsStore((s) => s.settingsOpen);
   const configuredServices = useSettingsStore((s) => s.configuredServices);
@@ -46,6 +42,11 @@ function EmptyState({
     let active = true;
     void (async () => {
       try {
+        // Cloudflare: zero-config, skip all BYOK checks
+        if (provider === "cloudflare") {
+          if (active) setSetup("ready");
+          return;
+        }
         if (!provider || !baseUrl.trim() || !model.trim()) {
           if (active) setSetup("endpoint");
           return;
@@ -88,11 +89,9 @@ function EmptyState({
       </div>
       <div className="text-[13px] font-medium text-fg">Edit by chatting</div>
       <Text type="supporting" color="secondary" className="mt-1 max-w-[14rem] text-[11px] leading-relaxed text-fg-muted">
-        {hasOpenProject
-          ? "Describe an edit in plain language and the AI will perform it on your timeline."
-          : "Open or create a project, then describe edits in plain language."}
+        Describe an edit in plain language and the AI will perform it on your timeline.
       </Text>
-      {hasOpenProject && setup !== "loading" && setup !== "ready" && (
+      {setup !== "loading" && setup !== "ready" && provider !== "cloudflare" && (
         <div className="mt-4 w-full rounded-lg border border-accent/30 bg-accent-soft/50 p-3 text-left">
           <div className="text-[11px] font-medium text-fg">Connect your model</div>
           <Text type="supporting" color="secondary" className="mt-1 block text-[10px] leading-relaxed">
@@ -113,7 +112,7 @@ function EmptyState({
           />
         </div>
       )}
-      {hasOpenProject && setup === "ready" && (
+      {setup === "ready" && (
         <div className="mt-4 w-full space-y-1.5">
           {SUGGESTIONS.map((s) => (
             <Button
@@ -146,7 +145,6 @@ export function ChatPanel({
   const newChat = useChatStore((s) => s.newChat);
   const clearError = useChatStore((s) => s.clearError);
   const setProjectContext = useChatStore((s) => s.setProjectContext);
-  const hasOpenProject = useProjectStore((s) => s.hasOpenProject);
   const projectId = useProjectStore((s) => (s.hasOpenProject ? s.project.id : null));
   const autoConfirm = useSettingsStore((s) => s.agentAutoConfirm);
   const setAutoConfirm = useSettingsStore((s) => s.setAgentAutoConfirm);
@@ -274,7 +272,7 @@ export function ChatPanel({
         className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3"
       >
         {messages.length === 0 ? (
-          <EmptyState hasOpenProject={hasOpenProject} />
+          <EmptyState />
         ) : (
           messages.map((m, index) => (
             <ChatMessage

@@ -59,7 +59,7 @@ export function getKeyStore(): KeyStore {
     const { app, safeStorage } = require("electron") as typeof import("electron");
     const nodePath = require("node:path") as typeof import("node:path");
     singleton = new KeyStore(
-      nodePath.join(app.getPath("userData"), "openreel-keys.json"),
+      nodePath.join(app.getPath("userData"), "kove-advanced-keys.json"),
       safeStorage,
     );
   }

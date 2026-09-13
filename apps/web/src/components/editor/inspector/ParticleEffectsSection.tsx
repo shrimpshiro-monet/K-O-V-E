@@ -5,7 +5,7 @@ import {
   type ParticleEffect,
   type ParticleConfig,
   createEffectFromPreset,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import {
   Sparkles,
   Plus,
@@ -16,13 +16,13 @@ import {
   EyeOff,
   Play,
 } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftCollapsible as Collapsible } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftNumberInputControl } from "@openreel/ui";
-import { ToolcraftSelectControl as Selector } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftCollapsible as Collapsible } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftNumberInputControl } from "@kove-advanced/ui";
+import { ToolcraftSelectControl as Selector } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { PropertySlider } from "./shell/PropertySlider";
 import { ColorSelector } from "../../../motion/components/primitives";
 

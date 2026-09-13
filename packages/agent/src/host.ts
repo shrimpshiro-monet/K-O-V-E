@@ -1,17 +1,19 @@
-import type { Action, ActionResult } from "@openreel/core/types/actions";
-import type { Project } from "@openreel/core/types/project";
-import type { CapabilityManifest } from "@openreel/core/capabilities/manifest";
+import type { Action, ActionResult } from "@kove-advanced/core/types/actions";
+import type { Project } from "@kove-advanced/core/types/project";
+import type { CapabilityManifest } from "@kove-advanced/core/capabilities/manifest";
 import type {
   MulticamActivityMap,
   MulticamManifest,
   MulticamShotPolicy,
   MulticamTranscriptSegment,
-} from "@openreel/core";
+} from "@kove-advanced/core";
+import type { LLMClient, LlmProviderName } from "./llm";
 
 export type JobKind =
   | "exportVideo"
   | "exportAudio"
-  | "exportFrame";
+  | "exportFrame"
+  | "extractVideoFrame";
 
 export interface JobResult {
   readonly ok: boolean;
@@ -240,6 +242,8 @@ export interface EditingHost {
   capabilities(): CapabilityManifest;
   /** Narrow multicam planning/review surface shared with local MCP clients. */
   multicam?: MulticamHostBridge;
+  /** LLM client for nested director calls (e.g. plan_edit). Set by chat-store before runTurn. */
+  llm?: { client: LLMClient; provider: LlmProviderName };
   /** Throws when no project is open (guard for mutating tools). */
   requireOpenProject(): void;
 

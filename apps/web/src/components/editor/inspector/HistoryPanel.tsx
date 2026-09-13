@@ -13,14 +13,14 @@ import {
   FileCode,
   Smile,
 } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
-import { ToolcraftTextInputControl } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
+import { ToolcraftTextInputControl } from "@kove-advanced/ui";
 import { useProjectStore } from "../../../stores/project-store";
-import type { HistorySnapshot } from "@openreel/core";
+import type { HistorySnapshot } from "@kove-advanced/core";
 
 interface DisplayEntry {
   id: string;

@@ -1,5 +1,5 @@
-// Renderer-side bridge to the desktop native FFmpeg sidecar (window.openreel.media).
-// packages/core cannot see apps/web's ambient window.openreel type, so we declare the
+// Renderer-side bridge to the desktop native FFmpeg sidecar (window.kove-advanced.media).
+// packages/core cannot see apps/web's ambient window.kove-advanced type, so we declare the
 // minimal slice this module uses and access it via a typed cast on globalThis.
 
 export interface NativeMediaBridge {
@@ -27,8 +27,8 @@ export interface NativeMediaBridge {
 }
 
 export function getBridge(): NativeMediaBridge | undefined {
-  const w = globalThis as unknown as { openreel?: Partial<NativeMediaBridge> };
-  const o = w.openreel;
+  const globalScope = globalThis as Record<string, unknown>;
+  const o = globalScope["kove-advanced"] as Partial<NativeMediaBridge> | undefined;
   if (o && o.platform === "desktop" && o.fs && o.media) {
     return o as NativeMediaBridge;
   }

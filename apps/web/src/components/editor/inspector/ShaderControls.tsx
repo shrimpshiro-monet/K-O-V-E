@@ -1,13 +1,13 @@
 import React from "react";
-import { ToolcraftNumberInputControl } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftNumberInputControl } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import {
   defaultMotionShaderParams,
   getMotionShaderDef,
   type MotionShaderDef,
   type MotionShaderParamDef,
   type MotionShaderParamValue,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import { PropertySlider } from "./shell/PropertySlider";
 import { ColorSelector } from "../../../motion/components/primitives";
 

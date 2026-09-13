@@ -5,14 +5,15 @@ import {
   toOpenAITools,
   buildSystemPrompt,
   selectToolsForPrompt,
-} from "@openreel/agent";
+  setAnalysisMode as setAgentAnalysisMode,
+} from "@kove-advanced/agent";
 import type {
   AgentEvent,
   ConfirmDecision,
   ToolCall,
   ToolResult,
   LoopMessage,
-} from "@openreel/agent";
+} from "@kove-advanced/agent";
 import { isSessionUnlocked, getSecret } from "../services/secure-storage";
 import { getLiveEditorHost, runExclusive } from "../services/agent/host-singleton";
 import { makeBYOKClient } from "../services/agent/llm-transport";
@@ -54,6 +55,13 @@ export interface TokenUsage {
   readonly outputTokens: number;
 }
 
+export interface AnalysisProgress {
+  readonly stage: string;
+  readonly message: string;
+  readonly current?: number;
+  readonly total?: number;
+}
+
 interface ChatState {
   messages: ChatMessage[];
   status: ChatStatus;
@@ -64,11 +72,15 @@ interface ChatState {
   lastTurnCommitted: boolean;
   lastTurnUndoSize: number | null;
   usage: TokenUsage;
+  analysisMode: "eco" | "ai";
+  analysisProgress: AnalysisProgress | null;
   projectId: string | null;
   currentConversationId: string | null;
   conversationStartedAt: number | null;
 
   send: (text: string) => Promise<void>;
+  setAnalysisMode: (mode: "eco" | "ai") => void;
+  setAnalysisProgress: (progress: AnalysisProgress | null) => void;
   resolveConfirm: (decision: ConfirmDecision) => void;
   stop: () => void;
   undoLastTurn: () => Promise<void>;
@@ -85,7 +97,7 @@ const genId = (): string =>
     ?.randomUUID?.() ?? `m-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const isDesktop = (): boolean =>
-  typeof window !== "undefined" && window.openreel?.platform === "desktop";
+  typeof window !== "undefined" && window["kove-advanced"]?.platform === "desktop";
 
 // Monotonic turn id: a completion whose seq is stale (reset/superseded) must not
 // write back into the store.
@@ -101,10 +113,20 @@ function undoStackSize(): number | null {
 
 function conversationFromMessages(messages: ChatMessage[]): LoopMessage[] {
   return messages.flatMap((message): LoopMessage[] => {
-    if (!message.text.trim()) return [];
+    if (!message.text.trim() && message.toolCalls.length === 0) return [];
     return message.role === "user"
       ? [{ role: "user", content: message.text }]
-      : [{ role: "assistant", content: message.text, toolUses: [] }];
+      : [
+          {
+            role: "assistant",
+            content: message.text,
+            toolUses: message.toolCalls.map((tc) => ({
+              id: tc.id,
+              name: tc.name,
+              input: tc.args,
+            })),
+          },
+        ];
   });
 }
 
@@ -139,19 +161,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
   lastTurnCommitted: false,
   lastTurnUndoSize: null,
   usage: { inputTokens: 0, outputTokens: 0 },
+  analysisMode: "eco" as const,
+  analysisProgress: null,
   projectId: null,
   currentConversationId: null,
   conversationStartedAt: null,
+
+  setAnalysisMode: (mode) => {
+    set({ analysisMode: mode });
+    setAgentAnalysisMode(mode);
+  },
+
+  setAnalysisProgress: (progress) => set({ analysisProgress: progress }),
 
   send: async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
     const current = get();
     if (current.status === "running" || current.status === "awaiting_confirm") {
-      return;
-    }
-    if (!useProjectStore.getState().hasOpenProject) {
-      set({ error: "Open or create a project before chatting." });
       return;
     }
 
@@ -162,40 +189,55 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     const settings = useSettingsStore.getState();
-    const provider = settings.defaultLlmProvider;
-    if (!provider) {
-      set({ error: "Choose an API format in AI settings." });
-      return;
-    }
-    const model = settings.llmModel.trim();
-    if (!model) {
-      set({ error: "Enter or choose a model ID in AI settings." });
-      return;
-    }
-    let baseUrl: string;
-    try {
-      baseUrl = normalizeCompatibleBaseUrl(settings.llmBaseUrl);
-    } catch (error) {
-      set({ error: error instanceof Error ? error.message : "Enter a valid compatible endpoint URL." });
-      return;
-    }
+    const provider = settings.defaultLlmProvider ?? "cloudflare";
 
-    const keyRequired = settings.configuredServices.includes(provider);
-    if (!isDesktop() && keyRequired && !isSessionUnlocked()) {
-      set({ error: "Unlock secure storage to use your API key." });
-      return;
-    }
-    let apiKey = "";
-    if (!isDesktop() && keyRequired) {
+    let model: string;
+    let baseUrl: string;
+    let apiKey: string;
+
+    if (provider === "cloudflare") {
+      // Cloudflare: zero-config from .dev.vars via Vite plugin — no BYOK needed
+      apiKey = import.meta.env.VITE_CLOUDFLARE_API_TOKEN ?? "";
+      baseUrl = import.meta.env.VITE_CLOUDFLARE_ACCOUNT_ID ?? "";
+      model = settings.llmModel.trim() || import.meta.env.VITE_CLOUDFLARE_AI_MODEL || "@cf/google/gemma-4-26b-a4b-it";
+      if (!apiKey || !baseUrl) {
+        set({ error: "Cloudflare credentials not found in .dev.vars." });
+        return;
+      }
+    } else {
+      // BYOK providers: require settings configuration
+      if (!provider) {
+        set({ error: "Choose an API format in AI settings." });
+        return;
+      }
+      model = settings.llmModel.trim();
+      if (!model) {
+        set({ error: "Enter or choose a model ID in AI settings." });
+        return;
+      }
       try {
-        apiKey = (await getSecret(provider)) ?? "";
-      } catch {
+        baseUrl = normalizeCompatibleBaseUrl(settings.llmBaseUrl);
+      } catch (error) {
+        set({ error: error instanceof Error ? error.message : "Enter a valid compatible endpoint URL." });
+        return;
+      }
+      const keyRequired = settings.configuredServices.includes(provider);
+      if (!isDesktop() && keyRequired && !isSessionUnlocked()) {
         set({ error: "Unlock secure storage to use your API key." });
         return;
       }
-      if (!apiKey) {
-        set({ error: "The configured endpoint API key could not be loaded." });
-        return;
+      apiKey = "";
+      if (!isDesktop() && keyRequired) {
+        try {
+          apiKey = (await getSecret(provider)) ?? "";
+        } catch {
+          set({ error: "Unlock secure storage to use your API key." });
+          return;
+        }
+        if (!apiKey) {
+          set({ error: "The configured endpoint API key could not be loaded." });
+          return;
+        }
       }
     }
     const active = get();
@@ -290,6 +332,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       baseUrl,
       signal: controller.signal,
     });
+    // Wire LLM client into host for nested director calls (plan_edit)
+    // Map settings provider to agent provider name for tool selection
+    const agentProvider = provider === "anthropic-compatible" ? "anthropic" : "openai";
+    host.llm = { client: llm, provider: agentProvider };
     const priorToolNames = get().conversation.flatMap((message) =>
       message.role === "assistant" ? message.toolUses.map((tool) => tool.name) : [],
     );
@@ -302,13 +348,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       .map((message) => message.content)
       .join("\n");
     const selectedToolNames = selectToolsForPrompt(routingContext, {
-      maxTools: 120,
+      maxTools: provider === "cloudflare" ? 25 : 120,
       priorToolNames,
     });
     const tools =
       provider === "anthropic-compatible"
         ? toAnthropicTools(selectedToolNames)
-        : toOpenAITools(selectedToolNames);
+        : toOpenAITools(selectedToolNames); // openai-compatible and cloudflare both use OpenAI format
     const autoConfirm = useSettingsStore.getState().agentAutoConfirm;
     const dryRun = useSettingsStore.getState().agentDryRun;
 
@@ -328,6 +374,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 new Promise<ConfirmDecision>((resolve) => {
                   set({ status: "awaiting_confirm", pendingConfirm: { call, resolve } });
                 }),
+                  enforceDirectorWorkflow: true,
           onEvent,
           turnLabel: "AI edit",
         }),

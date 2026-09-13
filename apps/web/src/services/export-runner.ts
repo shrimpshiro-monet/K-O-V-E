@@ -4,7 +4,7 @@ import {
   type VideoExportSettings,
   type ExportResult,
   type Project,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 export interface ExportRunnerState {
   isExporting: boolean;
@@ -102,7 +102,7 @@ function triggerAnchorDownload(data: Blob, filename: string, onRelease?: () => v
   );
 }
 
-const OPFS_TMP_PREFIX = ".openreel-export-";
+const OPFS_TMP_PREFIX = ".kove-advanced-export-";
 const OPFS_TMP_TTL_MS = 60 * 60 * 1000;
 
 type OpfsWriteHandle = FileSystemFileHandle & {
@@ -255,16 +255,16 @@ export async function createDownloadWritable(
 ): Promise<FileSystemWritableFileStream> {
   const ext = filename.split(".").pop() || "mp4";
 
-  if (typeof window.openreel?.fs?.showSaveDialog === "function") {
-    const chosen = await window.openreel.fs.showSaveDialog({
+  if (typeof window["kove-advanced"]?.fs?.showSaveDialog === "function") {
+    const chosen = await window["kove-advanced"].fs.showSaveDialog({
       defaultPath: filename,
       filters: [{ name: "Media file", extensions: [ext] }],
     });
     if (!chosen) {
       throw new DOMException("User cancelled", "AbortError");
     }
-    (window as { __openreelExportPath?: string }).__openreelExportPath = chosen;
-    const handleId = await window.openreel.fs.openWrite(chosen);
+    (window as Record<string, string | undefined>).__kove_advancedExportPath = chosen;
+    const handleId = await window["kove-advanced"].fs.openWrite(chosen);
     let cursor = 0;
     return {
       async seek(position: number) {
@@ -285,14 +285,14 @@ export async function createDownloadWritable(
         } else {
           return;
         }
-        await window.openreel!.fs.writeChunk(handleId, bytes, cursor);
+        await window["kove-advanced"]!.fs.writeChunk(handleId, bytes, cursor);
         cursor += bytes.byteLength;
       },
       async close() {
-        await window.openreel!.fs.closeWrite(handleId);
+        await window["kove-advanced"]!.fs.closeWrite(handleId);
       },
       async abort() {
-        await window.openreel!.fs.abortWrite(handleId);
+        await window["kove-advanced"]!.fs.abortWrite(handleId);
       },
       async truncate() {},
     } as unknown as FileSystemWritableFileStream;
@@ -449,21 +449,21 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
     ): Promise<FileSystemWritableFileStream> => {
       const mime = mimeForExt(ext);
 
-      if (typeof window.openreel?.fs?.showSaveDialog === "function") {
-        const chosen = await window.openreel.fs.showSaveDialog({
+      if (typeof window["kove-advanced"]?.fs?.showSaveDialog === "function") {
+        const chosen = await window["kove-advanced"].fs.showSaveDialog({
           defaultPath: filename,
           filters: [{ name: "Media file", extensions: [ext] }],
         });
         if (!chosen) {
           throw new DOMException("User cancelled", "AbortError");
         }
-        (window as { __openreelExportPath?: string }).__openreelExportPath = chosen;
+    (window as Record<string, string | undefined>).__kove_advancedExportPath = chosen;
 
         // The WAV path and any WebCodecs export (streamToFile) mux directly to
         // disk through the fs bridge. The native ffmpeg video path writes the
-        // file itself via __openreelExportPath, so it gets the no-op stub below.
+        // file itself via __kove-advancedExportPath, so it gets the no-op stub below.
         if (ext === "wav" || opts?.streamToFile === true) {
-          const handleId = await window.openreel.fs.openWrite(chosen);
+          const handleId = await window["kove-advanced"].fs.openWrite(chosen);
           let cursor = 0;
           return {
             async seek(position: number) {
@@ -480,14 +480,14 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
               } else {
                 return;
               }
-              await window.openreel!.fs.writeChunk(handleId, bytes, cursor);
+              await window["kove-advanced"]!.fs.writeChunk(handleId, bytes, cursor);
               cursor += bytes.byteLength;
             },
             async close() {
-              await window.openreel!.fs.closeWrite(handleId);
+              await window["kove-advanced"]!.fs.closeWrite(handleId);
             },
             async abort() {
-              await window.openreel!.fs.abortWrite(handleId);
+              await window["kove-advanced"]!.fs.abortWrite(handleId);
             },
             async truncate() {},
           } as unknown as FileSystemWritableFileStream;

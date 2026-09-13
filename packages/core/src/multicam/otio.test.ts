@@ -5,7 +5,7 @@ import { multicamPlanToOtio } from "./otio";
 describe("multicam OTIO export", () => {
   it("emits one OTIO track for each simultaneous panel", () => {
     const manifest = {
-      spec: "openreel-multicam/v1" as const,
+      spec: "kove-advanced-multicam/v1" as const,
       fps: 25,
       sync: { method: "audio-crosscorr" as const, reference: "wide" },
       participants: [
@@ -20,7 +20,7 @@ describe("multicam OTIO export", () => {
       constraints: DEFAULT_MULTICAM_MANIFEST_CONSTRAINTS,
     };
     const otio = multicamPlanToOtio({
-      spec: "openreel-multicam-edit/v1",
+      spec: "kove-advanced-multicam-edit/v1",
       durationMs: 2_000,
       shots: [{
         startMs: 0,

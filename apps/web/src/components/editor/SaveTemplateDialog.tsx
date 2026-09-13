@@ -1,14 +1,14 @@
 import { useState, useCallback } from "react";
 import { Upload, Cloud, HardDrive, Check, AlertCircle } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftDialog as Dialog, ToolcraftDialogHeader as DialogHeader } from "@openreel/ui";
-import { ToolcraftLayout as Layout, ToolcraftLayoutContent as LayoutContent, ToolcraftLayoutFooter as LayoutFooter } from "@openreel/ui";
-import { ToolcraftSelectableCard as SelectableCard } from "@openreel/ui";
-import { ToolcraftSelectControl as Selector } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
-import { ToolcraftTextAreaControl } from "@openreel/ui";
-import { ToolcraftTextInputControl } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftDialog as Dialog, ToolcraftDialogHeader as DialogHeader } from "@kove-advanced/ui";
+import { ToolcraftLayout as Layout, ToolcraftLayoutContent as LayoutContent, ToolcraftLayoutFooter as LayoutFooter } from "@kove-advanced/ui";
+import { ToolcraftSelectableCard as SelectableCard } from "@kove-advanced/ui";
+import { ToolcraftSelectControl as Selector } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
+import { ToolcraftTextAreaControl } from "@kove-advanced/ui";
+import { ToolcraftTextInputControl } from "@kove-advanced/ui";
 import { useProjectStore } from "../../stores/project-store";
 import { useEngineStore } from "../../stores/engine-store";
 import {
@@ -19,7 +19,7 @@ import {
   type ShapeClip,
   type SVGClip,
   type StickerClip,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import { templateCloudService } from "../../services/template-cloud-service";
 
 interface TemplateWithGraphics extends Template {

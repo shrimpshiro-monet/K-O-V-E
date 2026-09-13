@@ -58,6 +58,8 @@ export interface MediaItem {
   readonly id: string;
   readonly name: string;
   readonly type: "video" | "audio" | "image";
+  /** How the AI director should use this asset during footage analysis. */
+  readonly analysisRole?: "source" | "reference";
   readonly fileHandle: FileSystemFileHandle | null;
   readonly blob: Blob | null;
   readonly metadata: MediaMetadata;

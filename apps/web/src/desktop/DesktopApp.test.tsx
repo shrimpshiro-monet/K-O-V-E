@@ -53,13 +53,13 @@ beforeEach(() => {
     },
   });
   useSettingsStore.setState({ settingsOpen: false, settingsTab: "general" });
-  (window as unknown as { openreel: unknown }).openreel = {
+  (window as unknown as { "kove-advanced": unknown })["kove-advanced"] = {
     platform: "desktop",
     win: { minimize: () => {}, toggleMaximize: () => {}, close: () => {}, isMaximized: async () => false },
   };
 });
 afterEach(() => {
-  delete (window as unknown as { openreel?: unknown }).openreel;
+  delete (window as unknown as { "kove-advanced"?: unknown })["kove-advanced"];
   vi.clearAllMocks();
 });
 
@@ -67,7 +67,7 @@ describe("DesktopApp", () => {
   it("applies the desktop theme class to its root", () => {
     mockHasProject(false);
     const { container } = render(<DesktopApp />);
-    expect(container.querySelector(".openreel-desktop")).not.toBeNull();
+    expect(container.querySelector(".kove-advanced-desktop")).not.toBeNull();
   });
 
   it("shows the start screen and hides the workspace when no project is open", () => {
@@ -80,7 +80,7 @@ describe("DesktopApp", () => {
   it("renders the title bar and workspace when a project is open", () => {
     mockHasProject(true);
     const { getByText, getByTestId } = render(<DesktopApp />);
-    expect(getByText("OpenReel")).toBeTruthy();
+    expect(getByText("Kove Advanced")).toBeTruthy();
     expect(getByTestId("desktop-workspace")).toBeTruthy();
   });
 

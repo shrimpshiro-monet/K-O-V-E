@@ -5,9 +5,9 @@ import {
   toOpenAITools,
   buildSystemPrompt,
   selectToolsForPrompt,
-} from "@openreel/agent";
-import type { LLMClient, RunTurnResult, JobRunner } from "@openreel/agent";
-import type { Project } from "@openreel/core/types/project";
+} from "@kove-advanced/agent";
+import type { LLMClient, RunTurnResult, JobRunner } from "@kove-advanced/agent";
+import type { Project } from "@kove-advanced/core/types/project";
 import { makeNodeLLMClient, type LlmProvider } from "./node-llm";
 import { loadProjectFile, saveProjectFile } from "./project-io";
 

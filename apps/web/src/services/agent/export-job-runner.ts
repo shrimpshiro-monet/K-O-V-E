@@ -1,15 +1,17 @@
-import type { JobKind, JobResult, JobRunner } from "@openreel/agent";
+import type { JobKind, JobResult, JobRunner } from "@kove-advanced/agent";
 import type {
   VideoExportSettings,
   AudioExportSettings,
   ExportProgress,
   ExportResult,
-} from "@openreel/core/export/types";
-import type { Project } from "@openreel/core/types/project";
-import { getExportEngine, setEncoderBackendFactory, WebCodecsBackend } from "@openreel/core";
+} from "@kove-advanced/core/export/types";
+import type { Project } from "@kove-advanced/core/types/project";
+import { getExportEngine, setEncoderBackendFactory, WebCodecsBackend } from "@kove-advanced/core";
 import { useProjectStore } from "../../stores/project-store";
 import { NativeFFmpegBackend } from "../native-ffmpeg-backend";
 import { renderMotionCompositionFrameToDataUrl } from "../../motion/export-motion-frame";
+import { getMediaBridge, initializeMediaBridge } from "../../bridges/media-bridge";
+import { loadMediaBlob } from "../media-storage";
 
 const VIDEO_FORMATS = new Set<VideoExportSettings["format"]>(["mp4", "webm", "mov"]);
 const AUDIO_FORMATS = new Set<AudioExportSettings["format"]>(["mp3", "wav", "aac", "flac", "ogg"]);
@@ -138,7 +140,7 @@ function sanitizeName(name: string | undefined): string {
 
 function nativeBackendFactory() {
   return new NativeFFmpegBackend(
-    () => (window as { __openreelExportPath?: string }).__openreelExportPath ?? "",
+    () => (window as Record<string, string | undefined>).__kove_advancedExportPath ?? "",
   );
 }
 
@@ -148,7 +150,7 @@ async function saveExportLocally(
   ext: string,
   contentType: string,
 ): Promise<JobResult> {
-  const bridge = window.openreel?.fs;
+  const bridge = window["kove-advanced"]?.fs;
   if (!bridge) return { ok: false, error: "Local export storage is unavailable" };
   const filename = `${sanitizeName(projectName)}-${Date.now()}.${ext}`;
   const path = await bridge.tempFilePath(ext);
@@ -185,6 +187,44 @@ export function createExportJobRunner(): JobRunner {
     try {
       const project = useProjectStore.getState().project;
       const engine = getExportEngine();
+
+      if (kind === "extractVideoFrame") {
+        const mediaId = typeof params.mediaId === "string" ? params.mediaId : "";
+        if (!mediaId) {
+          return { ok: false, error: "extractVideoFrame requires a mediaId" };
+        }
+        const media = (project.mediaLibrary?.items ?? []).find((m) => m.id === mediaId);
+        if (!media) {
+          return { ok: false, error: `Media not found: ${mediaId}` };
+        }
+        if (media.type !== "video") {
+          return { ok: false, error: `Media is not a video: ${media.type}` };
+        }
+        const timeSeconds =
+          typeof params.timeSeconds === "number" && Number.isFinite(params.timeSeconds)
+            ? params.timeSeconds
+            : 0;
+        const maxWidth =
+          typeof params.maxWidth === "number" && Number.isFinite(params.maxWidth)
+            ? params.maxWidth
+            : 320;
+
+        const mediaBlob = media.blob ?? await loadMediaBlob(media.id);
+        if (!mediaBlob) return { ok: false, error: "Media blob unavailable" };
+        const mediaBridge = getMediaBridge();
+        if (!mediaBridge.isInitialized()) await initializeMediaBridge();
+        const frame = await mediaBridge.extractVideoFrame(mediaBlob, timeSeconds, maxWidth);
+        if (!frame?.imageDataBase64) return { ok: false, error: "Failed to decode media frame" };
+
+        return {
+          ok: true,
+          data: {
+            imageDataBase64: frame.imageDataBase64,
+            width: frame.width,
+            height: frame.height,
+          },
+        };
+      }
 
       if (kind === "exportVideo") {
         const format = typeof params.format === "string" ? params.format : "mp4";

@@ -1,4 +1,4 @@
-import { cn } from "@openreel/ui/lib/utils"
+import { cn } from "@kove-advanced/ui/lib/utils"
 
 function Skeleton({
   className,

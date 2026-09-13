@@ -1,5 +1,5 @@
-import { StorageEngine } from "@openreel/core";
-import type { MediaRecord, MediaMetadata } from "@openreel/core";
+import { StorageEngine } from "@kove-advanced/core";
+import type { MediaRecord, MediaMetadata } from "@kove-advanced/core";
 
 const storage = new StorageEngine();
 
@@ -79,7 +79,7 @@ export async function getStorageStats(): Promise<{
 export async function clearAllStorage(): Promise<void> {
   await storage.clearAllData();
 
-  const databasesToDelete = ["openreel-autosave", "openreel-projects", "openreel-templates"];
+  const databasesToDelete = ["kove-advanced-autosave", "kove-advanced-projects", "kove-advanced-templates"];
   await Promise.allSettled(
     databasesToDelete.map(
       (dbName) =>

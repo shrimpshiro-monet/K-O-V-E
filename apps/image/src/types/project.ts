@@ -1,1 +1,1 @@
-export * from '@openreel/image-core/project';
+export * from '@kove-advanced/image-core/project';

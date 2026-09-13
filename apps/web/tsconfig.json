@@ -9,12 +9,12 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@openreel/core": ["../../packages/core/src/index.ts"],
-      "@openreel/core/*": ["../../packages/core/src/*"],
-      "@openreel/agent": ["../../packages/agent/src/index.ts"],
-      "@openreel/agent/*": ["../../packages/agent/src/*"],
-      "@openreel/ui": ["../../packages/ui/src/index.ts"],
-      "@openreel/ui/*": ["../../packages/ui/src/*"]
+      "@kove-advanced/core": ["../../packages/core/src/index.ts"],
+      "@kove-advanced/core/*": ["../../packages/core/src/*"],
+      "@kove-advanced/agent": ["../../packages/agent/src/index.ts"],
+      "@kove-advanced/agent/*": ["../../packages/agent/src/*"],
+      "@kove-advanced/ui": ["../../packages/ui/src/index.ts"],
+      "@kove-advanced/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": ["src"]

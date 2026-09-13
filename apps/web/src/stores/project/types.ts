@@ -31,8 +31,8 @@ import type {
   ResolvedEditingTemplateOverlay,
   MotionComposition,
   MotionCompositionInstance,
-} from "@openreel/core";
-import { ActionExecutor, ActionHistory } from "@openreel/core";
+} from "@kove-advanced/core";
+import { ActionExecutor, ActionHistory } from "@kove-advanced/core";
 import type {
   VideoEffect,
   VideoEffectType,
@@ -138,6 +138,7 @@ export interface ProjectState {
   importMedia: (file: File) => Promise<ActionResult>;
   deleteMedia: (mediaId: string) => Promise<ActionResult>;
   renameMedia: (mediaId: string, name: string) => Promise<ActionResult>;
+  setMediaAnalysisRole: (mediaId: string, role: "source" | "reference") => Promise<ActionResult>;
   getMediaItem: (mediaId: string) => MediaItem | undefined;
 
   addTrack: (
@@ -265,7 +266,7 @@ export interface ProjectState {
     text: string,
     duration?: number,
     style?: Partial<TextStyle>,
-    metadata?: import("@openreel/core").ClipMetadata,
+    metadata?: import("@kove-advanced/core").ClipMetadata,
   ) => TextClip | null;
   updateTextContent: (clipId: string, text: string) => TextClip | null;
   updateTextStyle: (
@@ -286,7 +287,7 @@ export interface ProjectState {
   ) => TextClip | null;
   updateText3D: (
     clipId: string,
-    text3d: import("@openreel/core").Text3DSettings | undefined,
+    text3d: import("@kove-advanced/core").Text3DSettings | undefined,
   ) => TextClip | null;
   getTextClip: (clipId: string) => TextClip | undefined;
   getAllTextClips: () => TextClip[];
@@ -307,7 +308,7 @@ export interface ProjectState {
 
   addSubtitle: (
     subtitle: Subtitle,
-    metadata?: import("@openreel/core").ClipMetadata,
+    metadata?: import("@kove-advanced/core").ClipMetadata,
   ) => Promise<void>;
   removeSubtitle: (subtitleId: string) => void;
   updateSubtitle: (subtitleId: string, updates: Partial<Subtitle>) => void;

@@ -1,6 +1,6 @@
 import React from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
 import { Square, Pause, Play, X, Minimize2 } from "@/icons/lucide-compat";
 import { useRecorderStore } from "../../stores/recorder-store";
 import { formatDuration } from "../../services/screen-recorder";

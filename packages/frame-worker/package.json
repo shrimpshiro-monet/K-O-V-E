@@ -1,0 +1,30 @@
+{
+  "name": "@kove-advanced/frame-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@kove-advanced/creation-schema": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0",
+    "wrangler": "^3.0.0",
+    "@cloudflare/workers-types": "^4.0.0"
+  }
+}

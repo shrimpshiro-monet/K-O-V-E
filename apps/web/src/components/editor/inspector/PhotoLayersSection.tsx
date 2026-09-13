@@ -11,13 +11,13 @@ import {
   GripVertical,
   ChevronDown,
 } from "@/icons/lucide-compat";
-import type { PhotoBlendMode, PhotoLayer } from "@openreel/core";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftPopover as Popover } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import type { PhotoBlendMode, PhotoLayer } from "@kove-advanced/core";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftPopover as Popover } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { PropertySlider } from "./shell/PropertySlider";
 
 const BLEND_MODES: { value: PhotoBlendMode; label: string }[] = [

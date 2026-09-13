@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from "react";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { Star, StarOff, ChevronDown } from "@/icons/lucide-compat";
 import { useSettingsStore } from "../../../stores/settings-store";
 import type { ElevenLabsModel } from "./tts-types";

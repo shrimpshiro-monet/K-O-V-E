@@ -1,5 +1,5 @@
 {
-  "name": "@openreel/agent",
+  "name": "@kove-advanced/agent",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -25,7 +25,8 @@
     "vitest": "^1.6.0"
   },
   "dependencies": {
-    "@openreel/core": "workspace:*",
-    "@openreel/creation-schema": "workspace:*"
+    "@kove-advanced/core": "workspace:*",
+    "@kove-advanced/creation-schema": "workspace:*",
+    "@kove-advanced/frame-worker": "workspace:*"
   }
 }

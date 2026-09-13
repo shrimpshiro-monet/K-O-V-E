@@ -28,6 +28,15 @@ class FrameDescription(BaseModel):
     motion_level: MotionLevel
     has_dialogue: bool
     confidence: float
+    motion_score: float = 0.0
+    audio_rms_energy: float = 0.0
+    audio_bpm: float | None = None
+    is_silence: bool = False
+    has_music: bool = False
+    face_count: int = 0
+    has_talking_head: bool = False
+    face_positions: list[dict] = []
+    shot_boundary: bool = False
 
 
 class VideoSegment(BaseModel):
@@ -40,6 +49,18 @@ class VideoSegment(BaseModel):
     has_dialogue: bool
     visual_content: str
     confidence: float
+    motion_peak: float = 0.0
+    audio_energy: float = 0.0
+    audio_bpm: float | None = None
+    beat_timestamps: list[float] = []
+    face_presence_ratio: float = 0.0
+    has_talking_head: bool = False
+    shot_boundary_at_start: bool = False
+    importance_score: float = 0.0
+    sports_moment_score: float = 0.0
+    sports_moment_event: str = "unknown"
+    subject_ids: list[str] = []
+    subject_continuity_score: float = 0.0
 
 
 class VideoSegmentMap(BaseModel):

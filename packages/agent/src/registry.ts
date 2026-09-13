@@ -1,4 +1,21 @@
-import type { Action } from "@openreel/core/types/actions";
+import type { Action } from "@kove-advanced/core/types/actions";
+import { extractSegments as runFrameWorkerPipeline } from "@kove-advanced/frame-worker";
+import type { ExtractedFrame } from "@kove-advanced/frame-worker";
+import { buildDirectorPrompt, resolveDirectorVideoId } from "./director/director-prompt";
+import { PRE_BAKED_GENRES } from "./director/genres";
+import { reviewEditPlan } from "./director/plan-review";
+import { sampleRenderedFrames, runQualityPipeline, applyTargetedCorrections } from "./director/quality-pipeline";
+import { normalizeEditPlan, validateEditPlan } from "@kove-advanced/creation-schema";
+import type {
+  CaptionStyleTemplate,
+  EditPlan,
+  EditPlanLayout,
+  MotionMoveId,
+  MotionMomentSpec,
+  PlannedEffect,
+  SegmentMap,
+} from "@kove-advanced/creation-schema";
+import { buildMotionMove } from "./director/motion-moves";
 import {
   DEFAULT_SHAPE_STYLE,
   SHAPE_TYPES,
@@ -8,8 +25,8 @@ import {
   type ShadowStyle,
   type CornerRadii,
   type ShapeStyle,
-} from "@openreel/core/graphics/types";
-import { motionEngine } from "@openreel/core/motion/motion-engine";
+} from "@kove-advanced/core/graphics/types";
+import { motionEngine } from "@kove-advanced/core/motion/motion-engine";
 import {
   detectMotionBeatMarkersFromPeaks,
   generateMotionBeatMarkersAtBpm,
@@ -19,7 +36,7 @@ import {
   updateMotionCompositionMarker,
   removeMotionCompositionMarker,
   applyMotionAnimationPresetToBeats,
-} from "@openreel/core/motion/motion-markers";
+} from "@kove-advanced/core/motion/motion-markers";
 import {
   isMotionAnimatableProperty,
   upsertMotionLayerKeyframe,
@@ -42,41 +59,41 @@ import {
   setMotionKeyframeRoving,
   MOTION_ANIMATABLE_PROPERTIES,
   type MotionAnimatableProperty,
-} from "@openreel/core/motion/motion-keyframes";
-import { getMotionPreset } from "@openreel/core/motion/motion-presets";
+} from "@kove-advanced/core/motion/motion-keyframes";
+import { getMotionPreset } from "@kove-advanced/core/motion/motion-presets";
 import {
   createMotionVariable,
   updateMotionCompositionVariable,
   removeMotionCompositionVariable,
   coerceMotionVariableValue,
-} from "@openreel/core/motion/motion-variables";
+} from "@kove-advanced/core/motion/motion-variables";
 import {
   addMotionLayerVariableBinding,
   removeMotionLayerVariableBinding,
   isMotionVariableBindingCompatible,
   getCompatibleMotionVariableBindingTargets,
-} from "@openreel/core/motion/motion-variable-bindings";
-import { createMotionAdjustmentLayer } from "@openreel/core/motion/motion-adjustment-layers";
-import { createMotionNullLayer } from "@openreel/core/motion/motion-null-layers";
-import { createMotionParticleLayer } from "@openreel/core/motion/motion-particles";
+} from "@kove-advanced/core/motion/motion-variable-bindings";
+import { createMotionAdjustmentLayer } from "@kove-advanced/core/motion/motion-adjustment-layers";
+import { createMotionNullLayer } from "@kove-advanced/core/motion/motion-null-layers";
+import { createMotionParticleLayer } from "@kove-advanced/core/motion/motion-particles";
 import {
   getMotionShaderFillDefs,
   getMotionShaderEffectDefs,
   getMotionShaderTextDefs,
   getMotionShaderDef,
   listGeneratedMotionShaders,
-} from "@openreel/core/motion/shaders/index";
+} from "@kove-advanced/core/motion/shaders/index";
 import type {
   MotionShaderDef,
   MotionShaderParamDef,
   MotionShaderParamType,
   MotionShaderCategory,
-} from "@openreel/core/motion/shaders/index";
-import { validateMotionShaderSource } from "@openreel/core/motion/motion-shader-validator";
+} from "@kove-advanced/core/motion/shaders/index";
+import { validateMotionShaderSource } from "@kove-advanced/core/motion/motion-shader-validator";
 import {
   createMotionScene3DLayer,
   MOTION_OBJECT_3D_KINDS,
-} from "@openreel/core/motion/motion-scene3d";
+} from "@kove-advanced/core/motion/motion-scene3d";
 import {
   buildMotionPathData,
   upsertMotionShapePathKeyframe,
@@ -88,12 +105,12 @@ import {
   getEditableMotionShapePathPoints,
   parseMotionPathSegments,
   type MotionShapePathPoint,
-} from "@openreel/core/motion/motion-shape-path";
-import { buildMotionShapePolyline } from "@openreel/core/motion/motion-shape-modifiers";
+} from "@kove-advanced/core/motion/motion-shape-path";
+import { buildMotionShapePolyline } from "@kove-advanced/core/motion/motion-shape-modifiers";
 import {
   createMotionImageLayerFromAsset,
   createMotionImageAssetFromMediaItem,
-} from "@openreel/core/motion/motion-assets";
+} from "@kove-advanced/core/motion/motion-assets";
 import {
   buildMotionShapeStyle,
   buildMotionUiLayers,
@@ -111,20 +128,20 @@ import {
   type MotionUiShapeStyleSpec,
   type MotionUiTextStyleSpec,
   type BuildMotionUiLayerContext,
-} from "@openreel/core/motion/motion-ui-builder";
+} from "@kove-advanced/core/motion/motion-ui-builder";
 import {
   alignMotionLayers,
   distributeMotionLayers,
   type MotionLayerAlignment,
   type MotionLayerDistributionAxis,
-} from "@openreel/core/motion/motion-layout";
+} from "@kove-advanced/core/motion/motion-layout";
 import {
   MOTION_ANIMATION_PRESETS,
   applyMotionAnimationPreset,
   getMotionAnimationPreset,
   canApplyMotionAnimationPreset,
   type MotionAnimationPresetId,
-} from "@openreel/core/motion/motion-animation-presets";
+} from "@kove-advanced/core/motion/motion-animation-presets";
 import {
   createMotionExpression,
   addMotionLayerExpression,
@@ -133,7 +150,7 @@ import {
   toggleMotionLayerExpression,
   getMotionExpressionError,
   evaluateMotionPropertyValueAtTime,
-} from "@openreel/core/motion/motion-expressions";
+} from "@kove-advanced/core/motion/motion-expressions";
 import {
   createMotionEffect,
   createMotionShaderEffect,
@@ -147,7 +164,7 @@ import {
   nextMotionControlName,
   type MotionEffectNumericParameter,
   type MotionEffectParameterName,
-} from "@openreel/core/motion/motion-effects";
+} from "@kove-advanced/core/motion/motion-effects";
 import {
   createMotionMask,
   addMotionLayerMask,
@@ -156,19 +173,19 @@ import {
   upsertMotionMaskPathKeyframe,
   normalizeMaskKeyframeTime,
   transferMotionMaskStack,
-} from "@openreel/core/motion/motion-masks";
+} from "@kove-advanced/core/motion/motion-masks";
 import {
   setMotionLayerTrackMatte,
   clearMotionLayerTrackMatte,
-} from "@openreel/core/motion/motion-track-mattes";
-import { MOTION_BLEND_MODE_OPTIONS } from "@openreel/core/motion/motion-blend-modes";
+} from "@kove-advanced/core/motion/motion-track-mattes";
+import { MOTION_BLEND_MODE_OPTIONS } from "@kove-advanced/core/motion/motion-blend-modes";
 import {
   setMotionLayerParent,
   canParentMotionLayer,
   groupMotionLayers,
   ungroupMotionLayers,
   createMotionNullControllerForLayers,
-} from "@openreel/core/motion/motion-hierarchy";
+} from "@kove-advanced/core/motion/motion-hierarchy";
 import {
   precomposeMotionLayers,
   addMotionComponentInstance,
@@ -177,15 +194,15 @@ import {
   isMotionCompositionLayer,
   getMotionCompositionById,
   MOTION_COMPOSITION_TIME_PROPERTY,
-} from "@openreel/core/motion/motion-precomps";
-import { disintegrateMotionLayer } from "@openreel/core/motion/motion-disintegrate";
-import { morphMotionLayers } from "@openreel/core/motion/motion-morph";
-import { createCursorClick } from "@openreel/core/motion/motion-cursor";
+} from "@kove-advanced/core/motion/motion-precomps";
+import { disintegrateMotionLayer } from "@kove-advanced/core/motion/motion-disintegrate";
+import { morphMotionLayers } from "@kove-advanced/core/motion/motion-morph";
+import { createCursorClick } from "@kove-advanced/core/motion/motion-cursor";
 import {
   setMotionLayersVisible,
   setMotionLayersLocked,
   duplicateMotionLayers,
-} from "@openreel/core/motion/motion-layer-commands";
+} from "@kove-advanced/core/motion/motion-layer-commands";
 import {
   updateMotionCompositionLayerTiming,
   moveMotionLayerInTime,
@@ -194,13 +211,13 @@ import {
   splitMotionLayerAtTime,
   rippleDeleteMotionLayer,
   rippleMotionLayers,
-} from "@openreel/core/motion/motion-layer-timing";
+} from "@kove-advanced/core/motion/motion-layer-timing";
 import {
   createMotionGuide,
   addMotionCompositionGuide,
   moveMotionCompositionGuide,
   removeMotionCompositionGuide,
-} from "@openreel/core/motion/motion-guides";
+} from "@kove-advanced/core/motion/motion-guides";
 import {
   createMotionShapeModifier,
   addMotionShapeModifier,
@@ -210,7 +227,7 @@ import {
   getMotionShapeModifierPropertyDescriptors,
   MOTION_SHAPE_MODIFIER_PROPERTY_NAMES,
   type MotionShapeModifierPropertyName,
-} from "@openreel/core/motion/motion-shape-modifiers";
+} from "@kove-advanced/core/motion/motion-shape-modifiers";
 import {
   getMotionShapeContents,
   hasExplicitShapeContents,
@@ -222,7 +239,7 @@ import {
   moveShapeItem,
   createShapeGroupItem,
   createShapePathItem,
-} from "@openreel/core/motion/motion-shape-contents";
+} from "@kove-advanced/core/motion/motion-shape-contents";
 import {
   createMotionTextAnimator,
   addMotionTextAnimator,
@@ -230,7 +247,7 @@ import {
   toggleMotionTextAnimator,
   getMotionTextShaderAnimator,
   removeMotionTextAnimator,
-} from "@openreel/core/motion/motion-text-animators";
+} from "@kove-advanced/core/motion/motion-text-animators";
 import {
   createDefaultMotionCamera,
   normalizeMotionCamera,
@@ -239,7 +256,7 @@ import {
   isMotionCameraProperty,
   upsertMotionCameraKeyframe,
   type MotionCameraProperty,
-} from "@openreel/core/motion/motion-camera";
+} from "@kove-advanced/core/motion/motion-camera";
 import {
   createMotionLight,
   addMotionCompositionLight,
@@ -250,10 +267,10 @@ import {
   upsertMotionLightKeyframe,
   normalizeMotionLight,
   type MotionLightProperty,
-} from "@openreel/core/motion/motion-lights";
-import { importSvgAsMotionComposition } from "@openreel/core/motion/importers/svg-importer";
-import { importLottieAsMotionComposition } from "@openreel/core/motion/importers/lottie-importer";
-import { importFigmaJsonAsMotionComposition } from "@openreel/core/motion/importers/figma-json-importer";
+} from "@kove-advanced/core/motion/motion-lights";
+import { importSvgAsMotionComposition } from "@kove-advanced/core/motion/importers/svg-importer";
+import { importLottieAsMotionComposition } from "@kove-advanced/core/motion/importers/lottie-importer";
+import { importFigmaJsonAsMotionComposition } from "@kove-advanced/core/motion/importers/figma-json-importer";
 import {
   DEFAULT_MOTION_TRANSFORM,
   MOTION_SHAPE_MODIFIER_TYPES as MOTION_SHAPE_MODIFIER_TYPE_LIST,
@@ -304,13 +321,13 @@ import {
   type MotionScene3DLighting,
   type MotionScene3DRoom,
   type MotionRotation3D,
-} from "@openreel/core/motion/types";
-import type { Keyframe, Marker } from "@openreel/core/types/timeline";
-import { normalizeMotionBlurSettings } from "@openreel/core/motion/motion-blur";
-import type { BlendMode } from "@openreel/core/video/types";
-import type { LottieAnimation } from "@openreel/core/types/lottie";
-import type { MediaItem } from "@openreel/core/types/project";
-import { EASING_TYPES, type EasingType } from "@openreel/core/types/timeline";
+} from "@kove-advanced/core/motion/types";
+import type { Keyframe, Marker } from "@kove-advanced/core/types/timeline";
+import { normalizeMotionBlurSettings } from "@kove-advanced/core/motion/motion-blur";
+import type { BlendMode } from "@kove-advanced/core/video/types";
+import type { LottieAnimation } from "@kove-advanced/core/types/lottie";
+import type { MediaItem } from "@kove-advanced/core/types/project";
+import { EASING_TYPES, type EasingType } from "@kove-advanced/core/types/timeline";
 import type {
   EditingHost,
   JobKind,
@@ -386,7 +403,7 @@ import {
   type CreationProjectState,
   type CreationValidationIssue,
   type Transform3D,
-} from "@openreel/core/creation/index";
+} from "@kove-advanced/core/creation/index";
 
 export type ToolHandler = (
   args: Record<string, unknown>,
@@ -395,6 +412,7 @@ export type ToolHandler = (
 
 export interface RegisteredTool extends ToolDef {
   readonly handler: ToolHandler;
+  readonly actionType?: string;
 }
 
 const genId = (): string =>
@@ -1946,6 +1964,7 @@ interface ActionToolSpec {
 function actionTool(spec: ActionToolSpec): RegisteredTool {
   return {
     name: spec.name,
+    actionType: spec.actionType,
     domain: spec.domain,
     title: spec.title,
     description: spec.description,
@@ -1955,6 +1974,13 @@ function actionTool(spec: ActionToolSpec): RegisteredTool {
     expensive: spec.expensive ?? false,
     handler: async (args, host) => {
       host.requireOpenProject();
+      const clipsBefore = spec.actionType === "clip/add" || spec.actionType === "clip/split"
+        ? new Set(
+            host
+              .getProject()
+              .timeline.tracks.flatMap((track) => track.clips.map((clip) => clip.id)),
+          )
+        : undefined;
       const params = spec.mapParams ? spec.mapParams(args) : args;
       const action: Action = {
         type: spec.actionType,
@@ -1963,13 +1989,457 @@ function actionTool(spec: ActionToolSpec): RegisteredTool {
         params,
       };
       const result = await host.applyAction(action);
-      if (result.success) return ok(`${spec.name} applied`, { actionId: action.id });
+      if (result.success) {
+        const data: Record<string, unknown> = { actionId: result.actionId };
+        if (clipsBefore) {
+          const createdClipIds = host
+            .getProject()
+            .timeline.tracks.flatMap((track) => track.clips)
+            .map((clip) => clip.id)
+            .filter((clipId) => !clipsBefore.has(clipId));
+          if (createdClipIds.length > 0) data.createdClipIds = createdClipIds;
+        }
+        return ok(`${spec.name} applied`, data);
+      }
       return fail(
         result.error?.message ?? `${spec.name} failed`,
         result.error?.code ?? "ACTION_FAILED",
       );
     },
   };
+}
+
+async function materializeEditPlan(
+  plan: EditPlan,
+  segmentMap: SegmentMap,
+  host: EditingHost,
+): Promise<{ clipIds: string[]; textIds: string[]; effectCount: number; transitionCount: number; audioCount: number; motionCompositionIds: string[]; motionInstanceIds: string[] }> {
+  let videoTrack = host.getProject().timeline.tracks.find((track) => track.type === "video");
+  if (!videoTrack) {
+    const trackResult = await host.applyAction({
+      type: "track/add",
+      id: genId(),
+      timestamp: Date.now(),
+      params: { trackType: "video" },
+    });
+    if (!trackResult.success) throw new Error(trackResult.error?.message ?? "Could not create a video track");
+    videoTrack = host.getProject().timeline.tracks.find((track) => track.type === "video");
+  }
+  if (!videoTrack) throw new Error("No video track is available for the edit plan");
+
+  const videoIds = new Set(segmentMap.videos.map((video) => video.videoId));
+  const clipIds: string[] = [];
+  const videoTracks = [videoTrack];
+  const nextPositions = new Map(videoTracks.map((track) => [track.id, track.clips.reduce(
+    (end, clip) => Math.max(end, clip.startTime + clip.duration),
+    0,
+  )]));
+  for (const segment of plan.segments) {
+    if (!videoIds.has(segment.sourceVideoId)) throw new Error(`Edit plan references unavailable video "${segment.sourceVideoId}"`);
+    const requestedTrackIndex = Math.max(0, Math.floor(segment.trackIndex ?? 0));
+    while (videoTracks.length <= requestedTrackIndex) {
+      const trackResult = await host.applyAction({
+        type: "track/add",
+        id: genId(),
+        timestamp: Date.now(),
+        params: { trackType: "video" },
+      });
+      if (!trackResult.success) throw new Error(trackResult.error?.message ?? "Could not create a video track");
+      const createdTrack = host.getProject().timeline.tracks.filter((track) => track.type === "video").at(-1);
+      if (!createdTrack) throw new Error("Video track was added but could not be recovered");
+      videoTracks.push(createdTrack);
+      nextPositions.set(createdTrack.id, createdTrack.clips.reduce(
+        (end, clip) => Math.max(end, clip.startTime + clip.duration),
+        0,
+      ));
+    }
+    const targetTrack = videoTracks[requestedTrackIndex] ?? videoTrack;
+    const duration = segment.sourceEndTime - segment.sourceStartTime;
+    const hasIncomingTransition = plan.transitions.some(
+      (transition) => transition.afterSegmentIndex === plan.segments.indexOf(segment) - 1,
+    );
+    const previousClip = clipIds.at(-1)
+      ? host.getProject().timeline.tracks.flatMap((track) => track.clips).find((clip) => clip.id === clipIds.at(-1))
+      : undefined;
+    const nextPosition = hasIncomingTransition && previousClip
+      ? previousClip.startTime + previousClip.duration
+      : Number.isFinite(segment.targetPosition)
+        ? Math.max(0, segment.targetPosition ?? 0)
+        : nextPositions.get(targetTrack.id) ?? 0;
+    const currentTargetTrack = host.getProject().timeline.tracks.find((track) => track.id === targetTrack.id);
+    const clipIdsBefore = new Set((currentTargetTrack?.clips ?? []).map((clip) => clip.id));
+    const result = await host.applyAction({
+      type: "clip/add",
+      id: genId(),
+      timestamp: Date.now(),
+      params: {
+        trackId: targetTrack.id,
+        mediaId: segment.sourceVideoId,
+        startTime: nextPosition,
+        duration,
+        inPoint: segment.sourceStartTime,
+        outPoint: segment.sourceEndTime,
+        ...(segment.speed !== undefined ? { speed: segment.speed } : {}),
+      },
+    });
+    if (!result.success) throw new Error(`${result.error?.code ?? "ACTION_FAILED"}: ${result.error?.message ?? "Could not add planned clip"}`);
+    const latestTrack = host.getProject().timeline.tracks.find((track) => track.id === targetTrack.id);
+    const created = latestTrack?.clips.find((clip) => !clipIdsBefore.has(clip.id))?.id;
+    if (!created) throw new Error("Clip was added but its ID could not be recovered");
+    clipIds.push(created);
+    if (segment.layout && segment.layout.region !== "fullscreen") {
+      const transform = resolveLayoutTransform(
+        segment.layout,
+        host.getProject().settings.width,
+        host.getProject().settings.height,
+      );
+      const transformResult = await host.applyAction({
+        type: "transform/update",
+        id: genId(),
+        timestamp: Date.now(),
+        params: { clipId: created, transform },
+      });
+      if (!transformResult.success) throw new Error(transformResult.error?.message ?? "Could not apply planned layout");
+    }
+    if (segment.speedRamp) {
+      const speedKeyframes = segment.speedRamp.keyframes.map((keyframe, index) => ({
+        id: `${created}-speed-${index}`,
+        time: Math.max(0, Math.min(duration, keyframe.time)),
+        speed: Math.max(0.1, Math.min(20, keyframe.speed)),
+        easing: keyframe.easing ?? "linear",
+      }));
+      const freezeFrames = (segment.speedRamp.freezeFrames ?? []).map((freeze, index) => ({
+        id: `${created}-freeze-${index}`,
+        clipId: created,
+        sourceTime: Math.max(0, Math.min(duration, freeze.sourceTime)),
+        startTime: Math.max(0, freeze.startTime),
+        duration: Math.max(0.01, freeze.duration),
+      }));
+      const rampResult = await host.applyAction({
+        type: "speed/setRampData",
+        id: genId(),
+        timestamp: Date.now(),
+        params: {
+          clipId: created,
+          keyframes: speedKeyframes,
+          freezeFrames,
+          pitchCorrection: segment.speedRamp.pitchCorrection ?? true,
+        },
+      });
+      if (!rampResult.success) throw new Error(rampResult.error?.message ?? "Could not apply planned speed ramp");
+    }
+    nextPositions.set(targetTrack.id, Math.max(nextPositions.get(targetTrack.id) ?? 0, nextPosition + duration));
+  }
+
+  let effectCount = 0;
+  const plannedEffects: PlannedEffect[] = [
+    ...plan.effects,
+    ...plan.segments.flatMap((segment, targetSegmentIndex) =>
+      [
+        ...(segment.effectSpecs ?? []).map((effect) => ({ ...effect, targetSegmentIndex })),
+        ...segment.effects.map((type) => ({
+          targetSegmentIndex,
+          type,
+          params: {},
+          rationale: "Effect requested on the segment.",
+        })),
+      ]),
+  ];
+  for (const effect of plannedEffects) {
+    const clipId = effect.targetSegmentIndex === undefined ? undefined : clipIds[effect.targetSegmentIndex];
+    if (!clipId) continue;
+    const isColorGrade = ["colorGrade", "color-grade", "color_grading", "colorGrading"].includes(effect.type);
+    const result = await host.applyAction({
+      type: isColorGrade ? "clip/setColorGrading" : "effect/add",
+      id: genId(),
+      timestamp: Date.now(),
+      params: isColorGrade
+        ? { clipId, colorGrading: effect.params }
+        : {
+          clipId,
+          effectType: effect.type,
+          params: {
+            ...effect.params,
+            ...(effect.intensity !== undefined ? { intensity: Math.max(0, Math.min(1, effect.intensity)) } : {}),
+            ...(effect.startOffset !== undefined ? { startOffset: Math.max(0, effect.startOffset) } : {}),
+            ...(effect.duration !== undefined ? { duration: Math.max(0.01, effect.duration) } : {}),
+            ...(effect.easing !== undefined ? { easing: effect.easing } : {}),
+          },
+        },
+    });
+    if (!result.success) throw new Error(result.error?.message ?? "Could not add planned effect");
+    effectCount++;
+  }
+
+  let audioCount = 0;
+  let musicTrack = host.getProject().timeline.tracks.find((track) => track.type === "audio" && track.name === "Music")
+    ?? host.getProject().timeline.tracks.find((track) => track.type === "audio");
+  let sfxTrack = host.getProject().timeline.tracks.find((track) => track.type === "audio" && track.name === "SFX");
+  for (const decision of plan.audioDecisions) {
+    if (decision.type === "silence" || !decision.sourceVideoId) continue;
+    const media = host.getProject().mediaLibrary.items.find((item) => item.id === decision.sourceVideoId);
+    if (!media || (media.type !== "audio" && media.type !== "video")) continue;
+    const trackName = decision.type === "sfx" ? "SFX" : "Music";
+    let targetTrack = decision.type === "sfx" ? sfxTrack : musicTrack;
+    if (!targetTrack) {
+      const trackResult = await host.applyAction({
+        type: "track/add",
+        id: genId(),
+        timestamp: Date.now(),
+        params: { trackType: "audio", name: trackName },
+      });
+      if (!trackResult.success) throw new Error(trackResult.error?.message ?? `Could not create the ${trackName} track`);
+      targetTrack = host.getProject().timeline.tracks.find((track) => track.type === "audio" && track.name === trackName);
+      if (decision.type === "sfx") sfxTrack = targetTrack;
+      else musicTrack = targetTrack;
+    }
+    if (!targetTrack) throw new Error(`No audio track is available for ${trackName}`);
+    const duration = Math.max(0.01, decision.duration);
+    const result = await host.applyAction({
+      type: "clip/add",
+      id: genId(),
+      timestamp: Date.now(),
+      params: {
+        trackId: targetTrack.id,
+        mediaId: decision.sourceVideoId,
+        startTime: Math.max(0, decision.startTime),
+        duration,
+        inPoint: Math.max(0, decision.sourceStartTime ?? 0),
+        outPoint: Math.max(0, decision.sourceEndTime ?? duration),
+        volume: Math.max(0, Math.min(4, decision.volume ?? 1)),
+      },
+    });
+    if (!result.success) throw new Error(result.error?.message ?? `Could not add planned ${decision.type}`);
+    audioCount++;
+  }
+
+  let transitionCount = 0;
+  for (const transition of plan.transitions) {
+    const clipAId = clipIds[transition.afterSegmentIndex];
+    const clipBId = clipIds[transition.afterSegmentIndex + 1];
+    if (!clipAId || !clipBId) continue;
+    const result = await host.applyAction({
+      type: "transition/add",
+      id: genId(),
+      timestamp: Date.now(),
+      params: { clipAId, clipBId, transitionType: transition.type, duration: transition.duration },
+    });
+    if (!result.success) throw new Error(result.error?.message ?? "Could not add planned transition");
+    transitionCount++;
+  }
+
+  const textIds: string[] = [];
+  for (const text of plan.textElements) {
+    if (!host.createTextOverlay) continue;
+    const textTemplate = resolveTextStyle(plan.captionTemplate, text);
+    const overlay = await host.createTextOverlay({
+      text: text.content,
+      startSec: text.startTime,
+      durationSec: text.duration,
+      style: {
+        ...(textTemplate.fontFamily ? { fontFamily: textTemplate.fontFamily } : {}),
+        ...(textTemplate.fontSize ? { fontSize: textTemplate.fontSize } : {}),
+        ...(textTemplate.fontWeight ? { fontWeight: textTemplate.fontWeight } : {}),
+        ...(textTemplate.color ? { color: textTemplate.color } : {}),
+        ...(textTemplate.backgroundColor ? { backgroundColor: textTemplate.backgroundColor } : {}),
+        ...(textTemplate.backgroundPadding !== undefined ? { backgroundPadding: textTemplate.backgroundPadding } : {}),
+        ...(textTemplate.backgroundRadius !== undefined ? { backgroundRadius: textTemplate.backgroundRadius } : {}),
+        ...(textTemplate.align ? { align: textTemplate.align } : {}),
+        style: text.style,
+      },
+      animation: textTemplate.animation,
+      animationInSec: textTemplate.animationInSec,
+      animationOutSec: textTemplate.animationOutSec,
+    });
+    const textPosition = text.position ?? textTemplate.position;
+    if (textPosition) {
+      const transformResult = await host.applyAction({
+        type: "transform/update",
+        id: genId(),
+        timestamp: Date.now(),
+        params: {
+          clipId: overlay.id,
+          transform: {
+            position: {
+              x: text.position ? textPosition.x : textPosition.x * host.getProject().settings.width,
+              y: text.position ? textPosition.y : textPosition.y * host.getProject().settings.height,
+            },
+          },
+        },
+      });
+      if (!transformResult.success) throw new Error(transformResult.error?.message ?? "Could not position planned text");
+    }
+    textIds.push(overlay.id);
+  }
+  if (clipIds.length === 0) throw new Error("Director returned an empty EditPlan; no clips were added");
+  const motion = await materializeMotionMoments(plan.motionMoments, clipIds, host);
+  return { clipIds, textIds, effectCount, transitionCount, audioCount, ...motion };
+}
+
+async function materializeMotionMoments(
+  moments: readonly MotionMomentSpec[] | undefined,
+  clipIds: readonly string[],
+  host: EditingHost,
+): Promise<{ motionCompositionIds: string[]; motionInstanceIds: string[] }> {
+  const motionCompositionIds: string[] = [];
+  const motionInstanceIds: string[] = [];
+  if (!moments || moments.length === 0) return { motionCompositionIds, motionInstanceIds };
+
+  const project = host.getProject();
+  const targetTrackId = project.timeline.tracks.find((track) => track.type === "video")?.id;
+  for (const [index, moment] of moments.entries()) {
+    const segment = moment.segmentIndex === undefined ? undefined : clipIds[moment.segmentIndex];
+    const sourceClip = segment
+      ? project.timeline.tracks.flatMap((track) => track.clips).find((clip) => clip.id === segment)
+      : undefined;
+    const startTime = Math.max(0, moment.atTime ?? sourceClip?.startTime ?? 0);
+    const duration = Math.max(0.1, moment.duration ?? sourceClip?.duration ?? 2);
+    const composition = motionEngine.createStarterComposition({
+      name: `EditPlan Motion ${index + 1} - ${moment.move}`,
+      width: project.settings.width,
+      height: project.settings.height,
+      frameRate: project.settings.frameRate,
+      duration,
+      backgroundColor: "#050505",
+    });
+    const built = buildMotionMove(moment.move, {
+      composition,
+      duration,
+      title: moment.rationale,
+    }, genId);
+    const created = await applyMotionAction(host, "motion/createComposition", {
+      composition: built.composition,
+    });
+    if (!created.ok) throw new Error(created.summary);
+    motionCompositionIds.push(built.composition.id);
+
+    if (moment.insertIntoEditor) {
+      const instance = motionEngine.createInstance(built.composition, {
+        startTime,
+        duration,
+        trackId: targetTrackId,
+        name: `Motion ${moment.move}`,
+      });
+      const inserted = await applyMotionAction(host, "motion/insertInstance", { instance });
+      if (!inserted.ok) throw new Error(inserted.summary);
+      motionInstanceIds.push(instance.id);
+    }
+  }
+  return { motionCompositionIds, motionInstanceIds };
+}
+
+function resolveLayoutTransform(
+  layout: EditPlanLayout,
+  compositionWidth: number,
+  compositionHeight: number,
+): Record<string, unknown> {
+  const region = layout.region;
+  let x = 0.5;
+  let y = 0.5;
+  let width = 1;
+  let height = 1;
+  if (region === "split-left") [x, width] = [0.25, 0.5];
+  if (region === "split-right") [x, width] = [0.75, 0.5];
+  if (region === "split-top") [y, height] = [0.25, 0.5];
+  if (region === "split-bottom") [y, height] = [0.75, 0.5];
+  if (region === "pip-corner") {
+    const corner = layout.pipCorner ?? "bottom-right";
+    width = 0.32;
+    height = 0.32;
+    x = corner.includes("left") ? 0.03 + width / 2 : 1 - 0.03 - width / 2;
+    y = corner.includes("top") ? 0.03 + height / 2 : 1 - 0.03 - height / 2;
+  }
+  if (region === "custom") {
+    const rect = layout.customRect ?? { x: 0, y: 0, width: 1, height: 1 };
+    x = rect.x + rect.width / 2;
+    y = rect.y + rect.height / 2;
+    width = rect.width;
+    height = rect.height;
+  }
+  return {
+    position: { x: x * compositionWidth, y: y * compositionHeight },
+    scale: { x: width, y: height },
+    fitMode: layout.fit ?? "cover",
+  };
+}
+
+function resolveTextStyle<T extends { readonly templateOverride?: Partial<CaptionStyleTemplate> }>(
+  template: CaptionStyleTemplate | undefined,
+  element: T & {
+    readonly fontFamily?: string;
+    readonly fontSize?: number;
+    readonly color?: string;
+    readonly animation?: string;
+    readonly animationInSec?: number;
+    readonly animationOutSec?: number;
+  },
+): CaptionStyleTemplate {
+  const override = element.templateOverride;
+  return {
+    ...template,
+    ...override,
+    fontFamily: element.fontFamily ?? override?.fontFamily ?? template?.fontFamily,
+    fontSize: element.fontSize ?? override?.fontSize ?? template?.fontSize,
+    color: element.color ?? override?.color ?? template?.color,
+    animation: element.animation ?? override?.animation ?? template?.animation,
+    animationInSec: element.animationInSec ?? override?.animationInSec ?? template?.animationInSec,
+    animationOutSec: element.animationOutSec ?? override?.animationOutSec ?? template?.animationOutSec,
+  };
+}
+
+function normalizeDirectorPlanInput(value: unknown): EditPlan {
+  const raw = asRecord(value) ?? {};
+  const rawSegments = Array.isArray(raw.segments) ? raw.segments : [];
+  const rawTextElements = Array.isArray(raw.textElements) ? raw.textElements : [];
+  const rawEffects = Array.isArray(raw.effects) ? raw.effects : [];
+  const rawTransitions = Array.isArray(raw.transitions) ? raw.transitions : [];
+  const rawAudioDecisions = Array.isArray(raw.audioDecisions) ? raw.audioDecisions : [];
+  const metadata = asRecord(raw.metadata) ?? {};
+  const motionMoments = (Array.isArray(raw.motionMoments) ? raw.motionMoments : [])
+    .map((value) => {
+      const moment = asRecord(value);
+      const move = moment?.move;
+      return moment && isMotionMoveId(move) ? ({ ...moment, move } as MotionMomentSpec) : undefined;
+    })
+    .filter((moment): moment is MotionMomentSpec => moment !== undefined);
+
+  return {
+    segments: rawSegments.map((value) => {
+      const segment = asRecord(value) ?? {};
+      return {
+        ...segment,
+        sourceVideoId: typeof segment.sourceVideoId === "string" ? segment.sourceVideoId : "",
+        effects: Array.isArray(segment.effects)
+          ? segment.effects.filter((effect): effect is string => typeof effect === "string")
+          : [],
+        effectSpecs: Array.isArray(segment.effectSpecs)
+          ? segment.effectSpecs.filter((effect): effect is Record<string, unknown> => Boolean(effect && typeof effect === "object"))
+          : undefined,
+      };
+    }) as unknown as EditPlan["segments"],
+    textElements: rawTextElements as EditPlan["textElements"],
+    effects: rawEffects as EditPlan["effects"],
+    transitions: rawTransitions as EditPlan["transitions"],
+    audioDecisions: rawAudioDecisions as EditPlan["audioDecisions"],
+    captionTemplate: asRecord(raw.captionTemplate) as EditPlan["captionTemplate"],
+    motionMoments,
+    metadata: {
+      ...metadata,
+      targetDuration: typeof metadata.targetDuration === "number" ? metadata.targetDuration : 0,
+      targetPlatform: typeof metadata.targetPlatform === "string" ? metadata.targetPlatform : "unknown",
+      genre: typeof metadata.genre === "string" ? metadata.genre : "unknown",
+      pacing: metadata.pacing === "fast" || metadata.pacing === "slow" ? metadata.pacing : "medium",
+      rationale: typeof metadata.rationale === "string" ? metadata.rationale : "",
+    },
+  };
+}
+
+function isMotionMoveId(value: unknown): value is MotionMoveId {
+  return value === "particle-burst-on-cut" || value === "glitch-transition" || value === "3d-title-card";
+}
+
+export function getActionTypeForTool(name: string): string | undefined {
+  return listTools().find((tool) => tool.name === name)?.actionType;
 }
 
 function readTool(
@@ -6709,7 +7179,7 @@ function buildParticleMeshFrames(
   worldSize: number,
 ): MotionObjectMeshFrames {
   const count = Math.round(clampNumber(optionalNumber(args.count) ?? 90, 1, 600));
-  const seed = optionalString(args.seed) ?? "openreel-particles";
+  const seed = optionalString(args.seed) ?? "kove-advanced-particles";
   const speed = Math.max(0, optionalNumber(args.speed) ?? worldSize * 1.1);
   const spread = clampNumber(optionalNumber(args.spread) ?? 0.7, 0, Math.PI);
   const gravity = optionalNumber(args.gravity) ?? 2.5;
@@ -6805,7 +7275,7 @@ function updateCreationAssetParticleBake(
     gravity: optionalNumber(args.gravity) ?? 2.5,
     drag: clampNumber(optionalNumber(args.drag) ?? 0.04, 0, 1),
     lifetime: clampNumber(optionalNumber(args.lifetime) ?? 2.4, 0.2, 8),
-    seed: optionalString(args.seed) ?? "openreel-particles",
+    seed: optionalString(args.seed) ?? "kove-advanced-particles",
     fps: Math.round(clampNumber(optionalNumber(args.fps) ?? 24, 8, 30)),
   });
   const particleNode = {
@@ -8336,7 +8806,7 @@ function hashStringToUint32(value: string): number {
 }
 
 function createSeededRandom(seed: unknown): () => number {
-  let state = hashStringToUint32(optionalString(seed) ?? String(seed ?? "openreel"));
+  let state = hashStringToUint32(optionalString(seed) ?? String(seed ?? "kove-advanced"));
   return () => {
     state = Math.imul(state ^ (state >>> 15), 1 | state);
     state ^= state + Math.imul(state ^ (state >>> 7), 61 | state);
@@ -10661,12 +11131,75 @@ function overlayRemoveTool(
 }
 
 // ---- Tool list -------------------------------------------------------------
+// ---- Director constants and helpers (Monet AI Director) --------------------
+const VISION_WORKER_URL =
+  (typeof process !== "undefined" && process.env.KOVE_VISION_WORKER_URL) ||
+  (import.meta as any).env?.VITE_VISION_WORKER_URL;
+
+let _analysisMode: "eco" | "ai" = "eco";
+export function setAnalysisMode(mode: "eco" | "ai") { _analysisMode = mode; }
+export function getAnalysisMode() { return _analysisMode; }
+
+const BASELINE_INTERVAL_SEC = 1 / 1.5; // matches DEFAULT_SAMPLE_CONFIG.baselineFps
+
+export function baselineFrameTimestamps(duration: number): readonly number[] {
+  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+  if (safeDuration === 0) return [0];
+
+  return Array.from(
+    { length: Math.max(1, Math.ceil(safeDuration / BASELINE_INTERVAL_SEC)) },
+    (_, index) => Math.min(
+      index * BASELINE_INTERVAL_SEC,
+      Math.max(0, safeDuration - 0.05),
+    ),
+  );
+}
+
+function isExtractedFrameData(
+  data: unknown,
+): data is { imageDataBase64: string; width: number; height: number } {
+  if (!data || typeof data !== "object") return false;
+  const candidate = data as Record<string, unknown>;
+  return (
+    typeof candidate.imageDataBase64 === "string" && candidate.imageDataBase64.length > 0 &&
+    typeof candidate.width === "number" && Number.isFinite(candidate.width) && candidate.width > 0 &&
+    typeof candidate.height === "number" && Number.isFinite(candidate.height) && candidate.height > 0
+  );
+}
+
+async function captureBaselineFrames(
+  host: EditingHost,
+  mediaId: string,
+  duration: number,
+): Promise<ExtractedFrame[]> {
+  const frames: ExtractedFrame[] = [];
+  for (const timestamp of baselineFrameTimestamps(duration)) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const job = await host.runJob("extractVideoFrame", {
+        mediaId,
+        timeSeconds: timestamp,
+        maxWidth: 320,
+      });
+      if (!job.ok || !isExtractedFrameData(job.data)) continue;
+
+      frames.push({
+        timestamp,
+        imageData: job.data.imageDataBase64,
+        width: job.data.width,
+        height: job.data.height,
+      });
+      break;
+    }
+  }
+  return frames;
+}
+
 const TOOLS: RegisteredTool[] = [
   // read
   readTool("get_editor_state", "Editor state", "Project settings, durations, and counts.", obj({}), (_a, h) =>
     serializeEditorState(h.getProject()),
   ),
-  readTool("list_media", "List media", "Media library items (blob-free).", obj({}), (_a, h) =>
+  readTool("list_media", "List media", "Media library items (blob-free), including whether each video is source footage or a marked reference. Trust analysisRole and do not ask the user to identify files that are already tagged.", obj({}), (_a, h) =>
     listMedia(h.getProject()),
   ),
   readTool("list_tracks", "List tracks", "All timeline tracks.", obj({}), (_a, h) =>
@@ -11301,7 +11834,7 @@ const TOOLS: RegisteredTool[] = [
   readTool(
     "list_creation_assets",
     "List creation assets",
-    "Compact list of persisted OpenReel creation assets/recipes generated or edited by agents.",
+    "Compact list of persisted Kove Advanced creation assets/recipes generated or edited by agents.",
     obj({}),
     (_a, h) => {
       const state = creationState(h);
@@ -16032,7 +16565,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "motion",
     title: "Create agent-native 3D creation scene",
     description:
-      "Create a semantic OpenReel creation scene and a renderable Motion Creator scene3d composition in one call. Use this for arbitrary agent-built 3D worlds, product stages, environment layouts, UI-in-3D mockups, props, labels, and cinematic setups that must remain editable. `objects` uses the same fields as add_motion_3d_scene plus optional key, objectId, assetId, assetKind, materialId, materialModel, tags, and parentKey. insertIntoEditor defaults to false so the scene stays in Motion Creator; set it true ONLY when the user explicitly wants the rendered scene placed on the main video-editor timeline. Returns semantic object ids and render object ids for follow-up set_creation_object_transform, set_creation_object_material, animate_creation_object, and set_creation_camera calls.",
+      "Create a semantic Kove Advanced creation scene and a renderable Motion Creator scene3d composition in one call. Use this for arbitrary agent-built 3D worlds, product stages, environment layouts, UI-in-3D mockups, props, labels, and cinematic setups that must remain editable. `objects` uses the same fields as add_motion_3d_scene plus optional key, objectId, assetId, assetKind, materialId, materialModel, tags, and parentKey. insertIntoEditor defaults to false so the scene stays in Motion Creator; set it true ONLY when the user explicitly wants the rendered scene placed on the main video-editor timeline. Returns semantic object ids and render object ids for follow-up set_creation_object_transform, set_creation_object_material, animate_creation_object, and set_creation_camera calls.",
     inputSchema: obj({
       sceneId: str,
       compositionId: str,
@@ -16426,7 +16959,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "motion",
     title: "Sync creation scene to Motion",
     description:
-      "Create, repair, or refresh the Motion Creator scene3d composition/layer for a persisted semantic OpenReel creation scene. Use this when a creation scene exists but is not rendering, after project import/load recovery, after stale binding issues, or when agents need to regenerate the native scene3d layer from editable creation assets/objects/cameras/lights. Reuses an existing motion-scene3d render binding unless forceNew=true, and can insert the synced composition into the editor timeline.",
+      "Create, repair, or refresh the Motion Creator scene3d composition/layer for a persisted semantic Kove Advanced creation scene. Use this when a creation scene exists but is not rendering, after project import/load recovery, after stale binding issues, or when agents need to regenerate the native scene3d layer from editable creation assets/objects/cameras/lights. Reuses an existing motion-scene3d render binding unless forceNew=true, and can insert the synced composition into the editor timeline.",
     inputSchema: obj({
       sceneId: str,
       compositionId: str,
@@ -16641,7 +17174,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "motion",
     title: "Add object to creation scene",
     description:
-      "Append one editable semantic object to an existing OpenReel creation scene and sync the bound Motion Creator scene3d layer when a render binding exists. Uses the same object fields as create_creation_3d_scene/add_motion_3d_scene plus optional key, objectId, renderObjectId, assetId, assetKind, materialId, materialModel, tags, parentId, and parentKey. Returns the creation object id and render object id for set_creation_object_transform, set_creation_object_material, and animate_creation_object.",
+      "Append one editable semantic object to an existing Kove Advanced creation scene and sync the bound Motion Creator scene3d layer when a render binding exists. Uses the same object fields as create_creation_3d_scene/add_motion_3d_scene plus optional key, objectId, renderObjectId, assetId, assetKind, materialId, materialModel, tags, parentId, and parentKey. Returns the creation object id and render object id for set_creation_object_transform, set_creation_object_material, and animate_creation_object.",
     inputSchema: obj({
       sceneId: str,
       key: str,
@@ -23767,7 +24300,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "motion",
     title: "Render creation preview",
     description:
-      "Render a still preview image for a semantic OpenReel creation scene by resolving its bound Motion Creator scene3d composition/layer. Use this after create_creation_3d_scene, sync_creation_scene_to_motion, or product cinematic creation to visually inspect agent-native creation work. If the binding/composition/layer is missing, call sync_creation_scene_to_motion first.",
+      "Render a still preview image for a semantic Kove Advanced creation scene by resolving its bound Motion Creator scene3d composition/layer. Use this after create_creation_3d_scene, sync_creation_scene_to_motion, or product cinematic creation to visually inspect agent-native creation work. If the binding/composition/layer is missing, call sync_creation_scene_to_motion first.",
     inputSchema: obj({
       sceneId: str,
       compositionId: str,
@@ -31523,11 +32056,17 @@ const TOOLS: RegisteredTool[] = [
     expensive: false,
     handler: async (args, host) => {
       host.requireOpenProject();
+      const requestedType = String(args.type);
+      const actionType = getActionTypeForTool(requestedType) ?? requestedType;
+      const nestedParams = args.params as Record<string, unknown> | undefined;
+      const params = nestedParams ?? Object.fromEntries(
+        Object.entries(args).filter(([key]) => key !== "type"),
+      );
       const action: Action = {
-        type: String(args.type),
+        type: actionType,
         id: genId(),
         timestamp: Date.now(),
-        params: (args.params as Record<string, unknown>) ?? {},
+        params,
       };
       const result = await host.applyAction(action);
       return result.success
@@ -31549,8 +32088,9 @@ const TOOLS: RegisteredTool[] = [
       const list = (args.actions as Array<{ type: string; params?: Record<string, unknown> }>) ?? [];
       let applied = 0;
       for (const a of list) {
+        const requestedType = String(a.type);
         const action: Action = {
-          type: String(a.type),
+          type: getActionTypeForTool(requestedType) ?? requestedType,
           id: genId(),
           timestamp: Date.now(),
           params: a.params ?? {},
@@ -31828,7 +32368,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "multicam",
     title: "Get multicam project manifest",
     description:
-      "Return the exact openreel-multicam/v1 manifest for a camera group, including participants, camera subjects, sync reference, and hard constraints.",
+      "Return the exact kove-advanced-multicam/v1 manifest for a camera group, including participants, camera subjects, sync reference, and hard constraints.",
     inputSchema: obj({ groupId: str }),
     readOnly: true,
     destructive: false,
@@ -32054,6 +32594,450 @@ const TOOLS: RegisteredTool[] = [
     },
   },
 
+  // ---- Director tools (Monet AI Director) ------------------------------------
+  {
+    name: "extract_segments",
+    domain: "ai",
+    title: "Extract video segments",
+    description:
+      "Analyze uploaded video(s) via real frame sampling, scene-cut detection, and vision analysis to build a SegmentMap describing what's actually happening in the footage. Use this first when the user wants to create an edit from their footage. Pass videoMediaIds to analyze specific videos, or omit/empty to auto-analyze ALL video media in the project. Expensive — requires confirmation.",
+    inputSchema: obj({ videoMediaIds: { type: "array", items: str } }),
+    readOnly: false,
+    destructive: false,
+    expensive: true,
+    handler: async (args, host) => {
+      host.requireOpenProject();
+
+      const project = host.getProject();
+      const allMedia = project.mediaLibrary?.items ?? [];
+      const videoMediaItems = allMedia.filter((m) => m.type === "video");
+
+      let videoMediaIds = args.videoMediaIds as string[] | undefined;
+
+      // Auto-discover: if no IDs provided, use ALL video media in the project
+      if (!videoMediaIds || videoMediaIds.length === 0) {
+        if (videoMediaItems.length === 0) {
+          return fail("No video media found in the project. Import at least one video first.", "NO_VIDEO_MEDIA");
+        }
+        videoMediaIds = videoMediaItems.map((m) => m.id);
+      }
+
+      // Eco mode uses the local Python analyzer. Only AI mode requires the
+      // configured Cloudflare vision worker.
+      if (_analysisMode === "ai" && !VISION_WORKER_URL) {
+        // Fallback: build a basic SegmentMap from video metadata (no vision analysis)
+        const mediaMap = new Map(videoMediaItems.map((m) => [m.id, m]));
+        const referenceMediaIds = new Set(
+          videoMediaItems.filter((media) => media.analysisRole === "reference").map((media) => media.id),
+        );
+        const videos = videoMediaIds.filter((id) => !referenceMediaIds.has(id)).map((id) => {
+          const media = mediaMap.get(id);
+          if (!media) return null;
+          const duration = media.metadata.duration;
+          return {
+            videoId: id,
+            sourceFile: media.name ?? id,
+            duration,
+            resolution: { width: 1920, height: 1080 },
+            fps: 30,
+            totalFrames: Math.round(duration * 30),
+            segments: [
+              {
+                id: `${id}-seg-0`,
+                startTime: 0,
+                endTime: duration,
+                sceneType: "b-roll" as const,
+                motionLevel: "medium" as const,
+                description: `Full video: ${media.name ?? id} (${duration.toFixed(1)}s)`,
+                hasDialogue: false,
+                visualContent: media.name ?? id,
+                confidence: 0.5,
+              },
+            ],
+          };
+        }).filter(Boolean) as Array<{ videoId: string; sourceFile: string; duration: number; resolution: { width: number; height: number }; fps: number; totalFrames: number; segments: Array<{ id: string; startTime: number; endTime: number; sceneType: string; motionLevel: string; description: string; hasDialogue: boolean; visualContent: string; confidence: number }> }>;
+
+        const segmentMap = { videos };
+        const referenceAnalysis = {
+          analysisVersion: "1.1.0",
+          videos: videos.map((video) => ({
+            videoId: video.videoId,
+            duration: video.duration,
+            summary: {
+              pacing: "unknown" as const,
+              cutCount: 0,
+              cutsPerMinute: 0,
+              dialogueLed: false,
+            },
+            timeline: [{
+              startTime: 0,
+              endTime: video.duration,
+              usedFor: ["metadata-only source coverage"],
+              evidence: "AI analysis is disabled for this request.",
+              confidence: 0.2,
+            }],
+          })),
+        };
+        const videoList = videoMediaIds.map((id) => {
+          const m = mediaMap.get(id);
+          return m ? `"${m.name}" (${id})` : id;
+        }).join(", ");
+
+        return ok(
+          `extract_segments: generated basic SegmentMap for ${videoMediaIds.length} video(s) [${videoList}] (vision worker not available — using metadata only)`,
+          { segmentMap, referenceAnalysis, videoCount: videoMediaIds.length, totalSegments: videos.length, frameCount: 0, videoMediaIds },
+        );
+      }
+
+      const mediaMap = new Map(videoMediaItems.map((m) => [m.id, m]));
+      const referenceMediaIds = new Set(
+        videoMediaItems.filter((media) => media.analysisRole === "reference").map((media) => media.id),
+      );
+      const sourceMediaIds = videoMediaIds.filter((id) => !referenceMediaIds.has(id));
+      const videoInputs: Array<{ videoId: string; duration: number; frames: ExtractedFrame[] }> = [];
+
+      for (const id of videoMediaIds) {
+        const media = mediaMap.get(id);
+        if (!media) return fail(`Media id "${id}" not found in project`, "INVALID_MEDIA");
+        if (media.type !== "video") return fail(`Media id "${id}" is type "${media.type}", not video`, "INVALID_MEDIA");
+
+        const duration = media.metadata.duration;
+        const frames = await captureBaselineFrames(host, id, duration);
+        if (frames.length === 0) {
+          return fail(`Frame capture returned no frames for "${id}" — check the exportFrame job`, "FRAME_CAPTURE_FAILED");
+        }
+        videoInputs.push({ videoId: id, duration, frames });
+      }
+
+      const workerUrl = _analysisMode === "eco"
+        ? "http://localhost:8000/analyze-frames"
+        : VISION_WORKER_URL!;
+      const result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl });
+      const sourceIds = new Set(sourceMediaIds);
+      const sourceSegmentMap = {
+        videos: result.segmentMap.videos.filter((video) => sourceIds.has(video.videoId)),
+      };
+      const referenceAnalysis = {
+        ...result.referenceAnalysis,
+        videos: result.referenceAnalysis.videos.map((video) => ({
+          ...video,
+          role: referenceMediaIds.has(video.videoId) ? "reference" : "source",
+        })),
+      };
+
+      // Build a user-friendly video list for the response
+      const videoList = videoMediaIds.map((id) => {
+        const m = mediaMap.get(id);
+        return m ? `"${m.name}" (${id})` : id;
+      }).join(", ");
+
+      return ok(
+        `extract_segments: analyzed ${videoMediaIds.length} video(s) [${videoList}], ${referenceMediaIds.size} reference(s), ${result.frameCount} frame(s), ${sourceSegmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0)} source segment(s) in ${result.processingTimeMs}ms`,
+        { segmentMap: sourceSegmentMap, referenceAnalysis, videoCount: videoMediaIds.length, referenceVideoIds: [...referenceMediaIds], totalSegments: sourceSegmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0), frameCount: result.frameCount, videoMediaIds },
+      );
+    },
+  },
+  // ---- Internal structured-output tool for director sub-call ----
+  {
+    name: "submit_edit_plan",
+    domain: "internal",
+    internal: true,
+    title: "Submit edit plan",
+    description: "Internal-only: used by the director sub-call to return a structured EditPlan.",
+    inputSchema: obj({
+      segments: { type: "array", items: obj({
+        sourceVideoId: str,
+        sourceStartTime: num,
+        sourceEndTime: num,
+        trackIndex: { type: "integer" },
+        targetPosition: num,
+        speed: num,
+        effects: { type: "array", items: str },
+        effectSpecs: { type: "array", items: obj({
+          type: str,
+          params: { type: "object" },
+          intensity: num,
+          startOffset: num,
+          duration: num,
+          easing: str,
+          rationale: str,
+        }) },
+        layout: obj({
+          region: { type: "string", enum: ["fullscreen", "split-left", "split-right", "split-top", "split-bottom", "pip-corner", "custom"] },
+          pipCorner: { type: "string", enum: ["top-left", "top-right", "bottom-left", "bottom-right"] },
+          customRect: obj({ x: num, y: num, width: num, height: num }),
+          fit: { type: "string", enum: ["cover", "contain"] },
+        }),
+        rationale: str,
+      })},
+      textElements: { type: "array", items: obj({
+        content: str,
+        style: { type: "string", enum: ["title", "subtitle", "lower-third", "caption", "callout"] },
+        startTime: num,
+        duration: num,
+        fontFamily: str,
+        fontSize: num,
+        color: str,
+        animation: str,
+        animationInSec: num,
+        animationOutSec: num,
+        templateOverride: { type: "object" },
+        rationale: str,
+      })},
+      effects: { type: "array", items: obj({
+        targetSegmentIndex: { type: "integer" },
+        type: str,
+        params: { type: "object" },
+        rationale: str,
+      })},
+      transitions: { type: "array", items: obj({
+        afterSegmentIndex: { type: "integer" },
+        type: str,
+        duration: num,
+        rationale: str,
+      })},
+      audioDecisions: { type: "array", items: obj({
+        type: { type: "string", enum: ["music", "sfx", "silence"] },
+        sourceVideoId: str,
+        sourceStartTime: num,
+        sourceEndTime: num,
+        startTime: num,
+        duration: num,
+        volume: num,
+        rationale: str,
+      })},
+      captionTemplate: { type: "object" },
+      motionMoments: { type: "array", items: obj({
+        move: { type: "string", enum: ["particle-burst-on-cut", "glitch-transition", "3d-title-card"] },
+        segmentIndex: { type: "integer" },
+        atTime: num,
+        duration: num,
+        insertIntoEditor: bool,
+        rationale: str,
+      })},
+      metadata: obj({
+        targetDuration: num,
+        targetPlatform: str,
+        genre: str,
+        pacing: { type: "string", enum: ["fast", "medium", "slow"] },
+        rationale: str,
+      }),
+    }),
+    readOnly: true,
+    destructive: false,
+    expensive: false,
+    handler: async () => fail("submit_edit_plan is structured-output-only, never execute it directly", "NOT_EXECUTABLE"),
+  },
+  {
+    name: "plan_edit",
+    domain: "ai",
+    title: "Plan edit",
+    description:
+      "Given the user's prompt, have the director produce a structured EditPlan. Pass the source segmentMap and optional referenceAnalysis from extract_segments to reproduce a marked reference video's style on the user's own footage.",
+    inputSchema: obj(
+      { prompt: str, genreId: str, segmentMap: { type: "object" }, referenceAnalysis: { type: "object" } },
+      ["prompt"],
+    ),
+    readOnly: false,
+    destructive: false,
+    expensive: true,
+    handler: async (args, host) => {
+      host.requireOpenProject();
+      const prompt = (args.prompt as string | undefined)?.trim();
+      const genreId = args.genreId as string | undefined;
+
+      if (!prompt) return fail("prompt is required", "INVALID_PARAMS");
+
+      if (!host.llm) {
+        return fail("No LLM on host — plan_edit needs host.llm set", "NOT_CONFIGURED");
+      }
+
+      // Use provided segmentMap or build a fallback from project media
+      const project = host.getProject();
+      const allMedia = project.mediaLibrary?.items ?? [];
+      const videoMedia = allMedia.filter((m) => m.type === "video");
+      if (videoMedia.length === 0) {
+        return fail("No video media in the project. Import at least one video first.", "NO_VIDEO_MEDIA");
+      }
+
+      const providedMap = args.segmentMap as SegmentMap | undefined;
+      const providedReferenceAnalysis = args.referenceAnalysis as unknown;
+      let resolvedMap: SegmentMap;
+
+      if (providedMap && Array.isArray(providedMap.videos) && providedMap.videos.length > 0) {
+        // Use the segmentMap from extract_segments (has real vision analysis)
+        resolvedMap = {
+          videos: providedMap.videos.map((video) => ({
+            ...video,
+            segments: Array.isArray(video.segments) ? video.segments : [],
+          })),
+        };
+      } else {
+        // Fallback: build a basic SegmentMap from media metadata
+        resolvedMap = {
+          videos: videoMedia.filter((m) => m.analysisRole !== "reference").map((m) => ({
+            videoId: m.id,
+            sourceFile: m.name ?? m.id,
+            duration: m.metadata.duration,
+            segments: [
+              {
+                id: `${m.id}-seg-0`,
+                startTime: 0,
+                endTime: m.metadata.duration,
+                sceneType: "b-roll" as const,
+                motionLevel: "medium" as const,
+                description: `${m.name ?? m.id} — ${m.metadata.duration.toFixed(1)}s`,
+                hasDialogue: false,
+                visualContent: m.name ?? m.id,
+                confidence: 0.5,
+              },
+            ],
+          })),
+        };
+      }
+
+      const genre = genreId ? PRE_BAKED_GENRES.find((g) => g.id === genreId) : undefined;
+      const directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, providedReferenceAnalysis);
+
+      const planTools =
+        host.llm.provider === "anthropic"
+          ? toAnthropicTools(["submit_edit_plan"])
+          : toOpenAITools(["submit_edit_plan"]);
+
+      const response = await host.llm.client.complete({
+        system: directorPrompt,
+        messages: [
+          {
+            role: "user",
+            content:
+              "Analyze the footage and call submit_edit_plan with your complete EditPlan. You must call submit_edit_plan — do not respond with plain text.",
+          },
+        ],
+        tools: planTools,
+      });
+
+      const planCall = response.toolUses.find((t) => t.name === "submit_edit_plan");
+      if (!planCall) {
+        return fail(
+          `Director returned no EditPlan (stopReason: ${response.stopReason}). Text: ${response.text.slice(0, 300)}`,
+          "NO_PLAN_RETURNED",
+        );
+      }
+
+      const plan = normalizeDirectorPlanInput(planCall.input);
+
+      // Resolve all segment sourceVideoId references
+      const resolvedPlan = normalizeEditPlan({
+        ...plan,
+        segments: plan.segments.map((seg) => ({
+          ...seg,
+          sourceVideoId: resolveDirectorVideoId(resolvedMap, seg.sourceVideoId),
+        })),
+      }, resolvedMap);
+
+      let finalPlan = resolvedPlan;
+      let finalPlanIssues = validateEditPlan(finalPlan, resolvedMap);
+      const blocking = finalPlanIssues.filter((i: { severity: string }) => i.severity === "error");
+      if (blocking.length > 0) {
+        return fail(
+          `Director produced an invalid EditPlan: ${blocking.map((i: { code: string; message: string }) => `[${i.code}] ${i.message}`).join("; ")}`,
+          "INVALID_EDIT_PLAN",
+        );
+      }
+
+      let planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis);
+      let revisionApplied = false;
+      if (planReview.needsRevision) {
+        try {
+          const revisionResponse = await host.llm.client.complete({
+            system: `${directorPrompt}\n\n## Internal plan review\nThe first draft scored ${planReview.score.toFixed(2)} against the style target. Revise it once before execution. Address these deviations: ${planReview.deviations.join("; ") || "bring the measurable style profile closer to target"}.`,
+            messages: [{
+              role: "user",
+              content: `Revise this EditPlan to address the internal review, then call submit_edit_plan with the complete corrected plan. Do not explain the revision.\n\n${JSON.stringify(finalPlan)}`,
+            }],
+            tools: planTools,
+          });
+          const revisedCall = revisionResponse.toolUses.find((toolUse) => toolUse.name === "submit_edit_plan");
+          if (revisedCall) {
+            const revisedPlan = normalizeDirectorPlanInput(revisedCall.input);
+            const resolvedRevision = normalizeEditPlan({
+              ...revisedPlan,
+              segments: revisedPlan.segments.map((seg) => ({
+                ...seg,
+                sourceVideoId: resolveDirectorVideoId(resolvedMap, seg.sourceVideoId),
+              })),
+            }, resolvedMap);
+            const revisionIssues = validateEditPlan(resolvedRevision, resolvedMap);
+            if (!revisionIssues.some((issue: { severity: string }) => issue.severity === "error")) {
+              finalPlan = resolvedRevision;
+              finalPlanIssues = revisionIssues;
+              planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis);
+              revisionApplied = true;
+            }
+          }
+        } catch {
+          revisionApplied = false;
+        }
+      }
+
+      let materialized;
+      try {
+        materialized = await materializeEditPlan(finalPlan, resolvedMap, host);
+      } catch (error) {
+        return fail(
+          `EditPlan was valid but could not be applied: ${error instanceof Error ? error.message : "timeline mutation failed"}`,
+          "EDIT_PLAN_APPLY_FAILED",
+        );
+      }
+
+      // Step 8: Render sampled frames for visual self-review
+      const frameSampling = await sampleRenderedFrames(finalPlan, host);
+
+      // Step 9: Run combined quality pipeline (visual review + materialized draft review)
+      const qualityResult = runQualityPipeline(
+        finalPlan,
+        resolvedMap,
+        materialized,
+        planReview,
+        frameSampling.observations,
+      );
+
+      // Step 10: Apply targeted corrections when the quality review flags issues
+      let correctionsApplied = { applied: 0, skipped: 0 };
+      if (qualityResult.needsCorrection && qualityResult.corrections.length > 0) {
+        correctionsApplied = await applyTargetedCorrections(
+          finalPlan,
+          qualityResult.corrections,
+          materialized.clipIds,
+          host,
+        );
+      }
+
+      return ok(
+        `plan_edit applied: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s). Quality: ${(qualityResult.combinedScore * 100).toFixed(0)}% (${frameSampling.sampledCount} frames sampled, ${correctionsApplied.applied} correction(s) applied).`,
+        {
+          editPlan: finalPlan,
+          ...materialized,
+          validationWarnings: finalPlanIssues.filter((i: { severity: string }) => i.severity === "warning"),
+          planReview: {
+            score: planReview.score,
+            deviations: planReview.deviations,
+            revisionApplied,
+          },
+          qualityPipeline: {
+            combinedScore: qualityResult.combinedScore,
+            renderedReview: qualityResult.renderedReview,
+            draftReview: qualityResult.draftReview,
+            needsCorrection: qualityResult.needsCorrection,
+            corrections: qualityResult.corrections,
+            correctionsApplied,
+            sampledFrameCount: frameSampling.sampledCount,
+          },
+        },
+      );
+    },
+  },
+
   // Local render jobs delegated to the app host and gated as expensive.
   jobTool(
     "export_video",
@@ -32085,11 +33069,11 @@ export function listTools(): RegisteredTool[] {
 }
 
 export function toolDefs(): ToolDef[] {
-  return listTools().map(({ handler: _handler, ...def }) => def);
+  return listTools().map(({ handler: _handler, actionType: _actionType, ...def }) => def);
 }
 
 function selectedTools(names?: Iterable<string>): RegisteredTool[] {
-  if (!names) return listTools();
+  if (!names) return listTools().filter((t) => !t.internal);
   const selected = new Set(names);
   return listTools().filter((tool) => selected.has(tool.name));
 }
@@ -32126,7 +33110,7 @@ export function toMcpTools(): Array<{
   description: string;
   inputSchema: JSONSchema;
 }> {
-  return listTools().map((t) => ({
+  return selectedTools().map((t) => ({
     name: t.name,
     description: t.description,
     inputSchema: t.inputSchema,
@@ -32141,7 +33125,7 @@ export function toCapabilityDoc(names?: Iterable<string>): string {
     arr.push(t);
     byDomain.set(t.domain, arr);
   }
-  let out = "# OpenReel Agent Tools\n";
+  let out = "# Kove Advanced Agent Tools\n";
   for (const [domain, tools] of byDomain) {
     out += `\n## ${domain}\n`;
     for (const t of tools) {

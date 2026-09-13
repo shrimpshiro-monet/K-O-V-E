@@ -4,18 +4,18 @@ import { generateShareableLink } from "../hooks/use-router";
 import { getSharePageUrl } from "./share-service";
 
 afterEach(() => {
-  delete (window as unknown as { openreel?: unknown }).openreel;
+  delete (window as unknown as { "kove-advanced"?: unknown })["kove-advanced"];
 });
 
 describe("shareBaseOrigin", () => {
   it("uses publicOrigin on desktop for share + deep links", () => {
-    (window as unknown as { openreel: unknown }).openreel = {
+    (window as unknown as { "kove-advanced": unknown })["kove-advanced"] = {
       platform: "desktop",
-      publicOrigin: "https://app.openreel.video",
+      publicOrigin: "https://app.kove-advanced.video",
     };
-    expect(shareBaseOrigin()).toBe("https://app.openreel.video");
-    expect(generateShareableLink("share")).toMatch(/^https:\/\/app\.openreel\.video#\//);
-    expect(getSharePageUrl("x")).toBe("https://app.openreel.video#/share/x");
+    expect(shareBaseOrigin()).toBe("https://app.kove-advanced.video");
+    expect(generateShareableLink("share")).toMatch(/^https:\/\/app\.kove-advanced\.video#\//);
+    expect(getSharePageUrl("x")).toBe("https://app.kove-advanced.video#/share/x");
   });
 
   it("uses window.location origin+pathname on web", () => {

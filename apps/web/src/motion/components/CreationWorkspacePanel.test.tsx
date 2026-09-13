@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { CreationProjectState, CreationScene } from "@openreel/core/creation/index";
-import { IDENTITY_TRANSFORM } from "@openreel/core/creation/index";
+import type { CreationProjectState, CreationScene } from "@kove-advanced/core/creation/index";
+import { IDENTITY_TRANSFORM } from "@kove-advanced/core/creation/index";
 import { createEmptyProject } from "../../stores/project/project-helpers";
 import { useProjectStore } from "../../stores/project-store";
 import { useMotionStore } from "../stores/motion-store";
@@ -13,7 +13,7 @@ const h = vi.hoisted(() => ({
   runExclusive: vi.fn((fn: () => Promise<unknown>) => fn()),
 }));
 
-vi.mock("@openreel/agent", () => ({
+vi.mock("@kove-advanced/agent", () => ({
   executeTool: h.executeTool,
 }));
 

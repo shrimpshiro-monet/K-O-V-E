@@ -7,7 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { MaskEngine, type Clip, type Project } from "@openreel/core";
+import { MaskEngine, type Clip, type Project } from "@kove-advanced/core";
 
 import { createEmptyProject } from "../../../stores/project/project-helpers";
 import { useEngineStore } from "../../../stores/engine-store";

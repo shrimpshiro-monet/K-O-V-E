@@ -28,6 +28,8 @@ export interface RunTurnInput {
   readonly limits?: { maxSteps?: number; maxToolCalls?: number; maxTokens?: number };
   readonly dryRun?: boolean;
   readonly turnLabel?: string;
+  /** Run the mandatory director checkup before editing turns. */
+  readonly enforceDirectorWorkflow?: boolean;
 }
 
 export type StopReason =
@@ -47,6 +49,17 @@ export interface RunTurnResult {
 }
 
 const isReadOnly = (name: string): boolean => getTool(name)?.readOnly ?? false;
+
+const isDirectorDiscoveryTool = (name: string): boolean => name === "extract_segments";
+
+const DIRECTOR_REQUEST = /\b(edit|video|footage|clip|cut|trim|highlight|reel|montage|reference|b-roll|vlog|podcast|timeline|sequence|splice|join)\b/i;
+
+function latestUserPrompt(messages: LoopMessage[]): string {
+  return [...messages]
+    .reverse()
+    .find((message): message is Extract<LoopMessage, { role: "user" }> => message.role === "user")
+    ?.content ?? "";
+}
 
 const DATA_URL_PREFIX = /^data:([^;,]+)?(?:;[^,]*)?,/;
 
@@ -98,6 +111,7 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
     onEvent,
     dryRun = false,
     turnLabel = "AI edit",
+    enforceDirectorWorkflow = false,
   } = input;
   const maxSteps = input.limits?.maxSteps ?? 12;
   const maxToolCalls = input.limits?.maxToolCalls ?? 64;
@@ -113,9 +127,36 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
     outputTokens: 0,
   };
 
+  const requiresDirectorPlan = enforceDirectorWorkflow && DIRECTOR_REQUEST.test(latestUserPrompt(messages));
+  let directorPlanCompleted = !requiresDirectorPlan;
+
   const txn = host.beginTransaction(turnLabel);
 
   try {
+    if (requiresDirectorPlan) {
+      const checkup = ["get_capabilities", "get_editor_state", "list_media"] as const;
+      const checkupUses = checkup.map((name, index) => ({
+        id: `checkup-${index + 1}`,
+        name,
+        input: {},
+      }));
+      messages.push({ role: "assistant", content: "", toolUses: checkupUses });
+      const checkupResults: LoopToolResult[] = [];
+      for (const toolUse of checkupUses) {
+        toolCalls++;
+        const call: ToolCall = { id: toolUse.id, name: toolUse.name, args: {} };
+        emit({ type: "tool_call", call });
+        const result = await executeTool(toolUse.name, {}, host);
+        emit({ type: "tool_result", call, result });
+        checkupResults.push({
+          toolUseId: toolUse.id,
+          content: buildToolResultContent(result),
+          isError: !result.ok,
+        });
+      }
+      messages.push({ role: "tool", results: checkupResults });
+    }
+
     for (let step = 0; step < maxSteps; step++) {
       if (
         maxTokens !== undefined &&
@@ -198,6 +239,30 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
         };
         emit({ type: "tool_call", call });
 
+        if (
+          requiresDirectorPlan &&
+          !directorPlanCompleted &&
+          call.name !== "plan_edit" &&
+          !isReadOnly(call.name) &&
+          !isDirectorDiscoveryTool(call.name)
+        ) {
+          const blocked = {
+            ok: false as const,
+            summary: "Planning is required before editing",
+            error: {
+              code: "PLAN_REQUIRED",
+              message: "Call plan_edit directly before any editing tool. Do not wrap it in execute_action.",
+            },
+          };
+          emit({ type: "tool_result", call, result: blocked });
+          results.push({
+            toolUseId: call.id,
+            content: JSON.stringify(blocked),
+            isError: true,
+          });
+          continue;
+        }
+
         const needsConfirm =
           !dryRun &&
           !approveAll &&
@@ -230,6 +295,9 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
           };
         } else {
           result = await executeTool(call.name, call.args, host);
+        }
+        if (requiresDirectorPlan && call.name === "plan_edit" && result.ok) {
+          directorPlanCompleted = true;
         }
         emit({ type: "tool_result", call, result });
         results.push({

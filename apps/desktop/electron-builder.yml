@@ -1,7 +1,7 @@
-appId: video.openreel.desktop
-productName: OpenReel
+appId: video.kove-advanced.desktop
+productName: Kove Advanced
 # Predictable, space-free, arch-suffixed names → clean R2 URLs + a simple
-# manifest (e.g. OpenReel-1.2.3-arm64.dmg, OpenReel-1.2.3-x64.exe).
+# manifest (e.g. Kove Advanced-1.2.3-arm64.dmg, Kove Advanced-1.2.3-x64.exe).
 artifactName: ${productName}-${version}-${arch}.${ext}
 asar: true
 # The MCP stdio shim must be a real on-disk file so external clients (Claude
@@ -15,7 +15,7 @@ directories:
 # CI uploads everything to R2 (the generic provider does not upload itself).
 publish:
   provider: generic
-  url: https://dl.openreel.video
+  url: https://dl.kove-advanced.video
   channel: latest
 files:
   - dist/**/*

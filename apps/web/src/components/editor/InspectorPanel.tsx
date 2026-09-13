@@ -4,14 +4,14 @@ import { useProjectStore } from "../../stores/project-store";
 import { useTimelineStore } from "../../stores/timeline-store";
 import { useUIStore } from "../../stores/ui-store";
 import { useEngineStore } from "../../stores/engine-store";
-import type { Transform, EditingTemplatePrimitive } from "@openreel/core";
+import type { Transform, EditingTemplatePrimitive } from "@kove-advanced/core";
 import {
   ChromaKeyEngine,
   getMediaItemCapabilities,
   type CaptionAnimationStyle,
   CAPTION_ANIMATION_STYLES,
   getAnimationStyleDisplayName,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import { mergeEditingTemplateControlValues } from "./panels/EditingTemplateControls";
 import {
   getAudioBridgeEffects,
@@ -26,14 +26,14 @@ import {
   useCustomFonts,
 } from "./inspector/font-options";
 import { getNoiseReductionPreset } from "./inspector/noise-reduction-presets";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftFileDropControl as FileInput } from "@openreel/ui";
-import { ToolcraftNumberInputControl } from "@openreel/ui";
-import { ToolcraftSelectableCard as SelectableCard } from "@openreel/ui";
-import { ToolcraftSelectControl as Selector } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
-import { ToolcraftTextAreaControl } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftFileDropControl as FileInput } from "@kove-advanced/ui";
+import { ToolcraftNumberInputControl } from "@kove-advanced/ui";
+import { ToolcraftSelectableCard as SelectableCard } from "@kove-advanced/ui";
+import { ToolcraftSelectControl as Selector } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
+import { ToolcraftTextAreaControl } from "@kove-advanced/ui";
 import { ColorSelector } from "../../motion/components/primitives";
 import {
   getTabIdsForClipType,
@@ -422,7 +422,7 @@ export const InspectorPanel: React.FC = () => {
       try {
         await waitForEffectApplicationPaint();
         await apply();
-        window.dispatchEvent(new CustomEvent("openreel:preview-invalidate"));
+        window.dispatchEvent(new CustomEvent("kove-advanced:preview-invalidate"));
         await waitForEffectApplicationPaint();
       } finally {
         finishEffectApplication();

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { MotionComposition, MotionLayer } from "@openreel/core";
+import type { MotionComposition, MotionLayer } from "@kove-advanced/core";
 import {
   DEFAULT_MOTION_TRANSFORM,
   createMotionParticleLayer,
   createMotionLight,
   getMotionMaskKeyframeProperty,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import {
   getMotionStagePlaybackPreviewSettings,
   getMotionStagePreviewCanvasSize,

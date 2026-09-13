@@ -5,8 +5,8 @@ import type {
   Project,
   Track,
   Clip,
-} from "@openreel/core";
-import type { ActionExecutor } from "@openreel/core";
+} from "@kove-advanced/core";
+import type { ActionExecutor } from "@kove-advanced/core";
 
 export function createAction(
   type: string,

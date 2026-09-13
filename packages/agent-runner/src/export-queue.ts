@@ -1,4 +1,4 @@
-import type { JobKind, JobRunner } from "@openreel/agent";
+import type { JobKind, JobRunner } from "@kove-advanced/agent";
 
 export interface ExportJobSpec {
   readonly id: string;

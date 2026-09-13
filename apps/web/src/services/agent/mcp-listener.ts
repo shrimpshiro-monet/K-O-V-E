@@ -5,8 +5,8 @@ import {
   isExpensive,
   toMcpTools,
   type ToolResult,
-} from "@openreel/agent";
-import type { MotionComposition } from "@openreel/core";
+} from "@kove-advanced/agent";
+import type { MotionComposition } from "@kove-advanced/core";
 import { getLiveEditorHost, runExclusive } from "./host-singleton";
 import { useSettingsStore } from "../../stores/settings-store";
 import { useMotionStore } from "../../motion/stores/motion-store";
@@ -213,7 +213,7 @@ export async function handleMcpBridgeRequest(
 
 /** Installs the desktop MCP bridge listener. No-op off desktop. */
 export function installMcpListener(): () => void {
-  const mcp = window.openreel?.mcp;
+  const mcp = window["kove-advanced"]?.mcp;
   if (!mcp) return () => {};
   return mcp.onRequest(handleMcpBridgeRequest);
 }

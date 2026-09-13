@@ -1,4 +1,4 @@
-import type { MediaItem } from "@openreel/core";
+import type { MediaItem } from "@kove-advanced/core";
 
 export async function generateThumbnailFromBlob(
   blob: Blob,

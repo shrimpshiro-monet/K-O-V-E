@@ -3,8 +3,8 @@ import {
   makeClientFromSend,
   llmHttpError,
   parseRetryAfterMs,
-} from "@openreel/agent";
-import type { LLMClient, LLMSend } from "@openreel/agent";
+} from "@kove-advanced/agent";
+import type { LLMClient, LLMSend } from "@kove-advanced/agent";
 
 export type LlmProvider = "anthropic" | "openai";
 

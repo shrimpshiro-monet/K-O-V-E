@@ -24,7 +24,7 @@ function context(
 ): TextAnimationContext {
   return {
     unit: {
-      text: "OpenReel",
+      text: "Kove Advanced",
       index,
       totalUnits,
       x: 0,

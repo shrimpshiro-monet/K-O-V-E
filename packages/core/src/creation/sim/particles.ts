@@ -23,7 +23,7 @@ export interface ParticleEmitterOptions {
 
 export function spawnParticles(options: ParticleEmitterOptions): Particle[] {
   const count = Math.max(0, Math.min(4096, Math.floor(options.count)));
-  const rng = createRng(options.seed ?? "openreel-particles");
+  const rng = createRng(options.seed ?? "kove-advanced-particles");
   const origin = options.origin ?? { x: 0, y: 0, z: 0 };
   const speed = options.speed ?? 3;
   const speedJitter = Math.max(0, options.speedJitter ?? 0.3);

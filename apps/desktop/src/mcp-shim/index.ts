@@ -104,8 +104,8 @@ function main(): void {
     endpoint = readEndpoint();
   } catch (error) {
     process.stderr.write(
-      `openreel-mcp: ${error instanceof Error ? error.message : String(error)}\n` +
-        "Is the OpenReel desktop app running?\n",
+      `kove-advanced-mcp: ${error instanceof Error ? error.message : String(error)}\n` +
+        "Is the Kove Advanced desktop app running?\n",
     );
     process.exit(1);
   }
@@ -119,7 +119,7 @@ function main(): void {
       })
       .catch((error) => {
         process.stderr.write(
-          `openreel-mcp: ${error instanceof Error ? error.message : String(error)}\n`,
+          `kove-advanced-mcp: ${error instanceof Error ? error.message : String(error)}\n`,
         );
       });
   });

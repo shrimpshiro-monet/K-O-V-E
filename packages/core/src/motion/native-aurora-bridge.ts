@@ -29,10 +29,10 @@ export interface NativeAuroraBridge {
 }
 
 function getBridge(): NativeAuroraBridge | undefined {
-  const scope = globalThis as { openreel?: Partial<NativeAuroraBridge> };
-  const openreel = scope.openreel;
-  if (openreel?.platform === "desktop" && openreel.aurora) {
-    return openreel as NativeAuroraBridge;
+  const scope = globalThis as Record<string, unknown>;
+  const koveAdvanced = (scope as { "kove-advanced"?: Partial<NativeAuroraBridge> })["kove-advanced"];
+  if (koveAdvanced?.platform === "desktop" && koveAdvanced.aurora) {
+    return koveAdvanced as NativeAuroraBridge;
   }
   return undefined;
 }

@@ -8,7 +8,7 @@ import {
   type WhisperModelKey,
 } from "./whisper-models";
 
-const MODEL_HOST = "https://media.openreel.video/models/";
+const MODEL_HOST = "https://media.kove-advanced.video/models/";
 
 env.allowLocalModels = false;
 env.allowRemoteModels = true;

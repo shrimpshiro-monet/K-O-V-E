@@ -1,9 +1,9 @@
 #!/bin/bash
-# OpenReel Video - Local Development Start Script
+# Kove Advanced Video - Local Development Start Script
 
 set -e
 
-echo "=== OpenReel Video - Dev Setup ==="
+echo "=== Kove Advanced Video - Dev Setup ==="
 
 # Install dependencies if needed
 if [ ! -d "node_modules" ]; then

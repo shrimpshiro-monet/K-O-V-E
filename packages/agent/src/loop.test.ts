@@ -12,6 +12,61 @@ const tools = toAnthropicTools();
 const userMsg = (content: string): LoopMessage[] => [{ role: "user", content }];
 
 describe("runTurn", () => {
+  it("runs the director checkup and blocks edits before direct planning", async () => {
+    const host = new HeadlessHost(makeProjectWithClip());
+    const events: AgentEvent[] = [];
+    const result = await runTurn({
+      host,
+      llm: new MockLLMClient([
+        {
+          text: "I should plan this first.",
+          stopReason: "tool_use",
+          toolUses: [{ id: "t1", name: "add_track", input: { trackType: "text" } }],
+        },
+        { text: "Planning is required.", stopReason: "end_turn", toolUses: [] },
+      ]),
+      tools,
+      messages: userMsg("edit this video into a short reel"),
+      enforceDirectorWorkflow: true,
+      onEvent: (event) => events.push(event),
+    });
+
+    const calls = events
+      .filter((event): event is Extract<AgentEvent, { type: "tool_call" }> => event.type === "tool_call")
+      .map((event) => event.call.name);
+    expect(calls).toEqual(["get_capabilities", "get_editor_state", "list_media", "add_track"]);
+    expect(events.some((event) => event.type === "tool_result" && event.result.error?.code === "PLAN_REQUIRED")).toBe(true);
+    expect(host.getProject().timeline.tracks).toHaveLength(1);
+    expect(result.committed).toBe(true);
+  });
+
+  it("allows footage discovery before direct planning", async () => {
+    const host = new HeadlessHost(makeProjectWithClip());
+    const events: AgentEvent[] = [];
+    const result = await runTurn({
+      host,
+      llm: new MockLLMClient([
+        {
+          text: "I will inspect the footage first.",
+          stopReason: "tool_use",
+          toolUses: [{ id: "t1", name: "extract_segments", input: { videoMediaIds: ["media-1"] } }],
+        },
+        { text: "Now I can plan the edit.", stopReason: "end_turn", toolUses: [] },
+      ]),
+      tools,
+      messages: userMsg("edit this video into a short reel"),
+      enforceDirectorWorkflow: true,
+      onEvent: (event) => events.push(event),
+    });
+
+    const extractionResult = events.find(
+      (event): event is Extract<AgentEvent, { type: "tool_result" }> =>
+        event.type === "tool_result" && event.call.name === "extract_segments",
+    );
+    expect(extractionResult?.result.error?.code).not.toBe("PLAN_REQUIRED");
+    expect(result.committed).toBe(true);
+  });
+
   it("executes a multi-tool turn and commits", async () => {
     const host = new HeadlessHost(makeProjectWithClip());
     const script: LLMResponse[] = [

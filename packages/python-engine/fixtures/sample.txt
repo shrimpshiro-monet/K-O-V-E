@@ -1,0 +1,2 @@
+Place sample video clips here for integration testing.
+Set KOVE_TEST_VIDEO env var to point to a video file.

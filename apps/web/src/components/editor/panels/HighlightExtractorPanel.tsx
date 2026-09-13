@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftNumberInputControl } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftNumberInputControl } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { Sparkles, Play, Check, Loader2 } from "@/icons/lucide-compat";
 import { useProjectStore } from "../../../stores/project-store";
 import { useTimelineStore } from "../../../stores/timeline-store";

@@ -91,8 +91,6 @@ export interface UIState {
   dragData: Record<string, unknown> | null;
   cropMode: boolean;
   cropClipId: string | null;
-  showWelcomeScreen: boolean;
-  skipWelcomeScreen: boolean;
   motionPathMode: boolean;
   motionPathClipId: string | null;
   keyframeEditorOpen: boolean;
@@ -138,8 +136,6 @@ export interface UIState {
   ) => void;
   endDrag: () => void;
   setCropMode: (enabled: boolean, clipId?: string) => void;
-  setShowWelcomeScreen: (show: boolean) => void;
-  setSkipWelcomeScreen: (skip: boolean) => void;
   setMotionPathMode: (enabled: boolean, clipId?: string) => void;
   setKeyframeEditorOpen: (open: boolean) => void;
   toggleKeyframeEditor: () => void;
@@ -201,7 +197,7 @@ const DEFAULT_PANELS: Record<PanelId, PanelState> = {
   audioMixer: { visible: false, width: 300 },
   colorGrading: { visible: false, width: 400 },
   subtitles: { visible: false, width: 300 },
-  agentChat: { visible: false, width: 380 },
+  agentChat: { visible: true, width: 380 },
 };
 
 export const useUIStore = create<UIState>()(
@@ -247,9 +243,6 @@ export const useUIStore = create<UIState>()(
         inspectorActiveTab: "transform",
 
         desktopPage: "edit",
-
-        showWelcomeScreen: true,
-        skipWelcomeScreen: false,
 
         exportState: {
           isExporting: false,
@@ -578,20 +571,9 @@ export const useUIStore = create<UIState>()(
         },
 
         setDesktopPage: (page) => set({ desktopPage: page }),
-
-        setShowWelcomeScreen: (show: boolean) => {
-          set({ showWelcomeScreen: show });
-        },
-
-        setSkipWelcomeScreen: (skip: boolean) => {
-          set({
-            skipWelcomeScreen: skip,
-            showWelcomeScreen: skip ? false : get().showWelcomeScreen,
-          });
-        },
       }),
       {
-        name: "openreel-ui-preferences",
+        name: "kove-advanced-ui-preferences",
         version: 2,
         migrate: (persisted: unknown, version: number) => {
           const state = persisted as Record<string, unknown>;
@@ -618,7 +600,6 @@ export const useUIStore = create<UIState>()(
           autoScroll: state.autoScroll,
           timelineMaximized: state.timelineMaximized,
           playbackQuality: state.playbackQuality,
-          skipWelcomeScreen: state.skipWelcomeScreen,
           inspectorActiveTab: state.inspectorActiveTab,
           desktopPage: state.desktopPage,
         }),

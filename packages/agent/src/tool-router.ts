@@ -31,6 +31,7 @@ const ALWAYS_AVAILABLE = new Set([
 
 const MOTION_TERMS = /\b(motion|composition|layer|keyframe|animate|animation|after effects|lower third|title card|kinetic|lottie|svg|figma|particle|shader|mask|matte|precomp|camera|render frame)\b/i;
 const CREATION_TERMS = /\b(3d|three[- ]?d|product|character|scene|model|gltf|glb|rig|mesh|material|texture|bevel|displacement|x[- ]?ray|cloth|camera module|exploded|cinematic|decal|cutaway)\b/i;
+const DIRECTOR_TERMS = /\b(direct|edit|cut|trim|highlight|reel|montage|compilation|remix|create|make|kreate|analyze|footage|segment|footage|plan|sequence|chop|splice|join)\b/i;
 
 const words = (value: string): string[] =>
   value
@@ -71,11 +72,13 @@ export function selectToolsForPrompt(
   const maxTools = Math.max(1, options.maxTools ?? DEFAULT_AGENT_TOOL_LIMIT);
   const wantsMotion = MOTION_TERMS.test(prompt);
   const wantsCreation = CREATION_TERMS.test(prompt);
+  const wantsDirector = DIRECTOR_TERMS.test(prompt);
   const prior = new Set(options.priorToolNames ?? []);
   const promptWords = new Set(words(prompt));
 
   const candidates = listTools().filter((tool) => {
     if (ALWAYS_AVAILABLE.has(tool.name) || prior.has(tool.name)) return true;
+    if (wantsDirector && tool.domain === "ai") return true;
     if (!wantsMotion && !wantsCreation) return tool.domain !== "motion";
     if (wantsCreation && isCreationTool(tool)) return true;
     if (wantsMotion && tool.domain === "motion" && !isCreationTool(tool)) return true;
@@ -90,7 +93,8 @@ export function selectToolsForPrompt(
         relevance(tool, promptWords) +
         (prior.has(tool.name) ? 5_000 : 0) +
         (wantsCreation && isCreationTool(tool) ? 100 : 0) +
-        (wantsMotion && tool.domain === "motion" ? 50 : 0),
+        (wantsMotion && tool.domain === "motion" ? 50 : 0) +
+        (wantsDirector && tool.domain === "ai" ? 200 : 0),
     }))
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .slice(0, maxTools)

@@ -3,12 +3,12 @@ import {
   initializeMediaImportService,
   WaveformGenerator,
   getWaveformGenerator,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import type {
   ProcessedMedia,
   WaveformData,
   MediaTrackInfo,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import { useProjectStore } from "../stores/project-store";
 
 /**
@@ -148,6 +148,68 @@ export class MediaBridge {
       return [];
     } finally {
       cleanup();
+    }
+  }
+
+  async extractVideoFrame(
+    file: Blob,
+    timestamp: number,
+    width = 320,
+  ): Promise<{ imageDataBase64: string; width: number; height: number } | null> {
+    if (typeof document === "undefined") return null;
+
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = window.setTimeout(() => reject(new Error("Video metadata timed out")), 5000);
+        video.onloadedmetadata = () => { window.clearTimeout(timeout); resolve(); };
+        video.onerror = () => { window.clearTimeout(timeout); reject(new Error("Video decode failed")); };
+      });
+      const sourceWidth = video.videoWidth || width;
+      const sourceHeight = video.videoHeight || Math.round(width * 9 / 16);
+      const height = Math.max(1, Math.round(width * sourceHeight / Math.max(1, sourceWidth)));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) return null;
+
+      const target = Math.min(
+        Math.max(0, Number.isFinite(video.duration) ? video.duration - 0.05 : 0),
+        Math.max(0, timestamp),
+      );
+      if (Math.abs(video.currentTime - target) > 0.01) {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = window.setTimeout(() => reject(new Error("Video seek timed out")), 5000);
+          video.onseeked = () => { window.clearTimeout(timeout); resolve(); };
+          video.onerror = () => { window.clearTimeout(timeout); reject(new Error("Video seek failed")); };
+          video.currentTime = target;
+        });
+      } else if (video.readyState < 2) {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = window.setTimeout(() => reject(new Error("Video data load timed out")), 5000);
+          video.onloadeddata = () => { window.clearTimeout(timeout); resolve(); };
+          video.onerror = () => { window.clearTimeout(timeout); reject(new Error("Video decode failed")); };
+        });
+      }
+      context.drawImage(video, 0, 0, width, height);
+      return {
+        imageDataBase64: canvas.toDataURL("image/jpeg", 0.8).split(",")[1] ?? "",
+        width,
+        height,
+      };
+    } catch {
+      return null;
+    } finally {
+      video.removeAttribute("src");
+      video.load();
+      URL.revokeObjectURL(url);
     }
   }
 

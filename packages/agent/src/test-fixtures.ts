@@ -1,4 +1,4 @@
-import type { Project } from "@openreel/core/types/project";
+import type { Project } from "@kove-advanced/core/types/project";
 
 export function makeEmptyProject(): Project {
   return {

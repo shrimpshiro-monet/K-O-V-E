@@ -1,8 +1,8 @@
 import React from "react";
 import { Loader2, CheckCircle, XCircle, Clock } from "@/icons/lucide-compat";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftProgressBar as ProgressBar } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftProgressBar as ProgressBar } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import {
   useProcessingStore,
   PROCESSING_TYPE_LABELS,

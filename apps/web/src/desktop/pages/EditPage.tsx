@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import type React from "react";
 import { lazy, Suspense } from "react";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 
 import { AssetsPanel } from "../../components/editor/AssetsPanel";
 import { InspectorPanel } from "../../components/editor/InspectorPanel";
@@ -109,7 +109,7 @@ export function EditPage(): JSX.Element {
     max: 520,
     axis: "x",
     direction: 1,
-    storageKey: "openreel-desktop-media-w",
+    storageKey: "kove-advanced-desktop-media-w",
   });
   const inspectorW = useResizable({
     initial: 340,
@@ -117,7 +117,7 @@ export function EditPage(): JSX.Element {
     max: 560,
     axis: "x",
     direction: -1,
-    storageKey: "openreel-desktop-inspector-w",
+    storageKey: "kove-advanced-desktop-inspector-w",
   });
   const chatW = useResizable({
     initial: 380,
@@ -125,7 +125,7 @@ export function EditPage(): JSX.Element {
     max: 560,
     axis: "x",
     direction: -1,
-    storageKey: "openreel-desktop-chat-w",
+    storageKey: "kove-advanced-desktop-chat-w",
   });
   const timelineH = useResizable({
     initial: 320,
@@ -133,7 +133,7 @@ export function EditPage(): JSX.Element {
     max: 640,
     axis: "y",
     direction: -1,
-    storageKey: "openreel-desktop-timeline-h",
+    storageKey: "kove-advanced-desktop-timeline-h",
   });
 
   const gridStyle: React.CSSProperties = chatVisible

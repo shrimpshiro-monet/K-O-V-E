@@ -15,10 +15,10 @@ import {
   ChevronDown,
   ChevronRight,
 } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { PropertySlider } from "./shell/PropertySlider";
 import { useProjectStore } from "../../../stores/project-store";
 import { useTimelineStore } from "../../../stores/timeline-store";
@@ -28,7 +28,7 @@ import {
   SPEED_MIN,
   SPEED_MAX,
   SPEED_CURVE_PRESETS,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 interface ClipLike {
   id: string;

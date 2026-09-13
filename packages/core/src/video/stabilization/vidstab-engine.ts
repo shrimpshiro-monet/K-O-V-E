@@ -23,8 +23,8 @@ type FFmpegInstance = {
 };
 
 const VIDSTAB_CORE_CDN = {
-  mt: "https://mediashares.openreel.video/ffmpeg-vidstab/mt",
-  st: "https://mediashares.openreel.video/ffmpeg-vidstab/st",
+  mt: "https://mediashares.kove-advanced.video/ffmpeg-vidstab/mt",
+  st: "https://mediashares.kove-advanced.video/ffmpeg-vidstab/st",
 };
 
 export type VidstabProgress = {

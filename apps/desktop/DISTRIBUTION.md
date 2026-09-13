@@ -1,4 +1,4 @@
-# OpenReel Desktop — Distribution Guide
+# Kove Advanced Desktop — Distribution Guide
 
 How to build, sign, notarize, and ship the desktop app for **macOS, Windows, and Linux**.
 
@@ -24,7 +24,7 @@ pnpm dist             # full installers (dmg/zip, nsis, AppImage/deb) WITH signi
 The app spawns a bundled `ffmpeg` from `resources/bin/<platform>-<arch>/ffmpeg[.exe]` (resolver: `apps/desktop/src/main/sidecar/ffmpeg-path.ts`). Binaries are **gitignored** and fetched on demand:
 
 ```bash
-pnpm --filter @openreel/desktop fetch:ffmpeg          # host platform's slots
+pnpm --filter @kove-advanced/desktop fetch:ffmpeg          # host platform's slots
 node apps/desktop/scripts/fetch-ffmpeg.mjs --all       # every slot
 ```
 
@@ -48,10 +48,10 @@ installed (Xcode). Provide credentials ONE of two ways:
 
 ```bash
 # Option A: saved keychain profile (simplest locally) — run once:
-xcrun notarytool store-credentials openreel-notary \
+xcrun notarytool store-credentials kove-advanced-notary \
   --apple-id "you@example.com" --team-id 864H636QW4 \
   --password "abcd-efgh-ijkl-mnop"        # app-specific password (appleid.apple.com)
-export APPLE_KEYCHAIN_PROFILE=openreel-notary
+export APPLE_KEYCHAIN_PROFILE=kove-advanced-notary
 
 # Option B: env (CI) — Apple ID:
 export APPLE_ID="you@example.com"
@@ -81,27 +81,27 @@ In the release CI these come from the `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD` se
 
 ---
 
-## 5. Hosting + auto-update (R2 → dl.openreel.video)
+## 5. Hosting + auto-update (R2 → dl.kove-advanced.video)
 
 Built apps are **not** on GitHub Releases. They live in a Cloudflare **R2**
-bucket served at **`https://dl.openreel.video`**, which hosts:
+bucket served at **`https://dl.kove-advanced.video`**, which hosts:
 
-- the installers — `OpenReel-<version>-arm64.dmg`, `-x64.dmg`, `-x64.exe`, `-x86_64.AppImage`, `-amd64.deb` (electron-builder's arch token differs per target: x64 → `x86_64` for AppImage, `amd64` for deb),
+- the installers — `Kove Advanced-<version>-arm64.dmg`, `-x64.dmg`, `-x64.exe`, `-x86_64.AppImage`, `-amd64.deb` (electron-builder's arch token differs per target: x64 → `x86_64` for AppImage, `amd64` for deb),
 - the electron-updater feed (`latest.yml`, `latest-mac.yml`, `latest-linux.yml`, `*.zip`, `*.blockmap`),
 - `manifest.json` — the human-download index the landing page reads.
 
-`electron-builder.yml` sets `publish: { provider: generic, url: https://dl.openreel.video }`, so each build embeds that update feed and emits `latest*.yml` + blockmaps (the generic provider does not upload — the CI does, §6).
+`electron-builder.yml` sets `publish: { provider: generic, url: https://dl.kove-advanced.video }`, so each build embeds that update feed and emits `latest*.yml` + blockmaps (the generic provider does not upload — the CI does, §6).
 
-**Self-update flow** (`src/main/updater.ts`, `initAutoUpdater`): on launch it checks the R2 feed in the background (`autoDownload = false`). When a newer version exists the renderer shows an **update banner** (`apps/web/src/desktop/UpdateBanner.tsx`); the user clicks **Download** (`window.openreel.updater.download()` → in-app progress) and then **Restart & Install** (`updater.install()`), which quits through the normal flow so `autoInstallOnAppQuit` applies the update **after** the unsaved-changes guard. Nothing downloads or installs without consent.
+**Self-update flow** (`src/main/updater.ts`, `initAutoUpdater`): on launch it checks the R2 feed in the background (`autoDownload = false`). When a newer version exists the renderer shows an **update banner** (`apps/web/src/desktop/UpdateBanner.tsx`); the user clicks **Download** (`window.kove-advanced.updater.download()` → in-app progress) and then **Restart & Install** (`updater.install()`), which quits through the normal flow so `autoInstallOnAppQuit` applies the update **after** the unsaved-changes guard. Nothing downloads or installs without consent.
 
 Caveats: macOS install requires the build to be **signed** (Squirrel.Mac) — the CI does not upload an unsigned mac update feed; Linux auto-update is **AppImage** only (not `.deb`). The DMG/installers are always uploaded for manual download regardless of signing.
 
 ### R2 setup (one-time, in the Cloudflare dashboard)
 
-1. **Create a bucket** (e.g. `openreel-desktop`).
-2. **Attach the custom domain** `dl.openreel.video` to the bucket (R2 → bucket → Settings → Public access → Custom Domains). This makes objects public at `https://dl.openreel.video/<key>`.
+1. **Create a bucket** (e.g. `kove-advanced-desktop`).
+2. **Attach the custom domain** `dl.kove-advanced.video` to the bucket (R2 → bucket → Settings → Public access → Custom Domains). This makes objects public at `https://dl.kove-advanced.video/<key>`.
 3. **Create an R2 API token** (Account → R2 → Manage API Tokens) with Object Read & Write on that bucket; note the Access Key ID + Secret + your Account ID.
-4. **CORS** so the landing (a different origin) can `fetch` `manifest.json` — already configured on the bucket via `wrangler r2 bucket cors set` for `https://openreel.video`, `www.`, `app.`, and `localhost:5173/3000` (dev). The desktop updater runs from the main process and is not CORS-bound. Add any new landing origin (e.g. a `*.pages.dev` preview) to that policy.
+4. **CORS** so the landing (a different origin) can `fetch` `manifest.json` — already configured on the bucket via `wrangler r2 bucket cors set` for `https://kove-advanced.video`, `www.`, `app.`, and `localhost:5173/3000` (dev). The desktop updater runs from the main process and is not CORS-bound. Add any new landing origin (e.g. a `*.pages.dev` preview) to that policy.
 
 ---
 
@@ -121,7 +121,7 @@ otherwise (the unsigned mac update feed is withheld). Set these encrypted Action
 | Secret | Used for |
 |---|---|
 | `R2_ACCOUNT_ID` | R2 S3 endpoint (`https://<id>.r2.cloudflarestorage.com`) |
-| `R2_BUCKET` | the bucket name (e.g. `openreel-desktop`) |
+| `R2_BUCKET` | the bucket name (e.g. `kove-advanced-desktop`) |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | R2 API token credentials |
 | `MAC_CSC_LINK` / `MAC_CSC_KEY_PASSWORD` | Developer ID `.p12` (base64) + password |
 | `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` | notarization (`864H636QW4`) |
@@ -135,8 +135,8 @@ unrelated stale Rust workflow; remove separately.)
 
 ### Landing page
 
-`../openreel-landing` renders a desktop download section
-(`components/DesktopDownload.tsx`) that fetches `https://dl.openreel.video/manifest.json`
+`../kove-advanced-landing` renders a desktop download section
+(`components/DesktopDownload.tsx`) that fetches `https://dl.kove-advanced.video/manifest.json`
 at runtime and shows per-OS buttons (OS-detected primary CTA + all-platforms
 list). No rebuild of the landing is needed for a new desktop version — it reads
 the live manifest.
@@ -145,12 +145,12 @@ the live manifest.
 
 ## 7. App identity
 
-- Product name: **OpenReel** · appId: `video.openreel.desktop` · version: `apps/desktop/package.json`.
-- Note: the GPU bundle id referenced in `src/main/index.ts` (`com.openreel.video`) differs from `video.openreel.desktop` — reconcile if a single identity is desired.
+- Product name: **Kove Advanced** · appId: `video.kove-advanced.desktop` · version: `apps/desktop/package.json`.
+- Note: the GPU bundle id referenced in `src/main/index.ts` (`com.kove-advanced.video`) differs from `video.kove-advanced.desktop` — reconcile if a single identity is desired.
 
 ## What we (the product owner) must provide
 1. ~~ffmpeg binaries / GPL attribution / auto-update~~ — **done** (§2, §5).
-2. **R2 + subdomain** (one-time): create the bucket, bind `dl.openreel.video` to it, mint an R2 API token (§5), and set `R2_ACCOUNT_ID` / `R2_BUCKET` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` as CI secrets.
+2. **R2 + subdomain** (one-time): create the bucket, bind `dl.kove-advanced.video` to it, mint an R2 API token (§5), and set `R2_ACCOUNT_ID` / `R2_BUCKET` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` as CI secrets.
 3. **macOS signing**: `MAC_CSC_LINK` / `MAC_CSC_KEY_PASSWORD` + `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` (§3, §6) — required for mac auto-update to install.
 4. **Windows signing**: `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD`, or accept unsigned Windows (§4).
 5. Fill in the real support / source-offer contact in `LICENSES/FFMPEG.md`.

@@ -1,7 +1,7 @@
 # Browser caption models
 
 The web editor loads local caption models through Transformers.js from the
-`openreel` R2 bucket. Two quality tiers are mirrored:
+`kove-advanced` R2 bucket. Two quality tiers are mirrored:
 
 - Fast: `models/onnx-community/whisper-tiny/resolve/main/` (~100 MB)
 - Accurate: `models/onnx-community/whisper-large-v3-turbo_timestamped/resolve/main/`

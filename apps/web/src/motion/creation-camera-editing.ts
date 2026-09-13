@@ -1,11 +1,11 @@
-import type { Project, MotionComposition } from "@openreel/core";
-import type { MotionScene3DLayer } from "@openreel/core/motion/types";
+import type { Project, MotionComposition } from "@kove-advanced/core";
+import type { MotionScene3DLayer } from "@kove-advanced/core/motion/types";
 import type {
   CreationCamera,
   CreationOperation,
   CreationScene,
   Transform3D,
-} from "@openreel/core/creation/index";
+} from "@kove-advanced/core/creation/index";
 
 export interface CreationCameraEditPatch {
   readonly name?: string;

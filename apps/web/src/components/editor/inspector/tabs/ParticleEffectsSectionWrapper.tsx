@@ -4,7 +4,7 @@ import {
   getParticleEngine,
   type ParticleEffect,
   type ParticleConfig,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 export const ParticleEffectsSectionWrapper: React.FC<{
   clipId: string;

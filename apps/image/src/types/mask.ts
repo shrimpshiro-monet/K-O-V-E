@@ -1,1 +1,1 @@
-export * from '@openreel/image-core/mask';
+export * from '@kove-advanced/image-core/mask';

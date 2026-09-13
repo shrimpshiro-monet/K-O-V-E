@@ -191,7 +191,7 @@ describe("MultiCamEngine automatic edits", () => {
     const engine = new MultiCamEngine();
     engine.loadGroups([group({
       manifest: {
-        spec: "openreel-multicam/v1",
+        spec: "kove-advanced-multicam/v1",
         fps: 25,
         sync: { method: "audio-crosscorr", reference: "a" },
         participants: [
@@ -205,7 +205,7 @@ describe("MultiCamEngine automatic edits", () => {
         constraints: DEFAULT_MULTICAM_MANIFEST_CONSTRAINTS,
       },
       shotPlan: {
-        spec: "openreel-multicam-edit/v1",
+        spec: "kove-advanced-multicam-edit/v1",
         durationMs: 4_000,
         shots: [
           {

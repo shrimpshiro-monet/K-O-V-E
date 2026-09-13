@@ -7,8 +7,8 @@ import type {
   ShapeClip,
   SVGClip,
   StickerClip,
-} from "@openreel/core";
-import type { BlendMode } from "@openreel/core";
+} from "@kove-advanced/core";
+import type { BlendMode } from "@kove-advanced/core";
 
 // ─── 3D text font cache ──────────────────────────────────────────
 // FontLoader is async but the render pipeline is sync. We resolve the

@@ -2,8 +2,8 @@ import { describe, it, expect, afterEach } from "vitest";
 import { HeadlessHost } from "./headless-host";
 import { executeTool } from "./executor";
 import { makeEmptyProject } from "./test-fixtures";
-import { clearGeneratedMotionShaders } from "@openreel/core/motion/shaders";
-import type { Project } from "@openreel/core/types/project";
+import { clearGeneratedMotionShaders } from "@kove-advanced/core/motion/shaders";
+import type { Project } from "@kove-advanced/core/types/project";
 
 interface ShaderParamInfo {
   readonly name: string;

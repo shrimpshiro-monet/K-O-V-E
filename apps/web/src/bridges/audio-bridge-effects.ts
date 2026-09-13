@@ -1,6 +1,6 @@
-import type { Effect } from "@openreel/core";
-import { AudioEffectsEngine, getAudioEffectsEngine } from "@openreel/core";
-import type { EQBand } from "@openreel/core";
+import type { Effect } from "@kove-advanced/core";
+import { AudioEffectsEngine, getAudioEffectsEngine } from "@kove-advanced/core";
+import type { EQBand } from "@kove-advanced/core";
 import { useProjectStore } from "../stores/project-store";
 
 /**

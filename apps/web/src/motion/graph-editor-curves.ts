@@ -1,5 +1,5 @@
-import { EASING_FUNCTIONS, cubicBezier } from "@openreel/core";
-import type { EasingType } from "@openreel/core";
+import { EASING_FUNCTIONS, cubicBezier } from "@kove-advanced/core";
+import type { EasingType } from "@kove-advanced/core";
 
 export interface GraphSegmentFrame {
   readonly t0: number;

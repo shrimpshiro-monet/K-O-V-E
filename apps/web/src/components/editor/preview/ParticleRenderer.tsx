@@ -4,7 +4,7 @@ import {
   getParticleEngine,
   type Particle,
   type ParticleEffect,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 interface ParticleRendererProps {
   effects: ParticleEffect[];

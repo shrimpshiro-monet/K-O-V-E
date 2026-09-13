@@ -13,6 +13,7 @@ export {
   toCapabilityDoc,
 } from "./registry";
 export type { RegisteredTool, ToolHandler } from "./registry";
+export { setAnalysisMode, getAnalysisMode } from "./registry";
 export { executeTool, isDestructive, isExpensive } from "./executor";
 export * from "./llm";
 export { runTurn } from "./loop";
@@ -22,3 +23,11 @@ export { selectToolsForPrompt, DEFAULT_AGENT_TOOL_LIMIT } from "./tool-router";
 export { toLogRecord, createEventLogger, collectEvents } from "./observability";
 export type { AgentLogRecord } from "./observability";
 export { generateCapabilityMarkdown } from "./gen-docs";
+export {
+  PRE_BAKED_GENRES,
+  getGenreById,
+  listGenreIds,
+  DIRECTOR_SYSTEM_PROMPT,
+  buildDirectorPrompt,
+  resolveDirectorVideoId,
+} from "./director";

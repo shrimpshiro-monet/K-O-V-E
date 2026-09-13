@@ -23,22 +23,22 @@ import {
 import {
   ToolcraftSegmentedControl,
   ToolcraftSwitchControl,
-} from "@openreel/ui";
-import { ToolcraftButton as Button } from "@openreel/ui";
+} from "@kove-advanced/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
 import {
   ToolcraftDialog as Dialog,
   ToolcraftDialogHeader as DialogHeader,
-} from "@openreel/ui";
+} from "@kove-advanced/ui";
 import {
   ToolcraftLayout as Layout,
   ToolcraftLayoutContent as LayoutContent,
   ToolcraftLayoutFooter as LayoutFooter,
-} from "@openreel/ui";
-import { ToolcraftNumberInputControl } from "@openreel/ui";
-import { ToolcraftSelectableCard as SelectableCard } from "@openreel/ui";
-import { ToolcraftSelectControl as Selector } from "@openreel/ui";
-import { ToolcraftSliderControl } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+} from "@kove-advanced/ui";
+import { ToolcraftNumberInputControl } from "@kove-advanced/ui";
+import { ToolcraftSelectableCard as SelectableCard } from "@kove-advanced/ui";
+import { ToolcraftSelectControl as Selector } from "@kove-advanced/ui";
+import { ToolcraftSliderControl } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import {
   exportPresetsManager,
   type PlatformExportPreset,
@@ -50,7 +50,7 @@ import type {
   CompressionSource,
   CompressionTarget,
   CompressionPlan,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import type { SourceExportMatch } from "../../services/export-source-match";
 import {
   getDeviceProfile,
@@ -69,7 +69,7 @@ import {
   type BenchmarkProgress,
   type TimeEstimate,
   type CodecRecommendation,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import { EDITING_FRAME_RATE_OPTIONS } from "./editing-frame-rate";
 
 const WEB_EXPORT_GUARDRAIL_MESSAGE =
@@ -151,7 +151,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   sourceMatch = null,
 }) => {
   const isDesktop =
-    typeof window !== "undefined" && window.openreel?.platform === "desktop";
+    typeof window !== "undefined" && window["kove-advanced"]?.platform === "desktop";
   const [activeTab, setActiveTab] = useState<"presets" | "custom" | "reduce">(
     "presets",
   );

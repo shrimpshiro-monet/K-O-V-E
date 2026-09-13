@@ -1,9 +1,9 @@
 import React from "react";
 import { Zap, Loader2, Upload } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftFileDropControl as FileInput } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftFileDropControl as FileInput } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { AutoReframeSection } from "../";
 import { AutoCaptionPanel } from "../AutoCaptionPanel";
 import { CaptionEditorPanel } from "../CaptionEditorPanel";

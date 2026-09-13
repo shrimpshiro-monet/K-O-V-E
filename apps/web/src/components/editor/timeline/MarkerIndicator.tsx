@@ -1,8 +1,8 @@
 import React from "react";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftTextInputControl } from "@openreel/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftTextInputControl } from "@kove-advanced/ui";
 import { Flag, X } from "@/icons/lucide-compat";
-import type { Marker } from "@openreel/core";
+import type { Marker } from "@kove-advanced/core";
 
 interface MarkerIndicatorProps {
   marker: Marker;

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MotionComposition, Project } from "@openreel/core";
+import type { MotionComposition, Project } from "@kove-advanced/core";
 import {
   exportMotionCompositionSceneMp4,
   motionFrameExportFilename,
@@ -51,7 +51,7 @@ vi.mock("../services/export-runner", () => ({
   mimeForExt: (ext: string) => (ext === "mp4" ? "video/mp4" : "application/octet-stream"),
 }));
 
-vi.mock("@openreel/core", () => ({
+vi.mock("@kove-advanced/core", () => ({
   DEFAULT_VIDEO_SETTINGS: {
     format: "mp4",
     codec: "h264",
@@ -115,7 +115,7 @@ vi.mock("@openreel/core", () => ({
   },
 }));
 
-vi.mock("@openreel/core/creation/index", () => ({
+vi.mock("@kove-advanced/core/creation/index", () => ({
   resolveCreationMotionSceneBinding: resolveCreationMotionSceneBindingMock,
 }));
 
@@ -202,11 +202,11 @@ describe("motion frame export helpers", () => {
         }
       },
     );
-    Object.defineProperty(window, "openreel", {
+    Object.defineProperty(window, "kove-advanced", {
       configurable: true,
       value: undefined,
     });
-    delete (window as { __openreelExportPath?: string }).__openreelExportPath;
+    delete (window as Record<string, string | undefined>).__kove_advancedExportPath;
     createDownloadWritableMock.mockResolvedValue({ close: vi.fn() });
     initializeMock.mockResolvedValue(undefined);
     audioEngineClearCacheMock.mockReturnValue(undefined);
@@ -270,11 +270,11 @@ describe("motion frame export helpers", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    Object.defineProperty(window, "openreel", {
+    Object.defineProperty(window, "kove-advanced", {
       configurable: true,
       value: undefined,
     });
-    delete (window as { __openreelExportPath?: string }).__openreelExportPath;
+    delete (window as Record<string, string | undefined>).__kove_advancedExportPath;
   });
 
   it("builds stable filenames", () => {
@@ -433,7 +433,7 @@ describe("motion frame export helpers", () => {
       });
     const cancelSequenceSession = vi.fn().mockResolvedValue(undefined);
 
-    Object.defineProperty(window, "openreel", {
+    Object.defineProperty(window, "kove-advanced", {
       configurable: true,
       value: {
         platform: "desktop",
@@ -494,7 +494,7 @@ describe("motion frame export helpers", () => {
         totalFrames: 2,
       }),
     );
-    expect((window as { __openreelExportPath?: string }).__openreelExportPath).toBe(
+    expect((window as Record<string, string | undefined>).__kove_advancedExportPath).toBe(
       "/Users/me/Movies/native-launch.mp4",
     );
   });

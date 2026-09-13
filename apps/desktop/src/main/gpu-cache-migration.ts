@@ -20,7 +20,7 @@ const REGENERABLE_CACHE_DIRS = [
   "Code Cache",
 ];
 
-const VERSION_MARKER_FILE = ".openreel-build";
+const VERSION_MARKER_FILE = ".kove-advanced-build";
 
 function readMarker(markerPath: string): string {
   try {

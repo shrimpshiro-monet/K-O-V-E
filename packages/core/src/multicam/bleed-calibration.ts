@@ -1,5 +1,5 @@
 export const MULTICAM_BLEED_CALIBRATION_SPEC =
-  "openreel-bleed-calibration/v1" as const;
+  "kove-advanced-bleed-calibration/v1" as const;
 
 export interface MulticamCalibrationSource {
   angleId: string;

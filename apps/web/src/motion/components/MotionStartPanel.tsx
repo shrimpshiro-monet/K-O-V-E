@@ -17,8 +17,8 @@ import {
   Zap,
   type LucideIcon,
 } from "@/icons/lucide-compat";
-import { ToolcraftClickableCard, ToolcraftText } from "@openreel/ui";
-import type { MotionComposition } from "@openreel/core";
+import { ToolcraftClickableCard, ToolcraftText } from "@kove-advanced/ui";
+import type { MotionComposition } from "@kove-advanced/core";
 import { useProjectStore } from "../../stores/project-store";
 import {
   createMotionLayerOfType,

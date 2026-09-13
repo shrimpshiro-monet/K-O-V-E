@@ -2,14 +2,14 @@ import { contextBridge, ipcRenderer } from "electron";
 import { CHANNELS } from "../shared/channels";
 import type { McpBridgeRequest } from "../shared/mcp";
 
-contextBridge.exposeInMainWorld("openreel", {
+contextBridge.exposeInMainWorld("kove-advanced", {
   platform: "desktop",
-  publicOrigin: "https://app.openreel.video",
+  publicOrigin: "https://app.kove-advanced.video",
   probeHardware: () => ipcRenderer.invoke(CHANNELS.probeHardware, undefined),
   onMenuAction: (cb: (id: string) => void) => {
     const handler = (_event: unknown, id: string) => cb(id);
-    ipcRenderer.on("openreel:menu:action", handler);
-    return () => ipcRenderer.removeListener("openreel:menu:action", handler);
+    ipcRenderer.on("kove-advanced:menu:action", handler);
+    return () => ipcRenderer.removeListener("kove-advanced:menu:action", handler);
   },
   fs: {
     showSaveDialog: (opts: unknown) => ipcRenderer.invoke(CHANNELS.fsShowSaveDialog, opts),
@@ -33,13 +33,13 @@ contextBridge.exposeInMainWorld("openreel", {
   export: {
     start: (args: unknown) =>
       new Promise((resolve) => {
-        ipcRenderer.once("openreel:export-port", (event, meta) => {
+        ipcRenderer.once("kove-advanced:export-port", (event, meta) => {
           const { jobId } = meta as { jobId: string };
           const [port] = event.ports;
           // A live MessagePort cannot survive contextBridge serialization into
           // the main world, so forward it via window.postMessage transfer (the
           // documented Electron path) and resolve with just the jobId.
-          window.postMessage({ __openreelExportPort: true, jobId }, "*", [port]);
+          window.postMessage({ __kove-advancedExportPort: true, jobId }, "*", [port]);
           resolve({ jobId });
         });
         ipcRenderer.invoke(CHANNELS.exportStart, args);

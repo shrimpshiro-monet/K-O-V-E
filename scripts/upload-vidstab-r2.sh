@@ -1,9 +1,9 @@
 #!/bin/bash
 # Upload FFmpeg vidstab core files to Cloudflare R2
-# Bucket: pub-openreel (or your bucket name)
+# Bucket: pub-kove-advanced (or your bucket name)
 # Path prefix: ffmpeg-vidstab/
 
-BUCKET="pub-openreel"
+BUCKET="pub-kove-advanced"
 MT_DIR="/tmp/vidstab/mt/dist/esm"
 ST_DIR="/tmp/vidstab/st/dist/esm"
 
@@ -17,5 +17,5 @@ wrangler r2 object put "$BUCKET/ffmpeg-vidstab/st/ffmpeg-core.js" --file "$ST_DI
 wrangler r2 object put "$BUCKET/ffmpeg-vidstab/st/ffmpeg-core.wasm" --file "$ST_DIR/ffmpeg-core.wasm" --content-type "application/wasm"
 
 echo "Done! Files available at:"
-echo "  https://pub-openreel.r2.dev/ffmpeg-vidstab/mt/"
-echo "  https://pub-openreel.r2.dev/ffmpeg-vidstab/st/"
+echo "  https://pub-kove-advanced.r2.dev/ffmpeg-vidstab/mt/"
+echo "  https://pub-kove-advanced.r2.dev/ffmpeg-vidstab/st/"

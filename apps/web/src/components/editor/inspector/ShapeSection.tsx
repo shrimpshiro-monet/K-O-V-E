@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo } from "react";
-import { ToolcraftSegmentedControl } from "@openreel/ui";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftNumberInputControl } from "@openreel/ui";
-import { ToolcraftSelectControl as Selector } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftSegmentedControl } from "@kove-advanced/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftNumberInputControl } from "@kove-advanced/ui";
+import { ToolcraftSelectControl as Selector } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import {
   Square,
   Circle,
@@ -21,11 +21,11 @@ import type {
   ShapeStyle,
   FillStyle,
   StrokeStyle,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import {
   getMotionShaderDef,
   getMotionShaderFillDefs,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import {
   createDefaultEditorShader,
   groupShaderDefsByCollection,

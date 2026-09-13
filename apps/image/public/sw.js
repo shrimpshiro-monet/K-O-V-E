@@ -1,4 +1,4 @@
-const CACHE_NAME = 'openreel-image-v1';
+const CACHE_NAME = 'kove-advanced-image-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

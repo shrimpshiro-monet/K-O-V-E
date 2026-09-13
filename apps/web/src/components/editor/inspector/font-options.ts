@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-const CUSTOM_FONT_EVENT = "openreel:custom-fonts-updated";
+const CUSTOM_FONT_EVENT = "kove-advanced:custom-fonts-updated";
 
-const DB_NAME = "openreel-custom-fonts";
+const DB_NAME = "kove-advanced-custom-fonts";
 const DB_VERSION = 1;
 const STORE_FONTS = "fonts";
 

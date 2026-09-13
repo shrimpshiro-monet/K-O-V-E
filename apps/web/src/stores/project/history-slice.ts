@@ -5,8 +5,8 @@ import type {
   TextClip,
   SVGClip,
   StickerClip,
-} from "@openreel/core";
-import { getTrackItems } from "@openreel/core";
+} from "@kove-advanced/core";
+import { getTrackItems } from "@kove-advanced/core";
 import type { ProjectState } from "../project-store";
 import type { ProjectStoreHelpers } from "./store-helpers";
 import type {

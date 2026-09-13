@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useProjectStore } from '../stores/project-store';
 
 const AUTO_SAVE_DELAY = 2000;
-const STORAGE_KEY_PREFIX = 'openreel-image-project-';
+const STORAGE_KEY_PREFIX = 'kove-advanced-image-project-';
 
 export function useAutoSave() {
   const { project, isDirty, markClean } = useProjectStore();

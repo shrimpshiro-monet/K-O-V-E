@@ -21,9 +21,9 @@ import {
   Proportions,
   Magnet,
 } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { useProjectStore } from "../../stores/project-store";
 import { useTimelineStore } from "../../stores/timeline-store";
 import { useUIStore } from "../../stores/ui-store";
@@ -63,7 +63,7 @@ import {
   getMediaItemCapabilities,
   getVisibleTrackRenderOrder,
   trackHasAudioItems,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import { useEngineStore } from "../../stores/engine-store";
 import {
   type HandlePosition,
@@ -105,12 +105,12 @@ import {
   createMotionAwareOcclusionMask,
   getStabilizedTransform,
   getVidstabEngine,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import type {
   GSAPMotionPathPoint,
   MotionPathConfig,
   SegmentationResult,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 interface GPULayer {
   bitmap: ImageBitmap;
@@ -880,7 +880,7 @@ export const Preview: React.FC = () => {
     audioTrackIndex: number = 0,
   ): Promise<AudioBuffer | null> => {
     try {
-      const { extractAudioWav } = await import("@openreel/core/media");
+      const { extractAudioWav } = await import("@kove-advanced/core/media");
       const wavBlob = await extractAudioWav(blob, audioTrackIndex);
       const arrayBuffer = await wavBlob.arrayBuffer();
       return await audioContext.decodeAudioData(arrayBuffer);
@@ -6128,8 +6128,8 @@ export const Preview: React.FC = () => {
       }
       setPreviewInvalidateCounter((c) => c + 1);
     };
-    window.addEventListener("openreel:preview-invalidate", handler);
-    return () => window.removeEventListener("openreel:preview-invalidate", handler);
+    window.addEventListener("kove-advanced:preview-invalidate", handler);
+    return () => window.removeEventListener("kove-advanced:preview-invalidate", handler);
   }, []);
 
   useEffect(() => {

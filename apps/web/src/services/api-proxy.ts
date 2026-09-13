@@ -34,7 +34,8 @@ const DIRECT_CONFIG = {
 
 export type CompatibleApiService =
   | "openai-compatible"
-  | "anthropic-compatible";
+  | "anthropic-compatible"
+  | "cloudflare";
 export type ApiService = keyof typeof DIRECT_CONFIG | CompatibleApiService;
 
 export interface ApiFetchOptions extends globalThis.RequestInit {
@@ -94,8 +95,8 @@ export async function apiFetch(
   const { baseUrl, ...requestOptions } = options;
   const extraHeaders = (options.headers ?? {}) as Record<string, string>;
 
-  if (typeof window !== "undefined" && window.openreel?.platform === "desktop") {
-    const result = await window.openreel.cloud.fetch(service, path, {
+  if (typeof window !== "undefined" && window["kove-advanced"]?.platform === "desktop") {
+    const result = await window["kove-advanced"].cloud.fetch(service, path, {
       method: options.method,
       headers: options.headers as Record<string, string> | undefined,
       body: typeof options.body === "string" ? options.body : undefined,

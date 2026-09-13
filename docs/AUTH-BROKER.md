@@ -1,4 +1,4 @@
-# OpenReel App-Attestation Token Broker — Canonical Contract
+# Kove Advanced App-Attestation Token Broker — Canonical Contract
 
 This is the authoritative spec for the anonymous-user GPU-job authorization flow.
 The iOS and Android client agents implement against this document exactly.
@@ -25,7 +25,7 @@ The iOS and Android client agents implement against this document exactly.
 6. GPU worker validates the JWT against the Worker's public JWK and reads
    inputs / writes outputs in R2.
 
-All endpoints are under the cloud Worker base URL (e.g. `https://openreel-cloud...workers.dev`),
+All endpoints are under the cloud Worker base URL (e.g. `https://kove-advanced-cloud...workers.dev`),
 mounted at `/auth`.
 
 ---
@@ -141,7 +141,7 @@ The Play Integrity request must use the challenge as the nonce (or
 
 - `appIntegrity.appRecognitionVerdict == "PLAY_RECOGNIZED"`.
 - `deviceIntegrity.deviceRecognitionVerdict` contains `"MEETS_DEVICE_INTEGRITY"`.
-- `appIntegrity.packageName == "com.pythonxi.openreelvideo"`.
+- `appIntegrity.packageName == "com.kove-advanced.video"`.
 - `requestDetails.nonce == challenge` **or** `requestDetails.requestHash`
   matches `SHA256(challenge)` (hex, base64, or base64url).
 
@@ -156,7 +156,7 @@ JWT claims:
 
 ```json
 {
-  "iss": "openreel-cloud",
+  "iss": "kove-advanced-cloud",
   "aud": "gpu",
   "plat": "ios" | "android",
   "sub": "<base64url SHA256 of instanceId>",
@@ -198,7 +198,7 @@ Response `200`:
   "putUrl": "https://<account>.r2.cloudflarestorage.com/<bucket>/jobs/<sub>/<uuid>/<safeFilename>?X-Amz-...",
   "getUrl": "https://<account>.r2.cloudflarestorage.com/<bucket>/jobs/<sub>/<uuid>/<safeFilename>?X-Amz-...",
   "objectKey": "jobs/<sub>/<uuid>/<safeFilename>",
-  "bucket": "openreel-assets",
+  "bucket": "kove-advanced-assets",
   "expiresAt": "<ISO8601>"
 }
 ```
@@ -221,28 +221,28 @@ Errors: `401 unauthorized` / `invalid_token`, `400 filename_required`,
 The GPU worker (`infra/gpu-worker`) replaces the static bearer check:
 
 - `Authorization: Bearer <jwt>` is validated as **ES256** against `AUTH_PUBLIC_JWK`.
-- Checks: `iss == openreel-cloud`, `aud == gpu`, `scope == gpu:submit`, `exp`
+- Checks: `iss == kove-advanced-cloud`, `aud == gpu`, `scope == gpu:submit`, `exp`
   not passed, required claims present. Small in-memory **jti replay cache**
   (TTL 900s) rejects token reuse.
-- Migration flag `OPENREEL_JWT_REQUIRED` (default `true`). When `false` and
-  `OPENREEL_API_KEY` is set, the legacy static bearer is still accepted as a
+- Migration flag `KOVE_ADVANCED_JWT_REQUIRED` (default `true`). When `false` and
+  `KOVE_ADVANCED_API_KEY` is set, the legacy static bearer is still accepted as a
   fallback — for cutover only.
 - Job inputs are referenced by R2 object key (`mediaKey`, the `objectKey`
   returned by `/auth/upload-url`). The worker reads inputs and writes outputs
   through `core/storage.py`, which targets R2 (S3-compatible) when
-  `OPENREEL_R2_ACCOUNT_ID` is set.
+  `KOVE_ADVANCED_R2_ACCOUNT_ID` is set.
 
 GPU env:
 
 | Var | Purpose |
 |-----|---------|
 | `AUTH_PUBLIC_JWK` | P-256 **public** JWK (JSON) matching the Worker signing key |
-| `OPENREEL_JWT_REQUIRED` | `true` (default) to require JWT; `false` enables legacy fallback |
-| `OPENREEL_API_KEY` | legacy static bearer (fallback only) |
-| `OPENREEL_JTI_CACHE_TTL_SECONDS` | replay cache TTL (default 900) |
-| `OPENREEL_R2_ACCOUNT_ID` | enables R2 mode in storage |
-| `OPENREEL_R2_ACCESS_KEY_ID` / `OPENREEL_R2_SECRET_ACCESS_KEY` | R2 S3 creds |
-| `OPENREEL_R2_BUCKET` | R2 bucket (default `openreel-assets`) |
+| `KOVE_ADVANCED_JWT_REQUIRED` | `true` (default) to require JWT; `false` enables legacy fallback |
+| `KOVE_ADVANCED_API_KEY` | legacy static bearer (fallback only) |
+| `KOVE_ADVANCED_JTI_CACHE_TTL_SECONDS` | replay cache TTL (default 900) |
+| `KOVE_ADVANCED_R2_ACCOUNT_ID` | enables R2 mode in storage |
+| `KOVE_ADVANCED_R2_ACCESS_KEY_ID` / `KOVE_ADVANCED_R2_SECRET_ACCESS_KEY` | R2 S3 creds |
+| `KOVE_ADVANCED_R2_BUCKET` | R2 bucket (default `kove-advanced-assets`) |
 
 ---
 
@@ -257,8 +257,8 @@ wrangler kv namespace create AUTH_KV
 ```
 
 Non-secret vars (in `wrangler.jsonc`): `APPLE_TEAM_ID`, `APPLE_BUNDLE_ID`
-(`com.openreel.video`), `ANDROID_PACKAGE_NAME` (`com.pythonxi.openreelvideo`),
-`R2_ACCOUNT_ID`, `R2_ASSETS_BUCKET_NAME` (`openreel-assets`).
+(`com.kove-advanced.video`), `ANDROID_PACKAGE_NAME` (`com.kove-advanced.video`),
+`R2_ACCOUNT_ID`, `R2_ASSETS_BUCKET_NAME` (`kove-advanced-assets`).
 
 Secrets (`wrangler secret put <NAME>`):
 

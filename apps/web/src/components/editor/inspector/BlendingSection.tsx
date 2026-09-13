@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo } from "react";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { MockSlider } from "./shell/InspectorControls";
 import { useProjectStore } from "../../../stores/project-store";
 import {
   getAvailableBlendModes,
   getBlendModeName,
   type BlendMode,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 interface BlendingSectionProps {
   clipId: string;

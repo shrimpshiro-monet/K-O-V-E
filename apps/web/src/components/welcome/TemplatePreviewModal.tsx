@@ -12,15 +12,15 @@ import {
   Hash,
   Music,
 } from "@/icons/lucide-compat";
-import { ToolcraftSwitchControl } from "@openreel/ui";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftDialog as Dialog, ToolcraftDialogHeader as DialogHeader } from "@openreel/ui";
-import { ToolcraftLayout as Layout, ToolcraftLayoutContent as LayoutContent, ToolcraftLayoutFooter as LayoutFooter } from "@openreel/ui";
-import { ToolcraftNumberInputControl } from "@openreel/ui";
-import { ToolcraftSliderControl } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
-import { ToolcraftTextAreaControl } from "@openreel/ui";
-import { ToolcraftTextInputControl } from "@openreel/ui";
+import { ToolcraftSwitchControl } from "@kove-advanced/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftDialog as Dialog, ToolcraftDialogHeader as DialogHeader } from "@kove-advanced/ui";
+import { ToolcraftLayout as Layout, ToolcraftLayoutContent as LayoutContent, ToolcraftLayoutFooter as LayoutFooter } from "@kove-advanced/ui";
+import { ToolcraftNumberInputControl } from "@kove-advanced/ui";
+import { ToolcraftSliderControl } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
+import { ToolcraftTextAreaControl } from "@kove-advanced/ui";
+import { ToolcraftTextInputControl } from "@kove-advanced/ui";
 import { useEngineStore } from "../../stores/engine-store";
 import { useProjectStore } from "../../stores/project-store";
 import type {
@@ -28,7 +28,7 @@ import type {
   ExtendedPlaceholder,
   ScriptableTemplateReplacements,
   ExtendedPlaceholderType,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 interface TemplatePreviewModalProps {
   template: ScriptableTemplate;
@@ -151,7 +151,7 @@ export const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               lineHeight: 1.2,
             },
             transform: textClip.transform as Partial<
-              import("@openreel/core").Transform
+              import("@kove-advanced/core").Transform
             >,
             animation: {
               preset: "fade",

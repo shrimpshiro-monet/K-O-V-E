@@ -43,6 +43,7 @@ export function buildFfmpegArgs(a: ExportArgs): string[] {
       proresProfile: a.proresProfile,
     }),
     "-c:a", "aac",
+    "-movflags", "+faststart",
     "-progress", "pipe:2",
     a.outputPath,
   ];

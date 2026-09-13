@@ -1,6 +1,6 @@
-# OpenReel AI Agent — User Guide
+# Kove Advanced AI Agent — User Guide
 
-OpenReel can be edited by an AI agent of your choice. The same tool layer powers
+Kove Advanced can be edited by an AI agent of your choice. The same tool layer powers
 three surfaces:
 
 - **Web BYOK chat** — chat with a model inside the browser editor.
@@ -17,7 +17,7 @@ transform, color-grade, add text/shapes, keyframe, manage transitions, and more.
 
 1. Open **Settings → API Keys** and add an OpenAI or Anthropic key. On the web,
    keys are encrypted at rest behind a master password; on desktop they live in
-   the OS keychain. **Keys are never sent to or stored on OpenReel servers** —
+   the OS keychain. **Keys are never sent to or stored on Kove Advanced servers** —
    in production the web app proxies requests same-origin without persisting the
    key; on desktop the request goes through the native keychain.
 2. Open the **AI Editor** panel (the robot icon in the toolbar).
@@ -43,12 +43,12 @@ can drive your open project.
 1. Open **Settings → MCP** (desktop only).
 2. The panel shows the loopback URL and a bearer token (rotate it any time).
 3. Copy the client config snippet into your MCP client. It points at the bundled
-   `openreel-mcp` stdio shim, which bridges your client to the running app:
+   `kove-advanced-mcp` stdio shim, which bridges your client to the running app:
 
    ```json
    {
      "mcpServers": {
-       "openreel": { "command": "node", "args": ["<path to openreel-mcp>"] }
+       "kove-advanced": { "command": "node", "args": ["<path to kove-advanced-mcp>"] }
      }
    }
    ```
@@ -63,18 +63,18 @@ bearer token.
 
 ## Headless / automated edits (CLI)
 
-The `@openreel/agent-runner` package edits a stored project with no app open —
+The `@kove-advanced/agent-runner` package edits a stored project with no app open —
 useful for batch edits, "apply this recipe to N projects", and scheduled jobs.
 
 ```bash
-openreel-agent \
+kove-advanced-agent \
   --project ./reel.json \
   --prompt "Add a title that says Welcome for the first 3 seconds" \
   --provider anthropic --model claude-sonnet-4-20250514 \
   --out ./reel.edited.json
 ```
 
-- The API key is read from `OPENREEL_API_KEY` (or `ANTHROPIC_API_KEY` /
+- The API key is read from `KOVE_ADVANCED_API_KEY` (or `ANTHROPIC_API_KEY` /
   `OPENAI_API_KEY`) and is used per-request only — never stored or logged.
 - `--dry-run` plans without applying mutations.
 - Render/export jobs are delegated to the GPU worker, authorized by the auth

@@ -1,11 +1,11 @@
 import React, { useCallback, useMemo } from "react";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftSelectControl as Selector } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftSelectControl as Selector } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { PropertySlider } from "./shell/PropertySlider";
 import { useProjectStore } from "../../../stores/project-store";
-import type { GraphicAnimation, GraphicAnimationType } from "@openreel/core";
-import { SVG_ANIMATION_PRESETS } from "@openreel/core";
+import type { GraphicAnimation, GraphicAnimationType } from "@kove-advanced/core";
+import { SVG_ANIMATION_PRESETS } from "@kove-advanced/core";
 import { ColorSelector } from "../../../motion/components/primitives";
 
 const ColorField: React.FC<{

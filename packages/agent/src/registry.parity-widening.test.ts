@@ -2,16 +2,16 @@ import { describe, it, expect } from "vitest";
 import { HeadlessHost } from "./headless-host";
 import { executeTool } from "./executor";
 import { makeEmptyProject } from "./test-fixtures";
-import { DEFAULT_MOTION_TRANSFORM } from "@openreel/core/motion/types";
+import { DEFAULT_MOTION_TRANSFORM } from "@kove-advanced/core/motion/types";
 import type {
   MotionComposition,
   MotionLayer,
   MotionScene3DLayer,
   MotionShapeLayer,
   MotionTextLayer,
-} from "@openreel/core/motion/types";
+} from "@kove-advanced/core/motion/types";
 import type { ImportedMediaRef } from "./host";
-import type { MediaItem, Project } from "@openreel/core/types/project";
+import type { MediaItem, Project } from "@kove-advanced/core/types/project";
 
 const COMP_ID = "comp-parity";
 

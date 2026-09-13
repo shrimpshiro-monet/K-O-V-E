@@ -1,1 +1,1 @@
-export * from '@openreel/image-core/selection';
+export * from '@kove-advanced/image-core/selection';

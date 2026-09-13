@@ -1,11 +1,11 @@
 import type { JSX } from "react";
 import type React from "react";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
 import { Icon } from "@/icons/Icon";
 
 export function WindowControls({ platform }: { platform: string }): JSX.Element | null {
   if (platform === "darwin") return null;
-  const api = typeof window !== "undefined" ? window.openreel?.win : undefined;
+  const api = typeof window !== "undefined" ? window["kove-advanced"]?.win : undefined;
   if (!api) return null;
   return (
     <div className="flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>

@@ -5,11 +5,11 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftSliderControl } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftSliderControl } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import {
   Play,
   ArrowRight,
@@ -32,7 +32,7 @@ import type {
   EasingType,
   Transform,
   GraphicClip,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import { v4 as uuid } from "uuid";
 
 type MutableGraphicClip = {

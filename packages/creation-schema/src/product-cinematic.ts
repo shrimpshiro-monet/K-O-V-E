@@ -334,7 +334,7 @@ export function createPhoneProductCinematicScene(
     animations: [exploded, ...cameraRig.animations],
     metadata: {
       createdBy: "agent",
-      generator: "openreel.creation.product-cinematic.v1",
+      generator: "kove-advanced.creation.product-cinematic.v1",
       warnings,
     },
   };

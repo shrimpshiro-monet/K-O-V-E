@@ -1,12 +1,12 @@
 import React, { useState, useCallback } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { Video, Download } from "@/icons/lucide-compat";
 import { PropertySlider } from "./shell/PropertySlider";
 import { MockToggle } from "./shell/InspectorControls";
-import type { Clip } from "@openreel/core";
-import { getVidstabEngine, type VidstabProgress } from "@openreel/core";
+import type { Clip } from "@kove-advanced/core";
+import { getVidstabEngine, type VidstabProgress } from "@kove-advanced/core";
 import { useProjectStore } from "../../../stores/project-store";
 
 interface StabilizationSectionProps {

@@ -1,16 +1,16 @@
-# OpenReel Video
+# Kove Advanced Video
 
 > **The open source CapCut alternative. Professional video editing in your browser. No uploads. No installs. 100% open source.**
 
-OpenReel Video is a fully-featured browser-based video editor that runs entirely client-side. Built with React, TypeScript, WebCodecs, and WebGPU for professional-grade video editing without the need for expensive software or cloud processing.
+Kove Advanced Video is a fully-featured browser-based video editor that runs entirely client-side. Built with React, TypeScript, WebCodecs, and WebGPU for professional-grade video editing without the need for expensive software or cloud processing.
 
-**[Try it Live](https://openreel.video)** | **[Documentation](CONTRIBUTING.md)** | **[Discussions](https://github.com/Augani/openreel-video/discussions)** | **[Twitter](https://x.com/python_xi)**
+**[Try it Live](https://kove-advanced.video)** | **[Documentation](CONTRIBUTING.md)** | **[Discussions](https://github.com/Augani/kove-advanced-video/discussions)** | **[Twitter](https://x.com/python_xi)**
 
-![OpenReel Editor](https://img.shields.io/badge/Lines%20of%20Code-130k+-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Status](https://img.shields.io/badge/Status-Beta-orange) ![Open Source](https://img.shields.io/badge/Open%20Source-100%25-brightgreen) [![Sponsor Augani](https://img.shields.io/github/sponsors/Augani?logo=githubsponsors&label=Sponsor&color=EA4AAA)](https://github.com/sponsors/Augani)
+![Kove Advanced Editor](https://img.shields.io/badge/Lines%20of%20Code-130k+-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Status](https://img.shields.io/badge/Status-Beta-orange) ![Open Source](https://img.shields.io/badge/Open%20Source-100%25-brightgreen) [![Sponsor Augani](https://img.shields.io/github/sponsors/Augani?logo=githubsponsors&label=Sponsor&color=EA4AAA)](https://github.com/sponsors/Augani)
 
 ---
 
-## Why OpenReel?
+## Why Kove Advanced?
 
 - **100% Client-Side** - Your videos never leave your device. No uploads, no cloud processing, complete privacy.
 - **No Installation** - Works in Chrome/Edge. Just open and start editing.
@@ -92,14 +92,14 @@ OpenReel Video is a fully-featured browser-based video editor that runs entirely
 ## Quick Start
 
 ### Try Online
-Visit **[openreel.video](https://openreel.video)** to start editing immediately.
+Visit **[kove-advanced.video](https://kove-advanced.video)** to start editing immediately.
 
 ### Run Locally
 
 ```bash
 # Clone the repository
-git clone https://github.com/Augani/openreel-video.git
-cd openreel-video
+git clone https://github.com/Augani/kove-advanced-video.git
+cd kove-advanced-video
 
 # Install dependencies (requires Node.js 18+)
 pnpm install
@@ -142,7 +142,7 @@ All major browsers now support WebCodecs for hardware-accelerated video encoding
 ### Monorepo Structure
 
 ```
-openreel/
+kove-advanced/
 ├── apps/web/              # React frontend (~66k lines)
 │   └── src/
 │       ├── components/    # UI components
@@ -183,7 +183,7 @@ openreel/
 
 ## AI-Managed Development
 
-OpenReel is an experiment in AI-assisted open source development. Claude AI helps manage:
+Kove Advanced is an experiment in AI-assisted open source development. Claude AI helps manage:
 
 - **Issue triage** - Reviews and responds to issues
 - **Code implementation** - Writes features and fixes bugs
@@ -215,7 +215,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 **Development workflow:**
 ```bash
 # Fork and clone
-git clone https://github.com/Augani/openreel-video.git
+git clone https://github.com/Augani/kove-advanced-video.git
 
 # Create feature branch
 git checkout -b feat/your-feature
@@ -297,7 +297,7 @@ See [LICENSE](LICENSE) for details.
 
 ---
 
-## $OPENREEL Token
+## $KOVE_ADVANCED Token
 
 CA: `B7wDnfrdtvdG7SCkRjSMJ6LkVwGWvdWrQ75iV8G9pump`
 

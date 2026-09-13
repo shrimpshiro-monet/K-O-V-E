@@ -1,5 +1,5 @@
-import type { Project, ProjectSettings } from "@openreel/core";
-import { normalizeProjectStoredFields } from "@openreel/core";
+import type { Project, ProjectSettings } from "@kove-advanced/core";
+import { normalizeProjectStoredFields } from "@kove-advanced/core";
 import { v4 as uuidv4 } from "uuid";
 
 interface FilePickerAcceptType {
@@ -35,7 +35,7 @@ type NativeFileRef = { kind: "native"; path: string };
 type ProjectFileRef = FileSystemFileHandle | NativeFileRef;
 
 function isDesktopFs(): boolean {
-  return typeof window !== "undefined" && !!window.openreel?.fs;
+  return typeof window !== "undefined" && !!window["kove-advanced"]?.fs;
 }
 
 function isNativeRef(ref: unknown): ref is NativeFileRef {
@@ -46,7 +46,7 @@ function isNativeRef(ref: unknown): ref is NativeFileRef {
   );
 }
 
-const PROJECT_DB_NAME = "openreel-projects";
+const PROJECT_DB_NAME = "kove-advanced-projects";
 const PROJECT_DB_VERSION = 1;
 const PROJECTS_STORE = "projects";
 const RECENT_STORE = "recent";
@@ -317,12 +317,12 @@ class ProjectManager {
 
   async saveProjectAs(project: Project): Promise<boolean> {
     if (isDesktopFs()) {
-      const filePath = await window.openreel!.fs.showSaveDialog({
+      const filePath = await window["kove-advanced"]!.fs.showSaveDialog({
         defaultPath: `${project.name}.oreel`,
-        filters: [{ name: "OpenReel Project", extensions: ["oreel", "json"] }],
+        filters: [{ name: "Kove Advanced Project", extensions: ["oreel", "json"] }],
       });
       if (!filePath) return false;
-      await window.openreel!.fs.writeFile(
+      await window["kove-advanced"]!.fs.writeFile(
         filePath,
         JSON.stringify(project, null, 2),
       );
@@ -342,7 +342,7 @@ class ProjectManager {
         suggestedName: `${project.name}.oreel`,
         types: [
           {
-            description: "OpenReel Project",
+            description: "Kove Advanced Project",
             accept: { "application/json": [".oreel", ".json"] },
           },
         ],
@@ -372,7 +372,7 @@ class ProjectManager {
   ): Promise<boolean> {
     try {
       if (isNativeRef(handle)) {
-        await window.openreel!.fs.writeFile(
+        await window["kove-advanced"]!.fs.writeFile(
           handle.path,
           JSON.stringify(project, null, 2),
         );
@@ -417,11 +417,11 @@ class ProjectManager {
 
   async openProject(): Promise<Project | null> {
     if (isDesktopFs()) {
-      const filePath = await window.openreel!.fs.showOpenDialog({
-        filters: [{ name: "OpenReel Project", extensions: ["oreel", "json"] }],
+      const filePath = await window["kove-advanced"]!.fs.showOpenDialog({
+        filters: [{ name: "Kove Advanced Project", extensions: ["oreel", "json"] }],
       });
       if (!filePath) return null;
-      const content = await window.openreel!.fs.readFile(filePath);
+      const content = await window["kove-advanced"]!.fs.readFile(filePath);
       let project: Project;
       try {
         project = this.parseProjectContent(content);
@@ -441,7 +441,7 @@ class ProjectManager {
         const [handle] = await win.showOpenFilePicker!({
           types: [
             {
-              description: "OpenReel Project",
+              description: "Kove Advanced Project",
               accept: { "application/json": [".oreel", ".json"] },
             },
           ],
@@ -504,7 +504,7 @@ class ProjectManager {
     if (recentProject.fileHandle) {
       if (isNativeRef(recentProject.fileHandle)) {
         try {
-          const content = await window.openreel!.fs.readFile(
+          const content = await window["kove-advanced"]!.fs.readFile(
             recentProject.fileHandle.path,
           );
           const project = this.parseProjectContent(content);

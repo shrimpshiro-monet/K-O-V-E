@@ -87,8 +87,8 @@ import {
   type MotionLight,
   type MotionLightProperty,
   type MotionLayer,
-} from "@openreel/core";
-import { ToolcraftText } from "@openreel/ui";
+} from "@kove-advanced/core";
+import { ToolcraftText } from "@kove-advanced/ui";
 import { useProjectStore } from "../../stores/project-store";
 import { useMotionStore } from "../stores/motion-store";
 import {

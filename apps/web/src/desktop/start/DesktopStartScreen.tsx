@@ -1,14 +1,14 @@
 import type { JSX } from "react";
 import { useState, useEffect, useCallback } from "react";
-import { ToolcraftBadge } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftHeading as Heading } from "@openreel/ui";
-import { ToolcraftSelectableCard as SelectableCard } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftBadge } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftHeading as Heading } from "@kove-advanced/ui";
+import { ToolcraftSelectableCard as SelectableCard } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { Box, Smartphone, Monitor, Square, Film } from "@/icons/lucide-compat";
 
-import { OpenReelMark } from "../brand/OpenReelMark";
+import { KoveAdvancedMark } from "../brand/KoveAdvancedMark";
 import { Icon } from "@/icons/Icon";
 import {
   DESKTOP_FORMATS,
@@ -94,7 +94,7 @@ export function DesktopStartScreen(): JSX.Element {
       <div className="mx-auto flex max-w-4xl flex-col gap-10 px-8 py-12">
         <section>
           <div className="flex items-center gap-3">
-            <OpenReelMark size={28} className="text-accent" />
+            <KoveAdvancedMark size={28} className="text-accent" />
             <Heading level={1}>New Project</Heading>
           </div>
           <Text type="supporting" display="block" className="mt-1">

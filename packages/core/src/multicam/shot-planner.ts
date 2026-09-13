@@ -70,7 +70,7 @@ export interface MulticamShot {
 }
 
 export interface MulticamShotPlan {
-  spec: "openreel-multicam-edit/v1";
+  spec: "kove-advanced-multicam-edit/v1";
   durationMs: number;
   shots: MulticamShot[];
 }
@@ -532,7 +532,7 @@ export function planMulticamShots(
     manifest.constraints.min_shot_ms,
   );
   return {
-    spec: "openreel-multicam-edit/v1",
+    spec: "kove-advanced-multicam-edit/v1",
     durationMs: Math.round(activity.duration * 1_000),
     shots: addReactionShots(stable, manifest),
   };

@@ -62,7 +62,7 @@ export interface CodecRecommendation {
   qualityRating: "good" | "better" | "best";
 }
 
-const STORAGE_KEY = "openreel_device_profile";
+const STORAGE_KEY = "kove-advanced_device_profile";
 
 export function getCpuTier(cores: number): DeviceTier {
   if (cores >= 8) return "high";
@@ -435,13 +435,14 @@ export async function getDeviceProfile(
     return cachedProfile;
   }
 
-  // Desktop: build the profile from real hardware specs (window.openreel.probeHardware)
+  // Desktop: build the profile from real hardware specs (window["kove-advanced"].probeHardware)
   // instead of the browser heuristics (navigator/WebGL/WebCodecs).
-  const bridge = (globalThis as unknown as {
-    openreel?: { platform?: string; probeHardware?: () => Promise<NativeHardwareInfo> };
-  }).openreel;
-  if (bridge?.platform === "desktop" && typeof bridge.probeHardware === "function") {
-    const info = await bridge.probeHardware();
+  const globalScope = globalThis as Record<string, unknown>;
+  const koveAdvanced = globalScope["kove-advanced"] as
+    | { platform?: string; probeHardware?: () => Promise<NativeHardwareInfo> }
+    | undefined;
+  if (koveAdvanced?.platform === "desktop" && typeof koveAdvanced.probeHardware === "function") {
+    const info = await koveAdvanced.probeHardware();
     const { buildProfileFromNativeSpecs } = await import("./native-profile");
     cachedProfile = buildProfileFromNativeSpecs(info);
     return cachedProfile;

@@ -11,7 +11,7 @@ import {
   ContextMenuShortcut,
   ContextMenuCheckboxItem,
   Slider,
-} from '@openreel/ui';
+} from '@kove-advanced/ui';
 
 type FilterType = 'all' | LayerType;
 

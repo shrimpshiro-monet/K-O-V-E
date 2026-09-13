@@ -1,9 +1,9 @@
-import { ActionExecutor } from "@openreel/core/actions/action-executor";
-import { ActionHistory } from "@openreel/core/actions/action-history";
-import { CAPABILITY_MANIFEST } from "@openreel/core/capabilities/manifest";
-import type { CapabilityManifest } from "@openreel/core/capabilities/manifest";
-import type { Action, ActionResult } from "@openreel/core/types/actions";
-import type { Project } from "@openreel/core/types/project";
+import { ActionExecutor } from "@kove-advanced/core/actions/action-executor";
+import { ActionHistory } from "@kove-advanced/core/actions/action-history";
+import { CAPABILITY_MANIFEST } from "@kove-advanced/core/capabilities/manifest";
+import type { CapabilityManifest } from "@kove-advanced/core/capabilities/manifest";
+import type { Action, ActionResult } from "@kove-advanced/core/types/actions";
+import type { Project } from "@kove-advanced/core/types/project";
 import type { EditingHost, JobKind, JobResult, JobRunner, TxnHandle } from "./host";
 
 export interface HeadlessHostOptions {

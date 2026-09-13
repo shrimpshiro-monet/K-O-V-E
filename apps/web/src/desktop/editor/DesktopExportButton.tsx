@@ -1,8 +1,8 @@
 import type { JSX } from "react";
 import React, { useCallback, useEffect, useState } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import type { VideoExportSettings } from "@openreel/core";
-import { setEncoderBackendFactory, WebCodecsBackend } from "@openreel/core";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import type { VideoExportSettings } from "@kove-advanced/core";
+import { setEncoderBackendFactory, WebCodecsBackend } from "@kove-advanced/core";
 import { useProjectStore } from "../../stores/project-store";
 import { ExportDialog } from "../../components/editor/ExportDialog";
 import { deriveSourceExportMatch } from "../../services/export-source-match";
@@ -13,7 +13,7 @@ import { Icon } from "@/icons/Icon";
 const NO_DRAG = { WebkitAppRegion: "no-drag" } as React.CSSProperties;
 
 const resolveExportOutputPath = (): string =>
-  (window as { __openreelExportPath?: string }).__openreelExportPath ?? "";
+  (window as Record<string, string | undefined>).__kove_advancedExportPath ?? "";
 
 // Native ffmpeg writes the file itself via the resolved output path, so it does
 // not consume the writable stream — a no-op stream satisfies the interface.
@@ -57,8 +57,8 @@ export function DesktopExportButton(): JSX.Element {
 
   useEffect(() => {
     const open = () => setIsDialogOpen(true);
-    window.addEventListener("openreel:menu:export", open);
-    return () => window.removeEventListener("openreel:menu:export", open);
+    window.addEventListener("kove-advanced:menu:export", open);
+    return () => window.removeEventListener("kove-advanced:menu:export", open);
   }, []);
 
   const handleExport = useCallback(

@@ -1,12 +1,12 @@
 {
-  "name": "@openreel/agent-runner",
+  "name": "@kove-advanced/agent-runner",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "bin": {
-    "openreel-agent": "dist/cli.cjs"
+    "kove-advanced-agent": "dist/cli.cjs"
   },
   "exports": {
     ".": {
@@ -27,7 +27,7 @@
     "vitest": "^1.6.0"
   },
   "dependencies": {
-    "@openreel/agent": "workspace:*",
-    "@openreel/core": "workspace:*"
+    "@kove-advanced/agent": "workspace:*",
+    "@kove-advanced/core": "workspace:*"
   }
 }

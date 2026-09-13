@@ -3,7 +3,7 @@
 import {
   analyzeMulticamDrift,
   type MulticamDriftAnalysisOptions,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 interface DriftRequest {
   requestId: string;

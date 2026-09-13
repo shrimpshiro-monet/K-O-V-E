@@ -10,13 +10,13 @@ import {
   Link,
   Sparkles,
 } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftNumberInputControl } from "@openreel/ui";
-import { ToolcraftSelectableCard as SelectableCard } from "@openreel/ui";
-import { ToolcraftSelectControl as Selector } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
-import { ToolcraftTextInputControl } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftNumberInputControl } from "@kove-advanced/ui";
+import { ToolcraftSelectableCard as SelectableCard } from "@kove-advanced/ui";
+import { ToolcraftSelectControl as Selector } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
+import { ToolcraftTextInputControl } from "@kove-advanced/ui";
 import { useProjectStore } from "../../../stores/project-store";
 import { useEngineStore } from "../../../stores/engine-store";
 import { toast } from "../../../stores/notification-store";
@@ -39,7 +39,7 @@ import {
   type MultiCamGroup,
   type MulticamEditPolicy,
   type MulticamDecisionStrategy,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import {
   loadMulticamArtifact,
   saveMulticamArtifact,
@@ -386,7 +386,7 @@ export const MultiCameraPanel: React.FC<MultiCameraPanelProps> = () => {
   const [includeVisualReactions, setIncludeVisualReactions] = useState(false);
   const [policyPreset, setPolicyPreset] = useState("custom");
   const [multiCamEngine, setMultiCamEngine] =
-    useState<import("@openreel/core").MultiCamEngine | null>(null);
+    useState<import("@kove-advanced/core").MultiCamEngine | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -672,7 +672,7 @@ export const MultiCameraPanel: React.FC<MultiCameraPanelProps> = () => {
         }
 
         setStatus(groupId, "Running local Silero voice detection…");
-        const vadTracks = new Map<string, import("@openreel/core").MulticamVadTrack>();
+        const vadTracks = new Map<string, import("@kove-advanced/core").MulticamVadTrack>();
         for (const source of alignedSources) {
           const buffer = buffers.get(source.angle.id);
           if (!buffer) continue;
@@ -888,7 +888,7 @@ export const MultiCameraPanel: React.FC<MultiCameraPanelProps> = () => {
     downloadText(
       `${group.name.replace(/[^a-z0-9-_]+/gi, "-")}.orma`,
       serializeOrma(artifact),
-      "application/vnd.openreel.activity+json",
+      "application/vnd.kove-advanced.activity+json",
     );
   }, [downloadText, multiCamEngine]);
 

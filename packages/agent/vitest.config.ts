@@ -9,8 +9,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@openreel/core": path.resolve(__dirname, "../core/src"),
-      "@openreel/agent": path.resolve(__dirname, "./src"),
+      "@kove-advanced/core": path.resolve(__dirname, "../core/src"),
+      "@kove-advanced/agent": path.resolve(__dirname, "./src"),
     },
   },
 });

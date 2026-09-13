@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { Music, Loader2, AlertCircle, Check, Settings2, Image, Type, Video } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftProgressBar as ProgressBar } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftProgressBar as ProgressBar } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { PropertySlider } from "./shell/PropertySlider";
 import {
   getBeatSyncBridge,
   type BeatSyncState,
   DEFAULT_BEAT_SYNC_CONFIG,
 } from "../../../bridges/audio-text-sync-bridge";
-import type { SyncMode } from "@openreel/core";
+import type { SyncMode } from "@kove-advanced/core";
 
 interface BeatSyncPanelProps {
   clipId: string;

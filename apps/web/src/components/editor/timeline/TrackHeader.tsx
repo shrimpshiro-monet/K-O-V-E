@@ -3,14 +3,14 @@ import { Eye, EyeOff, Volume2, VolumeX, Lock, Trash2, Pencil, AlignLeft, Link2, 
 import {
   ToolcraftContextMenu as ContextMenu,
   type ToolcraftContextMenuOption as ContextMenuOption,
-} from "@openreel/ui";
-import { ToolcraftTextInputControl } from "@openreel/ui";
-import type { Track } from "@openreel/core";
+} from "@kove-advanced/ui";
+import { ToolcraftTextInputControl } from "@kove-advanced/ui";
+import type { Track } from "@kove-advanced/core";
 import {
   getTrackItems,
   trackHasAudioItems,
   trackHasVisualItems,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import { useProjectStore } from "../../../stores/project-store";
 import { useTimelineStore } from "../../../stores/timeline-store";
 import { getTrackInfo } from "./utils";

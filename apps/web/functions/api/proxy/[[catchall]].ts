@@ -41,8 +41,8 @@ const SERVICE_CONFIG: Record<string, ServiceConfig> = {
 };
 
 const ALLOWED_ORIGINS = [
-  "https://openreel.pages.dev",
-  "https://openreel-preview.pages.dev",
+  "https://kove-advanced.pages.dev",
+  "https://kove-advanced-preview.pages.dev",
   "http://localhost:5173",
   "http://localhost:4173",
 ];

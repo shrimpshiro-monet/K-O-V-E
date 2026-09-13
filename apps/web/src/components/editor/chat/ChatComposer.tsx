@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { useState, useCallback, type KeyboardEvent } from "react";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftTextAreaControl } from "@openreel/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftTextAreaControl } from "@kove-advanced/ui";
 import { Send, Square } from "@/icons/lucide-compat";
 import { useChatStore } from "../../../stores/chat-store";
 
@@ -9,6 +9,8 @@ export function ChatComposer(): JSX.Element {
   const status = useChatStore((s) => s.status);
   const send = useChatStore((s) => s.send);
   const stop = useChatStore((s) => s.stop);
+  const analysisMode = useChatStore((s) => s.analysisMode);
+  const setAnalysisMode = useChatStore((s) => s.setAnalysisMode);
   const [text, setText] = useState("");
   const busy = status === "running" || status === "awaiting_confirm";
 
@@ -65,8 +67,29 @@ export function ChatComposer(): JSX.Element {
           )}
         </div>
       </div>
-      <div className="mt-1 px-1 text-[10px] text-fg-muted">
-        Enter to send · Shift+Enter for a new line
+      <div className="mt-1 flex items-center gap-2 px-1">
+        <span className="text-[10px] text-fg-muted">
+          Enter to send · Shift+Enter for a new line
+        </span>
+        <div className="ml-auto">
+          <button
+            type="button"
+            onClick={() => setAnalysisMode(analysisMode === "eco" ? "ai" : "eco")}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+              analysisMode === "eco"
+                ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
+                : "bg-violet-500/15 text-violet-400 hover:bg-violet-500/25"
+            }`}
+            title={analysisMode === "eco" ? "Local analysis (free)" : "AI vision analysis (uses credits)"}
+          >
+            <span
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                analysisMode === "eco" ? "bg-emerald-400" : "bg-violet-400"
+              }`}
+            />
+            {analysisMode === "eco" ? "Eco" : "AI"}
+          </button>
+        </div>
       </div>
     </div>
   );

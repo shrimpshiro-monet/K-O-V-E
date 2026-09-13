@@ -3,18 +3,18 @@ import {
   Image as ImageIcon, Film, Music, Plus, Upload, Trash2,
   Square, Circle, Triangle, Star, ArrowRight, Hexagon, FileCode, AlertTriangle,
   RefreshCw, Palette, Sparkles, Video,
-  Type, Shapes, Wand2, LayoutTemplate, Zap, Shuffle,
+  Type, Shapes, Wand2, LayoutTemplate, Zap, Shuffle, Tag,
 } from "@/icons/lucide-compat";
 import {
   BACKGROUND_PRESETS,
   generateBackgroundBlob,
   type BackgroundPreset,
 } from "../../services/background-generator";
-import type { ShapeType, TextStyle } from "@openreel/core";
+import type { ShapeType, TextStyle } from "@kove-advanced/core";
 import { useProjectStore } from "../../stores/project-store";
 import { useUIStore } from "../../stores/ui-store";
 import { useTimelineStore } from "../../stores/timeline-store";
-import type { MediaItem } from "@openreel/core";
+import type { MediaItem } from "@kove-advanced/core";
 import { AspectRatioMatchDialog } from "./dialogs/AspectRatioMatchDialog";
 import { AIGenTab } from "./AIGenTab";
 import { RecipesTab } from "./panels/RecipesTab";
@@ -26,10 +26,10 @@ import {
 import { useTtsAudioStore } from "../../stores/tts-store";
 import { toast } from "../../stores/notification-store";
 import { saveFileHandle, saveDirectoryHandle } from "../../services/media-storage";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftSelectableCard as SelectableCard } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftSelectableCard as SelectableCard } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { KieAIImageDialog } from "./kieai/KieAIImageDialog";
 import { loadMediaBlob } from "../../services/media-storage";
 import { useKieAIStore } from "../../stores/kieai-store";
@@ -251,6 +251,7 @@ const MediaThumbnail: React.FC<{
   onAddToTimeline: () => void;
   onKieAI?: () => void;
   onRetryKieAI?: () => void;
+  onToggleReference?: () => void;
 }> = ({
   item,
   isSelected,
@@ -262,6 +263,7 @@ const MediaThumbnail: React.FC<{
   onAddToTimeline,
   onKieAI,
   onRetryKieAI,
+  onToggleReference,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -348,6 +350,12 @@ const MediaThumbnail: React.FC<{
               className="p-2 bg-primary/20 rounded-full hover:bg-primary/40 backdrop-blur-sm transition-colors"
             />
           )}
+          <PanelIconButton
+            label={item.analysisRole === "reference" ? "Use as source footage" : "Mark as reference video"}
+            icon={<Tag size={14} className={item.analysisRole === "reference" ? "text-amber-300" : "text-fg-muted"} />}
+            onClick={(e) => { e.stopPropagation(); onToggleReference?.(); }}
+            className="p-2 bg-black/30 rounded-full hover:bg-amber-500/30 backdrop-blur-sm transition-colors"
+          />
           <PanelIconButton
             label="Add to timeline"
             icon={<Plus size={14} className="text-primary" />}
@@ -589,11 +597,18 @@ const MediaThumbnail: React.FC<{
       </div>
 
       {/* Filename below thumbnail */}
-      <div
-        className="text-[12px] truncate font-medium text-fg-2 mt-1.5"
-        title={item.name}
-      >
-        {item.name}
+      <div className="mt-1.5 flex items-center gap-1.5 min-w-0">
+        <div
+          className="text-[12px] truncate font-medium text-fg-2"
+          title={item.name}
+        >
+          {item.name}
+        </div>
+        {item.analysisRole === "reference" && (
+          <span className="shrink-0 rounded bg-amber-500/15 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-300">
+            Reference
+          </span>
+        )}
       </div>
     </div>
   );
@@ -664,6 +679,7 @@ export const AssetsPanel: React.FC = () => {
   const {
     project,
     importMedia,
+    setMediaAnalysisRole,
     deleteMedia,
     replaceMediaAsset,
     updateSettings,
@@ -1132,6 +1148,9 @@ export const AssetsPanel: React.FC = () => {
                         onAddToTimeline={() => handleAddToTimeline(item)}
                         onKieAI={item.type === "image" && !item.isPending && !item.kieaiError ? () => handleOpenKieAI(item) : undefined}
                         onRetryKieAI={item.kieaiError && item.kieaiTaskId ? () => handleRetryKieAI(item) : undefined}
+                        onToggleReference={item.type === "video" ? () => {
+                          void setMediaAnalysisRole(item.id, item.analysisRole === "reference" ? "source" : "reference");
+                        } : undefined}
                       />
                     ))}
                     <div className="flex flex-col">

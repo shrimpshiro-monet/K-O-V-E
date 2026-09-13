@@ -1,5 +1,4 @@
-import subprocess
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from kove_engine.analyzers.scene_detector import SceneDetector
 

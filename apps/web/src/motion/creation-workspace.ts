@@ -1,11 +1,11 @@
-import type { MotionComposition } from "@openreel/core";
+import type { MotionComposition } from "@kove-advanced/core";
 import type {
   CreationProjectState,
   CreationAnimationTrack,
   CreationCamera,
   CreationScene,
   CreationSceneObject,
-} from "@openreel/core/creation/index";
+} from "@kove-advanced/core/creation/index";
 import {
   findRecoverableScene3DLayers,
   type RecoverableScene3DLayerSummary,

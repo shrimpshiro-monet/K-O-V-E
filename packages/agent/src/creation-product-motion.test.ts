@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateCreationScene } from "@openreel/creation-schema";
+import { validateCreationScene } from "@kove-advanced/creation-schema";
 import { createProductCinematicMotionComposition } from "./creation-product-motion";
 
 describe("createProductCinematicMotionComposition", () => {

@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Box, Search, Layout, Clock } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftSelectableCard as SelectableCard } from "@openreel/ui";
-import { ToolcraftTextInputControl } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftSelectableCard as SelectableCard } from "@kove-advanced/ui";
+import { ToolcraftTextInputControl } from "@kove-advanced/ui";
 import { useEngineStore } from "../../../stores/engine-store";
 import { useProjectStore } from "../../../stores/project-store";
 import { useRouter } from "../../../hooks/use-router";
 import type {
   TemplateSummary,
   TemplateCategory,
-} from "@openreel/core";
-import { TEMPLATE_CATEGORIES } from "@openreel/core";
+} from "@kove-advanced/core";
+import { TEMPLATE_CATEGORIES } from "@kove-advanced/core";
 
 export const TemplatesTab: React.FC = () => {
   const getTemplateEngine = useEngineStore((s) => s.getTemplateEngine);

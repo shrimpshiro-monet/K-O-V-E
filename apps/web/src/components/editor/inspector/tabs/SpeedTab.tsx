@@ -1,5 +1,5 @@
 import React from "react";
-import type { Clip } from "@openreel/core";
+import type { Clip } from "@kove-advanced/core";
 import { SpeedSection, StabilizationSection, SpeedRampSection } from "../";
 import { InspectorSection } from "../shell/InspectorSection";
 

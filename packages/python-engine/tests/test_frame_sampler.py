@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from kove_engine.analyzers.frame_sampler import FrameSampler
 

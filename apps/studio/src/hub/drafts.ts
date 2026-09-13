@@ -2,7 +2,7 @@ import { openDB, type IDBPDatabase } from "idb";
 import type { Scene } from "../effect/scene";
 import type { FilterDoc } from "../filter/types";
 
-const DB_NAME = "openreel-studio";
+const DB_NAME = "kove-advanced-studio";
 const STORE = "drafts";
 const DB_VERSION = 1;
 

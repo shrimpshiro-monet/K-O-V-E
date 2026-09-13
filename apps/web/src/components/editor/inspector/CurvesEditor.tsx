@@ -5,11 +5,11 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { RotateCcw } from "@/icons/lucide-compat";
-import type { CurvesValues, CurvePoint } from "@openreel/core";
+import type { CurvesValues, CurvePoint } from "@kove-advanced/core";
 
 export const DEFAULT_CURVES: CurvesValues = {
   rgb: [

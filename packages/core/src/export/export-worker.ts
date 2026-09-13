@@ -88,7 +88,7 @@ async function initialize(
         break;
       case "mp4":
       default:
-        outputFormat = new Mp4OutputFormat({ fastStart: streamMode ? false : "in-memory" });
+        outputFormat = new Mp4OutputFormat({ fastStart: streamMode ? "fragmented" : "in-memory" });
         break;
     }
 

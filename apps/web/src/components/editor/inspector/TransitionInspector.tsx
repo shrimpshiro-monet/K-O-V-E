@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { MockToggle } from "./shell/InspectorControls";
 import { PropertySlider } from "./shell/PropertySlider";
 import {
@@ -18,8 +18,8 @@ import {
   getTransitionBridge,
   type TransitionTypeInfo,
 } from "../../../bridges/transition-bridge";
-import type { Transition, Clip, TransitionEdge } from "@openreel/core";
-import type { TransitionType } from "@openreel/core";
+import type { Transition, Clip, TransitionEdge } from "@kove-advanced/core";
+import type { TransitionType } from "@kove-advanced/core";
 import { toast } from "../../../stores/notification-store";
 
 const TransitionSlider: React.FC<{

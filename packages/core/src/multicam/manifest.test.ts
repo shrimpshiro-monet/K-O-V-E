@@ -9,7 +9,7 @@ import {
 } from "./manifest";
 
 const manifest = (): MulticamManifest => ({
-  spec: "openreel-multicam/v1",
+  spec: "kove-advanced-multicam/v1",
   fps: 25,
   sync: { method: "audio-crosscorr", reference: "wide" },
   participants: [
@@ -25,7 +25,7 @@ const manifest = (): MulticamManifest => ({
 });
 
 describe("validateMulticamManifest", () => {
-  it("accepts the openreel-multicam/v1 shoot specification", () => {
+  it("accepts the kove-advanced-multicam/v1 shoot specification", () => {
     expect(validateMulticamManifest(manifest())).toEqual({ valid: true, errors: [] });
   });
 

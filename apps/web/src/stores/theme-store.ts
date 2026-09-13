@@ -27,8 +27,8 @@ const calculateIsDark = (mode: ThemeMode): boolean => {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      mode: "light",
-      isDark: false,
+      mode: "dark",
+      isDark: true,
 
       setMode: (mode: ThemeMode) => {
         const isDark = calculateIsDark(mode);
@@ -55,7 +55,7 @@ export const useThemeStore = create<ThemeState>()(
       },
     }),
     {
-      name: "openreel-theme",
+      name: "kove-advanced-theme",
       onRehydrateStorage: () => (state) => {
         if (state) {
           const isDark = calculateIsDark(state.mode);

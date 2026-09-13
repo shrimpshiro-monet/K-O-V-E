@@ -4,7 +4,7 @@ import type { MulticamDriftModel } from "./drift";
 import type { MulticamManifest } from "./manifest";
 import type { MulticamReactionCue } from "./reaction-analysis";
 
-export const ORMA_SPEC = "openreel-activity/v1" as const;
+export const ORMA_SPEC = "kove-advanced-activity/v1" as const;
 
 export interface MulticamTranscriptSegment {
   startMs: number;
@@ -108,7 +108,7 @@ export function deserializeOrma(serialized: string): OrmaArtifact {
     !value.drift ||
     typeof value.drift !== "object"
   ) {
-    throw new Error("Invalid OpenReel multicam activity artifact");
+    throw new Error("Invalid Kove Advanced multicam activity artifact");
   }
   return value as OrmaArtifact;
 }

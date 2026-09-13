@@ -1,5 +1,5 @@
 import React from "react";
-import { ToolcraftPanelSection } from "@openreel/ui";
+import { ToolcraftPanelSection } from "@kove-advanced/ui";
 
 export interface InspectorSectionProps {
   title: string;

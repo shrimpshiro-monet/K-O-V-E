@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from "react";
-import type { Keyframe, Clip } from "@openreel/core";
+import type { Keyframe, Clip } from "@kove-advanced/core";
 import { KeyframeMarker } from "./KeyframeMarker";
 import { EasingCurve } from "./EasingCurve";
 

@@ -1,4 +1,4 @@
-import type { Project } from "@openreel/core/types/project";
+import type { Project } from "@kove-advanced/core/types/project";
 
 /**
  * Compact, token-efficient, blob-free views of the project for the agent's read
@@ -36,6 +36,7 @@ export interface MediaView {
   readonly durationSec?: number;
   readonly width?: number;
   readonly height?: number;
+  readonly analysisRole?: "source" | "reference";
 }
 
 export interface TrackView {
@@ -145,6 +146,7 @@ export function listMedia(project: Project): MediaView[] {
     durationSec: item.metadata?.duration,
     width: item.metadata?.width,
     height: item.metadata?.height,
+    analysisRole: item.analysisRole ?? "source",
   }));
 }
 

@@ -12,13 +12,13 @@ from faster_whisper import WhisperModel
 import uvicorn
 from deep_translator import GoogleTranslator
 
-app = FastAPI(title="OpenReel Transcription API (GPU)")
+app = FastAPI(title="Kove Advanced Transcription API (GPU)")
 
 ALLOWED_ORIGINS = [
-    "https://openreel.video",
-    "https://www.openreel.video",
-    "https://app.openreel.video",
-    "https://editor.openreel.video",
+    "https://kove-advanced.video",
+    "https://www.kove-advanced.video",
+    "https://app.kove-advanced.video",
+    "https://editor.kove-advanced.video",
     "http://localhost:5173",
     "http://localhost:3000",
     "http://localhost:5174",

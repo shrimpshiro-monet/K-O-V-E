@@ -13,7 +13,7 @@ import type {
   MulticamManifestConstraints,
   MulticamVadTrack,
   MulticamCalibrationRange,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 export interface MulticamSyncAnalysis {
   results: Map<string, SyncResult>;
@@ -95,7 +95,7 @@ export function buildMulticamManifest(
   });
   const reference = cameras.find((camera) => camera.type === "wide")?.id ?? cameras[0]?.id ?? "";
   return {
-    spec: "openreel-multicam/v1",
+    spec: "kove-advanced-multicam/v1",
     fps: project.settings.frameRate,
     sync: { method: "audio-crosscorr", reference },
     participants,

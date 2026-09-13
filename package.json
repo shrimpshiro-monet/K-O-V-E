@@ -1,16 +1,16 @@
 {
-  "name": "openreel",
+  "name": "kove-advanced",
   "version": "0.1.2",
   "private": true,
   "description": "Professional video, audio, and photo editing in your browser",
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @openreel/web dev",
-    "build:wasm": "pnpm --filter @openreel/core build:wasm",
-    "build": "pnpm build:wasm && pnpm --filter @openreel/web build",
-    "preview": "pnpm --filter @openreel/web preview",
-    "deploy": "pnpm build && pnpm --filter @openreel/web deploy",
-    "deploy:preview": "pnpm build && pnpm --filter @openreel/web deploy:preview",
+    "dev": "pnpm --filter @kove-advanced/web dev",
+    "build:wasm": "pnpm --filter @kove-advanced/core build:wasm",
+    "build": "pnpm build:wasm && pnpm --filter @kove-advanced/web build",
+    "preview": "pnpm --filter @kove-advanced/web preview",
+    "deploy": "pnpm build && pnpm --filter @kove-advanced/web deploy",
+    "deploy:preview": "pnpm build && pnpm --filter @kove-advanced/web deploy:preview",
     "test": "pnpm -r test:run",
     "test:watch": "pnpm -r test",
     "lint": "pnpm -r lint",
@@ -40,12 +40,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Augani/openreel-video.git"
+    "url": "https://github.com/Augani/kove-advanced-video.git"
   },
   "bugs": {
-    "url": "https://github.com/Augani/openreel-video/issues"
+    "url": "https://github.com/Augani/kove-advanced-video/issues"
   },
-  "homepage": "https://openreel.video",
+  "homepage": "https://kove-advanced.video",
   "engines": {
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"

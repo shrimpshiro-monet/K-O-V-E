@@ -1,8 +1,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { ProjectSerializer } from "@openreel/core/storage/project-serializer";
-import type { IStorageEngine } from "@openreel/core/storage/types";
-import type { Project, ProjectSettings } from "@openreel/core/types/project";
+import { ProjectSerializer } from "@kove-advanced/core/storage/project-serializer";
+import type { IStorageEngine } from "@kove-advanced/core/storage/types";
+import type { Project, ProjectSettings } from "@kove-advanced/core/types/project";
 
 const DEFAULT_SETTINGS: ProjectSettings = {
   width: 1920,

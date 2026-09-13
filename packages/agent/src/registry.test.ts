@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  baselineFrameTimestamps,
   listTools,
   toAnthropicTools,
   toOpenAITools,
@@ -10,6 +11,16 @@ import {
 import type { EditingHost, HumanoidRigRequest, ModelInspectionRequest } from "./host";
 
 describe("tool registry", () => {
+  it("always schedules an initial frame and keeps baseline timestamps bounded", () => {
+    expect(baselineFrameTimestamps(0)).toEqual([0]);
+    expect(baselineFrameTimestamps(Number.NaN)).toEqual([0]);
+
+    const timestamps = baselineFrameTimestamps(2);
+    expect(timestamps[0]).toBe(0);
+    expect(timestamps.every((timestamp) => timestamp >= 0 && timestamp < 2)).toBe(true);
+    expect(new Set(timestamps).size).toBe(timestamps.length);
+  });
+
   it("has unique tool names", () => {
     const names = listTools().map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);
@@ -94,7 +105,7 @@ describe("tool registry", () => {
   });
 
   it("projects to all three provider formats with matching names", () => {
-    const base = listTools().map((t) => t.name).sort();
+    const base = listTools().filter((t) => !t.internal).map((t) => t.name).sort();
     expect(toAnthropicTools().map((t) => t.name).sort()).toEqual(base);
     expect(toOpenAITools().map((t) => t.function.name).sort()).toEqual(base);
     expect(toMcpTools().map((t) => t.name).sort()).toEqual(base);
@@ -102,7 +113,7 @@ describe("tool registry", () => {
 
   it("generates a capability doc", () => {
     const doc = toCapabilityDoc();
-    expect(doc).toContain("OpenReel Agent Tools");
+    expect(doc).toContain("Kove Advanced Agent Tools");
     expect(doc).toContain("execute_action");
   });
 

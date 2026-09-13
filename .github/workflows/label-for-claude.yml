@@ -72,7 +72,7 @@ jobs:
         with:
           script: |
             const prAuthor = context.payload.pull_request.user.login;
-            const isClaudeBot = prAuthor === 'openreel-claude-bot' || prAuthor.includes('claude');
+            const isClaudeBot = prAuthor === 'kove-advanced-claude-bot' || prAuthor.includes('claude');
             core.setOutput('is-human', !isClaudeBot);
 
       - name: Add needs-claude-review label to community PRs

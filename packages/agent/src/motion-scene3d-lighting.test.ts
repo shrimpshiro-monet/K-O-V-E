@@ -2,13 +2,13 @@ import { describe, it, expect } from "vitest";
 import { HeadlessHost } from "./headless-host";
 import { executeTool } from "./executor";
 import { makeEmptyProject } from "./test-fixtures";
-import { DEFAULT_MOTION_TRANSFORM } from "@openreel/core/motion/types";
+import { DEFAULT_MOTION_TRANSFORM } from "@kove-advanced/core/motion/types";
 import type {
   MotionComposition,
   MotionLayer,
   MotionScene3DLayer,
-} from "@openreel/core/motion/types";
-import type { Project } from "@openreel/core/types/project";
+} from "@kove-advanced/core/motion/types";
+import type { Project } from "@kove-advanced/core/types/project";
 
 function projectWithScene3D(): Project {
   const scene3d: MotionScene3DLayer = {

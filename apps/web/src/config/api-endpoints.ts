@@ -7,10 +7,10 @@
 
 const isDev = import.meta.env.DEV;
 
-/** OpenReel cloud services */
-export const OPENREEL_CLOUD_URL = isDev
+/** Kove Advanced cloud services */
+export const KOVE_ADVANCED_CLOUD_URL = isDev
   ? "http://localhost:8787"
-  : "https://api.openreel.video";
+  : "https://api.kove-advanced.video";
 
 /**
  * Third-party API base URLs.

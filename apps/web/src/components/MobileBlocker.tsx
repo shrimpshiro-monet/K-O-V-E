@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Monitor } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 
 export function MobileBlocker() {
   const [isMobile, setIsMobile] = useState(false);
@@ -34,7 +34,7 @@ export function MobileBlocker() {
 
         <div className="space-y-3">
           <Text type="body" color="primary" weight="bold" className="text-5xl text-text-primary tracking-tight">
-            OpenReel
+            Kove Advanced
           </Text>
           <div className="flex items-center justify-center gap-2">
             <div className="h-px w-8 bg-primary/50" />
@@ -52,7 +52,7 @@ export function MobileBlocker() {
             display="block"
             className="text-base text-text-primary leading-relaxed"
           >
-            OpenReel is a professional video editor that requires a desktop or
+            Kove Advanced is a professional video editor that requires a desktop or
             laptop computer.
           </Text>
           <Text
@@ -70,7 +70,7 @@ export function MobileBlocker() {
           <Button
             as="a"
             label="Learn More"
-            href="https://openreel.video"
+            href="https://kove-advanced.video"
             className="inline-flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary-hover active:bg-primary-active text-white font-medium rounded-lg transition-all duration-200 shadow-glow hover:shadow-glow-lg transform hover:scale-[1.02] active:scale-[0.98]"
           />
         </div>

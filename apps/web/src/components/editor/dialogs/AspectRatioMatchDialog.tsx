@@ -1,10 +1,10 @@
 import React from "react";
 import { Maximize2 } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftDialog as Dialog, ToolcraftDialogHeader as DialogHeader } from "@openreel/ui";
-import { ToolcraftLayout as Layout, ToolcraftLayoutContent as LayoutContent, ToolcraftLayoutFooter as LayoutFooter } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftDialog as Dialog, ToolcraftDialogHeader as DialogHeader } from "@kove-advanced/ui";
+import { ToolcraftLayout as Layout, ToolcraftLayoutContent as LayoutContent, ToolcraftLayoutFooter as LayoutFooter } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 
 interface AspectRatioMatchDialogProps {
   isOpen: boolean;

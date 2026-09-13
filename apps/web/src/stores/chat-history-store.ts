@@ -94,7 +94,7 @@ export const useChatHistoryStore = create<ChatHistoryState>()(
       clearHistory: () => set({ conversations: [] }),
     }),
     {
-      name: "openreel-ai-chat-history",
+      name: "kove-advanced-ai-chat-history",
       version: 1,
     },
   ),

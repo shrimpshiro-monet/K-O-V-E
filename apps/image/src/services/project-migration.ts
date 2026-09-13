@@ -1,1 +1,1 @@
-export * from '@openreel/image-core/migration';
+export * from '@kove-advanced/image-core/migration';

@@ -2,8 +2,8 @@ import type {
   MotionShaderCategory,
   MotionShaderDef,
   MotionShaderParamDef,
-} from "@openreel/core";
-import { validateMotionShaderSource } from "@openreel/core/motion/motion-shader-validator";
+} from "@kove-advanced/core";
+import { validateMotionShaderSource } from "@kove-advanced/core/motion/motion-shader-validator";
 import { buildShaderAuthoringPrompt } from "./ai-shader-prompt";
 
 export interface LlmMessage {

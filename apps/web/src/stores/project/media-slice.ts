@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
-import type { Action, MediaItem } from "@openreel/core";
+import type { Action, MediaItem } from "@kove-advanced/core";
 import type { ProjectState } from "../project-store";
 import { getMediaBridge, initializeMediaBridge } from "../../bridges/media-bridge";
 import { saveMediaBlob, deleteMediaBlob } from "../../services/media-storage";
@@ -14,6 +14,7 @@ export type MediaSlice = Pick<
   | "deleteMedia"
   | "replaceMediaAsset"
   | "renameMedia"
+  | "setMediaAnalysisRole"
   | "getMediaItem"
 >;
 
@@ -424,6 +425,19 @@ export function createMediaSlice(set: Set, get: Get): MediaSlice {
         set({ project: { ...project } });
       }
       return result;
+    },
+
+    setMediaAnalysisRole: async (mediaId, role) => {
+      const { project } = get();
+      const index = project.mediaLibrary.items.findIndex((item) => item.id === mediaId);
+      const item = project.mediaLibrary.items[index];
+      if (!item) return { success: false, error: { code: "NOT_FOUND", message: "Media item not found" } };
+      if (item.type !== "video") return { success: false, error: { code: "INVALID_MEDIA", message: "Only videos can be analysis references" } };
+
+      const items = [...project.mediaLibrary.items];
+      items[index] = { ...item, analysisRole: role };
+      set({ project: { ...project, mediaLibrary: { ...project.mediaLibrary, items }, modifiedAt: Date.now() } });
+      return { success: true };
     },
 
     getMediaItem: (mediaId: string) =>

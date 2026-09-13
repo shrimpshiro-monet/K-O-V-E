@@ -89,7 +89,7 @@ export class WebCodecsBackend implements EncoderBackend {
         break;
       case "mp4":
       default:
-        outputFormat = new Mp4OutputFormat({ fastStart: false });
+        outputFormat = new Mp4OutputFormat({ fastStart: "fragmented" });
         break;
     }
 

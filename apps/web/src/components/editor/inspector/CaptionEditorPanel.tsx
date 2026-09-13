@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { splitCaptionIntoSingleLineCues } from "@openreel/core";
+import { splitCaptionIntoSingleLineCues } from "@kove-advanced/core";
 import {
   ToolcraftButton as Button,
   ToolcraftCard as Card,
   ToolcraftSelectControl as Selector,
   ToolcraftText as Text,
-} from "@openreel/ui";
+} from "@kove-advanced/ui";
 import { Check, WrapText } from "@/icons/lucide-compat";
 import { useProjectStore } from "../../../stores/project-store";
 

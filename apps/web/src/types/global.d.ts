@@ -1,6 +1,6 @@
 export {};
 
-export interface OpenReelHardwareInfo {
+export interface KoveAdvancedHardwareInfo {
   cpu: { model: string; physicalCores: number; logicalCores: number };
   memory: { totalBytes: number; freeBytes: number };
   gpus: string[];
@@ -9,7 +9,7 @@ export interface OpenReelHardwareInfo {
   arch: string;
 }
 
-export interface OpenReelExportStartArgs {
+export interface KoveAdvancedExportStartArgs {
   width: number;
   height: number;
   frameRate: number;
@@ -25,11 +25,11 @@ export interface OpenReelExportStartArgs {
   proresProfile?: "proxy" | "lt" | "standard" | "hq" | "4444" | "4444xq";
 }
 
-export interface OpenReelExportSession {
+export interface KoveAdvancedExportSession {
   jobId: string;
 }
 
-export interface OpenReelAuroraRenderPreviewArgs {
+export interface KoveAdvancedAuroraRenderPreviewArgs {
   scene: unknown;
   assets: unknown[];
   width: number;
@@ -39,27 +39,27 @@ export interface OpenReelAuroraRenderPreviewArgs {
   quality?: "preview" | "final";
 }
 
-export interface OpenReelAuroraPreviewSessionStartArgs
-  extends OpenReelAuroraRenderPreviewArgs {
+export interface KoveAdvancedAuroraPreviewSessionStartArgs
+  extends KoveAdvancedAuroraRenderPreviewArgs {
   sessionId?: string;
 }
 
-export interface OpenReelAuroraPreviewSessionStartResult {
+export interface KoveAdvancedAuroraPreviewSessionStartResult {
   sessionId: string;
 }
 
-export interface OpenReelAuroraSequenceSessionStartArgs
-  extends Omit<OpenReelAuroraRenderPreviewArgs, "timeSeconds"> {
+export interface KoveAdvancedAuroraSequenceSessionStartArgs
+  extends Omit<KoveAdvancedAuroraRenderPreviewArgs, "timeSeconds"> {
   sessionId?: string;
   frameRate: number;
   durationSeconds: number;
 }
 
-export interface OpenReelAuroraSequenceSessionStartResult {
+export interface KoveAdvancedAuroraSequenceSessionStartResult {
   sessionId: string;
 }
 
-export interface OpenReelAuroraRenderPreviewResult {
+export interface KoveAdvancedAuroraRenderPreviewResult {
   backend: "native" | "cpu";
   pngBase64: string;
   dataUri: string;
@@ -70,7 +70,7 @@ export interface OpenReelAuroraRenderPreviewResult {
   renderMs: number;
 }
 
-export type OpenReelAuroraPreviewSessionEvent =
+export type KoveAdvancedAuroraPreviewSessionEvent =
   | {
       kind: "update";
       sessionId: string;
@@ -79,7 +79,7 @@ export type OpenReelAuroraPreviewSessionEvent =
       done: boolean;
       targetWidth: number;
       targetHeight: number;
-      result: OpenReelAuroraRenderPreviewResult;
+      result: KoveAdvancedAuroraRenderPreviewResult;
     }
   | {
       kind: "error";
@@ -88,7 +88,7 @@ export type OpenReelAuroraPreviewSessionEvent =
       error: string;
     };
 
-export type OpenReelAuroraSequenceSessionEvent =
+export type KoveAdvancedAuroraSequenceSessionEvent =
   | {
       kind: "frame";
       sessionId: string;
@@ -114,7 +114,7 @@ export type OpenReelAuroraSequenceSessionEvent =
       error: string;
     };
 
-export interface OpenReelMcpStatus {
+export interface KoveAdvancedMcpStatus {
   running: boolean;
   url: string;
   port: number;
@@ -123,7 +123,7 @@ export interface OpenReelMcpStatus {
   endpointFile: string;
 }
 
-export interface OpenReelRiggingBackendProbe {
+export interface KoveAdvancedRiggingBackendProbe {
   available: boolean;
   provider: "blender";
   mode?: "configured" | "bundled" | "system";
@@ -132,13 +132,13 @@ export interface OpenReelRiggingBackendProbe {
   error?: string;
 }
 
-export interface OpenReelRiggingWarning {
+export interface KoveAdvancedRiggingWarning {
   code: string;
   severity: "info" | "warning" | "error";
   message: string;
 }
 
-export interface OpenReelRigHumanoidModelArgs {
+export interface KoveAdvancedRigHumanoidModelArgs {
   modelUrl: string;
   outputPath?: string;
   name?: string;
@@ -146,7 +146,7 @@ export interface OpenReelRigHumanoidModelArgs {
   overwriteExisting?: boolean;
 }
 
-export interface OpenReelRigHumanoidModelResult {
+export interface KoveAdvancedRigHumanoidModelResult {
   ok: boolean;
   provider: "blender";
   inputUrl: string;
@@ -158,11 +158,11 @@ export interface OpenReelRigHumanoidModelResult {
   skinnedMeshCount: number;
   meshCount: number;
   boneCount: number;
-  warnings: OpenReelRiggingWarning[];
+  warnings: KoveAdvancedRiggingWarning[];
   error?: string;
 }
 
-export type OpenReelUpdaterStatus =
+export type KoveAdvancedUpdaterStatus =
   | { state: "checking" }
   | { state: "available"; version: string }
   | { state: "none" }
@@ -170,137 +170,139 @@ export type OpenReelUpdaterStatus =
   | { state: "downloaded"; version: string }
   | { state: "error"; message: string };
 
+export interface KoveAdvancedBridge {
+  platform: "desktop";
+  publicOrigin: string;
+  probeHardware(): Promise<KoveAdvancedHardwareInfo>;
+  onMenuAction(cb: (id: string) => void): () => void;
+  fs: {
+    showSaveDialog(opts: {
+      defaultPath: string;
+      filters: { name: string; extensions: string[] }[];
+    }): Promise<string | null>;
+    showOpenDialog(opts: {
+      filters: { name: string; extensions: string[] }[];
+    }): Promise<string | null>;
+    readFile(path: string): Promise<string>;
+    readFileBytes(path: string): Promise<ArrayBuffer>;
+    tempFilePath(ext: string): Promise<string>;
+    writeFile(path: string, data: string): Promise<void>;
+    openWrite(path: string): Promise<string>;
+    writeChunk(handleId: string, data: ArrayBuffer | Uint8Array, position: number): Promise<void>;
+    closeWrite(handleId: string): Promise<void>;
+    abortWrite(handleId: string): Promise<void>;
+    revealInFolder(path: string): Promise<void>;
+  };
+  keychain: {
+    get(id: string): Promise<string | null>;
+    set(id: string, value: string): Promise<void>;
+    delete(id: string): Promise<void>;
+  };
+  export: {
+    start(args: KoveAdvancedExportStartArgs): Promise<KoveAdvancedExportSession>;
+    writeAudioWav(jobId: string, wav: ArrayBuffer): Promise<void>;
+    writeAudioChunk(jobId: string, chunk: ArrayBuffer, position: number): Promise<void>;
+    finishAudio(jobId: string): Promise<void>;
+    cancel(jobId: string): Promise<void>;
+  };
+  aurora?: {
+    renderPreview(
+      args: KoveAdvancedAuroraRenderPreviewArgs,
+    ): Promise<KoveAdvancedAuroraRenderPreviewResult>;
+    startPreviewSession(
+      args: KoveAdvancedAuroraPreviewSessionStartArgs,
+    ): Promise<KoveAdvancedAuroraPreviewSessionStartResult>;
+    cancelPreviewSession(sessionId: string): Promise<void>;
+    onPreviewEvent(
+      cb: (event: KoveAdvancedAuroraPreviewSessionEvent) => void,
+    ): () => void;
+    startSequenceSession(
+      args: KoveAdvancedAuroraSequenceSessionStartArgs,
+    ): Promise<KoveAdvancedAuroraSequenceSessionStartResult>;
+    cancelSequenceSession(sessionId: string): Promise<void>;
+    onSequenceEvent(
+      cb: (event: KoveAdvancedAuroraSequenceSessionEvent) => void,
+    ): () => void;
+  };
+  cloud: {
+    fetch(
+      service:
+        | "elevenlabs"
+        | "openai"
+        | "anthropic"
+        | "openai-compatible"
+        | "anthropic-compatible",
+      path: string,
+      options?: {
+        method?: string;
+        headers?: Record<string, string>;
+        body?: string;
+        baseUrl?: string;
+      },
+    ): Promise<{ status: number; statusText: string; headers: Record<string, string>; body: ArrayBuffer }>;
+  };
+  win: {
+    minimize(): Promise<void>;
+    toggleMaximize(): Promise<void>;
+    close(): Promise<void>;
+    isMaximized(): Promise<boolean>;
+  };
+  lifecycle: {
+    onQueryUnsaved(handler: () => boolean): () => void;
+    onFlush(handler: () => Promise<void>): () => void;
+  };
+  updater: {
+    onStatus(cb: (status: KoveAdvancedUpdaterStatus) => void): () => void;
+    download(): Promise<void>;
+    install(): Promise<void>;
+  };
+  crash: {
+    report(payload: { message: string; stack?: string; type?: string; context?: unknown }): void;
+  };
+  mcp?: {
+    onRequest(
+      handler: (req: {
+        callId: string;
+        kind: "listTools" | "callTool";
+        name?: string;
+        args?: Record<string, unknown>;
+      }) => Promise<{ ok: boolean; result?: unknown; error?: string }>,
+    ): () => void;
+    getStatus(): Promise<KoveAdvancedMcpStatus>;
+    rotateToken(): Promise<KoveAdvancedMcpStatus>;
+    testConnection(): Promise<{ ok: boolean; message?: string; toolCount?: number }>;
+  };
+  media: {
+    generateProxy(args: { srcPath: string; preset: "low" | "medium" | "high" }): Promise<{ outPath: string }>;
+    transcode(args: {
+      srcPath: string;
+      container?: "mp4" | "webm" | "mov";
+      videoBitrateKbps?: number;
+      audioBitrateKbps?: number;
+    }): Promise<{ outPath: string }>;
+    extractAudioWav(args: { srcPath: string; streamIndex?: number }): Promise<{ outPath: string }>;
+    probeAudioStreams(args: { srcPath: string }): Promise<{
+      streams: { index: number; codec: string; channels: number; sampleRate: number; language?: string }[];
+    }>;
+    fetchUrl(args: { url: string; maxBytes?: number }): Promise<{
+      ok: boolean;
+      status: number;
+      statusText: string;
+      contentType: string;
+      body: ArrayBuffer;
+      error?: string;
+    }>;
+  };
+  rigging?: {
+    probeBackend(): Promise<KoveAdvancedRiggingBackendProbe>;
+    rigHumanoidModel(
+      args: KoveAdvancedRigHumanoidModelArgs,
+    ): Promise<KoveAdvancedRigHumanoidModelResult>;
+  };
+}
+
 declare global {
   interface Window {
-    openreel?: {
-      platform: "desktop";
-      publicOrigin: string;
-      probeHardware(): Promise<OpenReelHardwareInfo>;
-      onMenuAction(cb: (id: string) => void): () => void;
-      fs: {
-        showSaveDialog(opts: {
-          defaultPath: string;
-          filters: { name: string; extensions: string[] }[];
-        }): Promise<string | null>;
-        showOpenDialog(opts: {
-          filters: { name: string; extensions: string[] }[];
-        }): Promise<string | null>;
-        readFile(path: string): Promise<string>;
-        readFileBytes(path: string): Promise<ArrayBuffer>;
-        tempFilePath(ext: string): Promise<string>;
-        writeFile(path: string, data: string): Promise<void>;
-        openWrite(path: string): Promise<string>;
-        writeChunk(handleId: string, data: ArrayBuffer | Uint8Array, position: number): Promise<void>;
-        closeWrite(handleId: string): Promise<void>;
-        abortWrite(handleId: string): Promise<void>;
-        revealInFolder(path: string): Promise<void>;
-      };
-      keychain: {
-        get(id: string): Promise<string | null>;
-        set(id: string, value: string): Promise<void>;
-        delete(id: string): Promise<void>;
-      };
-      export: {
-        start(args: OpenReelExportStartArgs): Promise<OpenReelExportSession>;
-        writeAudioWav(jobId: string, wav: ArrayBuffer): Promise<void>;
-        writeAudioChunk(jobId: string, chunk: ArrayBuffer, position: number): Promise<void>;
-        finishAudio(jobId: string): Promise<void>;
-        cancel(jobId: string): Promise<void>;
-      };
-      aurora?: {
-        renderPreview(
-          args: OpenReelAuroraRenderPreviewArgs,
-        ): Promise<OpenReelAuroraRenderPreviewResult>;
-        startPreviewSession(
-          args: OpenReelAuroraPreviewSessionStartArgs,
-        ): Promise<OpenReelAuroraPreviewSessionStartResult>;
-        cancelPreviewSession(sessionId: string): Promise<void>;
-        onPreviewEvent(
-          cb: (event: OpenReelAuroraPreviewSessionEvent) => void,
-        ): () => void;
-        startSequenceSession(
-          args: OpenReelAuroraSequenceSessionStartArgs,
-        ): Promise<OpenReelAuroraSequenceSessionStartResult>;
-        cancelSequenceSession(sessionId: string): Promise<void>;
-        onSequenceEvent(
-          cb: (event: OpenReelAuroraSequenceSessionEvent) => void,
-        ): () => void;
-      };
-      cloud: {
-        fetch(
-          service:
-            | "elevenlabs"
-            | "openai"
-            | "anthropic"
-            | "openai-compatible"
-            | "anthropic-compatible",
-          path: string,
-          options?: {
-            method?: string;
-            headers?: Record<string, string>;
-            body?: string;
-            baseUrl?: string;
-          },
-        ): Promise<{ status: number; statusText: string; headers: Record<string, string>; body: ArrayBuffer }>;
-      };
-      win: {
-        minimize(): Promise<void>;
-        toggleMaximize(): Promise<void>;
-        close(): Promise<void>;
-        isMaximized(): Promise<boolean>;
-      };
-      lifecycle: {
-        onQueryUnsaved(handler: () => boolean): () => void;
-        onFlush(handler: () => Promise<void>): () => void;
-      };
-      updater: {
-        onStatus(cb: (status: OpenReelUpdaterStatus) => void): () => void;
-        download(): Promise<void>;
-        install(): Promise<void>;
-      };
-      crash: {
-        report(payload: { message: string; stack?: string; type?: string; context?: unknown }): void;
-      };
-      mcp?: {
-        onRequest(
-          handler: (req: {
-            callId: string;
-            kind: "listTools" | "callTool";
-            name?: string;
-            args?: Record<string, unknown>;
-          }) => Promise<{ ok: boolean; result?: unknown; error?: string }>,
-        ): () => void;
-        getStatus(): Promise<OpenReelMcpStatus>;
-        rotateToken(): Promise<OpenReelMcpStatus>;
-        testConnection(): Promise<{ ok: boolean; message?: string; toolCount?: number }>;
-      };
-      media: {
-        generateProxy(args: { srcPath: string; preset: "low" | "medium" | "high" }): Promise<{ outPath: string }>;
-        transcode(args: {
-          srcPath: string;
-          container?: "mp4" | "webm" | "mov";
-          videoBitrateKbps?: number;
-          audioBitrateKbps?: number;
-        }): Promise<{ outPath: string }>;
-        extractAudioWav(args: { srcPath: string; streamIndex?: number }): Promise<{ outPath: string }>;
-        probeAudioStreams(args: { srcPath: string }): Promise<{
-          streams: { index: number; codec: string; channels: number; sampleRate: number; language?: string }[];
-        }>;
-        fetchUrl(args: { url: string; maxBytes?: number }): Promise<{
-          ok: boolean;
-          status: number;
-          statusText: string;
-          contentType: string;
-          body: ArrayBuffer;
-          error?: string;
-        }>;
-      };
-      rigging?: {
-        probeBackend(): Promise<OpenReelRiggingBackendProbe>;
-        rigHumanoidModel(
-          args: OpenReelRigHumanoidModelArgs,
-        ): Promise<OpenReelRigHumanoidModelResult>;
-      };
-    };
+    ["kove-advanced"]?: KoveAdvancedBridge;
   }
 }

@@ -19,7 +19,7 @@ vi.mock("electron", () => ({
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { migrateGpuCacheOnUpgrade } from "../src/main/gpu-cache-migration";
 
-const MARKER = ".openreel-build";
+const MARKER = ".kove-advanced-build";
 
 function seedDir(name: string): void {
   mkdirSync(path.join(userDataDir, name), { recursive: true });

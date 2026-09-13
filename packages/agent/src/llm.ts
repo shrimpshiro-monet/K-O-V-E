@@ -387,25 +387,23 @@ export function parseOpenAIResponse(raw: unknown): LLMResponse {
   if (rawToolCalls.length === 0 && msg.function_call !== undefined) {
     rawToolCalls.push({ id: "legacy-function-call-0", function: msg.function_call });
   }
-  const toolUses: LLMToolUse[] = rawToolCalls.map((rawToolCall, index) => {
-    if (!isRecord(rawToolCall)) {
-      throw new Error("OpenAI-compatible provider returned an invalid tool call.");
-    }
+  const toolUses: LLMToolUse[] = [];
+  for (let index = 0; index < rawToolCalls.length; index++) {
+    const rawToolCall = rawToolCalls[index];
+    if (!isRecord(rawToolCall)) continue;
     const fn = isRecord(rawToolCall.function) ? rawToolCall.function : rawToolCall;
-    const name = typeof fn.name === "string" ? fn.name : "";
-    if (!name) {
-      throw new Error("OpenAI-compatible provider returned a tool call without a name.");
-    }
+    const name = typeof fn.name === "string" ? fn.name.trim() : "";
+    if (!name) continue; // skip malformed tool calls instead of crashing
     const id =
       typeof rawToolCall.id === "string" && rawToolCall.id
         ? rawToolCall.id
         : `compatible-tool-call-${index}`;
-    return {
+    toolUses.push({
       id,
       name,
       input: parseToolInput(fn.arguments, name),
-    };
-  });
+    });
+  }
   const stopReason: LLMStopReason =
     toolUses.length > 0 || choice.finish_reason === "tool_calls" || choice.finish_reason === "function_call"
       ? "tool_use"

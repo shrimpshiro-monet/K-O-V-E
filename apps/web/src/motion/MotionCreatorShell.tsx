@@ -24,8 +24,8 @@ import {
   Sparkles,
   type LucideIcon,
 } from "@/icons/lucide-compat";
-import type { MotionComposition } from "@openreel/core";
-import { ToolcraftClickableCard, ToolcraftText } from "@openreel/ui";
+import type { MotionComposition } from "@kove-advanced/core";
+import { ToolcraftClickableCard, ToolcraftText } from "@kove-advanced/ui";
 import { WorkspaceModeTabs } from "../components/WorkspaceModeTabs";
 import { Icon } from "@/icons/Icon";
 import { useRouter } from "../hooks/use-router";
@@ -215,9 +215,9 @@ const MIN_WORKSPACE_HEIGHT = 260;
 const TIMELINE_RESIZE_STEP = 32;
 const MOTION_HEADER_HEIGHT = 60;
 const MOTION_FOOTER_HEIGHT = 28;
-const LEFT_PANEL_STORAGE_KEY = "openreel.motionCreator.leftPanelWidth.v2";
-const RIGHT_PANEL_STORAGE_KEY = "openreel.motionCreator.rightPanelWidth.v2";
-const TIMELINE_HEIGHT_STORAGE_KEY = "openreel.motionCreator.timelineHeight.v2";
+const LEFT_PANEL_STORAGE_KEY = "kove-advanced.motionCreator.leftPanelWidth.v2";
+const RIGHT_PANEL_STORAGE_KEY = "kove-advanced.motionCreator.rightPanelWidth.v2";
+const TIMELINE_HEIGHT_STORAGE_KEY = "kove-advanced.motionCreator.timelineHeight.v2";
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
@@ -736,9 +736,9 @@ export function MotionCreatorShell({
     const openMotionExport = () => {
       void exportCurrentScene();
     };
-    window.addEventListener("openreel:menu:export", openMotionExport);
+    window.addEventListener("kove-advanced:menu:export", openMotionExport);
     return () => {
-      window.removeEventListener("openreel:menu:export", openMotionExport);
+      window.removeEventListener("kove-advanced:menu:export", openMotionExport);
     };
   }, [exportCurrentScene]);
 

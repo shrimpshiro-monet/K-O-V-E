@@ -43,13 +43,12 @@ coverage/
 .temp/
 .docs/
 docs/*
-!docs/superpowers/
 !docs/android-port/
 .worktrees/
 # Project-specific
 /public/projects/
-*.openreel
-!apps/desktop/crates/openreel-project/tests/fixtures/*.openreel
+*.kove-advanced
+!apps/desktop/crates/kove-advanced-project/tests/fixtures/*.kove-advanced
 apps/cloud/node_modules/
 apps/cloud/dist/
 apps/cloud/.wrangler/
@@ -87,10 +86,7 @@ mobile-mockup/
 xcuserdata/
 *.xcuserstate
 
-!docs/superpowers/
 
-# Brainstorming session artifacts
-.superpowers/
 
 # Signing certs — never commit
 *.p12

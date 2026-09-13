@@ -21,7 +21,8 @@ export type ToolDomain =
   | "ai"
   | "export"
   | "multicam"
-  | "raw";
+  | "raw"
+  | "internal";
 
 export interface ToolDef {
   readonly name: string;
@@ -32,6 +33,7 @@ export interface ToolDef {
   readonly readOnly: boolean;
   readonly destructive: boolean;
   readonly expensive: boolean;
+  readonly internal?: boolean; // exclude from user-facing tool lists
 }
 
 export interface ToolCall {

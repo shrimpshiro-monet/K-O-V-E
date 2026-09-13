@@ -4,8 +4,9 @@ import { HeadlessHost } from "./headless-host";
 import { executeTool, isDestructive } from "./executor";
 import { makeEmptyProject, makeProjectWithClip } from "./test-fixtures";
 import type { EditorStateView, ClipView } from "./serialize";
-import { getMotionLayerPropertyValueAtTime } from "@openreel/core/motion/motion-keyframes";
-import type { MotionLayer } from "@openreel/core/motion/types";
+import type { EditingHost } from "./host";
+import { getMotionLayerPropertyValueAtTime } from "@kove-advanced/core/motion/motion-keyframes";
+import type { MotionLayer } from "@kove-advanced/core/motion/types";
 
 function decodePngDataUri(dataUri: string): { width: number; height: number; rgba: Uint8Array } {
   const encoded = dataUri.replace(/^data:image\/png;base64,/, "");
@@ -79,6 +80,27 @@ describe("executeTool", () => {
     expect(host.getProject().timeline.tracks[0].clips[0].speed).toBe(2);
   });
 
+  it("applies a typed speed ramp with freeze holds", async () => {
+    const host = new HeadlessHost(makeProjectWithClip());
+    const res = await executeTool("set_speed_ramp", {
+      clipId: "c1",
+      keyframes: [
+        { id: "start", time: 0, speed: 1, easing: "linear" },
+        { id: "peak", time: 2, speed: 3, easing: "ease-in-out" },
+      ],
+      freezeFrames: [
+        { id: "hold", clipId: "c1", sourceTime: 1, startTime: 1, duration: 0.5 },
+      ],
+      pitchCorrection: true,
+    }, host);
+    expect(res.ok).toBe(true);
+    const clip = host.getProject().timeline.tracks[0].clips[0];
+    expect(clip.speedKeyframes).toHaveLength(2);
+    expect(clip.speedKeyframes?.[1]?.speed).toBe(3);
+    expect(clip.freezeFrames?.[0]?.duration).toBe(0.5);
+    expect(clip.pitchCorrection).toBe(true);
+  });
+
   it("resolves a clip by clipIndex when clipId is absent", async () => {
     const host = new HeadlessHost(makeProjectWithClip());
     const res = await executeTool("set_clip_reverse", { clipIndex: 0, reversed: true }, host);
@@ -105,11 +127,204 @@ describe("executeTool", () => {
     expect(host.getProject().timeline.tracks[0].clips[0].stabilization?.enabled).toBe(true);
   });
 
+  it("normalizes public tool names and flat args in execute_action", async () => {
+    const host = new HeadlessHost(makeProjectWithClip());
+    const res = await executeTool(
+      "execute_action",
+      { type: "set_clip_reverse", clipId: "c1", reversed: true },
+      host,
+    );
+    expect(res.ok).toBe(true);
+    expect(host.getProject().timeline.tracks[0].clips[0].reversed).toBe(true);
+  });
+
+  it("normalizes public tool names in batch_actions", async () => {
+    const host = new HeadlessHost(makeProjectWithClip());
+    const res = await executeTool(
+      "batch_actions",
+      {
+        actions: [
+          { type: "set_clip_reverse", params: { clipId: "c1", reversed: true } },
+        ],
+      },
+      host,
+    );
+    expect(res.ok).toBe(true);
+    expect(host.getProject().timeline.tracks[0].clips[0].reversed).toBe(true);
+  });
+
+  it("returns replacement clip IDs after a split", async () => {
+    const host = new HeadlessHost(makeProjectWithClip());
+    const res = await executeTool(
+      "split_clip",
+      { clipId: "c1", time: 2 },
+      host,
+    );
+    expect(res.ok).toBe(true);
+    expect((res.data as { createdClipIds: string[] }).createdClipIds).toHaveLength(1);
+    expect(host.getProject().timeline.tracks[0].clips).toHaveLength(2);
+  });
+
+  it("materializes a director plan onto an empty timeline", async () => {
+    const project = {
+      ...makeEmptyProject(),
+      mediaLibrary: {
+      items: [
+        {
+          id: "video-1",
+          name: "test.mp4",
+          type: "video",
+          metadata: { duration: 8 },
+        },
+      ],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [{
+            id: "plan-1",
+            name: "submit_edit_plan",
+            input: {
+              segments: [
+                {
+                  sourceVideoId: "video_0",
+                  sourceStartTime: 0,
+                  sourceEndTime: 4,
+                  trackIndex: 0,
+                  targetPosition: 0,
+                  speed: 1,
+                  effects: [],
+                  effectSpecs: [{
+                    type: "zoom-punch",
+                    params: { amount: 1.2 },
+                    intensity: 0.7,
+                    startOffset: 0.25,
+                    duration: 0.4,
+                    easing: "ease-out",
+                    rationale: "accent the opening hit",
+                  }],
+                  layout: { region: "split-left", fit: "contain" },
+                  rationale: "opening",
+                },
+                {
+                  sourceVideoId: "video_0",
+                  sourceStartTime: 4,
+                  sourceEndTime: 8,
+                  trackIndex: 0,
+                  targetPosition: 20,
+                  speed: 1,
+                  effects: [],
+                  rationale: "payoff",
+                },
+              ],
+              textElements: [],
+              effects: [{
+                targetSegmentIndex: 0,
+                type: "colorGrade",
+                params: { saturation: 1.15, contrast: 1.08 },
+                rationale: "lift the image",
+              }],
+              transitions: [{
+                afterSegmentIndex: 0,
+                type: "crossfade",
+                duration: 0.25,
+                rationale: "smooth cut",
+              }],
+              audioDecisions: [{
+                type: "music",
+                sourceVideoId: "video-1",
+                sourceStartTime: 0,
+                sourceEndTime: 4,
+                startTime: 0,
+                duration: 4,
+                volume: 0.35,
+                rationale: "music bed",
+              }, {
+                  type: "sfx",
+                  sourceVideoId: "video-1",
+                  sourceStartTime: 1,
+                  sourceEndTime: 1.25,
+                  startTime: 1,
+                  duration: 0.25,
+                  volume: 0.8,
+                  rationale: "hit marker",
+                }],
+              metadata: {
+                targetDuration: 4,
+                targetPlatform: "social",
+                genre: "highlight",
+                pacing: "fast",
+                rationale: "test",
+              },
+              motionMoments: [{
+                move: "particle-burst-on-cut",
+                segmentIndex: 0,
+                duration: 0.6,
+              }],
+            },
+          }],
+        }),
+      },
+    };
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(result.ok).toBe(true);
+    expect(host.getProject().timeline.tracks[0].clips).toHaveLength(2);
+    expect(host.getProject().timeline.tracks[0].clips[0].mediaId).toBe("video-1");
+    expect(host.getProject().timeline.tracks[0].transitions).toHaveLength(1);
+    expect(host.getProject().timeline.tracks[0].clips[0].colorGrading).toEqual({ saturation: 1.15, contrast: 1.08 });
+    expect(host.getProject().timeline.tracks[0].clips[0].effects?.[0]?.params).toEqual({
+      amount: 1.2,
+      intensity: 0.7,
+      startOffset: 0.25,
+      duration: 0.4,
+      easing: "ease-out",
+    });
+    expect(host.getProject().timeline.tracks.some((track) => track.type === "audio")).toBe(true);
+    expect(host.getProject().timeline.tracks[0].clips[0].transform.position).toEqual({ x: 480, y: 540 });
+    expect(host.getProject().timeline.tracks[0].clips[0].transform.fitMode).toBe("contain");
+    const audioTracks = host.getProject().timeline.tracks.filter((track) => track.type === "audio");
+    expect(audioTracks.map((track) => track.name)).toEqual(["Music", "SFX"]);
+    expect(audioTracks[1]?.clips[0]?.startTime).toBe(1);
+    expect((result.data as { motionCompositionIds: string[] }).motionCompositionIds).toHaveLength(1);
+    expect(host.getProject().motionCompositions).toHaveLength(1);
+    expect(host.getProject().motionCompositions?.[0]?.layers.some((layer) => layer.type === "particle")).toBe(true);
+  });
+
   it("returns an error for an unknown tool", async () => {
     const host = new HeadlessHost(makeEmptyProject());
     const res = await executeTool("nope", {}, host);
     expect(res.ok).toBe(false);
     expect(res.error?.code).toBe("UNKNOWN_TOOL");
+  });
+
+  it("reports malformed director output instead of throwing", async () => {
+    const project = {
+      ...makeEmptyProject(),
+      mediaLibrary: {
+        items: [{ id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [{ id: "bad-plan", name: "submit_edit_plan", input: { segments: [{}] } }],
+        }),
+      },
+    };
+
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    expect(result.error?.message).toContain("unknown video");
   });
 
   it("flags destructive tools", () => {
@@ -5791,7 +6006,7 @@ describe("executeTool", () => {
         key: "brand-mark",
         partId: "brand-mark",
         targetPartId: "shell",
-        text: "OPENREEL",
+        text: "KOVE_ADVANCED",
         normalZ: 1,
         offset: 0.09,
         width: 0.6,
@@ -5844,7 +6059,7 @@ describe("executeTool", () => {
         targetPartIds: ["shell"],
         normal: { x: 0, y: 0, z: 1 },
         offset: 0.09,
-        text: "OPENREEL",
+        text: "KOVE_ADVANCED",
         tint: "#f8fafc",
         opacity: 0.92,
         wrap: "flat",
@@ -5862,7 +6077,7 @@ describe("executeTool", () => {
       (object) => object.id === "obj-scene-decal-detail-brand-mark",
     );
     expect(renderObject).toMatchObject({
-      object: { kind: "text3d", text: "OPENREEL", extrude: 0.015 },
+      object: { kind: "text3d", text: "KOVE_ADVANCED", extrude: 0.015 },
       material: {
         color: "#f8fafc",
         emissive: "#f8fafc",
@@ -5904,7 +6119,7 @@ describe("executeTool", () => {
       ?.layers.find((candidate) => candidate.type === "scene3d")
       ?.objects?.find((object) => object.id === "obj-scene-decal-detail-brand-mark");
     expect(recoveredDecal).toMatchObject({
-      object: { kind: "text3d", text: "OPENREEL" },
+      object: { kind: "text3d", text: "KOVE_ADVANCED" },
       material: { color: "#f8fafc", emissive: "#f8fafc" },
       opacity: 0.92,
     });
@@ -6587,7 +6802,7 @@ describe("executeTool", () => {
             key: "label",
             kind: "text3d",
             name: "Panel label",
-            text: "OPENREEL",
+            text: "KOVE_ADVANCED",
             x: 0.32,
             y: 0.26,
             z: 0.12,
@@ -6727,7 +6942,7 @@ describe("executeTool", () => {
     expect(recoveredObjects[1]).toMatchObject({
       object: {
         kind: "text3d",
-        text: "OPENREEL",
+        text: "KOVE_ADVANCED",
         size: 0.24,
         extrude: 0.04,
       },
@@ -7237,7 +7452,7 @@ describe("executeTool", () => {
       {
         headline: "Ship motion ads",
         subheadline: "Create launch videos from product screens",
-        ctaText: "Try OpenReel",
+        ctaText: "Try Kove Advanced",
         brandColor: "#22c55e",
         duration: 8,
         intensity: 0.9,

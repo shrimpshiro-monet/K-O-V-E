@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { PropertySlider } from "./shell/PropertySlider";
 import {
   PictureInPicture2,
@@ -13,7 +13,7 @@ import {
   RotateCcw,
 } from "@/icons/lucide-compat";
 import { useProjectStore } from "../../../stores/project-store";
-import type { Transform } from "@openreel/core";
+import type { Transform } from "@kove-advanced/core";
 
 interface PiPSectionProps {
   clipId: string;

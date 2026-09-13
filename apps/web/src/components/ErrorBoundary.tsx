@@ -1,6 +1,6 @@
 import React from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;

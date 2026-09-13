@@ -122,8 +122,8 @@ import {
   type MotionLayer,
   type MotionLayerClipboard,
   type MotionLayerType,
-} from "@openreel/core";
-import { ToolcraftPopover as Popover } from "@openreel/ui";
+} from "@kove-advanced/core";
+import { ToolcraftPopover as Popover } from "@kove-advanced/ui";
 import { useProjectStore } from "../../stores/project-store";
 import { useMotionStore } from "../stores/motion-store";
 import {

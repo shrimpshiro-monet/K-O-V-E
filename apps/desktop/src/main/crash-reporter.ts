@@ -2,7 +2,7 @@ import { app } from "electron";
 import os from "node:os";
 
 const CRASH_ENDPOINT =
-  process.env.OPENREEL_CRASH_ENDPOINT ?? "https://api.openreel.video/crash";
+  process.env.KOVE_ADVANCED_CRASH_ENDPOINT ?? "https://api.kove-advanced.video/crash";
 const REPORT_TIMEOUT_MS = 4000;
 
 export interface CrashReportInput {

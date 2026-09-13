@@ -15,9 +15,9 @@ export function buildMenuTemplate(platform: string): MenuNode[] {
   const template: MenuNode[] = [];
   if (isMac) {
     template.push({
-      label: "OpenReel",
+      label: "Kove Advanced",
       submenu: [
-        { label: "About OpenReel", role: "about" },
+        { label: "About Kove Advanced", role: "about" },
         { label: "Settings…", accelerator: "Cmd+,", actionId: "settings" },
         { label: "Quit", role: "quit", accelerator: "Cmd+Q" },
       ],
@@ -67,7 +67,7 @@ export function buildMenuTemplate(platform: string): MenuNode[] {
   template.push({
     label: "Help",
     submenu: [
-      { label: "OpenReel Help" },
+      { label: "Kove Advanced Help" },
       { label: "Open Source Licenses", actionId: "openLicenses" },
     ],
   });
@@ -93,5 +93,5 @@ export function installApplicationMenu(platform: string, onAction: (id: string) 
 }
 
 export function sendMenuAction(win: BrowserWindow | null, id: string): void {
-  if (win) win.webContents.send("openreel:menu:action", id);
+  if (win) win.webContents.send("kove-advanced:menu:action", id);
 }

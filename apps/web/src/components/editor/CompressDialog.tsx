@@ -1,14 +1,14 @@
 import { useCallback, useRef, useState } from "react";
-import { ToolcraftSegmentedControl } from "@openreel/ui";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftDialog as Dialog, ToolcraftDialogHeader as DialogHeader } from "@openreel/ui";
-import { ToolcraftLayout as Layout, ToolcraftLayoutContent as LayoutContent, ToolcraftLayoutFooter as LayoutFooter } from "@openreel/ui";
-import { ToolcraftFileDropControl as FileInput } from "@openreel/ui";
-import { ToolcraftNumberInputControl } from "@openreel/ui";
-import { ToolcraftProgressBar as ProgressBar } from "@openreel/ui";
-import { ToolcraftSelectableCard as SelectableCard } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftSegmentedControl } from "@kove-advanced/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftDialog as Dialog, ToolcraftDialogHeader as DialogHeader } from "@kove-advanced/ui";
+import { ToolcraftLayout as Layout, ToolcraftLayoutContent as LayoutContent, ToolcraftLayoutFooter as LayoutFooter } from "@kove-advanced/ui";
+import { ToolcraftFileDropControl as FileInput } from "@kove-advanced/ui";
+import { ToolcraftNumberInputControl } from "@kove-advanced/ui";
+import { ToolcraftProgressBar as ProgressBar } from "@kove-advanced/ui";
+import { ToolcraftSelectableCard as SelectableCard } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { Video, Loader2 } from "@/icons/lucide-compat";
 import {
   computeCompressionPlan,
@@ -18,7 +18,7 @@ import {
   type CompressionSource,
   type CompressionTarget,
   type CompressionQuality,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import {
   probeCompressionSource,
   runCompression,

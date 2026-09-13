@@ -22,7 +22,7 @@ const timeRange = (start: number, duration: number, rate: number): OtioSerializa
 export function multicamPlanToOtio(
   plan: MulticamShotPlan,
   manifest: MulticamManifest,
-  name = "OpenReel Automatic Multicam Edit",
+  name = "Kove Advanced Automatic Multicam Edit",
 ): OtioSerializable {
   const maximumPanels = plan.shots.reduce(
     (maximum, shot) => Math.max(maximum, shot.layout.panels.length),
@@ -45,10 +45,10 @@ export function multicamPlanToOtio(
           OTIO_SCHEMA: "ExternalReference.1",
           target_url: camera?.file ?? "",
           available_range: null,
-          metadata: { openreel_camera_id: panel.cameraId },
+          metadata: { "kove-advanced_camera_id": panel.cameraId },
         },
         metadata: {
-          openreel: {
+          "kove-advanced": {
             subject: panel.subject,
             layout: shot.layout.template,
             panel_rect: panel.rect,
@@ -83,7 +83,7 @@ export function multicamPlanToOtio(
       metadata: {},
     },
     metadata: {
-      openreel: {
+      "kove-advanced": {
         spec: plan.spec,
         duration_ms: plan.durationMs,
         manifest_spec: manifest.spec,

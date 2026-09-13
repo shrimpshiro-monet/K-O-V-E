@@ -20,12 +20,12 @@ import {
   RotateCcw,
   type LucideIcon,
 } from "@/icons/lucide-compat";
-import { executeTool, type ToolResult } from "@openreel/agent";
+import { executeTool, type ToolResult } from "@kove-advanced/agent";
 import {
   ToolcraftSwitchControl,
   ToolcraftText,
   ToolcraftTextInputControl,
-} from "@openreel/ui";
+} from "@kove-advanced/ui";
 import { useProjectStore } from "../../stores/project-store";
 import { getLiveEditorHost, runExclusive } from "../../services/agent/host-singleton";
 import { useMotionStore } from "../stores/motion-store";

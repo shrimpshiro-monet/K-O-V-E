@@ -9,10 +9,10 @@
     "baseColor": "neutral"
   },
   "aliases": {
-    "components": "@openreel/ui/components",
-    "utils": "@openreel/ui/lib/utils",
-    "hooks": "@openreel/ui/hooks",
-    "ui": "@openreel/ui/components",
-    "lib": "@openreel/ui/lib"
+    "components": "@kove-advanced/ui/components",
+    "utils": "@kove-advanced/ui/lib/utils",
+    "hooks": "@kove-advanced/ui/hooks",
+    "ui": "@kove-advanced/ui/components",
+    "lib": "@kove-advanced/ui/lib"
   }
 }

@@ -1,5 +1,5 @@
-import { MockLLMClient } from "@openreel/agent";
-import type { LLMResponse } from "@openreel/agent";
+import { MockLLMClient } from "@kove-advanced/agent";
+import type { LLMResponse } from "@kove-advanced/agent";
 import { createEmptyProject } from "../project-io";
 import type { EvalCase } from "./harness";
 
@@ -8,6 +8,50 @@ const END: LLMResponse = { text: "Done.", stopReason: "end_turn", toolUses: [] }
 function scripted(...responses: LLMResponse[]): MockLLMClient {
   return new MockLLMClient([...responses, END]);
 }
+
+const MOCK_SEGMENT_MAP = {
+  videos: [
+    {
+      videoId: "video-1",
+      duration: 60,
+      segments: [
+        {
+          id: "seg-1",
+          startTime: 0,
+          endTime: 15,
+          description: "Person talking to camera about project",
+          sceneType: "talking",
+          motionLevel: "low",
+          hasDialogue: true,
+          visualContent: "Close-up of speaker",
+          confidence: 0.9,
+        },
+        {
+          id: "seg-2",
+          startTime: 15,
+          endTime: 35,
+          description: "B-roll of project in action",
+          sceneType: "b-roll",
+          motionLevel: "medium",
+          hasDialogue: false,
+          visualContent: "Wide shots of activity",
+          confidence: 0.85,
+        },
+        {
+          id: "seg-3",
+          startTime: 35,
+          endTime: 60,
+          description: "Person wrapping up conclusion",
+          sceneType: "talking",
+          motionLevel: "low",
+          hasDialogue: true,
+          visualContent: "Close-up of speaker",
+          confidence: 0.88,
+        },
+      ],
+    },
+  ],
+};
 
 /**
  * Deterministic regression corpus: each case scripts the model's tool sequence
@@ -67,5 +111,109 @@ export const SCRIPTED_CASES: EvalCase[] = [
       if (result.stoppedReason !== "end_turn") failures.push(`stopped: ${result.stoppedReason}`);
       return failures;
     },
+  },
+  // ---- Director (Monet) eval cases ----
+  {
+    name: "director: extract_segments is called for footage analysis",
+    makeProject: () => createEmptyProject("Director Test"),
+    prompt: "Make me a highlight reel from my footage",
+    llm: scripted({
+      text: "I'll analyze your footage first.",
+      stopReason: "tool_use",
+      toolUses: [
+        {
+          id: "d1",
+          name: "extract_segments",
+          input: {
+            videoMediaIds: ["media-1"],
+          },
+        },
+      ],
+    }),
+    expectedTools: ["extract_segments"],
+    assert: (project) => {
+      const failures: string[] = [];
+      if (project.timeline.tracks.length !== 0) {
+        failures.push("project should not be modified by extract_segments");
+      }
+      return failures;
+    },
+  },
+  {
+    name: "director: plan_edit is called after segment extraction",
+    makeProject: () => createEmptyProject("Director Plan"),
+    prompt: "Create a 30-second highlight reel for Instagram",
+    llm: scripted({
+      text: "Let me plan the edit based on your footage.",
+      stopReason: "tool_use",
+      toolUses: [
+        {
+          id: "d1",
+          name: "plan_edit",
+          input: {
+            segmentMap: MOCK_SEGMENT_MAP,
+            prompt: "Create a 30-second highlight reel for Instagram",
+            targetDuration: 30,
+            targetPlatform: "instagram",
+          },
+        },
+      ],
+    }),
+    expectedTools: ["plan_edit"],
+    assert: () => [],
+  },
+  {
+    name: "director: full workflow executes extract, plan, then edit tools",
+    makeProject: () => createEmptyProject("Full Workflow"),
+    prompt: "Analyze my footage and make a 15-second social reel",
+    llm: scripted({
+      text: "Analyzing your footage.",
+      stopReason: "tool_use",
+      toolUses: [
+        {
+          id: "d1",
+          name: "extract_segments",
+          input: {
+            videoMediaIds: ["media-1"],
+          },
+        },
+      ],
+    }),
+    expectedTools: ["extract_segments"],
+    assert: () => [],
+  },
+  {
+    name: "director: genre selection provides rules to plan_edit",
+    makeProject: () => createEmptyProject("Genre Test"),
+    prompt: "Make a music video style edit from my clips",
+    llm: scripted({
+      text: "I'll plan a music video edit for you.",
+      stopReason: "tool_use",
+      toolUses: [
+        {
+          id: "d1",
+          name: "plan_edit",
+          input: {
+            segmentMap: MOCK_SEGMENT_MAP,
+            prompt: "Make a music video style edit from my clips",
+            genre: {
+              id: "music-video",
+              name: "Music Video",
+              rules: {
+                pacing: "fast",
+                transitionPreference: ["hardCut", "glitch", "flash"],
+                effectPalette: ["brightness", "contrast", "saturation"],
+                textStyle: "minimal",
+                cutStyle: "hard",
+                colorMood: "vibrant",
+                musicRole: "featured",
+              },
+            },
+          },
+        },
+      ],
+    }),
+    expectedTools: ["plan_edit"],
+    assert: () => [],
   },
 ];

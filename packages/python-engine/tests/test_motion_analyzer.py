@@ -1,10 +1,11 @@
-import numpy as np
-import cv2
 import tempfile
 from pathlib import Path
 
+import cv2
+import numpy as np
+
 from kove_engine.analyzers.motion_analyzer import MotionAnalyzer
-from kove_engine.types import MotionLevel, FrameData
+from kove_engine.types import FrameData, MotionLevel
 
 
 def _make_frame(path: str, color: int) -> None:

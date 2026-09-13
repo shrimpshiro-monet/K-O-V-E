@@ -3,9 +3,9 @@ import {
   deserializeOrma,
   serializeOrma,
   type OrmaArtifact,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
-const store = createStore("openreel-multicam-analysis", "orma-artifacts");
+const store = createStore("kove-advanced-multicam-analysis", "orma-artifacts");
 
 export const multicamArtifactId = (projectId: string, groupId: string): string =>
   `${projectId}/${groupId}.orma`;

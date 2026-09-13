@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { PropertySlider } from "./shell/PropertySlider";
 import {
   User,
@@ -18,7 +18,7 @@ import {
   type BackgroundRemovalSettings,
   type BackgroundMode,
   DEFAULT_BACKGROUND_SETTINGS,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import { toast } from "../../../stores/notification-store";
 import { useProcessingStore } from "../../../services/processing-manager";
 import { ColorSelector } from "../../../motion/components/primitives";
@@ -94,7 +94,7 @@ export const BackgroundRemovalSection: React.FC<
       }
 
       onSettingsChange?.(newSettings);
-      window.dispatchEvent(new CustomEvent("openreel:preview-invalidate"));
+      window.dispatchEvent(new CustomEvent("kove-advanced:preview-invalidate"));
     },
     [settings, clipId, onSettingsChange],
   );

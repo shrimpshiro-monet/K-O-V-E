@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plug, Eye, EyeOff, Copy, RefreshCw, Wifi } from "@/icons/lucide-compat";
-import { ToolcraftSwitchControl } from "@openreel/ui";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftSwitchControl } from "@kove-advanced/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { useSettingsStore } from "../../../stores/settings-store";
 import { toast } from "../../../stores/notification-store";
-import type { OpenReelMcpStatus } from "../../../types/global";
+import type { KoveAdvancedMcpStatus } from "../../../types/global";
 
 const isDesktop = (): boolean =>
-  typeof window !== "undefined" && window.openreel?.platform === "desktop";
+  typeof window !== "undefined" && window["kove-advanced"]?.platform === "desktop";
 
 function clientConfigSnippet(shimPath: string): string {
   return JSON.stringify(
     {
       mcpServers: {
-        openreel: {
+        "kove-advanced": {
           command: "node",
-          args: [shimPath || "<path to openreel-mcp shim>"],
+          args: [shimPath || "<path to kove-advanced-mcp shim>"],
         },
       },
     },
@@ -39,13 +39,13 @@ export const McpPanel: React.FC = () => {
   const mcpAutoAllow = useSettingsStore((s) => s.mcpAutoAllowTrustedLocal);
   const setMcpAutoAllow = useSettingsStore((s) => s.setMcpAutoAllowTrustedLocal);
 
-  const [status, setStatus] = useState<OpenReelMcpStatus | null>(null);
+  const [status, setStatus] = useState<KoveAdvancedMcpStatus | null>(null);
   const [toolCount, setToolCount] = useState<number | null>(null);
   const [revealToken, setRevealToken] = useState(false);
   const [testing, setTesting] = useState(false);
 
   const refresh = useCallback(async () => {
-    const bridge = window.openreel?.mcp;
+    const bridge = window["kove-advanced"]?.mcp;
     if (!bridge) return;
     try {
       const nextStatus = await bridge.getStatus();
@@ -67,7 +67,7 @@ export const McpPanel: React.FC = () => {
   }, [refresh]);
 
   const handleRotate = useCallback(async () => {
-    const bridge = window.openreel?.mcp;
+    const bridge = window["kove-advanced"]?.mcp;
     if (!bridge) return;
     try {
       setStatus(await bridge.rotateToken());
@@ -78,7 +78,7 @@ export const McpPanel: React.FC = () => {
   }, []);
 
   const handleTest = useCallback(async () => {
-    const bridge = window.openreel?.mcp;
+    const bridge = window["kove-advanced"]?.mcp;
     if (!bridge) return;
     setTesting(true);
     try {
@@ -108,8 +108,8 @@ export const McpPanel: React.FC = () => {
           Desktop only
         </Text>
         <Text type="supporting" color="secondary" className="mt-1 max-w-sm text-xs">
-          The MCP server runs inside the OpenReel desktop app, letting external AI
-          clients (Claude Desktop, Cursor, Cline) edit your project. Open OpenReel
+          The MCP server runs inside the Kove Advanced desktop app, letting external AI
+          clients (Claude Desktop, Cursor, Cline) edit your project. Open Kove Advanced
           on desktop to configure it.
         </Text>
       </div>

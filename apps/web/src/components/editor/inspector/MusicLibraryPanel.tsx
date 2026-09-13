@@ -9,11 +9,11 @@ import {
   Clock,
   Volume2,
 } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
-import { ToolcraftTextInputControl } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
+import { ToolcraftTextInputControl } from "@kove-advanced/ui";
 import { useEngineStore } from "../../../stores/engine-store";
 import { useProjectStore } from "../../../stores/project-store";
 import {
@@ -24,7 +24,7 @@ import {
   type MusicGenre,
   type SFXCategory,
   type MoodTag,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 type TabType = "music" | "sfx";
 

@@ -5,13 +5,13 @@
 //
 // Usage: node scripts/build-manifest.mjs <artifactsDir> <outFile>
 //   <artifactsDir> is searched recursively for the installers; filenames follow
-//   electron-builder's artifactName: OpenReel-<version>-<arch>.<ext>.
+//   electron-builder's artifactName: Kove Advanced-<version>-<arch>.<ext>.
 
 import { readdirSync, statSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const BASE_URL = "https://dl.openreel.video";
+const BASE_URL = "https://dl.kove-advanced.video";
 
 const [, , artifactsDir, outFile] = process.argv;
 if (!artifactsDir || !outFile) {
@@ -36,7 +36,7 @@ function walk(dir) {
 }
 
 const files = walk(artifactsDir).filter((f) =>
-  path.basename(f).startsWith(`OpenReel-${version}-`),
+  path.basename(f).startsWith(`Kove Advanced-${version}-`),
 );
 
 function find(predicate) {

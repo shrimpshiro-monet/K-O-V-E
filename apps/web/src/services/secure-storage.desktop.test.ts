@@ -22,14 +22,14 @@ beforeEach(() => {
     set: vi.fn().mockResolvedValue(undefined),
     delete: vi.fn().mockResolvedValue(undefined),
   };
-  (window as unknown as { openreel: unknown }).openreel = {
+  (window as unknown as { "kove-advanced": unknown })["kove-advanced"] = {
     platform: "desktop",
     keychain,
   };
 });
 
 afterEach(() => {
-  delete (window as unknown as { openreel?: unknown }).openreel;
+  delete (window as unknown as { "kove-advanced"?: unknown })["kove-advanced"];
 });
 
 describe("secure-storage desktop branch", () => {

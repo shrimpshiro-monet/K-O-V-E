@@ -3,7 +3,7 @@ import { ToastContainer } from "./components/Toast";
 import { ScriptViewDialog } from "./components/editor/ScriptViewDialog";
 import { SearchModal } from "./components/editor/SearchModal";
 import { MobileBlocker } from "./components/MobileBlocker";
-import { WelcomeScreen } from "./components/welcome";
+
 import { RecoveryDialog } from "./components/welcome/RecoveryDialog";
 import { SharePage } from "./pages/SharePage";
 import { useUIStore } from "./stores/ui-store";
@@ -11,8 +11,8 @@ import { useProjectStore } from "./stores/project-store";
 import { useRouter } from "./hooks/use-router";
 import { useProjectRecovery } from "./hooks/useProjectRecovery";
 import { useKieAIPoller } from "./hooks/useKieAIPoller";
-import { SOCIAL_MEDIA_PRESETS, type SocialMediaCategory } from "@openreel/core";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { SOCIAL_MEDIA_PRESETS, type SocialMediaCategory } from "@kove-advanced/core";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 
 const EditorInterface = lazy(() =>
   import("./components/editor/EditorInterface").then((m) => ({
@@ -41,7 +41,7 @@ const PRESET_DIMENSIONS: Record<string, SocialMediaCategory> = {
 };
 
 function App() {
-  const { activeModal, closeModal, skipWelcomeScreen } = useUIStore();
+  const { activeModal, closeModal } = useUIStore();
   const { openModal: openSearchModal } = useUIStore();
   const createNewProject = useProjectStore((state) => state.createNewProject);
   const { showDialog, availableSaves, recover, dismiss, clearAll } = useProjectRecovery();
@@ -100,10 +100,11 @@ function App() {
 
       createNewProject(projectName, { width, height, frameRate });
       navigate("editor");
-    } else if (route === "editor" && skipWelcomeScreen) {
+    } else if (route === "editor") {
       hasHandledInitialRoute.current = true;
     } else if (["welcome", "templates", "recent"].includes(route)) {
       hasHandledInitialRoute.current = true;
+      navigate("editor");
     }
   }, [
     route,
@@ -113,7 +114,6 @@ function App() {
     fps,
     createNewProject,
     navigate,
-    skipWelcomeScreen,
   ]);
 
   const handleKeyDown = useCallback(
@@ -134,14 +134,6 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const showWelcome =
-    ["welcome", "templates", "recent"].includes(route) && !skipWelcomeScreen;
-  const initialTab =
-    route === "templates"
-      ? "templates"
-      : route === "recent"
-        ? "recent"
-        : undefined;
   const isSharePage = route === "share" && params.shareId;
 
   return (
@@ -153,8 +145,6 @@ function App() {
         </Suspense>
       ) : isSharePage ? (
         <SharePage shareId={params.shareId!} />
-      ) : showWelcome ? (
-        <WelcomeScreen initialTab={initialTab} />
       ) : (
         <Suspense fallback={<LoadingSpinner message="Loading editor..." />}>
           <EditorInterface />

@@ -8,7 +8,7 @@ import {
 } from "./orma";
 
 const manifest = {
-  spec: "openreel-multicam/v1" as const,
+  spec: "kove-advanced-multicam/v1" as const,
   fps: 25,
   sync: { method: "audio-crosscorr" as const, reference: "wide" },
   participants: [

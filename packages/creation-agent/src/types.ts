@@ -1,4 +1,4 @@
-import type { CreationScene } from "@openreel/creation-schema";
+import type { CreationScene } from "@kove-advanced/creation-schema";
 
 export type CreationToolDomain = "creation" | "product" | "validation";
 

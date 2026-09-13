@@ -4,10 +4,10 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@openreel/core": ["../core/src/index.ts"],
-      "@openreel/core/*": ["../core/src/*"],
-      "@openreel/agent": ["./src/index.ts"],
-      "@openreel/agent/*": ["./src/*"]
+      "@kove-advanced/core": ["../core/src/index.ts"],
+      "@kove-advanced/core/*": ["../core/src/*"],
+      "@kove-advanced/agent": ["./src/index.ts"],
+      "@kove-advanced/agent/*": ["./src/*"]
     }
   },
   "include": ["src"]

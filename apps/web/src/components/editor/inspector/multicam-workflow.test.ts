@@ -5,7 +5,7 @@ import {
   type MediaItem,
   type MultiCamGroup,
   type Project,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import {
   createMulticamApplyEditAction,
   buildMulticamManifest,
@@ -212,7 +212,7 @@ describe("multicam workflow", () => {
       forbid_jump_cut_same_subject: true,
     });
 
-    expect(value.spec).toBe("openreel-multicam/v1");
+    expect(value.spec).toBe("kove-advanced-multicam/v1");
     expect(value.participants.map((participant) => participant.audio)).toEqual(["a", "b"]);
     expect(value.cameras.map((camera) => camera.clipId)).toEqual(["clip-a", "clip-b"]);
   });

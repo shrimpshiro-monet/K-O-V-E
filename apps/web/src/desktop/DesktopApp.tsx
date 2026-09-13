@@ -16,7 +16,7 @@ import { createExportJobRunner } from "../services/agent/export-job-runner";
 import { useUIStore } from "../stores/ui-store";
 import { useSettingsStore } from "../stores/settings-store";
 import { SettingsDialog } from "../components/editor/settings/SettingsDialog";
-import { ToolcraftButton as Button } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
 import { Settings, Sparkles } from "@/icons/lucide-compat";
 import "./theme/desktop-theme.css";
 
@@ -41,7 +41,7 @@ export function DesktopApp(): JSX.Element {
   // directly; new/open/export are broadcast as events for the relevant UI to
   // pick up (e.g. the export button opens its dialog on "export").
   useEffect(() => {
-    const bridge = window.openreel;
+    const bridge = window["kove-advanced"];
     if (!bridge?.onMenuAction) return;
     return bridge.onMenuAction((id) => {
       switch (id) {
@@ -54,7 +54,7 @@ export function DesktopApp(): JSX.Element {
         case "newProject":
         case "open":
         case "export":
-          window.dispatchEvent(new CustomEvent(`openreel:menu:${id}`));
+          window.dispatchEvent(new CustomEvent(`kove-advanced:menu:${id}`));
           break;
         case "settings":
           useSettingsStore.getState().openSettings();
@@ -79,7 +79,7 @@ export function DesktopApp(): JSX.Element {
   // Answer the native unsaved-changes guard on window close / quit: report
   // dirty state and flush pending changes on request.
   useEffect(() => {
-    const lifecycle = window.openreel?.lifecycle;
+    const lifecycle = window["kove-advanced"]?.lifecycle;
     if (!lifecycle) return;
     const offQuery = lifecycle.onQueryUnsaved(() =>
       autoSaveManager.hasUnsavedChanges(useProjectStore.getState().getFullProject()),
@@ -94,7 +94,7 @@ export function DesktopApp(): JSX.Element {
   }, []);
 
   return (
-    <div className="openreel-desktop isolate flex h-screen w-screen flex-col overflow-hidden bg-bg text-fg">
+    <div className="kove-advanced-desktop isolate flex h-screen w-screen flex-col overflow-hidden bg-bg text-fg">
       <DesktopTitleBar platform={platform}>
         {hasProject && isVideoEditing ? (
           <Button

@@ -1,9 +1,9 @@
 name: Release Desktop
 
-# Builds the OpenReel desktop app for macOS (arm64 + x64), Windows (x64) and
+# Builds the Kove Advanced desktop app for macOS (arm64 + x64), Windows (x64) and
 # Linux (x64) and uploads the installers + electron-updater feed (latest*.yml,
 # blockmaps) and a landing manifest.json to the R2 bucket served at
-# https://dl.openreel.video. Signs + notarizes when the cert secrets are present
+# https://dl.kove-advanced.video. Signs + notarizes when the cert secrets are present
 # and otherwise builds unsigned (the unsigned macOS update feed is NOT uploaded,
 # since Squirrel.Mac rejects unsigned updates).
 #
@@ -84,7 +84,7 @@ jobs:
               --draft \
               --prerelease \
               --generate-notes \
-              --title "OpenReel Desktop $GITHUB_REF_NAME"
+              --title "Kove Advanced Desktop $GITHUB_REF_NAME"
 
   build:
     name: Build (${{ matrix.os }})
@@ -125,17 +125,17 @@ jobs:
         run: pnpm build:wasm
 
       - name: Fetch ffmpeg binaries
-        run: pnpm --filter @openreel/desktop fetch:ffmpeg
+        run: pnpm --filter @kove-advanced/desktop fetch:ffmpeg
 
       # The inline-env build:renderer script does not run under Windows cmd.exe,
-      # so set OPENREEL_DESKTOP at the step level here.
+      # so set KOVE_ADVANCED_DESKTOP at the step level here.
       - name: Build renderer
-        run: pnpm --filter @openreel/web build
+        run: pnpm --filter @kove-advanced/web build
         env:
-          OPENREEL_DESKTOP: "1"
+          KOVE_ADVANCED_DESKTOP: "1"
 
       - name: Build main + preload
-        run: pnpm --filter @openreel/desktop build:main
+        run: pnpm --filter @kove-advanced/desktop build:main
 
       - name: Package + upload (macOS)
         if: runner.os == 'macOS'
@@ -162,7 +162,7 @@ jobs:
           # DMG as "damaged" — the DMG must carry its own stapled ticket. (Mac
           # auto-update uses the .zip, so the DMG hash in latest-mac.yml is moot.)
           if [ -n "${CSC_LINK:-}" ]; then
-            for dmg in release/OpenReel-*.dmg; do
+            for dmg in release/Kove Advanced-*.dmg; do
               echo "Notarizing DMG: $dmg"
               xcrun notarytool submit "$dmg" \
                 --apple-id "$APPLE_ID" \
@@ -177,11 +177,11 @@ jobs:
           endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
           # Installers (for manual download from the landing) — always.
           aws s3 sync release "s3://$R2_BUCKET/" --endpoint-url "$endpoint" \
-            --no-progress --exclude "*" --include "OpenReel-*.dmg"
+            --no-progress --exclude "*" --include "Kove Advanced-*.dmg"
           # Update feed — only for signed builds (Squirrel.Mac rejects unsigned).
           if [ -n "$CSC_LINK" ]; then
             aws s3 sync release "s3://$R2_BUCKET/" --endpoint-url "$endpoint" \
-              --no-progress --exclude "*" --include "OpenReel-*.zip" \
+              --no-progress --exclude "*" --include "Kove Advanced-*.zip" \
               --include "latest-mac.yml" --include "*.blockmap"
           else
             echo "::warning::Unsigned mac — uploaded DMG only, no update feed."
@@ -194,7 +194,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release upload "$GITHUB_REF_NAME" release/OpenReel-*.dmg --clobber
+        run: gh release upload "$GITHUB_REF_NAME" release/Kove Advanced-*.dmg --clobber
 
       - name: Package + upload (Windows)
         if: runner.os == 'Windows'
@@ -215,7 +215,7 @@ jobs:
           if [ "$R2_UPLOAD" != "true" ] || [ "$R2_ENABLED" != "true" ]; then exit 0; fi
           endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
           aws s3 sync release "s3://$R2_BUCKET/" --endpoint-url "$endpoint" \
-            --no-progress --exclude "*" --include "OpenReel-*.exe" \
+            --no-progress --exclude "*" --include "Kove Advanced-*.exe" \
             --include "latest.yml" --include "*.blockmap"
 
       - name: Upload Windows installer to GitHub release
@@ -225,7 +225,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release upload "$GITHUB_REF_NAME" release/OpenReel-*.exe --clobber
+        run: gh release upload "$GITHUB_REF_NAME" release/Kove Advanced-*.exe --clobber
 
       - name: Package + upload (Linux)
         if: runner.os == 'Linux'
@@ -237,8 +237,8 @@ jobs:
           if [ "$R2_UPLOAD" != "true" ] || [ "$R2_ENABLED" != "true" ]; then exit 0; fi
           endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
           aws s3 sync release "s3://$R2_BUCKET/" --endpoint-url "$endpoint" \
-            --no-progress --exclude "*" --include "OpenReel-*.AppImage" \
-            --include "OpenReel-*.deb" --include "latest-linux.yml" \
+            --no-progress --exclude "*" --include "Kove Advanced-*.AppImage" \
+            --include "Kove Advanced-*.deb" --include "latest-linux.yml" \
             --include "*.blockmap"
 
       - name: Upload Linux installers to GitHub release
@@ -250,8 +250,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           gh release upload "$GITHUB_REF_NAME" \
-            release/OpenReel-*.AppImage \
-            release/OpenReel-*.deb \
+            release/Kove Advanced-*.AppImage \
+            release/Kove Advanced-*.deb \
             --clobber
 
   publish-github-release:
@@ -297,7 +297,7 @@ jobs:
           mkdir -p artifacts
           aws s3 sync "s3://$R2_BUCKET/" artifacts \
             --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com" \
-            --no-progress --exclude "*" --include "OpenReel-${VERSION}-*"
+            --no-progress --exclude "*" --include "Kove Advanced-${VERSION}-*"
           ls -la artifacts
       - name: Build manifest.json
         run: |

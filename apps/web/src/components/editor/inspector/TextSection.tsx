@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { ToolcraftSegmentedControl } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftFileDropControl as FileInput } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftNumberInputControl } from "@openreel/ui";
-import { ToolcraftSelectControl as Selector } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
-import { ToolcraftTextAreaControl } from "@openreel/ui";
+import { ToolcraftSegmentedControl } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftFileDropControl as FileInput } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftNumberInputControl } from "@kove-advanced/ui";
+import { ToolcraftSelectControl as Selector } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
+import { ToolcraftTextAreaControl } from "@kove-advanced/ui";
 import {
   AlignLeft,
   AlignCenter,
@@ -25,13 +25,13 @@ import type {
   TextShaderStyle,
   TextStyle,
   FontWeight,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import {
   getMotionShaderDef,
   getMotionShaderEffectDefs,
   getMotionShaderFillDefs,
   getMotionShaderTextDefs,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 import {
   FONT_CATEGORIES,
   FONT_FILE_ACCEPT,

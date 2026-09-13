@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { EditingHost, MulticamHostBridge } from "./host";
 import { executeTool } from "./executor";
 import { getTool, toMcpTools } from "./registry";
-import type { MulticamManifest } from "@openreel/core";
+import type { MulticamManifest } from "@kove-advanced/core";
 
 function bridge(): MulticamHostBridge {
   const manifest: MulticamManifest = {
-    spec: "openreel-multicam/v1",
+    spec: "kove-advanced-multicam/v1",
     fps: 25,
     sync: { method: "audio-crosscorr", reference: "wide" },
     participants: [

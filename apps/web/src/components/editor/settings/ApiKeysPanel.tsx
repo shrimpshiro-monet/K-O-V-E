@@ -11,13 +11,13 @@ import {
   Shield,
   KeyRound,
 } from "@/icons/lucide-compat";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftClickableCard as ClickableCard } from "@openreel/ui";
-import { ToolcraftIconButton as IconButton } from "@openreel/ui";
-import { ToolcraftLink as Link } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
-import { ToolcraftTextInputControl } from "@openreel/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
+import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
+import { ToolcraftLink as Link } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
+import { ToolcraftTextInputControl } from "@kove-advanced/ui";
 import { useSettingsStore, SERVICE_REGISTRY } from "../../../stores/settings-store";
 import {
   isMasterPasswordSet,
@@ -59,7 +59,7 @@ export const ApiKeysPanel: React.FC = () => {
 
     if (isSessionUnlocked()) {
       const keys =
-        typeof window !== "undefined" && window.openreel?.platform === "desktop"
+        typeof window !== "undefined" && window["kove-advanced"]?.platform === "desktop"
           ? (
               await Promise.all(
                 SERVICE_REGISTRY.map(async (service) =>

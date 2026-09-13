@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { Music, Zap, Loader2 } from "@/icons/lucide-compat";
-import { ToolcraftSegmentedControl } from "@openreel/ui";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftEmptyState as EmptyState } from "@openreel/ui";
-import { ToolcraftSelectControl as Selector } from "@openreel/ui";
-import { ToolcraftSliderControl } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftSegmentedControl } from "@kove-advanced/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftEmptyState as EmptyState } from "@kove-advanced/ui";
+import { ToolcraftSelectControl as Selector } from "@kove-advanced/ui";
+import { ToolcraftSliderControl } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { useProjectStore } from "../../../stores/project-store";
 import {
   getBeatDetectionEngine,
@@ -17,7 +17,7 @@ import {
   type BeatAnalysisResult,
   type Clip,
   getMediaItemCapabilities,
-} from "@openreel/core";
+} from "@kove-advanced/core";
 
 interface AutoEditPanelProps {
   onClose: () => void;
@@ -157,7 +157,6 @@ export const AutoEditPanel: React.FC<AutoEditPanelProps> = ({ onClose }) => {
       track.clips.some((clip) => sourceClipIds.has(clip.id)),
     );
     if (videoTrackIndex === -1) return;
-
     const newClips: Clip[] = preview.cuts.map((cut, index) => {
       const sourceClip = videoClips.find((c) => c.id === cut.sourceClipId);
       if (!sourceClip) return null;
@@ -171,6 +170,13 @@ export const AutoEditPanel: React.FC<AutoEditPanelProps> = ({ onClose }) => {
         outPoint: cut.outPoint,
       };
     }).filter((c): c is Clip => c !== null);
+    const totalDuration =
+      typeof preview.totalDuration === "number" && Number.isFinite(preview.totalDuration)
+        ? preview.totalDuration
+        : newClips.reduce(
+            (end, clip) => Math.max(end, clip.startTime + clip.duration),
+            0,
+          );
 
     const updatedTrack = {
       ...tracks[videoTrackIndex],
@@ -184,7 +190,7 @@ export const AutoEditPanel: React.FC<AutoEditPanelProps> = ({ onClose }) => {
         timeline: {
           ...state.project.timeline,
           tracks,
-          duration: preview.totalDuration,
+          duration: totalDuration,
         },
         modifiedAt: Date.now(),
       },
@@ -322,7 +328,9 @@ export const AutoEditPanel: React.FC<AutoEditPanelProps> = ({ onClose }) => {
                     Duration:{" "}
                   </Text>
                   <Text type="supporting" className="text-[9px]">
-                    {preview.totalDuration.toFixed(1)}s
+                    {(typeof preview.totalDuration === "number" && Number.isFinite(preview.totalDuration)
+                      ? preview.totalDuration
+                      : 0).toFixed(1)}s
                   </Text>
                 </div>
               </div>

@@ -23,8 +23,8 @@ import {
   type MotionTrack,
   type MotionTrackPoint,
   type MotionTrackingApplyMode,
-} from "@openreel/core";
-import { ToolcraftClickableCard, ToolcraftText } from "@openreel/ui";
+} from "@kove-advanced/core";
+import { ToolcraftClickableCard, ToolcraftText } from "@kove-advanced/ui";
 import { useProjectStore } from "../../stores/project-store";
 import { toast } from "../../stores/notification-store";
 import { useMotionStore } from "../stores/motion-store";

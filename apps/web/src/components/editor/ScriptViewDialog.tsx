@@ -11,17 +11,17 @@ import {
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import json from "react-syntax-highlighter/dist/esm/languages/hljs/json";
 import { vs2015 } from "react-syntax-highlighter/dist/esm/styles/hljs";
-import { ToolcraftSegmentedControl } from "@openreel/ui";
-import { ToolcraftButton as Button } from "@openreel/ui";
-import { ToolcraftCard as Card } from "@openreel/ui";
-import { ToolcraftDialog as Dialog, ToolcraftDialogHeader as DialogHeader } from "@openreel/ui";
-import { ToolcraftLayout as Layout, ToolcraftLayoutContent as LayoutContent } from "@openreel/ui";
-import { ToolcraftFileDropControl as FileInput } from "@openreel/ui";
-import { ToolcraftText as Text } from "@openreel/ui";
+import { ToolcraftSegmentedControl } from "@kove-advanced/ui";
+import { ToolcraftButton as Button } from "@kove-advanced/ui";
+import { ToolcraftCard as Card } from "@kove-advanced/ui";
+import { ToolcraftDialog as Dialog, ToolcraftDialogHeader as DialogHeader } from "@kove-advanced/ui";
+import { ToolcraftLayout as Layout, ToolcraftLayoutContent as LayoutContent } from "@kove-advanced/ui";
+import { ToolcraftFileDropControl as FileInput } from "@kove-advanced/ui";
+import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { useProjectStore } from "../../stores/project-store";
 import { toast } from "../../stores/notification-store";
-import { createProjectSerializer, createStorageEngine } from "@openreel/core";
-import type { ValidationResult } from "@openreel/core/storage/schema-types";
+import { createProjectSerializer, createStorageEngine } from "@kove-advanced/core";
+import type { ValidationResult } from "@kove-advanced/core/storage/schema-types";
 
 SyntaxHighlighter.registerLanguage("json", json);
 

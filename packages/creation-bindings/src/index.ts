@@ -9,7 +9,7 @@ import {
   type MeshStats,
   type RayTraceOptions,
   type RayTracedImage,
-} from "@openreel/core/creation/index";
+} from "@kove-advanced/core/creation/index";
 
 export type CreationBackendKind = "native" | "wasm" | "cpu";
 export type CreationRenderKind = "native" | "cpu";
@@ -165,7 +165,7 @@ function wrapNative(module: NativeCreationModule, kind: "native" | "wasm"): Crea
 
 function nativeAddonCandidates(): readonly string[] {
   const candidates = new Set<string>();
-  const explicit = process.env.OPENREEL_CREATION_ADDON_PATH?.trim();
+  const explicit = process.env.KOVE_ADVANCED_CREATION_ADDON_PATH?.trim();
   if (explicit) candidates.add(path.resolve(explicit));
 
   let current = path.resolve(process.cwd());
@@ -201,7 +201,7 @@ function nativeAddonCandidates(): readonly string[] {
 export function loadNativeAddon(
   searchPaths: readonly string[] = nativeAddonCandidates(),
 ): NativeCreationModule | undefined {
-  const require = createRequire(path.resolve(process.cwd(), "__openreel_creation_bindings__.cjs"));
+  const require = createRequire(path.resolve(process.cwd(), "__kove-advanced_creation_bindings__.cjs"));
   for (const candidate of searchPaths) {
     try {
       if (!existsSync(candidate)) continue;
@@ -224,8 +224,8 @@ export interface LoadCreationBackendOptions {
 }
 
 interface NativeHostGlobal {
-  __openreelCreationNative?: NativeCreationModule;
-  __openreelCreationWasm?: NativeCreationModule;
+  __kove-advancedCreationNative?: NativeCreationModule;
+  __kove-advancedCreationWasm?: NativeCreationModule;
 }
 
 export function loadCreationBackend(
@@ -233,9 +233,9 @@ export function loadCreationBackend(
 ): CreationBackend {
   if (options.preferCpu) return cpuCreationBackend();
   const host = globalThis as unknown as NativeHostGlobal;
-  const native = options.nativeModule ?? host.__openreelCreationNative;
+  const native = options.nativeModule ?? host.__kove-advancedCreationNative;
   if (native) return wrapNative(native, "native");
-  const wasm = options.wasmModule ?? host.__openreelCreationWasm;
+  const wasm = options.wasmModule ?? host.__kove-advancedCreationWasm;
   if (wasm) return wrapNative(wasm, "wasm");
   if (options.autoNative) {
     const addon = loadNativeAddon();

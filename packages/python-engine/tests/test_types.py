@@ -1,16 +1,16 @@
 from kove_engine.types import (
-    SceneType,
-    MotionLevel,
+    AudioResult,
+    ClassifierResult,
+    FaceResult,
+    FrameData,
     FrameDescription,
+    MotionLevel,
+    MotionResult,
+    SceneType,
+    SegmentMap,
     VideoSegment,
     VideoSegmentMap,
-    SegmentMap,
-    FrameData,
-    MotionResult,
-    AudioResult,
-    FaceResult,
     VisualResult,
-    ClassifierResult,
 )
 
 

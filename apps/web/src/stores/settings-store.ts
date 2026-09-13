@@ -48,12 +48,12 @@ export const SERVICE_REGISTRY: readonly ServiceConfig[] = [
 ] as const;
 
 export type TtsProvider = "elevenlabs";
-export type LlmProvider = "openai-compatible" | "anthropic-compatible";
+export type LlmProvider = "openai-compatible" | "anthropic-compatible" | "cloudflare";
 export type AggregatorProvider = "kie-ai" | "freepik";
 export type SettingsTab = "general" | "api-keys" | "mcp";
 
 function isLlmProvider(value: unknown): value is LlmProvider {
-  return value === "openai-compatible" || value === "anthropic-compatible";
+  return value === "openai-compatible" || value === "anthropic-compatible" || value === "cloudflare";
 }
 
 export interface SettingsState {
@@ -125,7 +125,7 @@ export const useSettingsStore = create<SettingsState>()(
         language: "en",
 
         defaultTtsProvider: "elevenlabs" as TtsProvider,
-        defaultLlmProvider: null,
+        defaultLlmProvider: "cloudflare" as LlmProvider,
         llmBaseUrl: "",
         llmModel: "",
         defaultAggregator: "kie-ai" as AggregatorProvider,
@@ -230,8 +230,8 @@ export const useSettingsStore = create<SettingsState>()(
         closeSettings: () => set({ settingsOpen: false }),
       }),
       {
-        name: "openreel-settings",
-        version: 7,
+        name: "kove-advanced-settings",
+        version: 8,
         migrate: (persisted, version) => {
           const next = (persisted ?? {}) as Record<string, unknown>;
           if (version < 2) next.mcpAutoAllowTrustedLocal = true;
@@ -241,9 +241,12 @@ export const useSettingsStore = create<SettingsState>()(
           if (version < 5 || next.defaultTtsProvider === "piper") {
             next.defaultTtsProvider = "elevenlabs";
           }
+          if (version < 8) {
+            next.defaultLlmProvider = "cloudflare";
+          }
           const previousProvider = next.defaultLlmProvider;
           if (!isLlmProvider(previousProvider)) {
-            next.defaultLlmProvider = null;
+            next.defaultLlmProvider = "cloudflare";
             next.llmBaseUrl = "";
             next.llmModel = "";
           } else {
