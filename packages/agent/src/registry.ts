@@ -1,11 +1,11 @@
 import type { Action } from "@kove-advanced/core/types/actions";
 import { extractSegments as runFrameWorkerPipeline } from "@kove-advanced/frame-worker";
 import type { ExtractedFrame } from "@kove-advanced/frame-worker";
-import { buildDirectorPrompt, resolveDirectorVideoId } from "./director/director-prompt";
+import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan } from "./director/plan-review";
 import { sampleRenderedFrames, runQualityPipeline, applyTargetedCorrections } from "./director/quality-pipeline";
-import { normalizeEditPlan, validateEditPlan } from "@kove-advanced/creation-schema";
+import { normalizeEditPlan, validateEditPlan, scorePromptCompleteness, generateExpansionQuestions } from "@kove-advanced/creation-schema";
 import type {
   CaptionStyleTemplate,
   EditPlan,
@@ -32739,6 +32739,23 @@ const TOOLS: RegisteredTool[] = [
   },
   // ---- Internal structured-output tool for director sub-call ----
   {
+    name: "expand_prompt_result",
+    domain: "ai",
+    title: "Expand prompt result",
+    description: "Structured output for prompt expansion. Do not call directly.",
+    inputSchema: obj(
+      {
+        expandedPrompt: str,
+        rationale: str,
+      },
+      ["expandedPrompt", "rationale"],
+    ),
+    readOnly: true,
+    destructive: false,
+    expensive: false,
+    handler: async () => fail("expand_prompt_result is structured-output-only, never execute it directly", "NOT_EXECUTABLE"),
+  },
+  {
     name: "submit_edit_plan",
     domain: "internal",
     internal: true,
@@ -32827,6 +32844,98 @@ const TOOLS: RegisteredTool[] = [
     destructive: false,
     expensive: false,
     handler: async () => fail("submit_edit_plan is structured-output-only, never execute it directly", "NOT_EXECUTABLE"),
+  },
+  {
+    name: "expand_prompt",
+    domain: "ai",
+    title: "Expand prompt",
+    description:
+      "Expand a vague or incomplete user prompt into a rich director's brief. Analyzes the prompt for missing information (tone, platform, content direction, length, style) and either auto-fills from context or returns targeted clarifying questions.",
+    inputSchema: obj(
+      {
+        prompt: str,
+        segmentMap: { type: "object" },
+        genreId: str,
+        platform: str,
+      },
+      ["prompt"],
+    ),
+    readOnly: true,
+    destructive: false,
+    expensive: false,
+    handler: async (args, host) => {
+      const prompt = (args.prompt as string | undefined)?.trim();
+      if (!prompt) return fail("prompt is required", "INVALID_PARAMS");
+
+      const genreId = args.genreId as string | undefined;
+      const providedMap = args.segmentMap as SegmentMap | undefined;
+
+      const genre = genreId ? PRE_BAKED_GENRES.find((g) => g.id === genreId) : undefined;
+
+      const { score, gaps } = scorePromptCompleteness(prompt);
+
+      if (score >= 0.8) {
+        return ok("Prompt is already detailed enough for the director.", {
+          expandedPrompt: prompt,
+          completenessScore: score,
+          questions: null,
+          rationale: "Prompt covers tone, platform, content direction, length, and style.",
+          detectedGaps: gaps,
+        });
+      }
+
+      if (host.llm) {
+        try {
+          const expansionPrompt = buildExpansionPrompt(prompt, providedMap, genre);
+          const expansionTools =
+            host.llm.provider === "anthropic"
+              ? toAnthropicTools(["expand_prompt_result"])
+              : toOpenAITools(["expand_prompt_result"]);
+
+          const response = await host.llm.client.complete({
+            system: expansionPrompt,
+            messages: [
+              {
+                role: "user",
+                content: "Expand this prompt into a detailed director's brief. Call expand_prompt_result.",
+              },
+            ],
+            tools: expansionTools,
+          });
+
+          const expansionCall = response.toolUses.find((t) => t.name === "expand_prompt_result");
+          if (expansionCall) {
+            const expanded = expansionCall.input.expandedPrompt as string | undefined;
+            if (expanded) {
+              return ok("Prompt expanded via AI.", {
+                expandedPrompt: expanded,
+                completenessScore: score,
+                questions: null,
+                rationale: `Auto-expanded from vague prompt. Detected gaps: ${gaps.join(", ") || "none"}.`,
+                detectedGaps: gaps,
+              });
+            }
+          }
+        } catch {
+          // Fall through to question-based expansion
+        }
+      }
+
+      const questions = generateExpansionQuestions(gaps);
+
+      return ok(
+        questions.length > 0
+          ? `Prompt is missing ${gaps.join(", ")}. Asking ${questions.length} clarifying question(s).`
+          : "Prompt could not be auto-expanded.",
+        {
+          expandedPrompt: prompt,
+          completenessScore: score,
+          questions: questions.length > 0 ? questions : null,
+          rationale: `Detected gaps: ${gaps.join(", ") || "none"}. ${host.llm ? "AI expansion failed." : "No LLM available for auto-expansion."}`,
+          detectedGaps: gaps,
+        },
+      );
+    },
   },
   {
     name: "plan_edit",

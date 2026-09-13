@@ -65,3 +65,13 @@ export {
 } from "./validate";
 
 export type { DirectorValidationIssue } from "./validate";
+
+export type {
+  PromptGap,
+  PromptExpansion,
+} from "./prompt-expansion";
+
+export {
+  scorePromptCompleteness,
+  generateExpansionQuestions,
+} from "./prompt-expansion";

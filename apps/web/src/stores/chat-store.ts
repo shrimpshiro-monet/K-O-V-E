@@ -37,12 +37,22 @@ export interface ToolCallView {
   readonly result?: ToolResult;
 }
 
+export interface PromptExpansionData {
+  readonly expandedPrompt: string;
+  readonly completenessScore: number;
+  readonly questions: string[] | null;
+  readonly rationale: string;
+  readonly detectedGaps: string[];
+}
+
 export interface ChatMessage {
   readonly id: string;
   readonly role: "user" | "assistant";
   readonly text: string;
   readonly toolCalls: ToolCallView[];
   readonly notice?: string;
+  readonly expansion?: PromptExpansionData;
+  readonly pendingQuestions?: string[];
 }
 
 interface PendingConfirm {
@@ -299,9 +309,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }));
           break;
         case "tool_result":
-          updateAssistant((m) => ({
-            ...m,
-            toolCalls: m.toolCalls.map((tc) =>
+          updateAssistant((m) => {
+            const updatedToolCalls = m.toolCalls.map((tc) =>
               tc.id === event.call.id
                 ? {
                     ...tc,
@@ -313,8 +322,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         : "error",
                   }
                 : tc,
-            ),
-          }));
+            );
+
+            let expansion = m.expansion;
+            let pendingQuestions = m.pendingQuestions;
+
+            if (event.call.name === "expand_prompt" && event.result.ok && event.result.data) {
+              const data = event.result.data as {
+                expandedPrompt?: string;
+                completenessScore?: number;
+                questions?: string[] | null;
+                rationale?: string;
+                detectedGaps?: string[];
+              };
+              expansion = {
+                expandedPrompt: data.expandedPrompt ?? "",
+                completenessScore: data.completenessScore ?? 0,
+                questions: data.questions ?? null,
+                rationale: data.rationale ?? "",
+                detectedGaps: data.detectedGaps ?? [],
+              };
+              pendingQuestions = data.questions ?? null;
+            }
+
+            return { ...m, toolCalls: updatedToolCalls, expansion, pendingQuestions };
+          });
           break;
         case "error":
           if (activeSeq === seq) set({ error: event.error.message });

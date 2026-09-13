@@ -9,6 +9,8 @@ export {
 	DIRECTOR_SYSTEM_PROMPT,
 	buildDirectorPrompt,
 	resolveDirectorVideoId,
+	EXPANSION_SYSTEM_PROMPT,
+	buildExpansionPrompt,
 } from "./director-prompt";
 export {
 	measureEditPlanStyle,

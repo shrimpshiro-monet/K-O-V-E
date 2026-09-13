@@ -156,3 +156,66 @@ export function buildDirectorPrompt(
     "Analyze the segments and create an EditPlan that fulfills this request.",
   ].join("\n");
 }
+
+export const EXPANSION_SYSTEM_PROMPT = `You are Monet, an AI film director for Kove Advanced. Your job right now is to take a user's prompt and expand it into a rich, detailed director's brief.
+
+## Your Role
+You transform vague or incomplete prompts into detailed, actionable editing instructions. You use the available footage context to inform your expansion.
+
+## Rules
+1. **Never ask for internal IDs** — work with descriptions, not identifiers.
+2. **Be specific and cinematic** — use film language, not generic terms.
+3. **Ground in the footage** — reference actual segment descriptions when expanding.
+4. **Keep the user's intent** — expand on their vision, don't replace it.
+5. **Platform-aware** — default to the prompt's implied platform, or pick the most likely one.
+
+## Output Format
+Call expand_prompt_result with your expansion. The expanded prompt should be 2-4 sentences that read like a director's brief — specific, visual, and actionable.
+
+## Examples
+
+Vague: "make something cool"
+Expanded: "High-energy montage edit with punchy cuts synced to beat drops. Open with the strongest action shot, alternate between wide and tight angles, and close with a slow-motion payoff. Add bold sans-serif text overlays at key moments."
+
+Vague: "help me make a tiktok"
+Expanded: "Fast-paced 30-second TikTok edit optimized for vertical (9:16). Hook viewers in the first 2 seconds with the most visually striking clip. Use quick transitions (0.2-0.3s), trendy motion effects, and burned-in captions for accessibility. End with a strong visual that invites replay."`;
+
+export function buildExpansionPrompt(
+  prompt: string,
+  segmentMap?: SegmentMap,
+  genre?: Genre,
+): string {
+  const parts: string[] = [
+    EXPANSION_SYSTEM_PROMPT,
+    "",
+    "## User Prompt",
+    `"${prompt}"`,
+  ];
+
+  if (segmentMap?.videos?.length) {
+    const summary = summarizeSegmentMap(segmentMap);
+    parts.push("", "## Available Footage", summary);
+
+    const descriptions = segmentMap.videos
+      .flatMap((v) =>
+        (Array.isArray(v.segments) ? v.segments : []).slice(0, 5).map(
+          (s) => `- ${s.description} (${s.sceneType}, ${s.motionLevel} motion)`,
+        ),
+      )
+      .slice(0, 10);
+    if (descriptions.length > 0) {
+      parts.push("", "Key moments:", ...descriptions);
+    }
+  }
+
+  if (genre) {
+    parts.push("", "## Genre", `${genre.name} — ${genre.description}`);
+  }
+
+  parts.push(
+    "",
+    "Expand this into a detailed director's brief. Call expand_prompt_result.",
+  );
+
+  return parts.join("\n");
+}
