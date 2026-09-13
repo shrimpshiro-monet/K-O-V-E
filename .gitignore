@@ -1,6 +1,12 @@
 # Dependencies
 node_modules/
 .pnpm-store/
+agent-reach-venv/
+
+# Python
+__pycache__/
+*.pyc
+.coverage
 
 # Build outputs
 dist/
