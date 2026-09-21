@@ -100,11 +100,11 @@ export function makeOverlayHandlers(
 
   const remove: ActionHandler = {
     type: `${prefix}/remove`,
-    validate(action: Action, project: Project): ValidationResult {
-      const clipId = (action.params as { clipId?: string }).clipId;
-      return getOverlays(project, field).some((c) => c.id === clipId)
-        ? ok()
-        : err(`${prefix} clip not found: ${String(clipId)}`);
+    validate(_action: Action, _project: Project): ValidationResult {
+      // Always valid — removing a non-existent overlay is a benign no-op.
+      // This makes teardown idempotent: stale IDs in the previous plan state
+      // don't abort the new plan.
+      return ok();
     },
     apply(action: Action, project: Project): void {
       const clipId = (action.params as { clipId: string }).clipId;

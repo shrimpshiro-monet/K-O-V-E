@@ -84,6 +84,8 @@ export interface LLMTurnInput {
   readonly messages: LoopMessage[];
   /** Provider-formatted tool definitions (from registry.toAnthropicTools/toOpenAITools). */
   readonly tools: unknown[];
+  /** Per-call override for max output tokens (defaults to adapter option). */
+  readonly maxTokens?: number;
 }
 
 export interface LLMClient {
@@ -290,7 +292,7 @@ export interface AdapterOptions {
 export class AnthropicClient implements LLMClient {
   constructor(private readonly options: AdapterOptions) {}
   async complete(input: LLMTurnInput): Promise<LLMResponse> {
-    const body = buildAnthropicBody(input, this.options.model, this.options.maxTokens ?? 4096);
+    const body = buildAnthropicBody(input, this.options.model, input.maxTokens ?? this.options.maxTokens ?? 4096);
     const raw = await this.options.send(body);
     return parseAnthropicResponse(raw);
   }
@@ -422,7 +424,7 @@ export function parseOpenAIResponse(raw: unknown): LLMResponse {
 export class OpenAIClient implements LLMClient {
   constructor(private readonly options: AdapterOptions) {}
   async complete(input: LLMTurnInput): Promise<LLMResponse> {
-    const body = buildOpenAIBody(input, this.options.model, this.options.maxTokens);
+    const body = buildOpenAIBody(input, this.options.model, input.maxTokens ?? this.options.maxTokens);
     const raw = await this.options.send(body);
     return parseOpenAIResponse(raw);
   }

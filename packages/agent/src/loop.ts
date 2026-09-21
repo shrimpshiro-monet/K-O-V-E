@@ -8,7 +8,7 @@ import type {
   LoopToolResultBlock,
 } from "./llm";
 import { executeTool, isDestructive, isExpensive } from "./executor";
-import { getTool } from "./registry";
+import { getTool, hasExistingDirectorPlan } from "./registry";
 
 export interface RunTurnInput {
   readonly host: EditingHost;
@@ -50,9 +50,99 @@ export interface RunTurnResult {
 
 const isReadOnly = (name: string): boolean => getTool(name)?.readOnly ?? false;
 
-const isDirectorDiscoveryTool = (name: string): boolean => name === "extract_segments";
+const isDirectorDiscoveryTool = (name: string): boolean =>
+  name === "extract_segments" || name === "create_project" || name === "list_media" || name === "import_media_from_url" || name === "get_capabilities" || name === "get_editor_state";
 
 const DIRECTOR_REQUEST = /\b(edit|video|footage|clip|cut|trim|highlight|reel|montage|reference|b-roll|vlog|podcast|timeline|sequence|splice|join)\b/i;
+
+/**
+ * Transient error codes that warrant a single retry before giving up.
+ * These typically indicate a temporary state issue rather than a real failure.
+ */
+const RETRYABLE_CODES = new Set([
+  "NOT_FOUND",
+  "CLIP_NOT_FOUND",
+  "TRACK_NOT_FOUND",
+  "INVALID_PARAMS",
+]);
+
+/**
+ * Execute a tool with retry logic for transient failures.
+ * On the first retryable failure, waits briefly and tries once more.
+ * Non-retryable errors are returned immediately with enhanced context.
+ */
+async function executeToolWithRetry(
+  name: string,
+  args: Record<string, unknown> | undefined,
+  host: EditingHost,
+): Promise<ToolResult> {
+  const result = await executeTool(name, args, host);
+  if (result.ok || !result.error) return result;
+
+  // Only retry on the first attempt for retryable codes
+  if (RETRYABLE_CODES.has(result.error.code)) {
+    // Brief pause to let state settle (e.g., clip IDs updating after a split)
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const retry = await executeTool(name, args, host);
+    if (retry.ok) return retry;
+    // Return the retry result (which may have a better error message)
+    return enhanceToolError(name, retry);
+  }
+
+  return enhanceToolError(name, result);
+}
+
+/**
+ * Enhance tool error results with actionable guidance for the LLM.
+ * Instead of raw error codes, provide context that helps the model
+ * understand what went wrong and what to try next.
+ */
+function enhanceToolError(name: string, result: ToolResult): ToolResult {
+  if (result.ok || !result.error) return result;
+
+  const { code, message } = result.error;
+  let hint: string | undefined;
+
+  switch (code) {
+    case "NOT_FOUND":
+    case "CLIP_NOT_FOUND":
+      hint = "The referenced clip may have been split, moved, or deleted. Call list_clips to refresh clip IDs before retrying.";
+      break;
+    case "TRACK_NOT_FOUND":
+      hint = "The track may have been removed. Call list_tracks to see available tracks.";
+      break;
+    case "INVALID_PARAMS":
+      hint = `Check the parameters for ${name}. Use get_capabilities to see valid enum values and parameter ranges.`;
+      break;
+    case "NO_VIDEO_MEDIA":
+      hint = "Import at least one video file before editing. Use import_media_from_url or drag files into the project.";
+      break;
+    case "PLAN_REQUIRED":
+      hint = "Call plan_edit before any editing tools when working with footage.";
+      break;
+    case "UNKNOWN_TOOL":
+      hint = `No tool named '${name}'. Check the available tools with get_capabilities.`;
+      break;
+    case "ACTION_FAILED":
+      hint = `The action for ${name} failed. Check parameter values against get_capabilities and try again.`;
+      break;
+    default:
+      // No hint for unknown error codes
+      break;
+  }
+
+  if (hint) {
+    return {
+      ...result,
+      error: {
+        code,
+        message: `${message}\n\nHint: ${hint}`,
+      },
+    };
+  }
+
+  return result;
+}
 
 function latestUserPrompt(messages: LoopMessage[]): string {
   return [...messages]
@@ -127,8 +217,16 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
     outputTokens: 0,
   };
 
-  const requiresDirectorPlan = enforceDirectorWorkflow && DIRECTOR_REQUEST.test(latestUserPrompt(messages));
+  const projectId = host.getProject().id ?? "__default__";
+  const hasExistingPlan = hasExistingDirectorPlan(projectId);
+  // Only force a fresh plan_edit if there's no existing director plan for this
+  // project. Follow-up editing requests ("make it shorter", "add a cut here")
+  // should use clip/effect/text tools to modify the existing timeline rather
+  // than rebuilding from scratch.
+  const requiresDirectorPlan =
+    enforceDirectorWorkflow && !hasExistingPlan && DIRECTOR_REQUEST.test(latestUserPrompt(messages));
   let directorPlanCompleted = !requiresDirectorPlan;
+  let planEditApplied = false;
 
   const txn = host.beginTransaction(turnLabel);
 
@@ -263,6 +361,27 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
           continue;
         }
 
+        // One-shot: plan_edit may only be called once per turn. If the user
+        // wants refinements they ask via chat and the AI edits the existing
+        // timeline clips directly — it does NOT re-run plan_edit.
+        if (call.name === "plan_edit" && planEditApplied) {
+          const blocked = {
+            ok: false as const,
+            summary: "plan_edit already applied this turn",
+            error: {
+              code: "PLAN_EDIT_ALREADY_USED",
+              message: "plan_edit was already applied this turn. To refine the edit, describe what you want changed and use clip/effect/text tools to modify the existing timeline — do not call plan_edit again.",
+            },
+          };
+          emit({ type: "tool_result", call, result: blocked });
+          results.push({
+            toolUseId: call.id,
+            content: JSON.stringify(blocked),
+            isError: true,
+          });
+          continue;
+        }
+
         const needsConfirm =
           !dryRun &&
           !approveAll &&
@@ -294,10 +413,43 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
             summary: `[dry-run] would call ${call.name}`,
           };
         } else {
-          result = await executeTool(call.name, call.args, host);
+          result = await executeToolWithRetry(call.name, call.args, host);
         }
+
+        // plan_edit materialization is best-effort inside the tool (teardown +
+        // insert + effects + transitions + audio + text). If it throws partway
+        // through, the timeline is left half-mutated. Roll back the entire turn
+        // so the user never sees orphan clips stacked under a failed plan.
+        if (
+          call.name === "plan_edit" &&
+          !result.ok &&
+          result.error?.code === "EDIT_PLAN_APPLY_FAILED"
+        ) {
+          await host.rollbackTransaction(txn);
+          emit({
+            type: "error",
+            error: {
+              code: "PLAN_MATERIALIZE_FAILED",
+              message: result.summary,
+            },
+          });
+          return {
+            text:
+              `The edit plan could not be applied and the timeline has been reverted. ` +
+              result.summary,
+            messages,
+            toolCalls,
+            stoppedReason: "error",
+            committed: false,
+            usage,
+          };
+        }
+
         if (requiresDirectorPlan && call.name === "plan_edit" && result.ok) {
           directorPlanCompleted = true;
+        }
+        if (call.name === "plan_edit" && result.ok) {
+          planEditApplied = true;
         }
         emit({ type: "tool_result", call, result });
         results.push({

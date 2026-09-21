@@ -4,7 +4,7 @@ import { CAPABILITY_MANIFEST } from "@kove-advanced/core/capabilities/manifest";
 import type { CapabilityManifest } from "@kove-advanced/core/capabilities/manifest";
 import type { Action, ActionResult } from "@kove-advanced/core/types/actions";
 import type { Project } from "@kove-advanced/core/types/project";
-import type { EditingHost, JobKind, JobResult, JobRunner, TxnHandle } from "./host";
+import type { EditingHost, JobKind, JobResult, JobRunner, OverlayRef, TextOverlayOptions, TxnHandle } from "./host";
 
 export interface HeadlessHostOptions {
   readonly history?: ActionHistory;
@@ -96,5 +96,40 @@ export class HeadlessHost implements EditingHost {
   setProject(project: Project | null): void {
     this.project = project;
     this.history.clear();
+  }
+
+  async createTextOverlay(options: TextOverlayOptions): Promise<OverlayRef> {
+    this.requireOpenProject();
+    const id = `text-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const trackId = options.trackId ?? "text-track-0";
+    const clip = {
+      id,
+      trackId,
+      startTime: options.startSec,
+      duration: options.durationSec,
+      text: options.text,
+      style: (options.style ?? {}) as Record<string, unknown>,
+      transform: { position: { x: 0.5, y: 0.5 }, scale: { x: 1, y: 1 }, rotation: 0, anchor: { x: 0.5, y: 0.5 }, opacity: 1 },
+      keyframes: [],
+    };
+    const result = await this.applyAction({
+      type: "text/create",
+      id: `create-${id}`,
+      timestamp: Date.now(),
+      params: { clip },
+    });
+    if (!result.success) throw new Error(result.error?.message ?? "Failed to create text overlay");
+    return { id, trackId };
+  }
+
+  async removeOverlay(kind: string, id: string): Promise<boolean> {
+    this.requireOpenProject();
+    const result = await this.applyAction({
+      type: `${kind}/remove`,
+      id: `remove-${id}`,
+      timestamp: Date.now(),
+      params: { clipId: id },
+    });
+    return result.success;
   }
 }

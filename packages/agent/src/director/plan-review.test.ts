@@ -9,7 +9,7 @@ const plan: EditPlan = {
       sourceStartTime: 0,
       sourceEndTime: 2,
       targetPosition: 0,
-      effects: ["zoom-punch"],
+      effects: ["chromatic-aberration"],
       rationale: "hook",
     },
     {
@@ -23,7 +23,7 @@ const plan: EditPlan = {
   ],
   textElements: [],
   effects: [],
-  transitions: [{ afterSegmentIndex: 0, type: "hardCut", duration: 0, rationale: "cut" }],
+  transitions: [],
   audioDecisions: [],
   metadata: {
     targetDuration: 4,
@@ -38,7 +38,7 @@ describe("edit plan review", () => {
   it("measures plan style and accepts a matching target", () => {
     const profile = measureEditPlanStyle(plan);
     expect(profile.cutsPerMinute).toBe(30);
-    expect(profile.effectPalette).toEqual(["zoom-punch"]);
+    expect(profile.effectPalette).toEqual(["chromatic-aberration"]);
 
     const review = reviewEditPlan(plan, {
       id: "highlight-reel",
@@ -46,8 +46,8 @@ describe("edit plan review", () => {
       description: "Fast highlight",
       rules: {
         pacing: "fast",
-        transitionPreference: ["hardCut"],
-        effectPalette: ["zoom-punch"],
+        transitionPreference: [],
+        effectPalette: ["chromatic-aberration"],
         textStyle: "minimal",
         cutStyle: "hard",
         musicRole: "rhythmic",
@@ -81,12 +81,12 @@ describe("edit plan review", () => {
       clipIds: ["clip-1", "clip-2"],
       textIds: [],
       effectCount: 0,
-      transitionCount: 1,
+      transitionCount: 0,
       audioCount: 0,
     }, styleReview);
 
     expect(review.lowConfidenceSegments).toEqual(["video-1:segment-1"]);
-    expect(review.execution.expectedTransitions).toBe(1);
+    expect(review.execution.expectedTransitions).toBe(0);
     expect(review.issues.some((issue) => issue.includes("low analysis confidence"))).toBe(true);
   });
 });

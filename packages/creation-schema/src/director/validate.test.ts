@@ -120,7 +120,7 @@ describe("director validation helpers", () => {
         sourceStartTime: 0,
         sourceEndTime: 4,
         effectSpecs: [{
-          type: "zoom-punch",
+          type: "chromatic-aberration",
           params: {},
           intensity: 1.5,
           startOffset: -0.1,
@@ -136,5 +136,91 @@ describe("director validation helpers", () => {
       "effect_duration_invalid",
       "effect_easing_invalid",
     ]));
+  });
+
+  it("rejects colorGrade with empty params in seg.effectSpecs", () => {
+    const issues = validateEditPlan({
+      ...plan,
+      metadata: { ...plan.metadata, targetDuration: 4 },
+      segments: [{
+        ...plan.segments[0],
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        effectSpecs: [{
+          type: "colorGrade",
+          params: {},
+          rationale: "test",
+        }],
+      }],
+    }, { videos: [{ videoId: "video-1", duration: 4, segments: [] }] });
+    expect(issues.map((i) => i.code)).toContain("empty_color_grade_params");
+  });
+
+  it("rejects colorGrade with empty params in plan.effects", () => {
+    const issues = validateEditPlan({
+      ...plan,
+      metadata: { ...plan.metadata, targetDuration: 4 },
+      effects: [{
+        type: "colorGrade",
+        params: {},
+        targetSegmentIndex: 0,
+        rationale: "test",
+      }],
+    }, { videos: [{ videoId: "video-1", duration: 4, segments: [] }] });
+    expect(issues.map((i) => i.code)).toContain("empty_color_grade_params");
+  });
+
+  it("warns about colorGrade in seg.effects string array (implicit empty params)", () => {
+    const issues = validateEditPlan({
+      ...plan,
+      metadata: { ...plan.metadata, targetDuration: 4 },
+      segments: [{
+        ...plan.segments[0],
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        effects: ["colorGrade"],
+      }],
+    }, { videos: [{ videoId: "video-1", duration: 4, segments: [] }] });
+    expect(issues.map((i) => i.code)).toContain("implicit_color_grade_params");
+  });
+
+  it("accepts colorGrade aliases via isColorGradeType", () => {
+    const aliases = ["colorGrade", "color-grade", "color_grading", "colorgrading", "color-grading", "color_grade"];
+    for (const alias of aliases) {
+      const issues = validateEditPlan({
+        ...plan,
+        metadata: { ...plan.metadata, targetDuration: 4 },
+        effects: [{
+          type: alias,
+          params: { brightness: 0.5 },
+          targetSegmentIndex: 0,
+          rationale: "test",
+        }],
+      }, { videos: [{ videoId: "video-1", duration: 4, segments: [] }] });
+      const typeErrors = issues.filter((i) => i.code === "unknown_effect_type");
+      expect(typeErrors).toHaveLength(0);
+    }
+  });
+
+  it("emits a misplaced-feature hint for speed-ramp in effectSpecs", () => {
+    const issues = validateEditPlan({
+      ...plan,
+      metadata: { ...plan.metadata, targetDuration: 4 },
+      segments: [{
+        ...plan.segments[0],
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        effectSpecs: [{
+          type: "speed-ramp",
+          params: {},
+          rationale: "match reference energy",
+        }],
+      }],
+    }, { videos: [{ videoId: "video-1", duration: 4, segments: [] }] });
+
+    const speedRampIssue = issues.find((i) => i.path?.endsWith(".type"));
+    expect(speedRampIssue).toBeDefined();
+    expect(speedRampIssue!.code).toBe("misplaced_feature");
+    expect(speedRampIssue!.message).toContain("segment.speedRamp");
   });
 });

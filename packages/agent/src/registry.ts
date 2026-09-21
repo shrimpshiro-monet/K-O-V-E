@@ -5,7 +5,7 @@ import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } fro
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan } from "./director/plan-review";
 import { sampleRenderedFrames, runQualityPipeline, applyTargetedCorrections } from "./director/quality-pipeline";
-import { normalizeEditPlan, validateEditPlan, scorePromptCompleteness, generateExpansionQuestions } from "@kove-advanced/creation-schema";
+import { normalizeEditPlan, validateEditPlan, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType } from "@kove-advanced/creation-schema";
 import type {
   CaptionStyleTemplate,
   EditPlan,
@@ -2009,11 +2009,249 @@ function actionTool(spec: ActionToolSpec): RegisteredTool {
   };
 }
 
+/**
+ * Tracks EVERY artifact the last plan_edit placed on the timeline. Missing
+ * categories here is the root cause of "stacking": transitions and audio
+ * clips are not children of video clips, so `clip/remove` does not clean
+ * them up. Without tracking, each plan_edit leaks these onto the timeline
+ * and the second edit renders on top of the first.
+ */
+interface PreviousPlanState {
+  readonly clipIds: readonly string[];
+  readonly textIds: readonly string[];
+  readonly transitionIds: readonly string[];
+  readonly audioClipIds: readonly string[];
+  /** Deterministic hash of the timeline-relevant fields of the input plan. */
+  readonly fingerprint: string;
+}
+const _previousPlanState = new Map<string, PreviousPlanState>();
+
+/**
+ * True only when a COMPLETE previous plan is on file. Partial state (missing
+ * fingerprint because a prior materialize aborted) returns false so the loop
+ * re-engages the full director workflow instead of leaving the user stuck.
+ */
+export function hasExistingDirectorPlan(projectId: string): boolean {
+  const state = _previousPlanState.get(projectId);
+  return Boolean(state && state.fingerprint);
+}
+
+/**
+ * Clear stored plan state for a project. Exported for tests that need clean
+ * `_previousPlanState` without relying on unique project IDs.
+ * @internal
+ */
+export function _resetPlanState(projectId: string): void {
+  _previousPlanState.delete(projectId);
+}
+
+/**
+ * Inject arbitrary plan state for a project. Exported for tests that need to
+ * simulate stale or partial `_previousPlanState` entries.
+ * @internal
+ */
+export function _setPlanStateForTest(projectId: string, state: PreviousPlanState): void {
+  _previousPlanState.set(projectId, state);
+}
+
+/**
+ * Read stored plan state for a project. Exported for tests that verify state
+ * is preserved (or not) across operations.
+ * @internal
+ */
+export function _getPlanStateForTest(projectId: string): PreviousPlanState | undefined {
+  return _previousPlanState.get(projectId);
+}
+
+/** Deterministic, key-order-insensitive stringify. */
+function stableStringify(value: unknown): string {
+  if (value === null || value === undefined) return JSON.stringify(value ?? null);
+  if (typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, v]) => v !== undefined)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`).join(",")}}`;
+}
+
+/**
+ * Strip every field whose name is exactly "rationale" (recursively).
+ * Rationale strings are the ONLY EditPlan fields that never affect the
+ * timeline. Everything else — including fields that don't exist yet —
+ * lands on the timeline one way or another, so it must be hashed.
+ */
+function stripRationale(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map(stripRationale);
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (k === "rationale") continue;
+    out[k] = stripRationale(v);
+  }
+  return out;
+}
+
+/**
+ * FNV-1a hash over every timeline-material field of an EditPlan. Two plans
+ * that would place identical content on the timeline hash equal, so a repeat
+ * submission across turns becomes a no-op instead of teardown+rebuild.
+ *
+ * Unlike the previous hand-maintained field list, this hashes the *entire*
+ * plan (minus rationale strings). New fields are automatically included — no
+ * code change needed when EditPlan gains a property. Object key order is
+ * normalized via stableStringify so {x:1,y:2} and {y:2,x:1} hash equal.
+ *
+ * @internal Used by the fingerprint no-op test. Not part of the public API.
+ */
+export function computeEditPlanFingerprint(plan: EditPlan): string {
+  const hashed = stableStringify(stripRationale(plan));
+  let hash = 2166136261;
+  for (let i = 0; i < hashed.length; i++) {
+    hash ^= hashed.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+/**
+ * Synthesize a sensible default for an effect's primary numeric param from
+ * the director-supplied `intensity` (0..1). Without this, `effectSpecs` that
+ * omit `params` produce invisible effects: video-effects-engine defaults
+ * everything to 0, so `brightness` becomes `brightness(1.0)`, blur becomes
+ * `blur(0px)`, etc. Mapping uses each effect's real parameter range.
+ *
+ * Most effects map intensity to a single param. A few (tonal, shadow) need
+ * multiple params to produce a visually meaningful result — a single-param
+ * mapping for tonal only lifts shadows, leaving midtones and highlights at 0.
+ */
+type IntensityMapping =
+  | { readonly single: string; readonly scale: number }
+  | { readonly multi: (intensity: number) => Record<string, number> };
+
+const EFFECT_INTENSITY_PARAM: Readonly<Record<string, IntensityMapping>> = {
+  brightness: { single: "value", scale: 100 },
+  contrast: { single: "value", scale: 100 },
+  saturation: { single: "value", scale: 100 },
+  hue: { single: "rotation", scale: 180 },
+  blur: { single: "radius", scale: 10 },
+  sharpen: { single: "amount", scale: 100 },
+  vignette: { single: "amount", scale: 100 },
+  grain: { single: "amount", scale: 100 },
+  temperature: { single: "value", scale: 100 },
+  tint: { single: "value", scale: 100 },
+  tonal: { multi: (i) => ({ shadows: i, midtones: i * 0.5, highlights: i * 0.3 }) },
+  shadow: { multi: (i) => ({ blur: i * 20, offsetX: 2, offsetY: 2, opacity: i * 0.6 }) },
+  glow: { single: "intensity", scale: 3 },
+  "motion-blur": { single: "distance", scale: 100 },
+  "radial-blur": { single: "amount", scale: 100 },
+  "chromatic-aberration": { single: "amount", scale: 50 },
+};
+
+function synthesizeEffectParams(
+  effectType: string,
+  directorParams: Record<string, unknown>,
+  intensity: number | undefined,
+): Record<string, unknown> {
+  const hasParams = Object.keys(directorParams).length > 0;
+  if (hasParams || intensity === undefined) return { ...directorParams };
+  const mapping = EFFECT_INTENSITY_PARAM[effectType];
+  if (!mapping) return { ...directorParams };
+  if ("multi" in mapping) return mapping.multi(intensity);
+  return { [mapping.single]: intensity * mapping.scale };
+}
+
 async function materializeEditPlan(
   plan: EditPlan,
   segmentMap: SegmentMap,
   host: EditingHost,
-): Promise<{ clipIds: string[]; textIds: string[]; effectCount: number; transitionCount: number; audioCount: number; motionCompositionIds: string[]; motionInstanceIds: string[] }> {
+): Promise<{ clipIds: string[]; textIds: string[]; transitionIds: string[]; audioClipIds: string[]; effectCount: number; transitionCount: number; audioCount: number; motionCompositionIds: string[]; motionInstanceIds: string[] }> {
+  // ---- Tear down previous plan (replace, never stack) ----
+  // Order matters: transitions reference clips, so they go first. Text
+  // overlays reference clip IDs on their tracks, so they go next. Clips
+  // (video + audio) last. Any UNEXPECTED failure aborts the whole edit
+  // rather than leaving a partially-torn-down timeline for the next plan
+  // to stack on top of — that is the "glitch" the user reports.
+  const projectId = host.getProject().id ?? "__default__";
+  const prev = _previousPlanState.get(projectId);
+  if (prev) {
+    const failedTextIds: string[] = [];
+    const failedClipIds: string[] = [];
+    const failedTransitionIds: string[] = [];
+
+    // Teardown must be idempotent: removing something that's already gone is a
+    // clean no-op, not a failure. Action handlers may either return
+    // `{ success: false, error }` OR throw — we handle both.
+    function isAlreadyGone(err: unknown): boolean {
+      const code = (err as { error?: { code?: string } })?.error?.code;
+      if (code === "INVALID_PARAMS" || code === "CLIP_NOT_FOUND" || code === "TEXT_NOT_FOUND") return true;
+      const message = err instanceof Error ? err.message : String(err);
+      return /\bnot\s+found\b/i.test(message);
+    }
+
+    for (const transitionId of prev.transitionIds) {
+      try {
+        const result = await host.applyAction({
+          type: "transition/remove",
+          id: genId(),
+          timestamp: Date.now(),
+          params: { transitionId },
+        });
+        if (!result.success && !isAlreadyGone(result)) {
+          failedTransitionIds.push(transitionId);
+        }
+      } catch (err) {
+        if (!isAlreadyGone(err)) failedTransitionIds.push(transitionId);
+      }
+    }
+
+    for (const textId of prev.textIds) {
+      try {
+        const result = await host.applyAction({
+          type: "text/remove",
+          id: genId(),
+          timestamp: Date.now(),
+          params: { clipId: textId },
+        });
+        if (!result.success && !isAlreadyGone(result)) {
+          failedTextIds.push(textId);
+        }
+      } catch (err) {
+        if (!isAlreadyGone(err)) failedTextIds.push(textId);
+      }
+    }
+
+    for (const clipId of [...prev.clipIds, ...prev.audioClipIds]) {
+      try {
+        const result = await host.applyAction({
+          type: "clip/remove",
+          id: genId(),
+          timestamp: Date.now(),
+          params: { clipId },
+        });
+        if (!result.success && !isAlreadyGone(result)) {
+          failedClipIds.push(clipId);
+        }
+      } catch (err) {
+        if (!isAlreadyGone(err)) failedClipIds.push(clipId);
+      }
+    }
+
+    if (
+      failedTransitionIds.length ||
+      failedTextIds.length ||
+      failedClipIds.length
+    ) {
+      throw new Error(
+        `Refusing to stack a new plan on a partially-torn-down timeline: ` +
+          `${failedClipIds.length} clip(s), ${failedTextIds.length} text overlay(s), ` +
+          `${failedTransitionIds.length} transition(s) could not be removed. ` +
+          `Resolve the timeline manually and retry.`,
+      );
+    }
+
+  }
+
   let videoTrack = host.getProject().timeline.tracks.find((track) => track.type === "video");
   if (!videoTrack) {
     const trackResult = await host.applyAction({
@@ -2061,11 +2299,17 @@ async function materializeEditPlan(
     const previousClip = clipIds.at(-1)
       ? host.getProject().timeline.tracks.flatMap((track) => track.clips).find((clip) => clip.id === clipIds.at(-1))
       : undefined;
-    const nextPosition = hasIncomingTransition && previousClip
+    const flowPosition = hasIncomingTransition && previousClip
       ? previousClip.startTime + previousClip.duration
+      : nextPositions.get(targetTrack.id) ?? 0;
+    // When a transition connects to this clip, force adjacency (flow position).
+    // Otherwise, use the director's targetPosition but never land inside
+    // already-placed clip space on this track.
+    const nextPosition = hasIncomingTransition && previousClip
+      ? flowPosition
       : Number.isFinite(segment.targetPosition)
-        ? Math.max(0, segment.targetPosition ?? 0)
-        : nextPositions.get(targetTrack.id) ?? 0;
+        ? Math.max(Math.max(0, segment.targetPosition ?? 0), flowPosition)
+        : flowPosition;
     const currentTargetTrack = host.getProject().timeline.tracks.find((track) => track.id === targetTrack.id);
     const clipIdsBefore = new Set((currentTargetTrack?.clips ?? []).map((clip) => clip.id));
     const result = await host.applyAction({
@@ -2148,37 +2392,63 @@ async function materializeEditPlan(
   for (const effect of plannedEffects) {
     const clipId = effect.targetSegmentIndex === undefined ? undefined : clipIds[effect.targetSegmentIndex];
     if (!clipId) continue;
-    const isColorGrade = ["colorGrade", "color-grade", "color_grading", "colorGrading"].includes(effect.type);
+    const isColorGrade = isColorGradeType(effect.type);
+    // If the director omitted params, synthesize a sensible default from
+    // intensity so the effect is actually VISIBLE. Video-effects-engine
+    // defaults every numeric param to 0, so {type:"brightness"} becomes
+    // brightness(1.0) (no change) unless we fill the param in for it.
+    const resolvedEffectParams = isColorGrade
+      ? effect.params
+      : {
+          ...synthesizeEffectParams(effect.type, effect.params, effect.intensity),
+          ...(effect.intensity !== undefined ? { intensity: Math.max(0, Math.min(1, effect.intensity)) } : {}),
+          ...(effect.startOffset !== undefined ? { startOffset: Math.max(0, effect.startOffset) } : {}),
+          ...(effect.duration !== undefined ? { duration: Math.max(0.01, effect.duration) } : {}),
+          ...(effect.easing !== undefined ? { easing: effect.easing } : {}),
+        };
     const result = await host.applyAction({
       type: isColorGrade ? "clip/setColorGrading" : "effect/add",
       id: genId(),
       timestamp: Date.now(),
       params: isColorGrade
-        ? { clipId, colorGrading: effect.params }
+        ? { clipId, colorGrading: resolvedEffectParams }
         : {
           clipId,
           effectType: effect.type,
-          params: {
-            ...effect.params,
-            ...(effect.intensity !== undefined ? { intensity: Math.max(0, Math.min(1, effect.intensity)) } : {}),
-            ...(effect.startOffset !== undefined ? { startOffset: Math.max(0, effect.startOffset) } : {}),
-            ...(effect.duration !== undefined ? { duration: Math.max(0.01, effect.duration) } : {}),
-            ...(effect.easing !== undefined ? { easing: effect.easing } : {}),
-          },
+          params: resolvedEffectParams,
         },
     });
     if (!result.success) throw new Error(result.error?.message ?? "Could not add planned effect");
     effectCount++;
   }
 
+  const audioClipIds: string[] = [];
   let audioCount = 0;
   let musicTrack = host.getProject().timeline.tracks.find((track) => track.type === "audio" && track.name === "Music")
     ?? host.getProject().timeline.tracks.find((track) => track.type === "audio");
   let sfxTrack = host.getProject().timeline.tracks.find((track) => track.type === "audio" && track.name === "SFX");
   for (const decision of plan.audioDecisions) {
-    if (decision.type === "silence" || !decision.sourceVideoId) continue;
-    const media = host.getProject().mediaLibrary.items.find((item) => item.id === decision.sourceVideoId);
-    if (!media || (media.type !== "audio" && media.type !== "video")) continue;
+    if (decision.type === "silence") continue;
+    if (!decision.sourceVideoId) {
+      console.warn(`[plan_edit] skipping audio decision ${decision.type} — no sourceVideoId`);
+      continue;
+    }
+    const media = host.getProject().mediaLibrary.items.find((item) => item.id === decision.sourceVideoId)
+      ?? host.getProject().mediaLibrary.items.find((item) => item.name === decision.sourceVideoId);
+    if (!media) {
+      const available = host.getProject().mediaLibrary.items
+        .filter((item) => item.type === "audio" || item.type === "video")
+        .map((item) => `${item.id} (${item.name})`)
+        .join(", ") || "none";
+      throw new Error(
+        `Could not add planned ${decision.type}: "${decision.sourceVideoId}" is not a media library id or name. Available audio/video media: ${available}.`,
+      );
+    }
+    if (media.type !== "audio" && media.type !== "video") {
+      throw new Error(
+        `Could not add planned ${decision.type}: media "${decision.sourceVideoId}" has type "${media.type}", not audio or video.`,
+      );
+    }
     const trackName = decision.type === "sfx" ? "SFX" : "Music";
     let targetTrack = decision.type === "sfx" ? sfxTrack : musicTrack;
     if (!targetTrack) {
@@ -2195,13 +2465,16 @@ async function materializeEditPlan(
     }
     if (!targetTrack) throw new Error(`No audio track is available for ${trackName}`);
     const duration = Math.max(0.01, decision.duration);
+    const before = new Set(
+      host.getProject().timeline.tracks.flatMap((track) => track.clips.map((c) => c.id)),
+    );
     const result = await host.applyAction({
       type: "clip/add",
       id: genId(),
       timestamp: Date.now(),
       params: {
         trackId: targetTrack.id,
-        mediaId: decision.sourceVideoId,
+        mediaId: media.id,
         startTime: Math.max(0, decision.startTime),
         duration,
         inPoint: Math.max(0, decision.sourceStartTime ?? 0),
@@ -2210,14 +2483,28 @@ async function materializeEditPlan(
       },
     });
     if (!result.success) throw new Error(result.error?.message ?? `Could not add planned ${decision.type}`);
+    const created = host
+      .getProject()
+      .timeline.tracks.flatMap((track) => track.clips.map((c) => c.id))
+      .find((id) => !before.has(id));
+    if (created) audioClipIds.push(created);
     audioCount++;
   }
 
+  const transitionIds: string[] = [];
   let transitionCount = 0;
   for (const transition of plan.transitions) {
     const clipAId = clipIds[transition.afterSegmentIndex];
     const clipBId = clipIds[transition.afterSegmentIndex + 1];
     if (!clipAId || !clipBId) continue;
+    // Diff the track before/after so we can capture the transitionId that
+    // transition/add created. `transition/add` only returns an actionId, and
+    // without the id the next plan_edit cannot tear this transition down.
+    const before = new Set(
+      host.getProject().timeline.tracks.flatMap((track) =>
+        (track.transitions ?? []).map((t) => t.id),
+      ),
+    );
     const result = await host.applyAction({
       type: "transition/add",
       id: genId(),
@@ -2225,6 +2512,12 @@ async function materializeEditPlan(
       params: { clipAId, clipBId, transitionType: transition.type, duration: transition.duration },
     });
     if (!result.success) throw new Error(result.error?.message ?? "Could not add planned transition");
+    const created = host
+      .getProject()
+      .timeline.tracks.flatMap((track) => track.transitions ?? [])
+      .map((t) => t.id)
+      .find((id) => !before.has(id));
+    if (created) transitionIds.push(created);
     transitionCount++;
   }
 
@@ -2253,27 +2546,54 @@ async function materializeEditPlan(
     });
     const textPosition = text.position ?? textTemplate.position;
     if (textPosition) {
-      const transformResult = await host.applyAction({
-        type: "transform/update",
+      const existingClip = host.getProject().textClips?.find((c) => c.id === overlay.id);
+      if (!existingClip) {
+        throw new Error(`Text overlay ${overlay.id} was created but not found in project.textClips`);
+      }
+      const positionResult = await host.applyAction({
+        type: "text/update",
         id: genId(),
         timestamp: Date.now(),
         params: {
           clipId: overlay.id,
-          transform: {
-            position: {
-              x: text.position ? textPosition.x : textPosition.x * host.getProject().settings.width,
-              y: text.position ? textPosition.y : textPosition.y * host.getProject().settings.height,
+          updates: {
+            transform: {
+              ...existingClip.transform,
+              position: { x: textPosition.x, y: textPosition.y },
             },
           },
         },
       });
-      if (!transformResult.success) throw new Error(transformResult.error?.message ?? "Could not position planned text");
+      if (!positionResult.success) throw new Error(positionResult.error?.message ?? "Could not position planned text");
     }
     textIds.push(overlay.id);
   }
   if (clipIds.length === 0) throw new Error("Director returned an empty EditPlan; no clips were added");
   const motion = await materializeMotionMoments(plan.motionMoments, clipIds, host);
-  return { clipIds, textIds, effectCount, transitionCount, audioCount, ...motion };
+  // Persist the FULL set of artifacts (including transitions and audio) plus
+  // the fingerprint of the plan that produced them. The next plan_edit uses
+  // this to (a) tear down completely and (b) short-circuit if the plan is
+  // identical to what is already on the timeline.
+  // Delete AFTER new clips are created but BEFORE persisting — if creation
+  // fails, the old state survives for proper teardown on retry.
+  _previousPlanState.delete(projectId);
+  _previousPlanState.set(projectId, {
+    clipIds: [...clipIds],
+    textIds: [...textIds],
+    transitionIds: [...transitionIds],
+    audioClipIds: [...audioClipIds],
+    fingerprint: computeEditPlanFingerprint(plan),
+  });
+  return {
+    clipIds,
+    textIds,
+    transitionIds,
+    audioClipIds,
+    effectCount,
+    transitionCount,
+    audioCount,
+    ...motion,
+  };
 }
 
 async function materializeMotionMoments(
@@ -2406,6 +2726,7 @@ function normalizeDirectorPlanInput(value: unknown): EditPlan {
   return {
     segments: rawSegments.map((value) => {
       const segment = asRecord(value) ?? {};
+      const speedRamp = asRecord(segment.speedRamp);
       return {
         ...segment,
         sourceVideoId: typeof segment.sourceVideoId === "string" ? segment.sourceVideoId : "",
@@ -2415,6 +2736,17 @@ function normalizeDirectorPlanInput(value: unknown): EditPlan {
         effectSpecs: Array.isArray(segment.effectSpecs)
           ? segment.effectSpecs.filter((effect): effect is Record<string, unknown> => Boolean(effect && typeof effect === "object"))
           : undefined,
+        speedRamp: speedRamp ? {
+          keyframes: Array.isArray(speedRamp.keyframes)
+            ? speedRamp.keyframes.filter((k): k is Record<string, unknown> => Boolean(k && typeof k === "object"))
+            : [],
+          freezeFrames: Array.isArray(speedRamp.freezeFrames)
+            ? speedRamp.freezeFrames
+                .filter((f): f is Record<string, unknown> => Boolean(f && typeof f === "object"))
+                .filter((f) => Number.isFinite(f.sourceTime) && Number.isFinite(f.startTime) && Number.isFinite(f.duration) && (f.duration as number) > 0 && (f.startTime as number) >= 0)
+            : undefined,
+          pitchCorrection: typeof speedRamp.pitchCorrection === "boolean" ? speedRamp.pitchCorrection : true,
+        } : undefined,
       };
     }) as unknown as EditPlan["segments"],
     textElements: rawTextElements as EditPlan["textElements"],
@@ -11171,16 +11503,25 @@ async function captureBaselineFrames(
   host: EditingHost,
   mediaId: string,
   duration: number,
-): Promise<ExtractedFrame[]> {
+): Promise<{ frames: ExtractedFrame[]; firstError?: string }> {
   const frames: ExtractedFrame[] = [];
-  for (const timestamp of baselineFrameTimestamps(duration)) {
+  const timestamps = baselineFrameTimestamps(duration);
+  let firstError: string | undefined;
+  for (const timestamp of timestamps) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const job = await host.runJob("extractVideoFrame", {
         mediaId,
         timeSeconds: timestamp,
         maxWidth: 320,
       });
-      if (!job.ok || !isExtractedFrameData(job.data)) continue;
+      if (!job.ok) {
+        if (!firstError && job.error) firstError = job.error;
+        continue;
+      }
+      if (!isExtractedFrameData(job.data)) {
+        if (!firstError) firstError = "extractVideoFrame returned invalid frame data";
+        continue;
+      }
 
       frames.push({
         timestamp,
@@ -11191,7 +11532,7 @@ async function captureBaselineFrames(
       break;
     }
   }
-  return frames;
+  return { frames, firstError };
 }
 
 const TOOLS: RegisteredTool[] = [
@@ -28222,8 +28563,10 @@ const TOOLS: RegisteredTool[] = [
         let baseAnimator;
         try {
           baseAnimator = createMotionTextAnimator("text-reveal-up", genId());
-        } catch (error) {
-          return fail(
+      } catch (error) {
+        console.error("[plan_edit] materialize threw:", error);
+        if (error instanceof Error) console.error("[plan_edit] stack:", error.stack);
+        return fail(
             error instanceof Error ? error.message : "Invalid text animator preset",
             "INVALID_PARAMS",
           );
@@ -32702,9 +33045,12 @@ const TOOLS: RegisteredTool[] = [
         if (media.type !== "video") return fail(`Media id "${id}" is type "${media.type}", not video`, "INVALID_MEDIA");
 
         const duration = media.metadata.duration;
-        const frames = await captureBaselineFrames(host, id, duration);
+        const { frames, firstError } = await captureBaselineFrames(host, id, duration);
         if (frames.length === 0) {
-          return fail(`Frame capture returned no frames for "${id}" — check the exportFrame job`, "FRAME_CAPTURE_FAILED");
+          const hint = firstError
+            ? ` (job error: ${firstError})`
+            : "";
+          return fail(`Frame capture returned no frames for "${id}"${hint}`, "FRAME_CAPTURE_FAILED");
         }
         videoInputs.push({ videoId: id, duration, frames });
       }
@@ -32769,6 +33115,11 @@ const TOOLS: RegisteredTool[] = [
         trackIndex: { type: "integer" },
         targetPosition: num,
         speed: num,
+        speedRamp: obj({
+          keyframes: { type: "array", items: obj({ time: num, speed: num, easing: str }) },
+          freezeFrames: { type: "array", items: obj({ sourceTime: num, startTime: num, duration: num }) },
+          pitchCorrection: { type: "boolean" },
+        }),
         effects: { type: "array", items: str },
         effectSpecs: { type: "array", items: obj({
           type: str,
@@ -32792,6 +33143,7 @@ const TOOLS: RegisteredTool[] = [
         style: { type: "string", enum: ["title", "subtitle", "lower-third", "caption", "callout"] },
         startTime: num,
         duration: num,
+        position: obj({ x: num, y: num }),
         fontFamily: str,
         fontSize: num,
         color: str,
@@ -33023,6 +33375,7 @@ const TOOLS: RegisteredTool[] = [
           },
         ],
         tools: planTools,
+        maxTokens: 8192,
       });
 
       const planCall = response.toolUses.find((t) => t.name === "submit_edit_plan");
@@ -33065,6 +33418,7 @@ const TOOLS: RegisteredTool[] = [
               content: `Revise this EditPlan to address the internal review, then call submit_edit_plan with the complete corrected plan. Do not explain the revision.\n\n${JSON.stringify(finalPlan)}`,
             }],
             tools: planTools,
+            maxTokens: 8192,
           });
           const revisedCall = revisionResponse.toolUses.find((toolUse) => toolUse.name === "submit_edit_plan");
           if (revisedCall) {
@@ -33089,6 +33443,84 @@ const TOOLS: RegisteredTool[] = [
         }
       }
 
+      // No-op short-circuit: if the incoming plan fingerprints equal to the
+      // plan currently on the timeline, do NOT tear down and rebuild. This is
+      // the change that stops the "it loops and adds a new plan onto the
+      // timeline" behavior even when the LLM re-submits a semantically
+      // identical plan across turns.
+      //
+      // Before accepting the no-op, verify that every artifact the stored plan
+      // placed still exists on the timeline. If the user manually deleted a
+      // clip, transition, or text overlay between turns, the fingerprint still
+      // matches but the timeline no longer matches — we must fall through to
+      // materialize so the plan gets re-applied.
+      //
+      // Also require at least one stored artifact so an empty timeline (user
+      // nuked everything) doesn't vacuously match.
+      const fingerprintProjectId = host.getProject().id ?? "__default__";
+      const incomingFingerprint = computeEditPlanFingerprint(finalPlan);
+      const storedState = _previousPlanState.get(fingerprintProjectId);
+      if (storedState?.fingerprint === incomingFingerprint) {
+        const liveClipIds = new Set(
+          host.getProject().timeline.tracks.flatMap((t) => t.clips.map((c) => c.id)),
+        );
+        const liveTransitionIds = new Set(
+          host.getProject().timeline.tracks.flatMap((t) => (t.transitions ?? []).map((x) => x.id)),
+        );
+        const liveTextIds = new Set(
+          (host.getProject().textClips ?? []).map((c) => c.id),
+        );
+        const hasAnyStoredArtifact =
+          storedState.clipIds.length > 0 ||
+          storedState.audioClipIds.length > 0 ||
+          storedState.textIds.length > 0 ||
+          storedState.transitionIds.length > 0;
+        const allStoredPresent =
+          hasAnyStoredArtifact &&
+          storedState.clipIds.every((id) => liveClipIds.has(id)) &&
+          storedState.audioClipIds.every((id) => liveClipIds.has(id)) &&
+          storedState.transitionIds.every((id) => liveTransitionIds.has(id)) &&
+          storedState.textIds.every((id) => liveTextIds.has(id));
+        if (allStoredPresent) {
+          return ok(
+            `plan_edit: plan unchanged — timeline already matches (${storedState.clipIds.length} clip(s), ${storedState.textIds.length} text overlay(s), ${storedState.transitionIds.length} transition(s), ${storedState.audioClipIds.length} audio clip(s)). No changes applied.`,
+            {
+              applied: false,
+              editPlan: finalPlan,
+              clipIds: storedState.clipIds,
+              textIds: storedState.textIds,
+              transitionIds: storedState.transitionIds,
+              audioClipIds: storedState.audioClipIds,
+              effectCount: 0,
+              transitionCount: storedState.transitionIds.length,
+              audioCount: storedState.audioClipIds.length,
+              motionCompositionIds: [],
+              motionInstanceIds: [],
+              validationWarnings: finalPlanIssues.filter(
+                (i: { severity: string }) => i.severity === "warning",
+              ),
+              planReview: {
+                score: planReview.score,
+                deviations: planReview.deviations,
+                revisionApplied: false,
+              },
+              qualityPipeline: {
+                combinedScore: planReview.score,
+                needsCorrection: false,
+                corrections: [],
+                correctionsApplied: { applied: 0, skipped: 0 },
+                sampledFrameCount: 0,
+                extractionFailed: false,
+                skipped: true,
+                reason: "plan unchanged",
+              },
+            },
+          );
+        }
+        // Stored IDs are missing from the timeline (user deleted clips) —
+        // fall through to materialize so the plan gets re-applied.
+      }
+
       let materialized;
       try {
         materialized = await materializeEditPlan(finalPlan, resolvedMap, host);
@@ -33109,6 +33541,7 @@ const TOOLS: RegisteredTool[] = [
         materialized,
         planReview,
         frameSampling.observations,
+        frameSampling.extractionFailed,
       );
 
       // Step 10: Apply targeted corrections when the quality review flags issues
@@ -33122,8 +33555,12 @@ const TOOLS: RegisteredTool[] = [
         );
       }
 
+      const qualityLabel = frameSampling.extractionFailed
+        ? `Quality: ${(qualityResult.combinedScore * 100).toFixed(0)}% (UNVERIFIED — frame extraction failed, visual review excluded)`
+        : `Quality: ${(qualityResult.combinedScore * 100).toFixed(0)}% (${frameSampling.sampledCount} frames sampled)`;
+
       return ok(
-        `plan_edit applied: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s). Quality: ${(qualityResult.combinedScore * 100).toFixed(0)}% (${frameSampling.sampledCount} frames sampled, ${correctionsApplied.applied} correction(s) applied).`,
+        `plan_edit applied: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s). ${qualityLabel}, ${correctionsApplied.applied} correction(s) applied).`,
         {
           editPlan: finalPlan,
           ...materialized,
@@ -33141,6 +33578,7 @@ const TOOLS: RegisteredTool[] = [
             corrections: qualityResult.corrections,
             correctionsApplied,
             sampledFrameCount: frameSampling.sampledCount,
+            extractionFailed: frameSampling.extractionFailed,
           },
         },
       );

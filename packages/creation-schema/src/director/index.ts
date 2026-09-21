@@ -66,6 +66,20 @@ export {
 
 export type { DirectorValidationIssue } from "./validate";
 
+export {
+  normalizeEffectType,
+  normalizeTransitionType,
+  getKnownEffectTypes,
+  getKnownTransitionTypes,
+  KNOWN_EFFECT_TYPES,
+  isColorGradeType,
+  KNOWN_TRANSITION_TYPES,
+  MISPLACED_FEATURE_HINTS,
+  getMisplacedFeatureHint,
+  type KnownEffectType,
+  type KnownTransitionType,
+} from "./effect-types";
+
 export type {
   PromptGap,
   PromptExpansion,

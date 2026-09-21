@@ -1,5 +1,6 @@
 import type { EditPlan, EditPlanLayout, PlannedSegment, PlannedSpeedRamp } from "./edit-plan";
 import type { SegmentMap, VideoSegmentMap } from "./segment-map";
+import { normalizeEffectType, normalizeTransitionType, isColorGradeType, getMisplacedFeatureHint } from "./effect-types";
 
 export interface DirectorValidationIssue {
   readonly code: string;
@@ -71,7 +72,11 @@ export function validateSegmentMap(
 
     let lastEnd = 0;
     for (const segment of video.segments) {
-      if (segment.startTime < lastEnd) {
+      // A tiny epsilon lets adjacent segments with 1-frame precision issues
+      // (e.g. 5.033333 vs 5.033334) pass without a false overlap warning.
+      // Without this, real SegmentMaps from the vision worker produced
+      // warning spam that drowned out the actionable issues.
+      if (segment.startTime < lastEnd - 1e-3) {
         issues.push(
           issue(
             "warning",
@@ -157,17 +162,20 @@ export function validateEditPlan(
     validateLayout(seg.layout, i, issues);
     validateSpeedRamp(seg.speedRamp, seg.sourceEndTime - seg.sourceStartTime, i, issues);
     seg.effectSpecs?.forEach((effect, effectIndex) => {
-      if (!effect.type.trim()) {
+      if (typeof effect.type !== "string" || !effect.type.trim()) {
         issues.push(issue("error", "empty_effect_type", `Segment ${i} effect ${effectIndex} has no type.`, `segments.${i}.effectSpecs.${effectIndex}.type`));
+      } else if (!normalizeEffectType(effect.type) && !isColorGradeType(effect.type)) {
+        pushUnknownEffect(effect.type, `segments[${i}].effectSpecs[${effectIndex}]`, issues);
       }
+      validateColorGradeParams(effect, `segments[${i}].effectSpecs[${effectIndex}]`, issues);
       if (effect.intensity !== undefined && (!Number.isFinite(effect.intensity) || effect.intensity < 0 || effect.intensity > 1)) {
-        issues.push(issue("error", "effect_intensity_out_of_range", `Segment ${i} effect ${effectIndex} intensity must be between 0 and 1.`, `segments.${i}.effectSpecs.${effectIndex}.intensity`));
+        issues.push(issue("warning", "effect_intensity_out_of_range", `Segment ${i} effect ${effectIndex} intensity out of [0,1] — will be clamped.`, `segments.${i}.effectSpecs.${effectIndex}.intensity`));
       }
       if (effect.startOffset !== undefined && (!Number.isFinite(effect.startOffset) || effect.startOffset < 0)) {
-        issues.push(issue("error", "effect_offset_out_of_range", `Segment ${i} effect ${effectIndex} startOffset cannot be negative.`, `segments.${i}.effectSpecs.${effectIndex}.startOffset`));
+        issues.push(issue("warning", "effect_offset_out_of_range", `Segment ${i} effect ${effectIndex} startOffset negative — will be clamped to 0.`, `segments.${i}.effectSpecs.${effectIndex}.startOffset`));
       }
       if (effect.duration !== undefined && (!Number.isFinite(effect.duration) || effect.duration <= 0)) {
-        issues.push(issue("error", "effect_duration_invalid", `Segment ${i} effect ${effectIndex} duration must be positive.`, `segments.${i}.effectSpecs.${effectIndex}.duration`));
+        issues.push(issue("warning", "effect_duration_invalid", `Segment ${i} effect ${effectIndex} duration non-positive — will be clamped to 0.01.`, `segments.${i}.effectSpecs.${effectIndex}.duration`));
       }
       if (effect.easing !== undefined && !effect.easing.trim()) {
         issues.push(issue("error", "effect_easing_invalid", `Segment ${i} effect ${effectIndex} easing cannot be empty.`, `segments.${i}.effectSpecs.${effectIndex}.easing`));
@@ -214,6 +222,169 @@ export function validateEditPlan(
     }
   }
 
+  // Validate TOP-LEVEL plan.effects. These are the per-segment effects the
+  // director targets via `targetSegmentIndex` — the most common shape the
+  // LLM actually produces. Nothing validated them before, so an invented
+  // type like "zoom-punch" or an alias that needs normalization like
+  // "warmth" flowed straight through to materialize and became a silent
+  // no-op (or a hard error with no clear attribution).
+  for (let i = 0; i < plan.effects.length; i++) {
+    const effect = plan.effects[i];
+    if (!effect) continue;
+    if (typeof effect.type !== "string" || !effect.type.trim()) {
+      issues.push(
+        issue(
+          "error",
+          "empty_effect_type",
+          `plan.effects[${i}] has no type.`,
+          `effects.${i}.type`,
+        ),
+      );
+    } else if (!normalizeEffectType(effect.type) && !isColorGradeType(effect.type)) {
+      pushUnknownEffect(effect.type, `plan.effects[${i}]`, issues);
+    }
+    // Color grade effects route to clip/setColorGrading, not effect/add.
+    // Empty params means the grade does nothing — catch it early.
+    validateColorGradeParams(effect, `plan.effects[${i}]`, issues);
+    if (
+      effect.targetSegmentIndex !== undefined &&
+      (!Number.isInteger(effect.targetSegmentIndex) ||
+        effect.targetSegmentIndex < 0 ||
+        effect.targetSegmentIndex >= plan.segments.length)
+    ) {
+      issues.push(
+        issue(
+          "error",
+          "invalid_effect_segment",
+          `plan.effects[${i}] targetSegmentIndex ${effect.targetSegmentIndex} is out of range.`,
+          `effects.${i}.targetSegmentIndex`,
+        ),
+      );
+    }
+    if (
+      effect.intensity !== undefined &&
+      (!Number.isFinite(effect.intensity) ||
+        effect.intensity < 0 ||
+        effect.intensity > 1)
+    ) {
+      issues.push(
+        issue(
+          "warning",
+          "effect_intensity_out_of_range",
+          `plan.effects[${i}] intensity out of [0,1] — will be clamped.`,
+          `effects.${i}.intensity`,
+        ),
+      );
+    }
+    if (
+      effect.startOffset !== undefined &&
+      (!Number.isFinite(effect.startOffset) || effect.startOffset < 0)
+    ) {
+      issues.push(
+        issue(
+          "warning",
+          "effect_offset_out_of_range",
+          `plan.effects[${i}] startOffset negative — will be clamped to 0.`,
+          `effects.${i}.startOffset`,
+        ),
+      );
+    }
+    if (
+      effect.duration !== undefined &&
+      (!Number.isFinite(effect.duration) || effect.duration <= 0)
+    ) {
+      issues.push(
+        issue(
+          "warning",
+          "effect_duration_invalid",
+          `plan.effects[${i}] duration non-positive — will be clamped to 0.01.`,
+          `effects.${i}.duration`,
+        ),
+      );
+    }
+    if (effect.easing !== undefined && !effect.easing.trim()) {
+      issues.push(
+        issue(
+          "error",
+          "effect_easing_invalid",
+          `plan.effects[${i}] easing cannot be empty.`,
+          `effects.${i}.easing`,
+        ),
+      );
+    }
+  }
+
+  // Validate transition types against the real registry
+  for (let i = 0; i < plan.transitions.length; i++) {
+    const transition = plan.transitions[i];
+    if (!transition) continue;
+    if (typeof transition.type !== "string" || !transition.type.trim()) {
+      issues.push(issue("error", "empty_transition_type", `Transition ${i} has no type.`, `transitions.${i}.type`));
+    } else if (!normalizeTransitionType(transition.type)) {
+      issues.push(issue("error", "unknown_transition_type", `Transition ${i} type "${transition.type}" has no matching render implementation and will silently no-op.`, `transitions.${i}.type`));
+    }
+    if (!Number.isFinite(transition.duration) || transition.duration <= 0) {
+      issues.push(issue("error", "invalid_transition_duration", `Transition ${i} has non-positive duration.`, `transitions.${i}.duration`));
+    }
+  }
+
+  // Validate that effect types on segments (string[] effects array) are real
+  for (let i = 0; i < plan.segments.length; i++) {
+    const seg = plan.segments[i] as PlannedSegment;
+    for (let j = 0; j < seg.effects.length; j++) {
+      const effectType = seg.effects[j];
+      if (typeof effectType !== "string" || !effectType.trim()) {
+        issues.push(issue("error", "empty_effect_type", `Segment ${i} effects[${j}] has no type.`, `segments.${i}.effects.${j}`));
+      } else if (!normalizeEffectType(effectType) && !isColorGradeType(effectType)) {
+        pushUnknownEffect(effectType, `segments[${i}].effects[${j}]`, issues);
+      }
+      // colorGrade in the string effects array gets empty params by default,
+      // which means it silently does nothing — warn so the LLM uses effectSpecs instead.
+      if (isColorGradeType(effectType)) {
+        issues.push(
+          issue(
+            "warning",
+            "implicit_color_grade_params",
+            `Segment ${i} effects[${j}] type "${effectType}" will receive empty params — use effectSpecs with explicit params instead.`,
+            `segments.${i}.effects.${j}`,
+          ),
+        );
+      }
+    }
+  }
+
+  for (let i = 0; i < plan.audioDecisions.length; i++) {
+    const decision = plan.audioDecisions[i];
+    if (!decision) continue;
+    if (
+      (decision.type === "music" || decision.type === "sfx") &&
+      (!decision.sourceVideoId || !String(decision.sourceVideoId).trim())
+    ) {
+      issues.push(issue(
+        "error",
+        "audio_decision_missing_source",
+        `audioDecisions[${i}] has type "${decision.type}" but no sourceVideoId — it will be silently dropped. Set sourceVideoId to a media library ID with audio.`,
+        `audioDecisions.${i}.sourceVideoId`,
+      ));
+    }
+    if (!Number.isFinite(decision.startTime) || decision.startTime < 0) {
+      issues.push(issue(
+        "error",
+        "audio_decision_bad_start",
+        `audioDecisions[${i}] has invalid startTime (${decision.startTime}).`,
+        `audioDecisions.${i}.startTime`,
+      ));
+    }
+    if (!Number.isFinite(decision.duration) || decision.duration <= 0) {
+      issues.push(issue(
+        "error",
+        "audio_decision_bad_duration",
+        `audioDecisions[${i}] has invalid duration (${decision.duration}).`,
+        `audioDecisions.${i}.duration`,
+      ));
+    }
+  }
+
   if (plan.metadata.targetDuration <= 0) {
     issues.push(
       issue("error", "bad_target_duration", "Target duration must be positive.", "metadata.targetDuration"),
@@ -221,6 +392,51 @@ export function validateEditPlan(
   }
 
   return issues;
+}
+
+/**
+ * Validate that a color-grade effect carries non-empty params.
+ * colorGrade types route to clip/setColorGrading (not effect/add), so
+ * empty params means the grade silently does nothing.
+ */
+function validateColorGradeParams(
+  effect: { type?: unknown; params?: unknown },
+  pathPrefix: string,
+  issues: DirectorValidationIssue[],
+): void {
+  if (!isColorGradeType(effect.type as string | undefined)) return;
+  const params = effect.params as Record<string, unknown> | undefined;
+  if (!params || Object.keys(params).length === 0) {
+    issues.push(
+      issue(
+        "error",
+        "empty_color_grade_params",
+        `${pathPrefix} is a colorGrade with no params — it will do nothing.`,
+        `${pathPrefix}.params`,
+      ),
+    );
+  }
+}
+
+/**
+ * Emit an unknown-effect issue. If the type is a known misplaced feature
+ * (speed ramp, transform, transition), emit "misplaced_feature" with an
+ * actionable message instead — the LLM needs to know WHERE the thing belongs.
+ */
+function pushUnknownEffect(
+  rawType: string,
+  pathPrefix: string,
+  issues: DirectorValidationIssue[],
+): void {
+  const hint = getMisplacedFeatureHint(rawType);
+  if (hint) {
+    issues.push(issue("error", "misplaced_feature",
+      `${pathPrefix}: ${hint}`, `${pathPrefix}.type`));
+    return;
+  }
+  issues.push(issue("error", "unknown_effect_type",
+    `${pathPrefix} type "${rawType}" has no matching render implementation. Valid types: brightness, contrast, saturation, hue, blur, sharpen, vignette, grain, temperature, tint, tonal, shadow, glow, motion-blur, radial-blur, chromatic-aberration, colorGrade.`,
+    `${pathPrefix}.type`));
 }
 
 function rangesOverlap(left: PlannedSegment, right: PlannedSegment): boolean {
@@ -267,8 +483,12 @@ function validateSpeedRamp(
     previousTime = keyframe.time;
   });
   ramp.freezeFrames?.forEach((freeze, freezeIndex) => {
-    if (!Number.isFinite(freeze.sourceTime) || freeze.sourceTime < 0 || freeze.sourceTime > sourceDuration || !Number.isFinite(freeze.startTime) || freeze.startTime < 0 || !Number.isFinite(freeze.duration) || freeze.duration <= 0) {
-      issues.push(issue("error", "invalid_freeze_frame", `Segment ${segmentIndex} freeze frame ${freezeIndex} is invalid.`, `segments.${segmentIndex}.speedRamp.freezeFrames.${freezeIndex}`));
+    if (!Number.isFinite(freeze.sourceTime) || !Number.isFinite(freeze.startTime) || !Number.isFinite(freeze.duration) || freeze.duration <= 0) {
+      issues.push(issue("error", "invalid_freeze_frame", `Segment ${segmentIndex} freeze frame ${freezeIndex} has non-finite or non-positive values.`, `segments.${segmentIndex}.speedRamp.freezeFrames.${freezeIndex}`));
+    } else if (freeze.sourceTime < 0 || freeze.sourceTime > sourceDuration || freeze.startTime < 0) {
+      // Treat out-of-range freeze frames as warnings, not errors — the
+      // materializer already clamps values so they won't crash the timeline.
+      issues.push(issue("warning", "clamp_freeze_frame", `Segment ${segmentIndex} freeze frame ${freezeIndex} sourceTime/startTime out of range — will be clamped.`, `segments.${segmentIndex}.speedRamp.freezeFrames.${freezeIndex}`));
     }
   });
 }
@@ -299,24 +519,57 @@ export function normalizeEditPlan(
       end = duration ?? 1;
     }
 
-    return { ...segment, sourceStartTime: start, sourceEndTime: end };
+    // Normalize effect types on this segment
+    const normalizedEffectSpecs = segment.effectSpecs?.map((spec) => {
+      const normalized = normalizeEffectType(spec.type);
+      return normalized ? { ...spec, type: normalized } : spec;
+    });
+    const normalizedEffects = segment.effects.map((type) => {
+      const normalized = normalizeEffectType(type);
+      return normalized ?? type;
+    });
+
+    return {
+      ...segment,
+      sourceStartTime: start,
+      sourceEndTime: end,
+      ...(normalizedEffectSpecs ? { effectSpecs: normalizedEffectSpecs } : {}),
+      effects: normalizedEffects,
+    };
   });
+  // Normalize top-level plan.effects the same way we normalize per-segment
+  // effects. Without this, an alias like "warmth" survives normalization
+  // and — even though validation now catches unknown types — the plan gets
+  // rejected when it could have been transparently mapped to the real
+  // implementation ("temperature"). Alias normalizing is what makes
+  // director-authored plans from older prompts still execute.
+  const effects = plan.effects.map((effect) => {
+    const normalizedType = normalizeEffectType(effect.type);
+    return normalizedType ? { ...effect, type: normalizedType } : effect;
+  });
+
   const transitions = plan.transitions.map((transition) => {
     const previous = segments[transition.afterSegmentIndex];
     const next = segments[transition.afterSegmentIndex + 1];
+    // Cap transition duration at half the shorter adjacent segment to
+    // prevent crossfades longer than the source clips (causes frame-hold glitches)
     const maxDuration = previous && next
-      ? Math.min(previous.sourceEndTime - previous.sourceStartTime, next.sourceEndTime - next.sourceStartTime) * 2
+      ? Math.min(previous.sourceEndTime - previous.sourceStartTime, next.sourceEndTime - next.sourceStartTime) * 0.5
       : 0.25;
     const duration = Number.isFinite(transition.duration) && transition.duration > 0
-      ? transition.duration
+      ? Math.min(transition.duration, maxDuration)
       : Math.min(0.25, maxDuration);
 
-    return { ...transition, duration };
+    // Normalize transition type
+    const normalizedType = normalizeTransitionType(transition.type);
+
+    return { ...transition, duration, type: normalizedType ?? transition.type };
   });
 
   return {
     ...plan,
     segments,
+    effects,
     transitions,
   };
 }

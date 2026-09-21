@@ -70,10 +70,10 @@ describe("director prompt", () => {
       }],
     }, "make the strongest highlight");
 
-    expect(prompt).toContain("## Footage graph");
-    expect(prompt).toContain('"importanceScore": 0.94');
-    expect(prompt).toContain('"beatTimestamps"');
-    expect(prompt).toContain("2.1");
-    expect(prompt).toContain("2.6");
+    expect(prompt).toContain("## Footage Analysis");
+    expect(prompt).toContain("importance=0.94");
+    expect(prompt).toContain("beats=[2.1,2.6]");
+    expect(prompt).toContain("segment-1");
+    expect(prompt).toContain("high-energy action");
   });
 });

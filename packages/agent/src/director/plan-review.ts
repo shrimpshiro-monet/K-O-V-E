@@ -130,12 +130,10 @@ export function measureEditPlanStyle(plan: EditPlan): StyleProfile {
     ...plan.segments.flatMap((segment) => segment.effects),
   ])];
   const cutStyle = transitionPalette.length === 0
-    ? "unknown"
+    ? "hard"
     : transitionPalette.every((type) => ["crossfade", "dipToBlack", "fade"].includes(type))
       ? "soft"
-      : transitionPalette.every((type) => ["hardCut", "cut"].includes(type))
-        ? "hard"
-        : "mixed";
+      : "mixed";
 
   return {
     version: "1.0.0",

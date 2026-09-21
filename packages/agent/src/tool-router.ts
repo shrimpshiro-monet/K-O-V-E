@@ -31,7 +31,28 @@ const ALWAYS_AVAILABLE = new Set([
 
 const MOTION_TERMS = /\b(motion|composition|layer|keyframe|animate|animation|after effects|lower third|title card|kinetic|lottie|svg|figma|particle|shader|mask|matte|precomp|camera|render frame)\b/i;
 const CREATION_TERMS = /\b(3d|three[- ]?d|product|character|scene|model|gltf|glb|rig|mesh|material|texture|bevel|displacement|x[- ]?ray|cloth|camera module|exploded|cinematic|decal|cutaway)\b/i;
-const DIRECTOR_TERMS = /\b(direct|edit|cut|trim|highlight|reel|montage|compilation|remix|create|make|kreate|analyze|footage|segment|footage|plan|sequence|chop|splice|join)\b/i;
+const DIRECTOR_TERMS = /\b(direct|edit|cut|trim|highlight|reel|montage|compilation|remix|create|make|kreate|analyze|footage|segment|plan|sequence|chop|splice|join|video|film|clip|footage|b-roll|podcast|vlog|social|tiktok|youtube|instagram|reel|short)\b/i;
+
+/**
+ * Domains that the director (Monet) needs access to when authoring edits.
+ * This ensures effect, transition, text, audio, clip, and track tools are
+ * always available when the user asks for an edit — not just AI tools.
+ */
+const DIRECTOR_DOMAINS = new Set([
+  "ai",           // plan_edit, expand_prompt, extract_segments
+  "effect",       // add_video_effect, remove_video_effect
+  "transition",   // add_transition, remove_transition
+  "text",         // create_text_clip, update_text_clip
+  "audio",        // audio tools
+  "clip",         // split_clip, move_clip, duplicate_clip
+  "track",        // add_track, remove_track
+  "transform",    // transform/update
+  "speed",        // speed changes
+  "color",        // color grading
+  "subtitle",     // subtitle tools
+  "marker",       // markers
+  "export",       // export tools
+]);
 
 const words = (value: string): string[] =>
   value
@@ -78,10 +99,17 @@ export function selectToolsForPrompt(
 
   const candidates = listTools().filter((tool) => {
     if (ALWAYS_AVAILABLE.has(tool.name) || prior.has(tool.name)) return true;
-    if (wantsDirector && tool.domain === "ai") return true;
+
+    // Director mode: include all editing-relevant domains so the AI can
+    // author a complete edit with effects, transitions, text, audio, etc.
+    if (wantsDirector && DIRECTOR_DOMAINS.has(tool.domain)) return true;
+
+    // Motion-only: include motion domain tools (but not creation)
     if (!wantsMotion && !wantsCreation) return tool.domain !== "motion";
     if (wantsCreation && isCreationTool(tool)) return true;
     if (wantsMotion && tool.domain === "motion" && !isCreationTool(tool)) return true;
+
+    // Default: include read, project, media, export, raw domains
     return tool.domain === "read" || ["project", "media", "export", "raw"].includes(tool.domain);
   });
 
@@ -94,7 +122,7 @@ export function selectToolsForPrompt(
         (prior.has(tool.name) ? 5_000 : 0) +
         (wantsCreation && isCreationTool(tool) ? 100 : 0) +
         (wantsMotion && tool.domain === "motion" ? 50 : 0) +
-        (wantsDirector && tool.domain === "ai" ? 200 : 0),
+        (wantsDirector && DIRECTOR_DOMAINS.has(tool.domain) ? 200 : 0),
     }))
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .slice(0, maxTools)
