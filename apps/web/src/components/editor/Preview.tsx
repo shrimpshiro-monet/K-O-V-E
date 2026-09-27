@@ -878,27 +878,28 @@ export const Preview: React.FC = () => {
     audioContext: AudioContext | BaseAudioContext,
     blob: Blob,
     audioTrackIndex: number = 0,
-  ): Promise<AudioBuffer | null> => {
+  ): Promise<{ buffer: AudioBuffer | null; permanent: boolean }> => {
+    let permanent = false;
     try {
       const { extractAudioWav } = await import("@kove-advanced/core/media");
       const wavBlob = await extractAudioWav(blob, audioTrackIndex);
       const arrayBuffer = await wavBlob.arrayBuffer();
-      return await audioContext.decodeAudioData(arrayBuffer);
+      return { buffer: await audioContext.decodeAudioData(arrayBuffer), permanent: false };
     } catch (error) {
       if (error instanceof Error && error.name === "NoAudioStreamError") {
-        return null;
+        permanent = true;
       }
     }
 
-    if (audioTrackIndex === 0) {
-      try {
-        const arrayBuffer = await blob.arrayBuffer();
-        return await audioContext.decodeAudioData(arrayBuffer);
-      } catch {
-        return null;
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      return { buffer: await audioContext.decodeAudioData(arrayBuffer), permanent };
+    } catch (error) {
+      if (error instanceof Error && error.name === "NoAudioStreamError") {
+        permanent = true;
       }
+      return { buffer: null, permanent };
     }
-    return null;
   };
 
   const getAudioEffectSignature = useCallback((effects: Effect[]): string =>
@@ -2063,11 +2064,13 @@ export const Preview: React.FC = () => {
                   mediaItem.blob,
                   audioClip.audioTrackIndex ?? 0,
                 );
-                if (!loaded) {
-                  noAudioBufferRef.current.add(audioCacheKey);
+                if (!loaded.buffer) {
+                  if (loaded.permanent) {
+                    noAudioBufferRef.current.add(audioCacheKey);
+                  }
                   continue;
                 }
-                audioBuffer = loaded;
+                audioBuffer = loaded.buffer;
                 audioBufferCacheRef.current.set(audioCacheKey, audioBuffer);
               } catch (error) {
                 console.warn(
@@ -2174,19 +2177,19 @@ export const Preview: React.FC = () => {
           }
 
           try {
-            audioBuffer = await loadAudioBuffer(
+            const loaded = await loadAudioBuffer(
               audioContext,
               mediaItem.blob,
               clip.audioTrackIndex ?? 0,
             );
+            audioBuffer = loaded.buffer;
             if (audioBuffer) {
               audioBufferCacheRef.current.set(cacheKey, audioBuffer);
-            } else {
+            } else if (loaded.permanent) {
               noAudioBufferRef.current.add(cacheKey);
             }
           } catch {
             audioBuffer = null;
-            noAudioBufferRef.current.add(cacheKey);
           }
         }
 
