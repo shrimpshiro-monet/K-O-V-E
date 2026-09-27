@@ -269,19 +269,16 @@ export function buildDirectorPrompt(
 
   const genreInfo = genre
     ? `\nGenre: ${genre.name} — ${genre.description}\nConfiguration: ${JSON.stringify({
-      ...genre,
-      styleProfile: genre.styleProfile ?? {
-        pacing: genre.pacing ?? genre.rules.pacing,
-        cutsPerMinute: genre.cutsPerMinuteTarget,
-        cutStyle: genre.rules.cutStyle,
-        effectPalette: genre.effectPalette ?? genre.rules.effectPalette,
-        transitionPalette: genre.transitionPalette ?? genre.rules.transitionPreference,
-      },
-      captionTemplate: genre.captionTemplate,
-      pacing: genre.pacing ?? genre.rules.pacing,
-      effectPalette: genre.effectPalette ?? genre.rules.effectPalette,
-      transitionPalette: genre.transitionPalette ?? genre.rules.transitionPreference,
-    }, null, 2)}`
+        ...genre,
+        styleProfile: genre.styleProfile ?? {
+          pacing: genre.pacing ?? genre.rules.pacing,
+          cutsPerMinute: genre.cutsPerMinuteTarget,
+          cutStyle: genre.rules.cutStyle,
+          effectPalette: genre.effectPalette ?? genre.rules.effectPalette,
+          transitionPalette: genre.transitionPalette ?? genre.rules.transitionPreference,
+        },
+        captionTemplate: genre.captionTemplate,
+      }, null, 2)}`
     : "";
   const referenceInfo = referenceAnalysis
     ? `\nStyle profile target from reference footage (apply this style to source footage only; do not place reference footage on the timeline):\n${JSON.stringify(referenceAnalysis, null, 2)}`

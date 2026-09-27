@@ -1246,3 +1246,116 @@ describe("ActionExecutor project/registerGeneratedShader", () => {
     ).toEqual(["ai-example-abcd1234"]);
   });
 });
+
+describe("ActionExecutor clip/add media-track type guard", () => {
+  function makeMedia(id: string, name: string, type: "video" | "audio" | "image") {
+    return {
+      id,
+      name,
+      type,
+      fileHandle: null,
+      blob: null,
+      metadata: { duration: 30, width: 1920, height: 1080, frameRate: 30 },
+      thumbnailUrl: null,
+      waveformData: null,
+    } as unknown as (typeof makeProject extends () => infer P
+      ? P extends Project
+        ? P["mediaLibrary"]["items"][number]
+        : never
+      : never);
+  }
+
+  function projectWithAudioTrack(): Project {
+    const project = makeProject();
+    project.mediaLibrary.items.push(makeMedia("music-video", "song.mp4", "video"));
+    project.mediaLibrary.items.push(makeMedia("song-audio", "song.wav", "audio"));
+    project.timeline.tracks.push({
+      id: "a1",
+      type: "audio",
+      name: "Music",
+      clips: [],
+      transitions: [],
+      locked: false,
+      hidden: false,
+      muted: false,
+      solo: false,
+    } as unknown as (typeof project.timeline.tracks)[number]);
+    return project;
+  }
+
+  it("allows a video media item on an audio track (music / separateAudio source)", async () => {
+    const executor = new ActionExecutor();
+    const project = projectWithAudioTrack();
+
+    const result = await executor.execute(
+      {
+        id: "add-video-to-audio",
+        type: "clip/add",
+        params: { trackId: "a1", mediaId: "music-video", startTime: 0 },
+        timestamp: Date.now(),
+      } as unknown as Action,
+      project,
+    );
+
+    expect(result.success).toBe(true);
+    const audioTrack = project.timeline.tracks.find((t) => t.id === "a1");
+    expect(audioTrack?.clips).toHaveLength(1);
+    expect(audioTrack?.clips[0]?.mediaId).toBe("music-video");
+  });
+
+  it("rejects an image media item added to an audio track", async () => {
+    const executor = new ActionExecutor();
+    const project = projectWithAudioTrack();
+    project.mediaLibrary.items.push(makeMedia("cover", "cover.png", "image"));
+
+    const result = await executor.execute(
+      {
+        id: "add-image-to-audio",
+        type: "clip/add",
+        params: { trackId: "a1", mediaId: "cover", startTime: 0 },
+        timestamp: Date.now(),
+      } as unknown as Action,
+      project,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toMatch(/audio track/i);
+    const audioTrack = project.timeline.tracks.find((t) => t.id === "a1");
+    expect(audioTrack?.clips).toHaveLength(0);
+  });
+
+  it("still allows audio media on a video track (audio split is legitimate)", async () => {
+    const executor = new ActionExecutor();
+    const project = makeProjectWithClip();
+    project.mediaLibrary.items.push(makeMedia("song-audio", "song.wav", "audio"));
+
+    const result = await executor.execute(
+      {
+        id: "add-audio-to-video",
+        type: "clip/add",
+        params: { trackId: "t1", mediaId: "song-audio", startTime: 0 },
+        timestamp: Date.now(),
+      } as unknown as Action,
+      project,
+    );
+
+    expect(result.success).toBe(true);
+  });
+
+  it("still allows audio media on an audio track", async () => {
+    const executor = new ActionExecutor();
+    const project = projectWithAudioTrack();
+
+    const result = await executor.execute(
+      {
+        id: "add-audio-to-audio",
+        type: "clip/add",
+        params: { trackId: "a1", mediaId: "song-audio", startTime: 0 },
+        timestamp: Date.now(),
+      } as unknown as Action,
+      project,
+    );
+
+    expect(result.success).toBe(true);
+  });
+});

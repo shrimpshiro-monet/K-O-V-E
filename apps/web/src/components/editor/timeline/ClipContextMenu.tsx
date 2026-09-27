@@ -60,7 +60,8 @@ export function useClipContextMenuItems({
   }, [track.clips, clip.id, clip.startTime]);
 
   const mediaItem = getMediaItem(clip.mediaId);
-  const clipMediaType = mediaItem?.type ?? track.type;
+  const clipMediaType =
+    track.type === "audio" ? "audio" : mediaItem?.type ?? track.type;
   const isVideo = clipMediaType === "video";
   const isAudio = clipMediaType === "audio";
   const isImage = clipMediaType === "image";

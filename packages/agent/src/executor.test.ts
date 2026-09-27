@@ -184,6 +184,12 @@ describe("executeTool", () => {
           type: "video",
           metadata: { duration: 8 },
         },
+        {
+          id: "audio-1",
+          name: "bed.wav",
+          type: "audio",
+          metadata: { duration: 30 },
+        },
       ],
       },
     } as ReturnType<typeof makeEmptyProject>;
@@ -245,7 +251,7 @@ describe("executeTool", () => {
               }],
               audioDecisions: [{
                 type: "music",
-                sourceVideoId: "video-1",
+                sourceVideoId: "audio-1",
                 sourceStartTime: 0,
                 sourceEndTime: 4,
                 startTime: 0,
@@ -254,7 +260,7 @@ describe("executeTool", () => {
                 rationale: "music bed",
               }, {
                   type: "sfx",
-                  sourceVideoId: "video-1",
+                  sourceVideoId: "audio-1",
                   sourceStartTime: 1,
                   sourceEndTime: 1.25,
                   startTime: 1,
@@ -301,6 +307,93 @@ describe("executeTool", () => {
     expect((result.data as { motionCompositionIds: string[] }).motionCompositionIds).toHaveLength(1);
     expect(host.getProject().motionCompositions).toHaveLength(1);
     expect(host.getProject().motionCompositions?.[0]?.layers.some((layer) => layer.type === "particle")).toBe(true);
+  });
+
+  it("prefers standalone audio media for music when the plan points at a video", async () => {
+    const project = {
+      ...makeEmptyProject(),
+      id: "prefer-audio-test",
+      mediaLibrary: {
+        items: [
+          {
+            id: "video-1",
+            name: "footage.mp4",
+            type: "video",
+            metadata: { duration: 8 },
+          },
+          {
+            id: "audio-1",
+            name: "bed.mp3",
+            type: "audio",
+            metadata: { duration: 30 },
+          },
+        ],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    _resetPlanState("prefer-audio-test");
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [{
+            id: "plan-pref-audio",
+            name: "submit_edit_plan",
+            input: {
+              segments: [{
+                sourceVideoId: "video-1",
+                sourceStartTime: 0,
+                sourceEndTime: 4,
+                trackIndex: 0,
+                targetPosition: 0,
+                speed: 1,
+                effects: [],
+                effectSpecs: [],
+                rationale: "opening",
+              }],
+              textElements: [],
+              effects: [],
+              transitions: [],
+              audioDecisions: [{
+                type: "music",
+                sourceVideoId: "video-1",
+                sourceStartTime: 2,
+                sourceEndTime: 6,
+                startTime: 0,
+                duration: 4,
+                volume: 0.7,
+                rationale: "should prefer mp3",
+              }],
+              metadata: {
+                targetDuration: 4,
+                targetPlatform: "social",
+                genre: "highlight",
+                pacing: "fast",
+                rationale: "test",
+              },
+              motionMoments: [],
+            },
+          }],
+        }),
+      },
+    } as NonNullable<EditingHost["llm"]>;
+
+    const result = await executeTool("plan_edit", { prompt: "use the music bed" }, host);
+    expect(result.ok).toBe(true);
+
+    const musicTrack = host.getProject().timeline.tracks.find(
+      (track) => track.type === "audio" && track.name === "Music",
+    );
+    expect(musicTrack).toBeDefined();
+    expect(musicTrack?.clips).toHaveLength(1);
+    // The plan pointed at video-1; materializer must substitute audio-1.
+    expect(musicTrack?.clips[0]?.mediaId).toBe("audio-1");
+    // Video-planned source offsets do not transfer — start at the head of the mp3.
+    expect(musicTrack?.clips[0]?.inPoint).toBe(0);
+    expect(musicTrack?.clips[0]?.outPoint).toBeGreaterThan(0);
+    _resetPlanState("prefer-audio-test");
   });
 
   it("returns applied:false when re-applying an identical plan (no-op short-circuit)", async () => {

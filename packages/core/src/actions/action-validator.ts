@@ -18,6 +18,31 @@ import type {
 import type { Project, Timeline, Track, Clip } from "../types";
 import { getActionHandler } from "./registry";
 
+/**
+ * Whether a media item of `mediaType` may be placed on a track of `trackType`.
+ *
+ * Mirrors how a real NLE organises a timeline:
+ *  - video and image share a video track (an image is a one-frame video)
+ *  - audio tracks accept audio media, and also video media used as an audio
+ *    source (detached audio / `separateAudio`, or a director music decision
+ *    that falls back to a video file when no standalone audio exists)
+ *  - audio media IS allowed on a video track: splitting a clip's audio onto the
+ *    timeline is a normal editing operation and must stay legal
+ *
+ * Only image-on-audio is rejected — images carry no audio stream. Video placed
+ * on an audio track is legal but must never be *visually* rendered from that
+ * track; see `getVisibleTrackRenderOrder`.
+ */
+export function isMediaCompatibleWithTrack(
+  mediaType: "video" | "audio" | "image" | string,
+  trackType: string,
+): boolean {
+  if (trackType === "audio") return mediaType === "audio" || mediaType === "video";
+  // Video, image, text and graphics tracks accept visual media; audio may also
+  // be split onto a video track.
+  return mediaType !== "audio" || trackType === "video";
+}
+
 export class ActionValidator {
   validate(action: Action, project: Project): ValidationResult {
     const errors: ValidationError[] = [];
@@ -527,15 +552,24 @@ export class ActionValidator {
             path: "params.mediaId",
           });
         } else {
-          const mediaExists = project.mediaLibrary.items.some(
+          const media = project.mediaLibrary.items.find(
             (item) => item.id === action.params.mediaId,
           );
-          if (!mediaExists) {
+          if (!media) {
             errors.push({
               code: "MEDIA_NOT_FOUND",
               message: `Media with ID ${action.params.mediaId} not found`,
               path: "params.mediaId",
             });
+          } else if (typeof action.params.trackId === "string") {
+            const track = this.findTrack(timeline, action.params.trackId);
+            if (track && !isMediaCompatibleWithTrack(media.type, track.type)) {
+              errors.push({
+                code: "INVALID_PARAMS",
+                message: `Media type "${media.type}" cannot be added to a ${track.type} track. Audio tracks take audio (or video as an audio source); images have no audio stream.`,
+                path: "params.mediaId",
+              });
+            }
           }
         }
         if (

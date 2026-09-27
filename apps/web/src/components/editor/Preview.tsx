@@ -1179,9 +1179,16 @@ export const Preview: React.FC = () => {
   const project = useProjectStore((state) => state.project);
   const getMediaItem = useProjectStore((state) => state.getMediaItem);
   const mediaClipHasVisual = useCallback(
-    (clip: PreviewClip) =>
-      getMediaItemCapabilities(getMediaItem(clip.mediaId)).visual,
-    [getMediaItem],
+    (clip: PreviewClip) => {
+      // Video media may legally live on an audio track (music source /
+      // separateAudio) but must never be painted into the picture.
+      const owningTrack = project.timeline.tracks.find(
+        (track) => track.id === clip.trackId,
+      );
+      if (owningTrack?.type === "audio") return false;
+      return getMediaItemCapabilities(getMediaItem(clip.mediaId)).visual;
+    },
+    [project, getMediaItem],
   );
   const mediaClipHasAudio = useCallback(
     (clip: PreviewClip) =>
@@ -1912,6 +1919,7 @@ export const Preview: React.FC = () => {
         .map((t, idx) => ({ track: t, originalIndex: idx }))
         .filter(
           ({ track }) =>
+            track.type !== "audio" &&
             !track.hidden &&
             track.clips.some(
               (clip) =>
@@ -2640,7 +2648,9 @@ export const Preview: React.FC = () => {
 
       const videoTracks = timelineTracks.filter(
         (track) =>
-          !track.hidden && track.clips.some((clip) => mediaClipHasVisual(clip)),
+          track.type !== "audio" &&
+          !track.hidden &&
+          track.clips.some((clip) => mediaClipHasVisual(clip)),
       );
 
       let hasRenderedFrame = false;
@@ -3239,7 +3249,9 @@ export const Preview: React.FC = () => {
 
       const videoTracks = timelineTracks.filter(
         (track) =>
-          !track.hidden && track.clips.some((clip) => mediaClipHasVisual(clip)),
+          track.type !== "audio" &&
+          !track.hidden &&
+          track.clips.some((clip) => mediaClipHasVisual(clip)),
       );
 
       const hasVideoContent = videoTracks.some((track) =>
@@ -3422,7 +3434,9 @@ export const Preview: React.FC = () => {
       ) {
         return { canUse: false, clips: [] };
       }
-      const videoTracks = tracks.filter((track) => !track.hidden);
+      const videoTracks = tracks.filter(
+        (track) => !track.hidden && track.type !== "audio",
+      );
 
       const allVideoClips: Array<{
         clip: (typeof tracks)[0]["clips"][0];
@@ -3493,7 +3507,9 @@ export const Preview: React.FC = () => {
       // They are rendered using CPU canvas2D after the video frame
 
       // Collect image clips for background compositing (don't disable native playback)
-      const imageTracks = tracks.filter((track) => !track.hidden);
+      const imageTracks = tracks.filter(
+        (track) => !track.hidden && track.type !== "audio",
+      );
       const imageClips: Array<{
         clip: (typeof tracks)[0]["clips"][0];
         trackIndex: number;
@@ -6119,25 +6135,24 @@ export const Preview: React.FC = () => {
     isDark,
   ]);
 
-  const [previewInvalidateCounter, setPreviewInvalidateCounter] = useState(0);
   useEffect(() => {
     const handler = () => {
       processedAudioBufferCacheRef.current.clear();
       if (audioGraphRef.current) {
         audioGraphRef.current.seekTo(getMasterClock().currentTime);
       }
-      setPreviewInvalidateCounter((c) => c + 1);
     };
     window.addEventListener("kove-advanced:preview-invalidate", handler);
     return () => window.removeEventListener("kove-advanced:preview-invalidate", handler);
   }, []);
 
   useEffect(() => {
-    if (isPlaying || previewInvalidateCounter === 0) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    renderFrameDirectly(playheadPosition);
-  }, [previewInvalidateCounter, isPlaying, renderFrameDirectly, playheadPosition]);
+    if (isPlaying) return;
+    void renderFrameDirectly(playheadPosition);
+    // Only fire when the timeline content changes (transitions, clips, effects).
+    // Playhead movement is handled by the existing scrubbing effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timelineTracks]);
 
   const selectedClipId = useMemo(() => {
     const clipSelection = selectedItems.find((item) => item.type === "clip");

@@ -1491,7 +1491,7 @@ export class VideoEngine {
   ): Promise<void> {
     const baseTracks = timeline.tracks
       .map((track, idx) => ({ track, idx }))
-      .filter(({ track }) => !track.hidden)
+      .filter(({ track }) => !track.hidden && track.type !== "audio")
       // Highest index renders behind, so the bottom-most layer is the backdrop.
       .sort((a, b) => b.idx - a.idx);
 

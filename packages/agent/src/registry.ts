@@ -2424,8 +2424,10 @@ async function materializeEditPlan(
 
   const audioClipIds: string[] = [];
   let audioCount = 0;
-  let musicTrack = host.getProject().timeline.tracks.find((track) => track.type === "audio" && track.name === "Music")
-    ?? host.getProject().timeline.tracks.find((track) => track.type === "audio");
+  // Only a track explicitly named "Music"/"SFX" (or one this loop creates) is
+  // ours to use. Falling back to "any audio track" hijacked a track the user
+  // owns and was how video clips ended up in the Music lane.
+  let musicTrack = host.getProject().timeline.tracks.find((track) => track.type === "audio" && track.name === "Music");
   let sfxTrack = host.getProject().timeline.tracks.find((track) => track.type === "audio" && track.name === "SFX");
   for (const decision of plan.audioDecisions) {
     if (decision.type === "silence") continue;
@@ -2449,6 +2451,32 @@ async function materializeEditPlan(
         `Could not add planned ${decision.type}: media "${decision.sourceVideoId}" has type "${media.type}", not audio or video.`,
       );
     }
+    const duration = Math.max(0.01, decision.duration);
+    // Prefer standalone audio for music/SFX when one exists. The director
+    // prompt asks for this, but the LLM often still points sourceVideoId at
+    // a video's own audio (or the same footage used for segments). Enforce
+    // deterministically so an uploaded mp3/wav is what actually plays.
+    let sourceStart = Math.max(0, decision.sourceStartTime ?? 0);
+    let sourceEnd = Math.max(sourceStart + 0.01, decision.sourceEndTime ?? sourceStart + duration);
+    let resolvedMedia = media;
+    if (media.type === "video") {
+      const standaloneAudio = host.getProject().mediaLibrary.items.find(
+        (item) => item.type === "audio",
+      );
+      if (standaloneAudio) {
+        console.warn(
+          `[plan_edit] ${decision.type}: preferring standalone audio "${standaloneAudio.name}" over video source "${media.name}"`,
+        );
+        resolvedMedia = standaloneAudio;
+        // Offsets planned against a different (video) file do not transfer —
+        // start at the head of the uploaded audio and clamp to its duration.
+        sourceStart = 0;
+        const audioDuration = standaloneAudio.metadata?.duration;
+        sourceEnd = audioDuration !== undefined && audioDuration > 0
+          ? Math.min(Math.max(0.01, duration), audioDuration)
+          : Math.max(0.01, duration);
+      }
+    }
     const trackName = decision.type === "sfx" ? "SFX" : "Music";
     let targetTrack = decision.type === "sfx" ? sfxTrack : musicTrack;
     if (!targetTrack) {
@@ -2464,7 +2492,6 @@ async function materializeEditPlan(
       else musicTrack = targetTrack;
     }
     if (!targetTrack) throw new Error(`No audio track is available for ${trackName}`);
-    const duration = Math.max(0.01, decision.duration);
     const before = new Set(
       host.getProject().timeline.tracks.flatMap((track) => track.clips.map((c) => c.id)),
     );
@@ -2474,11 +2501,11 @@ async function materializeEditPlan(
       timestamp: Date.now(),
       params: {
         trackId: targetTrack.id,
-        mediaId: media.id,
+        mediaId: resolvedMedia.id,
         startTime: Math.max(0, decision.startTime),
         duration,
-        inPoint: Math.max(0, decision.sourceStartTime ?? 0),
-        outPoint: Math.max(0, decision.sourceEndTime ?? duration),
+        inPoint: sourceStart,
+        outPoint: Math.max(sourceStart + 0.01, sourceEnd),
         volume: Math.max(0, Math.min(4, decision.volume ?? 1)),
       },
     });
