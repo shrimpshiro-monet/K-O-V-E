@@ -224,8 +224,8 @@ export interface LoadCreationBackendOptions {
 }
 
 interface NativeHostGlobal {
-  __kove-advancedCreationNative?: NativeCreationModule;
-  __kove-advancedCreationWasm?: NativeCreationModule;
+  __koveAdvancedCreationNative?: NativeCreationModule;
+  __koveAdvancedCreationWasm?: NativeCreationModule;
 }
 
 export function loadCreationBackend(
@@ -233,9 +233,9 @@ export function loadCreationBackend(
 ): CreationBackend {
   if (options.preferCpu) return cpuCreationBackend();
   const host = globalThis as unknown as NativeHostGlobal;
-  const native = options.nativeModule ?? host.__kove-advancedCreationNative;
+  const native = options.nativeModule ?? host.__koveAdvancedCreationNative;
   if (native) return wrapNative(native, "native");
-  const wasm = options.wasmModule ?? host.__kove-advancedCreationWasm;
+  const wasm = options.wasmModule ?? host.__koveAdvancedCreationWasm;
   if (wasm) return wrapNative(wasm, "wasm");
   if (options.autoNative) {
     const addon = loadNativeAddon();

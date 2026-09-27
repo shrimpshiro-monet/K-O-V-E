@@ -57,11 +57,11 @@ function installBridge(): void {
       })),
     },
   };
-  (globalThis as any).kove-advanced = bridge;
+  (globalThis as any)["kove-advanced"] = bridge;
 }
 
 function bridgeMock(): any {
-  return (globalThis as any).kove-advanced;
+  return (globalThis as any)["kove-advanced"];
 }
 
 beforeEach(() => {
@@ -70,13 +70,13 @@ beforeEach(() => {
   installBridge();
 });
 afterEach(() => {
-  delete (globalThis as any).kove-advanced;
+  delete (globalThis as any)["kove-advanced"];
 });
 
 describe("native-media-bridge", () => {
   it("nativeMediaAvailable is true only when a desktop bridge is present", () => {
     expect(nativeMediaAvailable()).toBe(true);
-    delete (globalThis as any).kove-advanced;
+    delete (globalThis as any)["kove-advanced"];
     expect(nativeMediaAvailable()).toBe(false);
   });
 
