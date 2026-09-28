@@ -118,9 +118,11 @@ self.onmessage = async (
     audio?: Float32Array;
     language?: string;
     model?: WhisperModelKey;
+    timestamps?: "segment" | "word";
   }>,
 ) => {
-  const { requestId, type, audio, language } = event.data;
+  const { requestId, type, language } = event.data;
+  const timestamps = event.data.timestamps === "word" ? "word" : true;
   const modelKey = isWhisperModelKey(event.data.model)
     ? event.data.model
     : DEFAULT_WHISPER_MODEL;
@@ -130,13 +132,14 @@ self.onmessage = async (
       post(requestId, { type: "ready", model: modelKey, backend });
       return;
     }
+    const audio = event.data.audio;
     if (!audio?.length) throw new Error("The selected clip has no decodable audio.");
 
     post(requestId, { type: "transcription-progress", progress: 0.05 });
     const output = await transcriber(audio, {
       language,
       task: "transcribe",
-      return_timestamps: true,
+      return_timestamps: timestamps,
       chunk_length_s: 30,
       stride_length_s: 5,
     });
@@ -145,6 +148,7 @@ self.onmessage = async (
       type: "result",
       text: result.text,
       chunks: result.chunks ?? [],
+      granularity: timestamps === "word" ? "word" : "segment",
       model: modelKey,
       backend,
     });
