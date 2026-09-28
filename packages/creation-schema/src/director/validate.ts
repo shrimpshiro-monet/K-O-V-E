@@ -168,6 +168,7 @@ export function validateEditPlan(
         pushUnknownEffect(effect.type, `segments[${i}].effectSpecs[${effectIndex}]`, issues);
       }
       validateColorGradeParams(effect, `segments[${i}].effectSpecs[${effectIndex}]`, issues);
+      validateEffectSpecParams(effect, `segments[${i}].effectSpecs[${effectIndex}]`, issues);
       if (effect.intensity !== undefined && (!Number.isFinite(effect.intensity) || effect.intensity < 0 || effect.intensity > 1)) {
         issues.push(issue("warning", "effect_intensity_out_of_range", `Segment ${i} effect ${effectIndex} intensity out of [0,1] — will be clamped.`, `segments.${i}.effectSpecs.${effectIndex}.intensity`));
       }
@@ -416,6 +417,35 @@ function validateColorGradeParams(
       ),
     );
   }
+}
+
+/**
+ * Non-colorGrade effects with no params render nothing: the effects
+ * engine defaults every numeric param to 0, so {type:"chromatic-aberration"}
+ * becomes a no-op. The materializer synthesizes defaults from `intensity`
+ * when intensity is present — flag the remaining case as a warning so
+ * the LLM's revision pass can fill it in.
+ */
+function validateEffectSpecParams(
+  effect: { type?: unknown; params?: unknown; intensity?: unknown },
+  pathPrefix: string,
+  issues: DirectorValidationIssue[],
+): void {
+  const params = effect.params as Record<string, unknown> | undefined;
+  const hasParams = !!params && Object.keys(params).length > 0;
+  if (hasParams) return;
+  const type = typeof effect.type === "string" ? effect.type.trim() : "";
+  if (!type) return;
+  if (isColorGradeType(type)) return;
+  if (typeof effect.intensity === "number") return;
+  issues.push(
+    issue(
+      "warning",
+      "effect_spec_missing_params",
+      `${pathPrefix} effect "${type}" has no params and no intensity — it will render as a no-op.`,
+      `${pathPrefix}.params`,
+    ),
+  );
 }
 
 /**

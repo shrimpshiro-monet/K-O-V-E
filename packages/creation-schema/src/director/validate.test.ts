@@ -156,6 +156,36 @@ describe("director validation helpers", () => {
     expect(issues.map((i) => i.code)).toContain("empty_color_grade_params");
   });
 
+  it("warns on non-colorGrade effect specs with no params and no intensity", () => {
+    const segment = {
+      ...plan.segments[0],
+      sourceStartTime: 0,
+      sourceEndTime: 4,
+      effectSpecs: [{ type: "chromatic-aberration", rationale: "test" }],
+    };
+    const map = { videos: [{ videoId: "video-1", duration: 4, segments: [] }] };
+    const missing = validateEditPlan(
+      // Cast: PlannedEffectSpec marks `params` required, but LLM-supplied JSON
+      // routinely omits it — that is exactly the case under test.
+      { ...plan, metadata: { ...plan.metadata, targetDuration: 4 }, segments: [segment] } as unknown as EditPlan,
+      map,
+    ).filter((issue) => issue.code === "effect_spec_missing_params");
+    expect(missing).toHaveLength(1);
+    expect(missing[0]!.severity).toBe("warning");
+
+    const withIntensity = validateEditPlan(
+      {
+        ...plan,
+        metadata: { ...plan.metadata, targetDuration: 4 },
+        segments: [
+          { ...segment, effectSpecs: [{ type: "chromatic-aberration", intensity: 0.7, rationale: "test" }] },
+        ],
+      } as unknown as EditPlan,
+      map,
+    );
+    expect(withIntensity.map((issue) => issue.code)).not.toContain("effect_spec_missing_params");
+  });
+
   it("rejects colorGrade with empty params in plan.effects", () => {
     const issues = validateEditPlan({
       ...plan,
