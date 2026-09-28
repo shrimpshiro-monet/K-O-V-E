@@ -53,17 +53,23 @@ export function parseDevVars(text: string): Record<string, string> {
   return out;
 }
 
-/** Env first, then the repo's `.dev.vars` (the same source the web app reads). */
+/**
+ * Credential precedence: eval-scoped `KOVE_EVAL_CLOUDFLARE_*` (lets a second
+ * account key be exported without disturbing the web app's credentials) →
+ * generic `CLOUDFLARE_*` env → the repo's `.dev.vars`. Token and account id
+ * must come from the same Cloudflare account or requests 403.
+ */
 export function loadWorkersAIConfig(repoRoot: string = REPO_ROOT): WorkersAIConfig | null {
   let vars: Record<string, string> = {};
   const devVars = resolve(repoRoot, ".dev.vars");
   if (existsSync(devVars)) {
     vars = parseDevVars(readFileSync(devVars, "utf8"));
   }
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID || "";
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN || vars.CLOUDFLARE_API_TOKEN || "";
-  const model =
-    process.env.CLOUDFLARE_AI_MODEL || vars.CLOUDFLARE_AI_MODEL || "@cf/google/gemma-4-26b-a4b-it";
+  const pick = (name: string): string =>
+    process.env[`KOVE_EVAL_${name}`] || process.env[name] || vars[name] || "";
+  const accountId = pick("CLOUDFLARE_ACCOUNT_ID");
+  const apiToken = pick("CLOUDFLARE_API_TOKEN");
+  const model = pick("CLOUDFLARE_AI_MODEL") || "@cf/google/gemma-4-26b-a4b-it";
   if (!accountId || !apiToken) return null;
   return { accountId, apiToken, model };
 }
@@ -443,6 +449,9 @@ export interface BaselineSummary {
     readonly allFail: number;
     readonly mixed: number;
     readonly mixedIds: readonly string[];
+    /** Combinations with fewer than runsPerCombo valid results. */
+    readonly incomplete: number;
+    readonly incompleteIds: readonly string[];
   };
   readonly results: readonly BaselineCaseResult[];
 }
@@ -720,9 +729,16 @@ export function summarizeBaseline(
     byId.set(result.id, bucket);
   }
   const mixedIds: string[] = [];
+  const incompleteIds: string[] = [];
   let allPass = 0;
   let allFail = 0;
   for (const [id, group] of byId) {
+    // A single valid result is not evidence of stability — require the
+    // full k-run sample before classifying a combination.
+    if (group.length < opts.runsPerCombo) {
+      incompleteIds.push(id);
+      continue;
+    }
     const passing = group.filter(r => r.ok).length;
     if (passing === 0) allFail += 1;
     else if (passing === group.length) allPass += 1;
@@ -746,7 +762,14 @@ export function summarizeBaseline(
       noClipOverlaps: rate(r => r.gates.noClipOverlaps),
       allGates: rate(r => r.ok),
     },
-    determinism: { allPass, allFail, mixed: mixedIds.length, mixedIds },
+    determinism: {
+      allPass,
+      allFail,
+      mixed: mixedIds.length,
+      mixedIds,
+      incomplete: incompleteIds.length,
+      incompleteIds,
+    },
     results,
   };
 }

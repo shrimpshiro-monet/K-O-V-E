@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Project } from "@kove-advanced/core/types/project";
 import type { Track } from "@kove-advanced/core/types/timeline";
 import {
@@ -180,30 +180,36 @@ describe("baseline harness helpers", () => {
     });
     const summary = summarizeBaseline(
       [
-        make("a", 0, true, false), // combo a: pass
-        make("a", 1, false, false), // combo a: fail  -> mixed
-        make("b", 0, true, true), // combo b run0: quota, excluded
-        make("b", 1, true, false), // combo b: pass
+        make("a", 0, true, false), // combo a: complete k-run sample, pass/fail/pass
+        make("a", 1, false, false),
+        make("a", 2, true, false),
+        make("b", 0, true, true), // combo b: quota run excluded -> only 2 valid
+        make("b", 1, true, false),
         make("b", 2, true, false),
+        make("c", 0, true, false), // combo c: complete and stable pass
+        make("c", 1, true, false),
+        make("c", 2, true, false),
       ],
-      { model: "m", cases: 2, runsPerCombo: 3, status: "aborted", abortReason: "stopped early", quotaExcluded: 1 },
+      { model: "m", cases: 3, runsPerCombo: 3, status: "aborted", abortReason: "stopped early", quotaExcluded: 1 },
     );
     expect(summary.quotaExcluded).toBe(1);
     expect(summary.status).toBe("aborted");
     expect(summary.abortReason).toBe("stopped early");
-    // planValidates over non-quota results: run0 1/1, run1 1/2, run2 1/1
-    expect(summary.gateRates.planValidates.perRun).toEqual([1, 0.5, 1]);
-    expect(summary.gateRates.planValidates.validPerRun).toEqual([1, 2, 1]);
-    expect(summary.gateRates.allGates.perRun).toEqual([1, 0.5, 1]);
-    // quota result must not skew determinism: b is stable-pass (its quota run ignored)
+    // planValidates over non-quota results: run0 2/2, run1 2/3, run2 3/3
+    expect(summary.gateRates.planValidates.perRun).toEqual([1, 0.6667, 1]);
+    expect(summary.gateRates.planValidates.validPerRun).toEqual([2, 3, 3]);
+    expect(summary.gateRates.allGates.perRun).toEqual([1, 0.6667, 1]);
+    // b is not evidence of stability: 2 valid < runsPerCombo
     expect(summary.determinism).toEqual({
       allPass: 1,
       allFail: 0,
       mixed: 1,
       mixedIds: ["a"],
+      incomplete: 1,
+      incompleteIds: ["b"],
     });
-    expect(summary.passed).toBe(3);
-    expect(summary.total).toBe(5);
+    expect(summary.passed).toBe(7);
+    expect(summary.total).toBe(9);
   });
 
   it("reads Workers AI credentials from .dev.vars when present", () => {
@@ -219,6 +225,32 @@ describe("baseline harness helpers", () => {
     expect(config!.model).toContain("@cf/");
     // Never leak the token into the report/test output.
     expect(JSON.stringify(config)).not.toContain(readFileSync(devVarsPath, "utf8").trim());
+  });
+
+  it("prefers KOVE_EVAL_CLOUDFLARE_* credentials over generic env and .dev.vars", () => {
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "acct-generic");
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "tok-generic");
+    vi.stubEnv("KOVE_EVAL_CLOUDFLARE_ACCOUNT_ID", "acct-eval");
+    vi.stubEnv("KOVE_EVAL_CLOUDFLARE_API_TOKEN", "tok-eval");
+    vi.stubEnv("KOVE_EVAL_CLOUDFLARE_AI_MODEL", "@cf/eval-model");
+    try {
+      expect(loadWorkersAIConfig()).toEqual({
+        accountId: "acct-eval",
+        apiToken: "tok-eval",
+        model: "@cf/eval-model",
+      });
+
+      // Without the eval override, generic env still wins over .dev.vars.
+      vi.unstubAllEnvs();
+      vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "acct-generic");
+      vi.stubEnv("CLOUDFLARE_API_TOKEN", "tok-generic");
+      const config = loadWorkersAIConfig();
+      expect(config?.accountId).toBe("acct-generic");
+      expect(config?.apiToken).toBe("tok-generic");
+      expect(config?.model).toContain("@cf/");
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 
@@ -300,6 +332,10 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
           `stable fail ${summary.determinism.allFail}, mixed ${summary.determinism.mixed}` +
           (summary.determinism.mixedIds.length
             ? ` → ${summary.determinism.mixedIds.join(", ")}`
+            : "") +
+          `, incomplete ${summary.determinism.incomplete}` +
+          (summary.determinism.incompleteIds.length
+            ? ` → ${summary.determinism.incompleteIds.join(", ")}`
             : ""),
       );
     },
