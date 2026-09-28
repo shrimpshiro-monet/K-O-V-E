@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EditPlan } from "@kove-advanced/creation-schema";
-import { beatError, cutTimesFromTimeline, midWordCuts, pairwise, snap } from "./metrics";
+import { beatError, cutTimesFromTimeline, midWordCuts, pairwise, snap, timelineBeats } from "./metrics";
 
 describe("eval metrics", () => {
   it("snap moves only within maxShift", () => {
@@ -25,5 +25,9 @@ describe("eval metrics", () => {
       { type: "audio", clips: [{ startTime: 2 }] },
     ];
     expect(cutTimesFromTimeline(tracks)).toEqual([4]);
+  });
+  it("timelineBeats shifts source beats by startTime - inPoint and clips to range", () => {
+    const clip = { startTime: 10, inPoint: 2, duration: 8 };
+    expect(timelineBeats([clip], [2, 4, 9, 11])).toEqual([10, 12, 17]);
   });
 });

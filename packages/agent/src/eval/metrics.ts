@@ -2,6 +2,20 @@ import type { EditPlan } from "@kove-advanced/creation-schema";
 
 export type Word = { start: number; end: number };
 
+export type BeatClip = { startTime: number; inPoint: number; duration: number };
+
+export function timelineBeats(clips: ReadonlyArray<BeatClip>, sourceBeats: readonly number[]): number[] {
+  const out = new Set<number>();
+  for (const clip of clips) {
+    for (const b of sourceBeats) {
+      const t = clip.startTime + (b - clip.inPoint);
+      if (t >= clip.startTime && t <= clip.startTime + clip.duration) out.add(t);
+    }
+  }
+  return [...out].sort((a, b) => a - b);
+}
+
+
 export function cutTimesFromTimeline(
   tracks: ReadonlyArray<{ type: string; clips: ReadonlyArray<{ startTime: number }> }>,
   eps = 1 / 60,
