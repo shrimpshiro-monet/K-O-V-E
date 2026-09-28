@@ -2148,15 +2148,16 @@ const EFFECT_INTENSITY_PARAM: Readonly<Record<string, IntensityMapping>> = {
   "chromatic-aberration": { single: "amount", scale: 50 },
 };
 
+// `directorParams` comes from LLM-supplied JSON and may be missing entirely; the type annotation is a lie the call site can't enforce.
 function synthesizeEffectParams(
   effectType: string,
-  directorParams: Record<string, unknown>,
+  directorParams: Record<string, unknown> | undefined,
   intensity: number | undefined,
 ): Record<string, unknown> {
-  const hasParams = Object.keys(directorParams).length > 0;
-  if (hasParams || intensity === undefined) return { ...directorParams };
+  const hasParams = !!directorParams && Object.keys(directorParams).length > 0;
+  if (hasParams || intensity === undefined) return { ...(directorParams ?? {}) };
   const mapping = EFFECT_INTENSITY_PARAM[effectType];
-  if (!mapping) return { ...directorParams };
+  if (!mapping) return { ...(directorParams ?? {}) };
   if ("multi" in mapping) return mapping.multi(intensity);
   return { [mapping.single]: intensity * mapping.scale };
 }

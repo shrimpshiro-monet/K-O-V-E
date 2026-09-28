@@ -309,6 +309,70 @@ describe("executeTool", () => {
     expect(host.getProject().motionCompositions?.[0]?.layers.some((layer) => layer.type === "particle")).toBe(true);
   });
 
+  it("materializes an effect spec with no params field", async () => {
+    const project = {
+      ...makeEmptyProject(),
+      mediaLibrary: {
+        items: [
+          {
+            id: "video-1",
+            name: "test.mp4",
+            type: "video",
+            metadata: { duration: 8 },
+          },
+        ],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [{
+            id: "plan-1",
+            name: "submit_edit_plan",
+            input: {
+              segments: [
+                {
+                  sourceVideoId: "video_0",
+                  sourceStartTime: 0,
+                  sourceEndTime: 4,
+                  trackIndex: 0,
+                  targetPosition: 0,
+                  speed: 1,
+                  effects: [],
+                  // No `params` field at all — synthesizeEffectParams must
+                  // survive the undefined, then fill defaults from intensity.
+                  effectSpecs: [{ type: "chromatic-aberration", intensity: 0.7, rationale: "accent" }],
+                  layout: { region: "split-left", fit: "contain" },
+                  rationale: "opening",
+                },
+              ],
+              textElements: [],
+              effects: [],
+              transitions: [],
+              audioDecisions: [],
+              metadata: {
+                targetDuration: 4,
+                targetPlatform: "social",
+                genre: "highlight",
+                pacing: "fast",
+                rationale: "test",
+              },
+            },
+          }],
+        }),
+      },
+    };
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(result.ok, result.error?.message ?? "plan_edit succeeded").toBe(true);
+    const params = host.getProject().timeline.tracks[0].clips[0]?.effects?.[0]?.params;
+    expect(Object.keys(params ?? {})).not.toHaveLength(0);
+    expect(params).toEqual({ amount: 35, intensity: 0.7 });
+  });
+
   it("prefers standalone audio media for music when the plan points at a video", async () => {
     const project = {
       ...makeEmptyProject(),
