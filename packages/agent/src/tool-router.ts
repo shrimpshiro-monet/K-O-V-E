@@ -15,6 +15,19 @@ const ALWAYS_AVAILABLE = new Set([
   "list_projects",
   "open_project",
   "save_project",
+  "execute_action",
+  "batch_actions",
+]);
+
+/**
+ * Motion tools used to sit in ALWAYS_AVAILABLE, where a flat 10,000 score
+ * outbid every editing tool (they score at most 10,000 + 200). On a capped
+ * budget that meant motion took 10 of 25 slots for every prompt, leaving
+ * effect/transition/text/clip tools to fight over the last 2. They are still
+ * unconditional when the prompt is motion-shaped, and always available again
+ * once the conversation has actually used one (prior).
+ */
+const MOTION_ALWAYS_AVAILABLE = new Set([
   "list_motion_compositions",
   "get_motion_composition",
   "create_motion_composition",
@@ -25,8 +38,6 @@ const ALWAYS_AVAILABLE = new Set([
   "remove_motion_layer",
   "render_motion_frame",
   "insert_motion_into_editor",
-  "execute_action",
-  "batch_actions",
 ]);
 
 const MOTION_TERMS = /\b(motion|composition|layer|keyframe|animate|animation|after effects|lower third|title card|kinetic|lottie|svg|figma|particle|shader|mask|matte|precomp|camera|render frame)\b/i;
@@ -61,8 +72,15 @@ const words = (value: string): string[] =>
     .split(/\s+/)
     .filter((word) => word.length >= 3);
 
-function relevance(tool: RegisteredTool, promptWords: Set<string>): number {
-  if (ALWAYS_AVAILABLE.has(tool.name)) return 10_000;
+const isAlwaysAvailable = (toolName: string, wantsMotion: boolean): boolean =>
+  ALWAYS_AVAILABLE.has(toolName) || (wantsMotion && MOTION_ALWAYS_AVAILABLE.has(toolName));
+
+function relevance(
+  tool: RegisteredTool,
+  promptWords: Set<string>,
+  wantsMotion: boolean,
+): number {
+  if (isAlwaysAvailable(tool.name, wantsMotion)) return 10_000;
   const name = new Set(words(tool.name));
   const title = new Set(words(tool.title));
   const description = new Set(words(tool.description));
@@ -98,7 +116,7 @@ export function selectToolsForPrompt(
   const promptWords = new Set(words(prompt));
 
   const candidates = listTools().filter((tool) => {
-    if (ALWAYS_AVAILABLE.has(tool.name) || prior.has(tool.name)) return true;
+    if (isAlwaysAvailable(tool.name, wantsMotion) || prior.has(tool.name)) return true;
 
     // Director mode: include all editing-relevant domains so the AI can
     // author a complete edit with effects, transitions, text, audio, etc.
@@ -118,7 +136,7 @@ export function selectToolsForPrompt(
       tool,
       index,
       score:
-        relevance(tool, promptWords) +
+        relevance(tool, promptWords, wantsMotion) +
         (prior.has(tool.name) ? 5_000 : 0) +
         (wantsCreation && isCreationTool(tool) ? 100 : 0) +
         (wantsMotion && tool.domain === "motion" ? 50 : 0) +

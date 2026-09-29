@@ -212,6 +212,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     let model: string;
     let baseUrl: string;
     let apiKey: string;
+    let cloudflareFallback: { accountId: string; apiToken: string } | undefined;
 
     if (provider === "cloudflare") {
       // Cloudflare: zero-config from .dev.vars via Vite plugin — no BYOK needed
@@ -221,6 +222,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (!apiKey || !baseUrl) {
         set({ error: "Cloudflare credentials not found in .dev.vars." });
         return;
+      }
+      // Optional second token/account pair: used automatically once the
+      // primary's daily neuron allocation is spent (code 4006).
+      const fallbackToken = import.meta.env.VITE_CLOUDFLARE_API_TOKEN_2 ?? "";
+      const fallbackAccountId = import.meta.env.VITE_CLOUDFLARE_ACCOUNT_ID_2 ?? "";
+      if (fallbackToken && fallbackAccountId) {
+        cloudflareFallback = { accountId: fallbackAccountId, apiToken: fallbackToken };
       }
     } else {
       // BYOK providers: require settings configuration
@@ -363,12 +371,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
     };
 
     const host = getLiveEditorHost();
+    let cloudflareSwitched = false;
     const llm = makeBYOKClient({
       provider,
       model,
       apiKey,
       baseUrl,
       signal: controller.signal,
+      cloudflareFallback,
+      onCloudflareSlotChange: (slot) => {
+        if (slot === 2) cloudflareSwitched = true;
+      },
     });
     // Wire LLM client into host for nested director calls (plan_edit)
     // Map settings provider to agent provider name for tool selection
@@ -406,6 +419,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
           system: buildSystemPrompt(host, selectedToolNames),
           messages: get().conversation,
           dryRun,
+          // Workers AI free tier is 10k neurons/day (~1.1M tokens) and every
+          // step re-sends the system prompt + tools (~6.8k tokens, no cache
+          // discount). Cap the step budget there; other providers keep 12.
+          limits: provider === "cloudflare" ? { maxSteps: 6 } : undefined,
           confirmGate: autoConfirm
             ? () => "approve_for_turn"
             : (call) =>
@@ -454,10 +471,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
               ? "The edits finished, but the model did not provide a written summary."
               : "The model returned an empty response. Try again or choose another model."
             : undefined;
+        const quotaNotice = cloudflareSwitched
+          ? "Switched to the secondary Cloudflare account — the primary account's daily AI allocation is spent."
+          : undefined;
         return {
           ...message,
           text: finalText,
-          notice: stopNotice ?? emptyNotice,
+          notice: quotaNotice ?? stopNotice ?? emptyNotice,
         };
       }),
       conversation: result.messages,

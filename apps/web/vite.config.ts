@@ -93,40 +93,58 @@ export default defineConfig({
   server: {
     headers: {
       "Cross-Origin-Opener-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "require-corp",
+      // credentialless (not require-corp) so cross-origin fonts/sourcemaps
+      // without a CORP header still load; cross-origin isolation is retained.
+      "Cross-Origin-Embedder-Policy": "credentialless",
     },
     proxy: (() => {
-      // Read the API token directly from .dev.vars
+      // Read both Cloudflare token/account pairs directly from .dev.vars.
+      // The Vite plugin maps CLOUDFLARE_* -> VITE_CLOUDFLARE_* generically, so
+      // the _2 keys reach the client without any plugin change.
       const devVarsPath = path.resolve(__dirname, "../../.dev.vars");
-      let apiToken = "";
+      const vars: Record<string, string> = {};
       if (fs.existsSync(devVarsPath)) {
         for (const line of fs.readFileSync(devVarsPath, "utf-8").split("\n")) {
           const trimmed = line.trim();
-          if (trimmed.startsWith("CLOUDFLARE_API_TOKEN=")) {
-            apiToken = trimmed.slice("CLOUDFLARE_API_TOKEN=".length).trim();
-            break;
+          const eq = trimmed.indexOf("=");
+          if (trimmed.startsWith("CLOUDFLARE_") && eq > 0) {
+            vars[trimmed.slice(0, eq)] = trimmed.slice(eq + 1).trim();
           }
         }
       }
-      console.log("[vite] Cloudflare proxy token:", apiToken ? `${apiToken.slice(0, 8)}...` : "MISSING");
-      return {
-        "/api/cf-ai": {
-          target: "https://api.cloudflare.com",
-          changeOrigin: true,
-          rewrite: (p: string) => p.replace(/^\/api\/cf-ai/, ""),
-          headers: {
-            Authorization: `Bearer ${apiToken}`,
-          },
-          timeout: 120000,
-          proxyTimeout: 120000,
+      const tokens = [
+        ["CLOUDFLARE_API_TOKEN", vars.CLOUDFLARE_API_TOKEN ?? ""],
+        ["CLOUDFLARE_API_TOKEN_2", vars.CLOUDFLARE_API_TOKEN_2 ?? ""],
+      ] as const;
+      for (const [key, token] of tokens) {
+        console.log(
+          `[vite] ${key}:`,
+          token ? `${token.slice(0, 8)}...` : "MISSING",
+        );
+      }
+      const route = (strip: RegExp, token: string): Record<string, unknown> => ({
+        target: "https://api.cloudflare.com",
+        changeOrigin: true,
+        rewrite: (p: string) => p.replace(strip, ""),
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
+        timeout: 120000,
+        proxyTimeout: 120000,
+      });
+      // Vite matches contexts with url.startsWith(context), so "/api/cf-ai-2"
+      // would be captured by the "/api/cf-ai" route. Regex contexts keep the
+      // two slots mutually exclusive regardless of key order.
+      return {
+        "^/api/cf-ai-2(?:/|$)": route(/^\/api\/cf-ai-2/, tokens[1][1]),
+        "^/api/cf-ai(?:/|$)": route(/^\/api\/cf-ai/, tokens[0][1]),
       };
     })(),
   },
   preview: {
     headers: {
       "Cross-Origin-Opener-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "require-corp",
+      "Cross-Origin-Embedder-Policy": "credentialless",
     },
   },
 });

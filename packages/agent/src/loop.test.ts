@@ -4,7 +4,7 @@ import { runTurn } from "./loop";
 import { executeTool } from "./executor";
 import { MockLLMClient } from "./llm";
 import type { LLMClient, LLMResponse, LoopMessage, LoopToolResultBlock } from "./llm";
-import { toAnthropicTools } from "./registry";
+import { toAnthropicTools, _resetPlanState } from "./registry";
 import { makeEmptyProject, makeProjectWithClip } from "./test-fixtures";
 import type { EditingHost } from "./host";
 import type { AgentEvent } from "./types";
@@ -508,5 +508,89 @@ describe("runTurn", () => {
     expect(host.getProject().timeline.tracks[0].clips).toHaveLength(1);
 
     expect(result.committed).toBe(true);
+  });
+
+  it("resolves the plan_edit card when materialization fails mid-apply", async () => {
+    const projectId = "loop-apply-fail-chip";
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: {
+        items: [{ id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    _resetPlanState(projectId);
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    // Text engine dies after clips land — the partial-apply path.
+    host.createTextOverlay = async () => {
+      throw new Error("text engine down");
+    };
+
+    const planWithText = {
+      segments: [{
+        sourceVideoId: "video-1",
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        trackIndex: 0,
+        targetPosition: 0,
+        effects: [],
+        effectSpecs: [],
+        rationale: "opening",
+      }],
+      textElements: [
+        { content: "boom", style: "title", startTime: 0, duration: 1, rationale: "x" },
+      ],
+      effects: [],
+      transitions: [],
+      audioDecisions: [],
+      metadata: { targetDuration: 4, targetPlatform: "social", genre: "highlight-reel", pacing: "fast", rationale: "test" },
+    };
+
+    const llm: LLMClient = {
+      complete: async () => ({
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "outer-1", name: "plan_edit", input: { prompt: "make a highlight" } }],
+      }),
+    };
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [{ id: "plan-1", name: "submit_edit_plan", input: planWithText }],
+        }),
+      },
+    };
+
+    const events: AgentEvent[] = [];
+    const result = await runTurn({
+      host,
+      llm,
+      tools,
+      messages: userMsg("make a highlight"),
+      onEvent: (event) => events.push(event),
+    });
+
+    const planResultIndex = events.findIndex(
+      (e) => e.type === "tool_result" && e.call.name === "plan_edit",
+    );
+    expect(planResultIndex).toBeGreaterThanOrEqual(0);
+    const planResult = events[planResultIndex] as Extract<AgentEvent, { type: "tool_result" }>;
+    expect(planResult.result.ok).toBe(false);
+    expect(planResult.result.error?.code).toBe("EDIT_PLAN_APPLY_FAILED");
+
+    const errorIndex = events.findIndex((e) => e.type === "error");
+    expect(errorIndex).toBeGreaterThanOrEqual(0);
+    // The tool card must resolve BEFORE the turn error — otherwise the chip
+    // stays on "Running" forever, since nothing emits another tool_result.
+    expect(planResultIndex).toBeLessThan(errorIndex);
+
+    expect(result.stoppedReason).toBe("error");
+    expect(result.committed).toBe(false);
+    expect(host.getProject().timeline.tracks.flatMap((track) => track.clips)).toHaveLength(0);
+    _resetPlanState(projectId);
   });
 });

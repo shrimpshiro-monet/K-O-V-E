@@ -18,6 +18,7 @@ import {
   isMasterPasswordSet,
   isSessionUnlocked,
 } from "../../../services/secure-storage";
+import { CLOUDFLARE_NEURONS_PER_TOKEN } from "../../../services/agent/llm-transport";
 
 const SUGGESTIONS: ReadonlyArray<string> = [
   "Add a title that says 'Welcome' for the first 3 seconds",
@@ -151,12 +152,24 @@ export function ChatPanel({
   const dryRun = useSettingsStore((s) => s.agentDryRun);
   const setDryRun = useSettingsStore((s) => s.setAgentDryRun);
   const openSettings = useSettingsStore((s) => s.openSettings);
+  const llmProvider = useSettingsStore((s) => s.defaultLlmProvider);
 
   const totalTokens = usage.inputTokens + usage.outputTokens;
   const tokenLabel =
     totalTokens >= 1000
       ? `${(totalTokens / 1000).toFixed(1)}k`
       : `${totalTokens}`;
+  // Workers AI bills neurons, not tokens — show the real daily-allocation cost.
+  const neurons =
+    llmProvider === "cloudflare"
+      ? Math.round(totalTokens * CLOUDFLARE_NEURONS_PER_TOKEN)
+      : null;
+  const neuronLabel =
+    neurons === null
+      ? null
+      : neurons >= 1000
+        ? `${(neurons / 1000).toFixed(1)}k`
+        : `${neurons}`;
 
   const busy = status === "running" || status === "awaiting_confirm";
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -180,10 +193,14 @@ export function ChatPanel({
         </span>
         {totalTokens > 0 && (
           <span
-            title={`${usage.inputTokens} in · ${usage.outputTokens} out`}
+            title={
+              neurons === null
+                ? `${usage.inputTokens} in · ${usage.outputTokens} out`
+                : `${usage.inputTokens} in · ${usage.outputTokens} out · ≈${neurons} neurons of the 10,000/day free allocation`
+            }
             className="shrink-0 rounded bg-bg-2 px-1.5 py-0.5 text-[10px] tabular-nums text-fg-muted"
           >
-            {tokenLabel} tok
+            {neurons === null ? `${tokenLabel} tok` : `≈${neuronLabel} n`}
           </span>
         )}
         <div className="ml-auto flex items-center gap-1">

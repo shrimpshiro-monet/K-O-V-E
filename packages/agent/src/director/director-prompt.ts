@@ -64,7 +64,7 @@ Every EditPlan you submit MUST contain ALL of these arrays — never leave them 
    - Text → \`plan.textElements[]\`
 3. **transitions** (required): 2-4 transitions between segments. Alternate types (crossfade, dipToBlack, dipToWhite, wipe, slide, zoom, push, whipPan, flash, glitch).
 4. **audioDecisions** (required): Prefer EXTERNAL audio files (media items with type "audio", e.g. uploaded mp3/wav) over the video's own audio. Use the external file's media ID as \`sourceVideoId\`. Only fall back to a video's own audio when no separate audio file exists in the library, or mark as silence.
-   - Music:  { "type": "music",  "sourceVideoId": "<media id from list_media>", "startTime": 0, "duration": <edit length>, "volume": 0.7, "rationale": "..." }
+   - Music:  { "type": "music",  "sourceVideoId": "<media id from the Available media library block>", "startTime": 0, "duration": <edit length>, "volume": 0.7, "rationale": "..." }
    - SFX:    { "type": "sfx",    "sourceVideoId": "<media id>", "startTime": <hit time>, "duration": 0.3, "volume": 1.0, "rationale": "..." }
    - Silence: { "type": "silence", "startTime": 0, "duration": <edit length>, "rationale": "no audio source in library" }
 
@@ -247,11 +247,23 @@ function formatFootageGraph(videos: readonly VideoSegmentMap[]): string {
   return lines.join("\n");
 }
 
+/**
+ * A media-library entry the director may cite in `audioDecisions[].sourceVideoId`.
+ * Structurally compatible with `MediaItem`, so the registry can pass it straight through.
+ */
+export interface DirectorMediaRef {
+  readonly id: string;
+  readonly name: string;
+  readonly type: "video" | "audio" | "image";
+  readonly duration: number;
+}
+
 export function buildDirectorPrompt(
   segmentMap: SegmentMap,
   prompt: string,
   genre?: Genre,
   referenceAnalysis?: unknown,
+  mediaLibrary?: readonly DirectorMediaRef[],
 ): string {
   const videos = Array.isArray(segmentMap?.videos) ? segmentMap.videos : [];
   const safeMap: SegmentMap = { videos };
@@ -277,6 +289,30 @@ export function buildDirectorPrompt(
   const videoIds = videos
     .map((video, index) => `- video_${index}: ${video.videoId}`)
     .join("\n");
+
+  // The nested plan_edit call only gets submit_edit_plan — it cannot call
+  // list_media — so the catalog must be inlined here or audioDecisions get
+  // invented media ids that never resolve at apply time.
+  const catalogableMedia = (mediaLibrary ?? []).filter(
+    (m) => m.type === "audio" || m.type === "video",
+  );
+  const mediaCatalog = catalogableMedia
+    .map((media, index) => {
+      const duration =
+        typeof media.duration === "number" && Number.isFinite(media.duration) && media.duration > 0
+          ? `${media.duration.toFixed(1)}s`
+          : "?s";
+      return `- media_${index}: ${media.id} — "${media.name}" (${media.type}, ${duration})`;
+    })
+    .join("\n");
+  const mediaInfo = mediaCatalog
+    ? [
+        "## Available media library",
+        "For `audioDecisions[].sourceVideoId` use EXACTLY one of the media ids below — never invent, slugify, or abbreviate one:",
+        mediaCatalog,
+        'Prefer `type: audio` files for music/sfx. A `type: video` id is only valid for that video\'s own audio, and `type: "silence"` needs no id.',
+      ].join("\n")
+    : "";
 
   // Use the compact, signal-rich format instead of raw JSON
   const footageGraph = formatFootageGraph(videos);
@@ -344,6 +380,7 @@ export function buildDirectorPrompt(
     `Available footage: ${summary}`,
     "Canonical sourceVideoId values (use the value after the colon, never the alias):",
     videoIds || "(none)",
+    ...(mediaInfo ? ["", mediaInfo] : []),
     perceptionSummary,
     "",
     "## Footage Analysis",

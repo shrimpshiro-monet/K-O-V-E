@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { withRetry, LLMHttpError, parseRetryAfterMs } from "./llm";
+import { withRetry, LLMHttpError, llmHttpError, parseRetryAfterMs, LLMNetworkError } from "./llm";
 
 const noSleep = async (): Promise<void> => {};
 
@@ -76,5 +76,60 @@ describe("withRetry", () => {
     const wrapped = withRetry(send, { sleep: noSleep });
     await expect(wrapped({})).rejects.toThrow("network");
     expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries transport-level network failures (no answer ever came back)", async () => {
+    const send = vi.fn()
+      .mockRejectedValueOnce(new LLMNetworkError("proxy down"))
+      .mockResolvedValueOnce("ok");
+    const wrapped = withRetry(send, { sleep: noSleep });
+    await expect(wrapped({})).resolves.toBe("ok");
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up on network failures after the retry budget", async () => {
+    const send = vi.fn().mockRejectedValue(new LLMNetworkError("proxy down"));
+    const wrapped = withRetry(send, { sleep: noSleep, retries: 1 });
+    await expect(wrapped({})).rejects.toThrow("proxy down");
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("quota errors", () => {
+  const quotaBody = JSON.stringify({
+    success: false,
+    errors: [
+      {
+        code: 4006,
+        message: "you have used up your daily free allocation of 10,000 neurons",
+      },
+    ],
+  });
+
+  it("parses the upstream code out of the error body", () => {
+    expect(llmHttpError("cloudflare-ai", 429, quotaBody).code).toBe(4006);
+    expect(llmHttpError("cloudflare-ai", 429, "not json").code).toBeUndefined();
+    expect(llmHttpError("cloudflare-ai", 500, '{"errors":[]}').code).toBeUndefined();
+  });
+
+  it("does not retry a spent daily allocation", async () => {
+    const send = vi
+      .fn()
+      .mockRejectedValue(llmHttpError("cloudflare-ai", 429, quotaBody));
+    const wrapped = withRetry(send, { sleep: noSleep });
+
+    await expect(wrapped({})).rejects.toMatchObject({ status: 429, code: 4006 });
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it("still retries an ordinary 429", async () => {
+    const send = vi
+      .fn()
+      .mockRejectedValueOnce(llmHttpError("cloudflare-ai", 429, '{"errors":[{"code":4211}]}'))
+      .mockResolvedValueOnce("ok");
+    const wrapped = withRetry(send, { sleep: noSleep });
+
+    await expect(wrapped({})).resolves.toBe("ok");
+    expect(send).toHaveBeenCalledTimes(2);
   });
 });

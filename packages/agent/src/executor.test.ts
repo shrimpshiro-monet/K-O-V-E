@@ -574,6 +574,164 @@ describe("executeTool", () => {
     expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
   });
 
+  it("blocks an invented music media id at prepare time and repairs it once", async () => {
+    const projectId = "unknown-media-repair-test";
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: {
+        items: [
+          { id: "video-1", name: "footage.mp4", type: "video", metadata: { duration: 8 } },
+          { id: "audio-1", name: "bed.mp3", type: "audio", metadata: { duration: 30 } },
+        ],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    _resetPlanState(projectId);
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    const planWithMusic = (sourceVideoId: string) => ({
+      segments: [{
+        sourceVideoId: "video-1",
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        trackIndex: 0,
+        targetPosition: 0,
+        speed: 1,
+        effects: [],
+        effectSpecs: [],
+        rationale: "opening",
+      }],
+      textElements: [],
+      effects: [],
+      transitions: [],
+      audioDecisions: [{
+        type: "music",
+        sourceVideoId,
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        startTime: 0,
+        duration: 4,
+        volume: 0.7,
+        rationale: "bed",
+      }],
+      metadata: {
+        targetDuration: 4,
+        targetPlatform: "social",
+        genre: "highlight",
+        pacing: "fast",
+        rationale: "test",
+      },
+      motionMoments: [],
+    });
+
+    const systems: string[] = [];
+    let calls = 0;
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async (request: { system: string }) => {
+          calls += 1;
+          systems.push(request.system);
+          return {
+            text: "",
+            stopReason: "tool_use",
+            toolUses: [{
+              id: calls === 1 ? "plan-invented-id" : "plan-fixed-id",
+              name: "submit_edit_plan",
+              input: planWithMusic(calls === 1 ? "media_outfit_21savage" : "audio-1"),
+            }],
+          };
+        },
+      },
+    } as NonNullable<EditingHost["llm"]>;
+
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(result.ok, result.error?.message ?? "plan_edit failed").toBe(true);
+    expect(calls).toBeGreaterThanOrEqual(2);
+    // The repair round — not the original plan — must carry the media issue.
+    expect(systems[1]).toContain("[unknown_media]");
+    expect(systems[1]).toContain("audioDecisions.0.sourceVideoId");
+    expect(systems[1]).toContain("## Available media library");
+
+    const musicTrack = host.getProject().timeline.tracks.find(
+      (track) => track.type === "audio" && track.name === "Music",
+    );
+    expect(musicTrack?.clips[0]?.mediaId).toBe("audio-1");
+    _resetPlanState(projectId);
+  });
+
+  it("fails validation instead of partially applying when a music media id stays unknown", async () => {
+    const projectId = "unknown-media-persistent-test";
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: {
+        items: [{ id: "video-1", name: "footage.mp4", type: "video", metadata: { duration: 8 } }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    _resetPlanState(projectId);
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    const badPlan = {
+      segments: [{
+        sourceVideoId: "video-1",
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        trackIndex: 0,
+        targetPosition: 0,
+        speed: 1,
+        effects: [],
+        effectSpecs: [],
+        rationale: "opening",
+      }],
+      textElements: [],
+      effects: [],
+      transitions: [],
+      audioDecisions: [{
+        type: "music",
+        sourceVideoId: "media_outfit_21savage",
+        startTime: 0,
+        duration: 4,
+        volume: 0.7,
+        rationale: "invented id",
+      }],
+      metadata: {
+        targetDuration: 4,
+        targetPlatform: "social",
+        genre: "highlight",
+        pacing: "fast",
+        rationale: "test",
+      },
+      motionMoments: [],
+    };
+
+    let calls = 0;
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => {
+          calls += 1;
+          return {
+            text: "",
+            stopReason: "tool_use",
+            toolUses: [{ id: `plan-bad-${calls}`, name: "submit_edit_plan", input: badPlan }],
+          };
+        },
+      },
+    } as NonNullable<EditingHost["llm"]>;
+
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    expect(result.error?.message).toContain("unknown_media");
+    // Blocked at prepare: exactly one repair round, no partial materialization.
+    expect(calls).toBe(2);
+    const timeline = host.getProject().timeline;
+    expect(timeline.tracks.flatMap((track) => track.clips)).toHaveLength(0);
+    expect(timeline.tracks.flatMap((track) => track.transitions ?? [])).toHaveLength(0);
+    _resetPlanState(projectId);
+  });
+
   it("flags destructive tools", () => {
     expect(isDestructive("remove_clip")).toBe(true);
     expect(isDestructive("get_editor_state")).toBe(false);

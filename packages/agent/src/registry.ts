@@ -33395,7 +33395,18 @@ const TOOLS: RegisteredTool[] = [
         );
       }
 
-      const directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, providedReferenceAnalysis);
+      const directorPrompt = buildDirectorPrompt(
+        resolvedMap,
+        prompt,
+        genre,
+        providedReferenceAnalysis,
+        host.getProject().mediaLibrary.items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          type: item.type,
+          duration: item.metadata?.duration ?? 0,
+        })),
+      );
 
       const planTools =
         host.llm.provider === "anthropic"
@@ -33438,6 +33449,29 @@ const TOOLS: RegisteredTool[] = [
         );
       }
 
+      // Audio refs are checked here rather than at apply time: the applier's
+      // exact id/name match throws, which aborts the whole plan AFTER partial
+      // materialization. Blocking at prepare feeds the bounded repair path.
+      const unknownMediaIssues = (plan: EditPlan): DirectorValidationIssue[] => {
+        const items = host.getProject().mediaLibrary.items;
+        const issues: DirectorValidationIssue[] = [];
+        plan.audioDecisions.forEach((decision, index) => {
+          if (decision.type === "silence") return;
+          const ref = decision.sourceVideoId;
+          if (!ref) return; // source-less music/sfx is skipped by the applier
+          if (items.some((item) => item.id === ref || item.name === ref)) return;
+          issues.push({
+            severity: "error",
+            code: "unknown_media",
+            message:
+              `audioDecisions.${index}.sourceVideoId "${ref}" is not a media library id or name. ` +
+              `Use exactly one id from the "Available media library" block in your prompt.`,
+            path: `audioDecisions.${index}.sourceVideoId`,
+          });
+        });
+        return issues;
+      };
+
       const preparePlan = (
         raw: unknown,
       ): { plan: EditPlan; issues: readonly DirectorValidationIssue[] } => {
@@ -33453,7 +33487,10 @@ const TOOLS: RegisteredTool[] = [
           },
           resolvedMap,
         );
-        return { plan: resolved, issues: validateEditPlan(resolved, resolvedMap) };
+        return {
+          plan: resolved,
+          issues: [...validateEditPlan(resolved, resolvedMap), ...unknownMediaIssues(resolved)],
+        };
       };
 
       const formatIssues = (issues: readonly DirectorValidationIssue[]): string =>
@@ -33636,7 +33673,7 @@ const TOOLS: RegisteredTool[] = [
           // Best effort — reported below.
         }
         return fail(
-          `EditPlan was valid but could not be applied: ${message}. The timeline was left at its previous revision (${compensation.removed} partial artifact(s) removed).`,
+          `EditPlan was valid but could not be applied: ${message}. Previous revision ${state.revision} preserved; rolled back ${compensation.removed} partial artifact(s) created by this attempt.`,
           "EDIT_PLAN_APPLY_FAILED",
           { compensation },
         );

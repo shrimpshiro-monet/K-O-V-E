@@ -3,6 +3,8 @@ import {
   makeClientFromSend,
   llmHttpError,
   parseRetryAfterMs,
+  CLOUDFLARE_QUOTA_CODE,
+  LLMNetworkError,
 } from "@kove-advanced/agent";
 import type { LLMClient } from "@kove-advanced/agent";
 import { apiFetch } from "../api-proxy";
@@ -14,14 +16,49 @@ const PATHS: Record<LlmProvider, string> = {
   "cloudflare": "/chat/completions",
 };
 
-/** Cloudflare Workers AI uses OpenAI-compatible /v1/chat/completions. */
-export interface CloudflareAIOptions {
+/** Active Cloudflare account. 1 = primary, 2 = the fallback pair. */
+export type CloudflareSlot = 1 | 2;
+
+/**
+ * Measured against Workers AI (gemma-4-26b): 2516 prompt tokens → 22.9 neurons.
+ * Cached prompt tokens are billed at the same rate on the free tier.
+ */
+export const CLOUDFLARE_NEURONS_PER_TOKEN = 0.0091;
+
+/** A token/account credential pair (they must be a matching pair or you get 403). */
+export interface CloudflareAccount {
   readonly accountId: string;
   readonly apiToken: string;
+}
+
+/**
+ * Which account the transport is using. Module-level on purpose: a fresh
+ * client is built every turn, but the "this account is out of quota" decision
+ * has to outlive it. Reset on page reload (the daily allocation resets too).
+ */
+let cloudflareSlot: CloudflareSlot = 1;
+
+export const getCloudflareSlot = (): CloudflareSlot => cloudflareSlot;
+export const resetCloudflareSlot = (): void => {
+  cloudflareSlot = 1;
+};
+
+/** Cloudflare Workers AI uses OpenAI-compatible /v1/chat/completions. */
+export interface CloudflareAIOptions extends CloudflareAccount {
+  /** Second token/account pair used once the primary's daily quota is spent. */
+  readonly fallback?: CloudflareAccount;
+  /** Fired once, with 2, when the primary account hits its daily allocation. */
+  readonly onSlotChange?: (slot: CloudflareSlot) => void;
   readonly model?: string;
   readonly maxTokens?: number;
   readonly signal?: AbortSignal;
 }
+
+const isQuotaExhausted = (status: number, body: string, code?: number | string): boolean => {
+  if (status !== 429) return false;
+  if (code !== undefined) return String(code) === String(CLOUDFLARE_QUOTA_CODE);
+  return new RegExp(`"code"\\s*:\\s*${CLOUDFLARE_QUOTA_CODE}\\b`).test(body);
+};
 
 /** Ensure content is always a string (Cloudflare rejects arrays/null). */
 function contentToString(content: unknown): string {
@@ -41,43 +78,76 @@ function contentToString(content: unknown): string {
   return String(content);
 }
 
-function makeCloudflareSend(
-  accountId: string,
-  apiToken: string,
-  signal?: AbortSignal,
-) {
+function makeCloudflareSend(opts: CloudflareAIOptions) {
+  const isDev = import.meta.env.DEV;
+  const primary: CloudflareAccount = {
+    accountId: opts.accountId,
+    apiToken: opts.apiToken,
+  };
+  const hasFallback = Boolean(opts.fallback);
   return async (body: unknown): Promise<unknown> => {
-    if (signal?.aborted) {
-      throw new DOMException("Aborted", "AbortError");
-    }
     // Normalize body: ensure all message content fields are strings
     const normalized = normalizeCloudflareBody(body);
-    const isDev = import.meta.env.DEV;
-    const url = isDev
-      ? `/api/cf-ai/client/v4/accounts/${accountId}/ai/v1/chat/completions`
-      : `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (!isDev) {
-      headers.Authorization = `Bearer ${apiToken}`;
-    }
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(normalized),
-      signal,
-    });
-    if (!res.ok) {
+    // At most one flip per request: a spent fallback must surface as an error,
+    // never as an endless primary<->secondary ping-pong.
+    let flipped = false;
+    for (;;) {
+      if (opts.signal?.aborted) {
+        throw new DOMException("Aborted", "AbortError");
+      }
+      const slot: CloudflareSlot = hasFallback ? cloudflareSlot : 1;
+      const creds = slot === 2 && opts.fallback ? opts.fallback : primary;
+      const url = isDev
+        ? `${slot === 2 ? "/api/cf-ai-2" : "/api/cf-ai"}/client/v4/accounts/${creds.accountId}/ai/v1/chat/completions`
+        : `https://api.cloudflare.com/client/v4/accounts/${creds.accountId}/ai/v1/chat/completions`;
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (!isDev) {
+        headers.Authorization = `Bearer ${creds.apiToken}`;
+      }
+      let res: Response;
+      try {
+        res = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(normalized),
+          signal: opts.signal,
+        });
+      } catch (error) {
+        // Abort is deliberate; anything else means no answer came back. The dev
+        // proxy answers upstream connection failures with a synthetic 500, so
+        // this path covers the browser-side half of the same class of failure.
+        if (error instanceof DOMException && error.name === "AbortError") throw error;
+        if (error instanceof TypeError) {
+          throw new LLMNetworkError(
+            "Could not reach the AI endpoint — the dev proxy or network is unavailable.",
+            { cause: error },
+          );
+        }
+        throw error;
+      }
+      if (res.ok) return res.json();
       const text = await res.text().catch(() => "");
-      throw llmHttpError(
+      const error = llmHttpError(
         "cloudflare-ai",
         res.status,
         text,
         parseRetryAfterMs(res.headers.get("retry-after")),
       );
+      if (
+        hasFallback &&
+        !flipped &&
+        cloudflareSlot === 1 &&
+        isQuotaExhausted(res.status, text, error.code)
+      ) {
+        cloudflareSlot = 2;
+        flipped = true;
+        opts.onSlotChange?.(2);
+        continue;
+      }
+      throw error;
     }
-    return res.json();
   };
 }
 
@@ -100,10 +170,7 @@ function normalizeCloudflareBody(body: unknown): unknown {
  * Defaults to the vision model used by Monet's frame analysis pipeline.
  */
 export function makeCloudflareAIClient(opts: CloudflareAIOptions): LLMClient {
-  const send = withRetry(
-    makeCloudflareSend(opts.accountId, opts.apiToken, opts.signal),
-    { signal: opts.signal },
-  );
+  const send = withRetry(makeCloudflareSend(opts), { signal: opts.signal });
   return makeClientFromSend({
     provider: "openai",
     model: opts.model ?? "@cf/google/gemma-4-26b-a4b-it",
@@ -133,8 +200,9 @@ function makeSend(
       });
     } catch (error) {
       if (error instanceof TypeError) {
-        throw new Error(
+        throw new LLMNetworkError(
           "Could not reach the compatible endpoint. Check its URL, availability, and browser CORS settings.",
+          { cause: error },
         );
       }
       throw error;
@@ -159,6 +227,10 @@ export interface BYOKClientOptions {
   readonly baseUrl?: string;
   readonly maxTokens?: number;
   readonly signal?: AbortSignal;
+  /** Provider: "cloudflare" only. Second token/account pair for quota fallback. */
+  readonly cloudflareFallback?: CloudflareAccount;
+  /** Provider: "cloudflare" only. Fired with 2 when the primary quota is spent. */
+  readonly onCloudflareSlotChange?: (slot: CloudflareSlot) => void;
 }
 
 /**
@@ -172,6 +244,8 @@ export function makeBYOKClient(opts: BYOKClientOptions): LLMClient {
     return makeCloudflareAIClient({
       accountId: opts.baseUrl ?? "",
       apiToken: opts.apiKey,
+      fallback: opts.cloudflareFallback,
+      onSlotChange: opts.onCloudflareSlotChange,
       model: opts.model,
       maxTokens: opts.maxTokens,
       signal: opts.signal,

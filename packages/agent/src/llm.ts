@@ -106,9 +106,29 @@ export class LLMHttpError extends Error {
     readonly status: number,
     /** Parsed Retry-After (ms), honored by withRetry when present. */
     readonly retryAfterMs?: number,
+    /** Provider body code (e.g. Cloudflare's 4006 daily quota) when parsed. */
+    readonly code?: number | string,
   ) {
     super(message);
     this.name = "LLMHttpError";
+  }
+}
+
+/**
+ * Pulls the first provider `errors[0].code` out of an error body.
+ * Cloudflare returns `{"errors":[{"code":4006,...}]}` for a spent allocation.
+ */
+function parseUpstreamCode(body: string): number | string | undefined {
+  if (!body) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (!isRecord(parsed) || !Array.isArray(parsed.errors)) return undefined;
+    const first = parsed.errors[0];
+    if (!isRecord(first)) return undefined;
+    const code = first.code;
+    return typeof code === "number" || typeof code === "string" ? code : undefined;
+  } catch {
+    return undefined;
   }
 }
 
@@ -128,7 +148,12 @@ export function llmHttpError(
   body: string,
   retryAfterMs?: number,
 ): LLMHttpError {
-  return new LLMHttpError(`${provider} ${status}: ${body.slice(0, 500)}`, status, retryAfterMs);
+  return new LLMHttpError(
+    `${provider} ${status}: ${body.slice(0, 500)}`,
+    status,
+    retryAfterMs,
+    parseUpstreamCode(body),
+  );
 }
 
 export interface RetryOptions {
@@ -168,8 +193,27 @@ function abortableSleep(
   });
 }
 
+/** Cloudflare Workers AI: daily free neuron allocation spent (won't recover in-window). */
+export const CLOUDFLARE_QUOTA_CODE = 4006;
+
+/**
+ * The request never got an answer — DNS/connect refused, proxy died, socket
+ * dropped. Distinct from an HTTP error status (the server spoke): nothing was
+ * answered, so backing off and retrying is safe and usually succeeds.
+ */
+export class LLMNetworkError extends Error {
+  constructor(message: string, options?: { readonly cause?: unknown }) {
+    super(message, options);
+    this.name = "LLMNetworkError";
+  }
+}
+
 const defaultRetryable = (error: unknown): boolean => {
+  if (error instanceof LLMNetworkError) return true;
   if (error instanceof LLMHttpError) {
+    // A spent daily allocation is a hard stop until UTC midnight — backing off
+    // for ~3s only burns the turn. The transport's account fallback handles it.
+    if (String(error.code) === String(CLOUDFLARE_QUOTA_CODE)) return false;
     return error.status === 429 || error.status >= 500;
   }
   return false;

@@ -426,6 +426,9 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
           result.error?.code === "EDIT_PLAN_APPLY_FAILED"
         ) {
           await host.rollbackTransaction(txn);
+          // Resolve the tool card first: this branch returns without reaching
+          // the emit below, which left the UI's "Running" chip hanging forever.
+          emit({ type: "tool_result", call, result });
           emit({
             type: "error",
             error: {
