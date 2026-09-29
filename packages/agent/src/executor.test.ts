@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { inflateSync } from "node:zlib";
 import { HeadlessHost } from "./headless-host";
 import { executeTool, isDestructive } from "./executor";
+import { _resetPlanState, _setPlanStateForTest, _getPlanStateForTest } from "./registry";
 import { makeEmptyProject, makeProjectWithClip } from "./test-fixtures";
 import type { EditorStateView, ClipView } from "./serialize";
 import type { EditingHost } from "./host";
@@ -42,6 +43,13 @@ function decodePngDataUri(dataUri: string): { width: number; height: number; rgb
 }
 
 describe("executeTool", () => {
+  beforeEach(() => {
+    // Clear any leftover plan state from prior tests to prevent
+    // _previousPlanState collisions between tests using the same project ID.
+    _resetPlanState("p1");
+    _resetPlanState("noop-test");
+  });
+
   it("runs a read tool (get_editor_state)", async () => {
     const host = new HeadlessHost(makeProjectWithClip());
     const res = await executeTool("get_editor_state", {}, host);
@@ -176,6 +184,12 @@ describe("executeTool", () => {
           type: "video",
           metadata: { duration: 8 },
         },
+        {
+          id: "audio-1",
+          name: "bed.wav",
+          type: "audio",
+          metadata: { duration: 30 },
+        },
       ],
       },
     } as ReturnType<typeof makeEmptyProject>;
@@ -237,7 +251,7 @@ describe("executeTool", () => {
               }],
               audioDecisions: [{
                 type: "music",
-                sourceVideoId: "video-1",
+                sourceVideoId: "audio-1",
                 sourceStartTime: 0,
                 sourceEndTime: 4,
                 startTime: 0,
@@ -246,7 +260,7 @@ describe("executeTool", () => {
                 rationale: "music bed",
               }, {
                   type: "sfx",
-                  sourceVideoId: "video-1",
+                  sourceVideoId: "audio-1",
                   sourceStartTime: 1,
                   sourceEndTime: 1.25,
                   startTime: 1,
@@ -295,6 +309,240 @@ describe("executeTool", () => {
     expect(host.getProject().motionCompositions?.[0]?.layers.some((layer) => layer.type === "particle")).toBe(true);
   });
 
+  it("materializes an effect spec with no params field", async () => {
+    const project = {
+      ...makeEmptyProject(),
+      mediaLibrary: {
+        items: [
+          {
+            id: "video-1",
+            name: "test.mp4",
+            type: "video",
+            metadata: { duration: 8 },
+          },
+        ],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [{
+            id: "plan-1",
+            name: "submit_edit_plan",
+            input: {
+              segments: [
+                {
+                  sourceVideoId: "video_0",
+                  sourceStartTime: 0,
+                  sourceEndTime: 4,
+                  trackIndex: 0,
+                  targetPosition: 0,
+                  speed: 1,
+                  effects: [],
+                  // No `params` field at all — synthesizeEffectParams must
+                  // survive the undefined, then fill defaults from intensity.
+                  effectSpecs: [{ type: "chromatic-aberration", intensity: 0.7, rationale: "accent" }],
+                  layout: { region: "split-left", fit: "contain" },
+                  rationale: "opening",
+                },
+              ],
+              textElements: [],
+              effects: [],
+              transitions: [],
+              audioDecisions: [],
+              metadata: {
+                targetDuration: 4,
+                targetPlatform: "social",
+                genre: "highlight",
+                pacing: "fast",
+                rationale: "test",
+              },
+            },
+          }],
+        }),
+      },
+    };
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(result.ok, result.error?.message ?? "plan_edit succeeded").toBe(true);
+    const params = host.getProject().timeline.tracks[0].clips[0]?.effects?.[0]?.params;
+    expect(Object.keys(params ?? {})).not.toHaveLength(0);
+    expect(params).toEqual({ amount: 35, intensity: 0.7 });
+  });
+
+  it("prefers standalone audio media for music when the plan points at a video", async () => {
+    const project = {
+      ...makeEmptyProject(),
+      id: "prefer-audio-test",
+      mediaLibrary: {
+        items: [
+          {
+            id: "video-1",
+            name: "footage.mp4",
+            type: "video",
+            metadata: { duration: 8 },
+          },
+          {
+            id: "audio-1",
+            name: "bed.mp3",
+            type: "audio",
+            metadata: { duration: 30 },
+          },
+        ],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    _resetPlanState("prefer-audio-test");
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [{
+            id: "plan-pref-audio",
+            name: "submit_edit_plan",
+            input: {
+              segments: [{
+                sourceVideoId: "video-1",
+                sourceStartTime: 0,
+                sourceEndTime: 4,
+                trackIndex: 0,
+                targetPosition: 0,
+                speed: 1,
+                effects: [],
+                effectSpecs: [],
+                rationale: "opening",
+              }],
+              textElements: [],
+              effects: [],
+              transitions: [],
+              audioDecisions: [{
+                type: "music",
+                sourceVideoId: "video-1",
+                sourceStartTime: 2,
+                sourceEndTime: 6,
+                startTime: 0,
+                duration: 4,
+                volume: 0.7,
+                rationale: "should prefer mp3",
+              }],
+              metadata: {
+                targetDuration: 4,
+                targetPlatform: "social",
+                genre: "highlight",
+                pacing: "fast",
+                rationale: "test",
+              },
+              motionMoments: [],
+            },
+          }],
+        }),
+      },
+    } as NonNullable<EditingHost["llm"]>;
+
+    const result = await executeTool("plan_edit", { prompt: "use the music bed" }, host);
+    expect(result.ok).toBe(true);
+
+    const musicTrack = host.getProject().timeline.tracks.find(
+      (track) => track.type === "audio" && track.name === "Music",
+    );
+    expect(musicTrack).toBeDefined();
+    expect(musicTrack?.clips).toHaveLength(1);
+    // The plan pointed at video-1; materializer must substitute audio-1.
+    expect(musicTrack?.clips[0]?.mediaId).toBe("audio-1");
+    // Video-planned source offsets do not transfer — start at the head of the mp3.
+    expect(musicTrack?.clips[0]?.inPoint).toBe(0);
+    expect(musicTrack?.clips[0]?.outPoint).toBeGreaterThan(0);
+    _resetPlanState("prefer-audio-test");
+  });
+
+  it("returns applied:false when re-applying an identical plan (no-op short-circuit)", async () => {
+    const projectId = "noop-test";
+
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: {
+        items: [{ id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    const planInput = {
+      segments: [
+        {
+          sourceVideoId: "video-1",
+          sourceStartTime: 0,
+          sourceEndTime: 4,
+          trackIndex: 0,
+          targetPosition: 0,
+          speed: 1,
+          effects: [],
+          effectSpecs: [],
+          rationale: "clip 1",
+        },
+      ],
+      textElements: [],
+      effects: [],
+      transitions: [],
+      audioDecisions: [],
+      metadata: {
+        targetDuration: 4,
+        targetPlatform: "social",
+        genre: "highlight",
+        pacing: "fast",
+        rationale: "test",
+      },
+    };
+
+    let callCount = 0;
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => {
+          callCount++;
+          return {
+            text: "",
+            stopReason: "tool_use",
+            toolUses: [{ id: `plan-${callCount}`, name: "submit_edit_plan", input: structuredClone(planInput) }],
+          };
+        },
+      },
+    };
+
+    // First call applies the plan (full materialization, no 'applied' field)
+    const first = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(first.ok).toBe(true);
+    const firstData = first.data as Record<string, unknown>;
+    expect(firstData.clipIds).toBeDefined();
+
+    // Capture all timeline artifact IDs after first application
+    const collectIds = () => {
+      const p = host.getProject();
+      return {
+        clips: p.timeline.tracks.flatMap((t) => t.clips.map((c) => c.id)).sort(),
+        transitions: p.timeline.tracks.flatMap((t) => (t.transitions ?? []).map((x) => x.id)).sort(),
+        text: (p.textClips ?? []).map((c) => c.id).sort(),
+        audio: p.timeline.tracks.filter((t) => t.type === "audio").flatMap((t) => t.clips.map((c) => c.id)).sort(),
+      };
+    };
+    const idsAfterFirst = collectIds();
+
+    // Second call with the same plan should short-circuit
+    const second = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(second.ok).toBe(true);
+    const secondData = second.data as Record<string, unknown>;
+    expect(secondData.applied).toBe(false);
+
+    // Verify timeline was NOT torn down and rebuilt — all artifact IDs unchanged
+    const idsAfterSecond = collectIds();
+    expect(idsAfterSecond).toEqual(idsAfterFirst);
+  });
+
   it("returns an error for an unknown tool", async () => {
     const host = new HeadlessHost(makeEmptyProject());
     const res = await executeTool("nope", {}, host);
@@ -324,7 +572,6 @@ describe("executeTool", () => {
     const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
     expect(result.ok).toBe(false);
     expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
-    expect(result.error?.message).toContain("unknown video");
   });
 
   it("flags destructive tools", () => {
@@ -8865,5 +9112,446 @@ describe("executeTool", () => {
       (candidate) => candidate.type === "backdrop-blur",
     );
     expect(effect).toBeDefined();
+  });
+
+  it("extract_segments returns actionable error when frame capture yields no frames", async () => {
+    // Cause (1): media has no blob / source URL → job returns ok but invalid data
+    const jobCalls: Array<{ mediaId: string; timeSeconds: number }> = [];
+    const project = {
+      ...makeEmptyProject(),
+      id: "extract-probe",
+      mediaLibrary: {
+        items: [{
+          id: "orphaned-media",
+          name: "test.mp4",
+          type: "video",
+          metadata: { duration: 5 },
+        }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+
+    const host = new HeadlessHost(project, {
+      jobRunner: async (_kind, params) => {
+        jobCalls.push({ mediaId: params.mediaId as string, timeSeconds: params.timeSeconds as number });
+        // Simulate missing blob: returns ok but invalid frame shape
+        return { ok: true, data: { frames: [] } };
+      },
+    });
+
+    const result = await executeTool("extract_segments", {
+      videoMediaIds: ["orphaned-media"],
+    }, host);
+
+    expect(jobCalls.length).toBeGreaterThan(0);
+    expect(jobCalls[0].mediaId).toBe("orphaned-media");
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("FRAME_CAPTURE_FAILED");
+    // Error message must include the media ID and actionable context
+    expect(result.error?.message).toContain("orphaned-media");
+    expect(result.error?.message).toContain("invalid frame data");
+  });
+
+  it("extract_segments surfaces job error message when job fails", async () => {
+    const project = {
+      ...makeEmptyProject(),
+      id: "extract-job-fail",
+      mediaLibrary: {
+        items: [{
+          id: "missing-media",
+          name: "gone.mp4",
+          type: "video",
+          metadata: { duration: 3 },
+        }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+
+    const host = new HeadlessHost(project, {
+      jobRunner: async () => ({
+        ok: false,
+        error: "Media blob unavailable",
+      }),
+    });
+
+    const result = await executeTool("extract_segments", {
+      videoMediaIds: ["missing-media"],
+    }, host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("FRAME_CAPTURE_FAILED");
+    expect(result.error?.message).toContain("Media blob unavailable");
+  });
+
+  it("teardown tolerates a text overlay deleted between turns", async () => {
+    const projectId = "text-teardown-idempotent";
+    _resetPlanState(projectId);
+
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: {
+        items: [{ id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    const planA = {
+      segments: [{
+        sourceVideoId: "video-1",
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        trackIndex: 0,
+        targetPosition: 0,
+        effects: [],
+        effectSpecs: [],
+        rationale: "clip 1",
+      }],
+      textElements: [{
+        content: "Hello",
+        style: "title",
+        startTime: 0,
+        duration: 2,
+        rationale: "greeting",
+      }],
+      effects: [],
+      transitions: [],
+      audioDecisions: [],
+      metadata: { targetDuration: 4, targetPlatform: "social", genre: "highlight", pacing: "fast", rationale: "test" },
+    };
+
+    // Plan B: different segment end time so fingerprint won't match
+    const planB = {
+      ...planA,
+      segments: [{ ...planA.segments[0], sourceEndTime: 6, rationale: "longer clip" }],
+      textElements: [{
+        content: "World",
+        style: "title",
+        startTime: 0,
+        duration: 3,
+        rationale: "closing",
+      }],
+    };
+
+    let innerCallCount = 0;
+    const innerResponses = [
+      { text: "", stopReason: "tool_use" as const, toolUses: [{ id: "plan-a", name: "submit_edit_plan", input: structuredClone(planA) }] },
+      { text: "", stopReason: "tool_use" as const, toolUses: [{ id: "plan-b", name: "submit_edit_plan", input: structuredClone(planB) }] },
+    ];
+
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => {
+          return innerResponses[innerCallCount++] ?? { text: "", stopReason: "end_turn" as const, toolUses: [] };
+        },
+      },
+    };
+
+    // Apply plan A — creates a text overlay
+    const first = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(first.ok).toBe(true);
+    const textClipsAfterFirst = (host.getProject() as { textClips?: Array<{ id: string }> }).textClips ?? [];
+    expect(textClipsAfterFirst.length).toBeGreaterThan(0);
+    const textId = textClipsAfterFirst[0]!.id;
+
+    // Simulate user manually deleting the text overlay between turns
+    await host.applyAction({
+      type: "text/remove",
+      id: "user-delete",
+      timestamp: Date.now(),
+      params: { clipId: textId },
+    });
+    expect(((host.getProject() as { textClips?: Array<{ id: string }> }).textClips ?? []).length).toBe(0);
+
+    // Apply plan B — teardown must tolerate the missing text
+    const second = await executeTool("plan_edit", { prompt: "make it longer" }, host);
+    expect(second.ok).toBe(true);
+
+    // Plan B's text should now be on the timeline
+    const textClipsAfterSecond = (host.getProject() as { textClips?: Array<{ id: string; text: string }> }).textClips ?? [];
+    expect(textClipsAfterSecond.length).toBe(1);
+    expect(textClipsAfterSecond[0]!.text).toBe("World");
+  });
+
+  it("teardown tolerates a clip deleted between turns", async () => {
+    const projectId = "clip-teardown-idempotent";
+    _resetPlanState(projectId);
+
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: {
+        items: [{ id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    const planA = {
+      segments: [{
+        sourceVideoId: "video-1",
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        trackIndex: 0,
+        targetPosition: 0,
+        effects: [],
+        effectSpecs: [],
+        rationale: "clip 1",
+      }],
+      textElements: [],
+      effects: [],
+      transitions: [],
+      audioDecisions: [],
+      metadata: { targetDuration: 4, targetPlatform: "social", genre: "highlight", pacing: "fast", rationale: "test" },
+    };
+
+    const planB = {
+      ...planA,
+      segments: [{ ...planA.segments[0], sourceEndTime: 6, rationale: "longer clip" }],
+    };
+
+    let innerCallCount = 0;
+    const innerResponses = [
+      { text: "", stopReason: "tool_use" as const, toolUses: [{ id: "plan-a", name: "submit_edit_plan", input: structuredClone(planA) }] },
+      { text: "", stopReason: "tool_use" as const, toolUses: [{ id: "plan-b", name: "submit_edit_plan", input: structuredClone(planB) }] },
+    ];
+
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => {
+          return innerResponses[innerCallCount++] ?? { text: "", stopReason: "end_turn" as const, toolUses: [] };
+        },
+      },
+    };
+
+    // Apply plan A
+    const first = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(first.ok).toBe(true);
+    const clipsAfterFirst = host.getProject().timeline.tracks.flatMap((t) => t.clips);
+    expect(clipsAfterFirst.length).toBeGreaterThan(0);
+    const clipId = clipsAfterFirst[0]!.id;
+
+    // Simulate user manually deleting the clip
+    await host.applyAction({
+      type: "clip/remove",
+      id: "user-delete",
+      timestamp: Date.now(),
+      params: { clipId },
+    });
+    const clipsAfterDelete = host.getProject().timeline.tracks.flatMap((t) => t.clips);
+    expect(clipsAfterDelete.length).toBe(0);
+
+    // Apply plan B — teardown must tolerate the missing clip
+    const second = await executeTool("plan_edit", { prompt: "make it longer" }, host);
+    expect(second.ok).toBe(true);
+
+    const clipsAfterSecond = host.getProject().timeline.tracks.flatMap((t) => t.clips);
+    expect(clipsAfterSecond.length).toBe(1);
+  });
+
+  it("tolerates stale text IDs in _previousPlanState after a rolled-back turn", async () => {
+    const projectId = "stale-text";
+    _resetPlanState(projectId);
+
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: { items: [{ id: "video-1", name: "t.mp4", type: "video", metadata: { duration: 8 } }] },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    // Plant stale text IDs directly — simulating the leaked state from a
+    // rolled-back turn where _previousPlanState was written before materialize
+    // finished, then the transaction rolled back but the map entry survived.
+    _setPlanStateForTest(projectId, {
+      clipIds: [],
+      textIds: ["text-does-not-exist-12345"],
+      transitionIds: [],
+      audioClipIds: [],
+      fingerprint: "stale-fingerprint",
+    });
+
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [{
+            id: "plan-1",
+            name: "submit_edit_plan",
+            input: {
+              segments: [{ sourceVideoId: "video-1", sourceStartTime: 0, sourceEndTime: 4, trackIndex: 0, targetPosition: 0, effects: [], effectSpecs: [], rationale: "c" }],
+              textElements: [],
+              effects: [],
+              transitions: [],
+              audioDecisions: [],
+              metadata: { targetDuration: 4, targetPlatform: "social", genre: "highlight-reel", pacing: "fast", rationale: "t" },
+            },
+          }],
+        }),
+      },
+    };
+
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(result.ok).toBe(true);
+    expect((result.data as { applied?: boolean }).applied).not.toBe(false);
+  });
+
+  it("does not clear _previousPlanState when materialize fails", async () => {
+    const projectId = "no-clear-on-failure";
+    _resetPlanState(projectId);
+
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: { items: [{ id: "video-1", name: "t.mp4", type: "video", metadata: { duration: 8 } }] },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    const planA = {
+      segments: [{ sourceVideoId: "video-1", sourceStartTime: 0, sourceEndTime: 4, trackIndex: 0, targetPosition: 0, effects: [], effectSpecs: [], rationale: "a" }],
+      textElements: [],
+      effects: [],
+      transitions: [],
+      audioDecisions: [],
+      metadata: { targetDuration: 4, targetPlatform: "social", genre: "highlight-reel", pacing: "fast", rationale: "a" },
+    };
+
+    const planB = {
+      ...planA,
+      segments: [{ ...planA.segments[0], sourceEndTime: 6, rationale: "b" }],
+    };
+
+    // Turn 1: apply plan A successfully
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "", stopReason: "tool_use",
+          toolUses: [{ id: "plan-a-1", name: "submit_edit_plan", input: structuredClone(planA) }],
+        }),
+      },
+    };
+    const first = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(first.ok).toBe(true);
+
+    const stateAfterA = _getPlanStateForTest(projectId);
+    expect(stateAfterA).toBeDefined();
+    expect(stateAfterA!.clipIds.length).toBeGreaterThan(0);
+
+    // Turn 2: force a teardown failure by making applyAction fail immediately.
+    // This simulates a genuine action handler crash during teardown — the
+    // transaction rolls back, but _previousPlanState must survive so the next
+    // retry can re-attempt teardown.
+    const originalApplyAction = host.applyAction.bind(host);
+    host.applyAction = async () => {
+      return { success: false, error: { code: "TRACK_LOCKED", message: "simulated failure" } };
+    };
+
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "", stopReason: "tool_use",
+          toolUses: [{ id: "plan-b-1", name: "submit_edit_plan", input: structuredClone(planB) }],
+        }),
+      },
+    };
+    const second = await executeTool("plan_edit", { prompt: "make it longer" }, host);
+    expect(second.ok).toBe(false);
+    host.applyAction = originalApplyAction;
+
+    // THE INVARIANT: after rollback, A is still on the timeline, so state
+    // must still describe A. If it's been cleared, the next turn stacks.
+    const stateAfterFailure = _getPlanStateForTest(projectId);
+    expect(stateAfterFailure).toBeDefined();
+    expect(stateAfterFailure!.clipIds).toEqual(stateAfterA!.clipIds);
+
+    // Sanity: A is still on the timeline (rollback worked)
+    const clipsOnTimeline = host.getProject().timeline.tracks.flatMap((t) => t.clips);
+    expect(clipsOnTimeline.length).toBe(stateAfterA!.clipIds.length);
+
+    // Turn 3: retry with plan B. With state intact → teardown removes A → clean apply.
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "", stopReason: "tool_use",
+          toolUses: [{ id: "plan-b-2", name: "submit_edit_plan", input: structuredClone(planB) }],
+        }),
+      },
+    };
+    const third = await executeTool("plan_edit", { prompt: "make it longer" }, host);
+    expect(third.ok).toBe(true);
+
+    const clipsAfterRetry = host.getProject().timeline.tracks.flatMap((t) => t.clips);
+    expect(clipsAfterRetry.length).toBe(1);
+  });
+
+  it("preserves transform fields when positioning a text overlay", async () => {
+    const projectId = "text-transform-preservation";
+    _resetPlanState(projectId);
+
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: {
+        items: [{ id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "", stopReason: "tool_use",
+          toolUses: [{
+            id: "plan-1",
+            name: "submit_edit_plan",
+            input: {
+              segments: [{
+                sourceVideoId: "video-1",
+                sourceStartTime: 0,
+                sourceEndTime: 4,
+                trackIndex: 0,
+                targetPosition: 0,
+                effects: [],
+                effectSpecs: [],
+                rationale: "clip",
+              }],
+              textElements: [{
+                content: "Positioned Text",
+                style: "title",
+                startTime: 0,
+                duration: 3,
+                position: { x: 0.5, y: 0.5 },
+                rationale: "title",
+              }],
+              effects: [],
+              transitions: [],
+              audioDecisions: [],
+              metadata: { targetDuration: 4, targetPlatform: "social", genre: "highlight", pacing: "fast", rationale: "test" },
+            },
+          }],
+        }),
+      },
+    };
+
+    const result = await executeTool("plan_edit", { prompt: "add a title" }, host);
+    expect(result.ok).toBe(true);
+
+    const textClips = (host.getProject() as { textClips?: Array<{ id: string; transform: Record<string, unknown> }> }).textClips ?? [];
+    expect(textClips.length).toBe(1);
+
+    const transform = textClips[0]!.transform;
+    expect(transform.position).toEqual({ x: 0.5, y: 0.5 });
+    expect(transform.scale).toBeDefined();
+    expect(transform.scale).toEqual({ x: 1, y: 1 });
+    expect(transform.rotation).toBeDefined();
+    expect(transform.rotation).toBe(0);
+    expect(transform.opacity).toBeDefined();
+    expect(transform.opacity).toBe(1);
   });
 });

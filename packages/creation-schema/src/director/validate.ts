@@ -2,8 +2,11 @@ import type { EditPlan, EditPlanLayout, PlannedSegment, PlannedSpeedRamp } from 
 import type { SegmentMap, VideoSegmentMap } from "./segment-map";
 import {
   canonicalizeTransitionType,
+  getMisplacedFeatureHint,
+  isColorGradeType,
   isSupportedEffectType,
   isSupportedTransitionType,
+  normalizeEffectType,
   SUPPORTED_CLIP_EFFECT_TYPES,
   SUPPORTED_TRANSITION_TYPES,
 } from "./vocab";
@@ -78,7 +81,11 @@ export function validateSegmentMap(
 
     let lastEnd = 0;
     for (const segment of video.segments) {
-      if (segment.startTime < lastEnd) {
+      // A tiny epsilon lets adjacent segments with 1-frame precision issues
+      // (e.g. 5.033333 vs 5.033334) pass without a false overlap warning.
+      // Without this, real SegmentMaps from the vision worker produced
+      // warning spam that drowned out the actionable issues.
+      if (segment.startTime < lastEnd - 1e-3) {
         issues.push(
           issue(
             "warning",
@@ -229,27 +236,76 @@ export function validateEditPlan(
 
   // ---- Renderer-backed vocabulary -----------------------------------------
   const unsupportedEffect = (type: string, path: string): void => {
-    if (!isSupportedEffectType(type)) {
-      issues.push(issue(
-        "error",
-        "unsupported_effect",
-        `Effect "${type}" is not supported by the renderer. Supported effects: ${SUPPORTED_CLIP_EFFECT_TYPES.join(", ")} (colorGrade also maps to clip color grading).`,
-        path,
-      ));
+    if (isSupportedEffectType(type)) return;
+    // A structural feature in the wrong place gets an actionable hint so the
+    // bounded repair attempt knows where it belongs instead of deleting it.
+    const hint = getMisplacedFeatureHint(type);
+    if (hint) {
+      issues.push(issue("error", "misplaced_feature", `${path}: ${hint}`, path));
+      return;
     }
+    issues.push(issue(
+      "error",
+      "unsupported_effect",
+      `Effect "${type}" is not supported by the renderer. Supported effects: ${SUPPORTED_CLIP_EFFECT_TYPES.join(", ")} (colorGrade also maps to clip color grading).`,
+      path,
+    ));
   };
 
   for (let i = 0; i < plan.segments.length; i++) {
     const segment = plan.segments[i] as PlannedSegment;
     segment.effects.forEach((type, effectIndex) => {
-      unsupportedEffect(type, `segments.${i}.effects.${effectIndex}`);
+      if (typeof type !== "string" || !type.trim()) {
+        issues.push(issue("error", "empty_effect_type", `Segment ${i} effects[${effectIndex}] has no type.`, `segments.${i}.effects.${effectIndex}`));
+      } else {
+        unsupportedEffect(type, `segments.${i}.effects.${effectIndex}`);
+        // colorGrade in the string effects array gets empty params by default,
+        // which means it silently does nothing — warn so the LLM uses
+        // effectSpecs with explicit params instead.
+        if (isColorGradeType(type)) {
+          issues.push(issue(
+            "warning",
+            "implicit_color_grade_params",
+            `Segment ${i} effects[${effectIndex}] type "${type}" will receive empty params — use effectSpecs with explicit params instead.`,
+            `segments.${i}.effects.${effectIndex}`,
+          ));
+        }
+      }
     });
     segment.effectSpecs?.forEach((spec, effectIndex) => {
-      unsupportedEffect(spec.type, `segments.${i}.effectSpecs.${effectIndex}.type`);
+      const path = `segments.${i}.effectSpecs.${effectIndex}`;
+      unsupportedEffect(spec.type, `${path}.type`);
+      if (isColorGradeType(spec.type) && (!spec.params || Object.keys(spec.params).length === 0)) {
+        issues.push(issue("error", "empty_color_grade_params", `${path} is a colorGrade with no params — it will do nothing.`, `${path}.params`));
+      }
+      // The effects engine defaults every numeric param to 0, so a spec with
+      // no params and no intensity renders as a no-op. The materializer
+      // synthesizes defaults from `intensity` when intensity is present —
+      // this flags the remaining case for the revision pass to fill in.
+      if (
+        spec.type &&
+        !isColorGradeType(spec.type) &&
+        (!spec.params || Object.keys(spec.params).length === 0) &&
+        spec.intensity === undefined
+      ) {
+        issues.push(issue("warning", "effect_spec_missing_params", `${path} effect "${spec.type}" has no params and no intensity — it will render as a no-op.`, `${path}.params`));
+      }
     });
   }
   plan.effects.forEach((effect, effectIndex) => {
-    unsupportedEffect(effect.type, `effects.${effectIndex}.type`);
+    const path = `effects.${effectIndex}`;
+    unsupportedEffect(effect.type, `${path}.type`);
+    if (isColorGradeType(effect.type) && (!effect.params || Object.keys(effect.params).length === 0)) {
+      issues.push(issue("error", "empty_color_grade_params", `${path} is a colorGrade with no params — it will do nothing.`, `${path}.params`));
+    }
+    if (
+      effect.targetSegmentIndex !== undefined &&
+      (!Number.isInteger(effect.targetSegmentIndex) ||
+        effect.targetSegmentIndex < 0 ||
+        effect.targetSegmentIndex >= plan.segments.length)
+    ) {
+      issues.push(issue("error", "invalid_effect_segment", `${path} targetSegmentIndex ${effect.targetSegmentIndex} is out of range.`, `${path}.targetSegmentIndex`));
+    }
   });
 
   plan.transitions.forEach((transition, index) => {
@@ -429,24 +485,51 @@ export function normalizeEditPlan(
       end = duration ?? 1;
     }
 
-    return { ...segment, sourceStartTime: start, sourceEndTime: end };
+    // Canonicalize effect names to what the renderer actually draws, so an
+    // alias like "warmth" reaches materialize as "temperature" instead of
+    // being rejected (or silently dropped).
+    const effectSpecs = segment.effectSpecs?.map((spec) => {
+      const canonical = normalizeEffectType(spec.type);
+      return canonical ? { ...spec, type: canonical } : spec;
+    });
+    const effects = segment.effects.map((type) => normalizeEffectType(type) ?? type);
+
+    return {
+      ...segment,
+      sourceStartTime: start,
+      sourceEndTime: end,
+      ...(effectSpecs ? { effectSpecs } : {}),
+      effects,
+    };
   });
+  const effects = plan.effects.map((effect) => {
+    const canonical = normalizeEffectType(effect.type);
+    return canonical ? { ...effect, type: canonical } : effect;
+  });
+
   const transitions = plan.transitions.map((transition) => {
     const previous = segments[transition.afterSegmentIndex];
     const next = segments[transition.afterSegmentIndex + 1];
+    // Cap transition duration at half the shorter adjacent segment to prevent
+    // blends longer than the source clips (causes frame-hold glitches).
     const maxDuration = previous && next
-      ? Math.min(previous.sourceEndTime - previous.sourceStartTime, next.sourceEndTime - next.sourceStartTime) * 2
+      ? Math.min(previous.sourceEndTime - previous.sourceStartTime, next.sourceEndTime - next.sourceStartTime) * 0.5
       : 0.25;
     const duration = Number.isFinite(transition.duration) && transition.duration > 0
-      ? transition.duration
+      ? Math.min(transition.duration, maxDuration)
       : Math.min(0.25, maxDuration);
 
-    return { ...transition, duration };
+    // Hard cuts canonicalize to null — the entry is kept here and dropped by
+    // canonicalizePlanTransitions, never rewritten into a rendered blend.
+    const canonical = canonicalizeTransitionType(transition.type);
+
+    return { ...transition, duration, type: canonical ?? transition.type };
   });
 
   return {
     ...plan,
     segments,
+    effects,
     transitions,
   };
 }

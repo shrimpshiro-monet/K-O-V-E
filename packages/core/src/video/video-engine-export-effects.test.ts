@@ -345,7 +345,9 @@ describe("VideoEngine export frame effects", () => {
     expect(colorWheelsBitmap.close).toHaveBeenCalledTimes(1);
     expect(cpuGradedBitmap.close).toHaveBeenCalledTimes(1);
     expect(whiteBalancedBitmap.close).toHaveBeenCalledTimes(1);
-  });
+    // Software rendering of the full grade chain; under a full monorepo run the
+    // default 5s budget is blown by contention alone.
+  }, 15000);
 
   it("does not scale an output-sized decoded frame twice", async () => {
     const outputSizedBitmap = makeBitmap("output-sized", 320, 180);

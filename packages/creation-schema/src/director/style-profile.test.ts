@@ -12,8 +12,8 @@ const profile: StyleProfile = {
   textOverlayDensity: 2,
   shotTypeDistribution: { action: 0.8, talking: 0.2 },
   cutStyle: "hard",
-  effectPalette: ["zoom-punch"],
-  transitionPalette: ["hardCut"],
+  effectPalette: ["chromatic-aberration"],
+  transitionPalette: ["crossfade"],
   detectedBpm: 120,
   dialogueRatio: 0.2,
   musicRatio: 1,
@@ -26,8 +26,8 @@ describe("style profile comparison", () => {
       pacing: "fast",
       cutsPerMinute: [24, 45],
       cutStyle: "hard",
-      effectPalette: ["zoom-punch"],
-      transitionPalette: ["hardCut"],
+      effectPalette: ["chromatic-aberration"],
+      transitionPalette: ["crossfade"],
     });
     expect(matching.score).toBe(1);
     expect(matching.deviations).toHaveLength(0);

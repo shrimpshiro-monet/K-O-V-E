@@ -3,6 +3,8 @@ import { Bot, User } from "@/icons/lucide-compat";
 import type { ChatMessage as ChatMessageData } from "../../../stores/chat-store";
 import { MarkdownMessage } from "./MarkdownMessage";
 import { ToolCallCard } from "./ToolCallCard";
+import { PromptExpansionCard } from "./PromptExpansionCard";
+import { useChatStore } from "../../../stores/chat-store";
 
 export function ChatMessage({
   message,
@@ -12,6 +14,7 @@ export function ChatMessage({
   pending?: boolean;
 }): JSX.Element {
   const isUser = message.role === "user";
+  const send = useChatStore((s) => s.send);
 
   return (
     <div className="flex gap-2">
@@ -35,6 +38,13 @@ export function ChatMessage({
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
             <span>Thinking…</span>
           </div>
+        )}
+        {!isUser && message.expansion && (
+          <PromptExpansionCard
+            expansion={message.expansion}
+            onUseExpanded={(expanded) => send(expanded)}
+            onAnswerQuestions={(answers) => send(answers)}
+          />
         )}
         {message.toolCalls.length > 0 && (
           <div className="space-y-1">

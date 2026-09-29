@@ -58,13 +58,17 @@ export interface TimelineTrackRenderEntry {
  * Returns visible tracks in canvas painter order. The timeline stores the
  * front-most track at index 0, so rendering must walk from the last visible
  * track to the first.
+ *
+ * Audio tracks are excluded even when their clips reference video media — a
+ * video may legally sit on an audio track as an audio source (music fallback,
+ * separateAudio), but it must never paint into the picture.
  */
 export function getVisibleTrackRenderOrder(
   tracks: readonly Track[],
 ): TimelineTrackRenderEntry[] {
   return tracks
     .map((track, originalIndex) => ({ track, originalIndex }))
-    .filter(({ track }) => !track.hidden)
+    .filter(({ track }) => !track.hidden && track.type !== "audio")
     .reverse();
 }
 

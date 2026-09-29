@@ -175,6 +175,24 @@ describe("universal timeline item model", () => {
     ]);
   });
 
+  it("excludes audio tracks from visual render order even when they hold video media", () => {
+    const music = {
+      ...track,
+      id: "music",
+      type: "audio" as const,
+      name: "Music",
+      hidden: false,
+      clips: [clip("music-video-clip", "video", "music")],
+    };
+    const v1 = { ...track, id: "v1", type: "video" as const, hidden: false };
+
+    expect(
+      getVisibleTrackRenderOrder([v1, music]).map(
+        ({ track: orderedTrack }) => orderedTrack.id,
+      ),
+    ).toEqual(["v1"]);
+  });
+
   it("resolves media and overlays from one legacy-typed track", () => {
     expect(getTrackItems(project, "mixed").map((item) => item.kind)).toEqual([
       "media",

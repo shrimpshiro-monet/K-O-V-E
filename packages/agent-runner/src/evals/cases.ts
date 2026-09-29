@@ -201,7 +201,7 @@ export const SCRIPTED_CASES: EvalCase[] = [
               name: "Music Video",
               rules: {
                 pacing: "fast",
-                transitionPreference: ["hardCut", "glitch", "flash"],
+                transitionPreference: ["crossfade", "glitch", "flash"],
                 effectPalette: ["brightness", "contrast", "saturation"],
                 textStyle: "minimal",
                 cutStyle: "hard",

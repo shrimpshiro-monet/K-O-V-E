@@ -878,27 +878,28 @@ export const Preview: React.FC = () => {
     audioContext: AudioContext | BaseAudioContext,
     blob: Blob,
     audioTrackIndex: number = 0,
-  ): Promise<AudioBuffer | null> => {
+  ): Promise<{ buffer: AudioBuffer | null; permanent: boolean }> => {
+    let permanent = false;
     try {
       const { extractAudioWav } = await import("@kove-advanced/core/media");
       const wavBlob = await extractAudioWav(blob, audioTrackIndex);
       const arrayBuffer = await wavBlob.arrayBuffer();
-      return await audioContext.decodeAudioData(arrayBuffer);
+      return { buffer: await audioContext.decodeAudioData(arrayBuffer), permanent: false };
     } catch (error) {
       if (error instanceof Error && error.name === "NoAudioStreamError") {
-        return null;
+        permanent = true;
       }
     }
 
-    if (audioTrackIndex === 0) {
-      try {
-        const arrayBuffer = await blob.arrayBuffer();
-        return await audioContext.decodeAudioData(arrayBuffer);
-      } catch {
-        return null;
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      return { buffer: await audioContext.decodeAudioData(arrayBuffer), permanent };
+    } catch (error) {
+      if (error instanceof Error && error.name === "NoAudioStreamError") {
+        permanent = true;
       }
+      return { buffer: null, permanent };
     }
-    return null;
   };
 
   const getAudioEffectSignature = useCallback((effects: Effect[]): string =>
@@ -1179,9 +1180,16 @@ export const Preview: React.FC = () => {
   const project = useProjectStore((state) => state.project);
   const getMediaItem = useProjectStore((state) => state.getMediaItem);
   const mediaClipHasVisual = useCallback(
-    (clip: PreviewClip) =>
-      getMediaItemCapabilities(getMediaItem(clip.mediaId)).visual,
-    [getMediaItem],
+    (clip: PreviewClip) => {
+      // Video media may legally live on an audio track (music source /
+      // separateAudio) but must never be painted into the picture.
+      const owningTrack = project.timeline.tracks.find(
+        (track) => track.id === clip.trackId,
+      );
+      if (owningTrack?.type === "audio") return false;
+      return getMediaItemCapabilities(getMediaItem(clip.mediaId)).visual;
+    },
+    [project, getMediaItem],
   );
   const mediaClipHasAudio = useCallback(
     (clip: PreviewClip) =>
@@ -1912,6 +1920,7 @@ export const Preview: React.FC = () => {
         .map((t, idx) => ({ track: t, originalIndex: idx }))
         .filter(
           ({ track }) =>
+            track.type !== "audio" &&
             !track.hidden &&
             track.clips.some(
               (clip) =>
@@ -2055,11 +2064,13 @@ export const Preview: React.FC = () => {
                   mediaItem.blob,
                   audioClip.audioTrackIndex ?? 0,
                 );
-                if (!loaded) {
-                  noAudioBufferRef.current.add(audioCacheKey);
+                if (!loaded.buffer) {
+                  if (loaded.permanent) {
+                    noAudioBufferRef.current.add(audioCacheKey);
+                  }
                   continue;
                 }
-                audioBuffer = loaded;
+                audioBuffer = loaded.buffer;
                 audioBufferCacheRef.current.set(audioCacheKey, audioBuffer);
               } catch (error) {
                 console.warn(
@@ -2166,19 +2177,19 @@ export const Preview: React.FC = () => {
           }
 
           try {
-            audioBuffer = await loadAudioBuffer(
+            const loaded = await loadAudioBuffer(
               audioContext,
               mediaItem.blob,
               clip.audioTrackIndex ?? 0,
             );
+            audioBuffer = loaded.buffer;
             if (audioBuffer) {
               audioBufferCacheRef.current.set(cacheKey, audioBuffer);
-            } else {
+            } else if (loaded.permanent) {
               noAudioBufferRef.current.add(cacheKey);
             }
           } catch {
             audioBuffer = null;
-            noAudioBufferRef.current.add(cacheKey);
           }
         }
 
@@ -2640,7 +2651,9 @@ export const Preview: React.FC = () => {
 
       const videoTracks = timelineTracks.filter(
         (track) =>
-          !track.hidden && track.clips.some((clip) => mediaClipHasVisual(clip)),
+          track.type !== "audio" &&
+          !track.hidden &&
+          track.clips.some((clip) => mediaClipHasVisual(clip)),
       );
 
       let hasRenderedFrame = false;
@@ -3239,7 +3252,9 @@ export const Preview: React.FC = () => {
 
       const videoTracks = timelineTracks.filter(
         (track) =>
-          !track.hidden && track.clips.some((clip) => mediaClipHasVisual(clip)),
+          track.type !== "audio" &&
+          !track.hidden &&
+          track.clips.some((clip) => mediaClipHasVisual(clip)),
       );
 
       const hasVideoContent = videoTracks.some((track) =>
@@ -3422,7 +3437,9 @@ export const Preview: React.FC = () => {
       ) {
         return { canUse: false, clips: [] };
       }
-      const videoTracks = tracks.filter((track) => !track.hidden);
+      const videoTracks = tracks.filter(
+        (track) => !track.hidden && track.type !== "audio",
+      );
 
       const allVideoClips: Array<{
         clip: (typeof tracks)[0]["clips"][0];
@@ -3493,7 +3510,9 @@ export const Preview: React.FC = () => {
       // They are rendered using CPU canvas2D after the video frame
 
       // Collect image clips for background compositing (don't disable native playback)
-      const imageTracks = tracks.filter((track) => !track.hidden);
+      const imageTracks = tracks.filter(
+        (track) => !track.hidden && track.type !== "audio",
+      );
       const imageClips: Array<{
         clip: (typeof tracks)[0]["clips"][0];
         trackIndex: number;
@@ -6119,25 +6138,24 @@ export const Preview: React.FC = () => {
     isDark,
   ]);
 
-  const [previewInvalidateCounter, setPreviewInvalidateCounter] = useState(0);
   useEffect(() => {
     const handler = () => {
       processedAudioBufferCacheRef.current.clear();
       if (audioGraphRef.current) {
         audioGraphRef.current.seekTo(getMasterClock().currentTime);
       }
-      setPreviewInvalidateCounter((c) => c + 1);
     };
     window.addEventListener("kove-advanced:preview-invalidate", handler);
     return () => window.removeEventListener("kove-advanced:preview-invalidate", handler);
   }, []);
 
   useEffect(() => {
-    if (isPlaying || previewInvalidateCounter === 0) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    renderFrameDirectly(playheadPosition);
-  }, [previewInvalidateCounter, isPlaying, renderFrameDirectly, playheadPosition]);
+    if (isPlaying) return;
+    void renderFrameDirectly(playheadPosition);
+    // Only fire when the timeline content changes (transitions, clips, effects).
+    // Playhead movement is handled by the existing scrubbing effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timelineTracks]);
 
   const selectedClipId = useMemo(() => {
     const clipSelection = selectedItems.find((item) => item.type === "clip");

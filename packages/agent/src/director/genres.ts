@@ -8,7 +8,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
       "Fast-paced compilation of the best moments. High energy, quick cuts, rhythm-driven editing.",
     rules: {
       pacing: "fast",
-      transitionPreference: ["hardCut", "whipPan", "flash"],
+      transitionPreference: ["crossfade", "whipPan", "flash"],
       effectPalette: ["brightness", "contrast", "saturation"],
       textStyle: "minimal",
       cutStyle: "hard",
@@ -88,7 +88,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
       "Rhythm-synced cuts with heavy visual effects. The music drives the edit.",
     rules: {
       pacing: "fast",
-      transitionPreference: ["hardCut", "glitch", "flash", "whipPan"],
+      transitionPreference: ["crossfade", "glitch", "flash", "whipPan"],
       effectPalette: [
         "brightness",
         "contrast",
@@ -105,7 +105,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     pacing: "fast",
     cutsPerMinuteTarget: [18, 42],
     effectPalette: ["brightness", "contrast", "saturation", "chromatic-aberration", "motion-blur"],
-    transitionPalette: ["hardCut", "glitch", "flash", "whipPan"],
+    transitionPalette: ["crossfade", "glitch", "flash", "whipPan"],
     musicMoodHints: ["rhythmic", "featured", "high energy"],
   },
   {
@@ -135,7 +135,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
       "Short-form, punchy, caption-heavy. Optimized for vertical mobile viewing.",
     rules: {
       pacing: "fast",
-      transitionPreference: ["hardCut", "zoom", "slide"],
+      transitionPreference: ["crossfade", "zoom", "slide"],
       effectPalette: ["brightness", "saturation", "contrast"],
       textStyle: "heavy",
       cutStyle: "hard",
@@ -159,7 +159,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     effectPalette: ["brightness", "contrast", "saturation", "chromatic-aberration"],
     transitionPalette: ["hardCut", "match-cut"],
     musicMoodHints: ["playful", "punchy", "social"],
-    rules: { pacing: "fast", transitionPreference: ["hardCut", "match-cut"], effectPalette: ["brightness", "contrast", "saturation"], textStyle: "heavy", cutStyle: "hard", colorMood: "vibrant", musicRole: "rhythmic" },
+    rules: { pacing: "fast", transitionPreference: ["crossfade", "flash"], effectPalette: ["brightness", "contrast", "saturation"], textStyle: "heavy", cutStyle: "hard", colorMood: "vibrant", musicRole: "rhythmic" },
   },
   {
     id: "kill-montage",
@@ -192,9 +192,9 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     cutsPerMinuteTarget: [10, 24],
     captionTemplate: { fontSize: 36, color: "#ffffff", backgroundColor: "#111111", backgroundPadding: 12, backgroundRadius: 6, position: { x: 0.08, y: 0.86 }, align: "left" },
     effectPalette: ["brightness", "contrast"],
-    transitionPalette: ["crossfade", "hardCut"],
+    transitionPalette: ["crossfade"],
     musicMoodHints: ["light", "focused", "low volume"],
-    rules: { pacing: "medium", transitionPreference: ["crossfade", "hardCut"], effectPalette: ["brightness", "contrast"], textStyle: "heavy", cutStyle: "soft", colorMood: "neutral", musicRole: "background" },
+    rules: { pacing: "medium", transitionPreference: ["crossfade"], effectPalette: ["brightness", "contrast"], textStyle: "heavy", cutStyle: "soft", colorMood: "neutral", musicRole: "background" },
   },
   {
     id: "before-after",
@@ -204,9 +204,9 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     pacing: "slow",
     cutsPerMinuteTarget: [4, 14],
     effectPalette: ["brightness", "contrast", "saturation"],
-    transitionPalette: ["match-cut", "crossfade"],
+    transitionPalette: ["flash", "crossfade"],
     musicMoodHints: ["anticipatory", "uplifting", "minimal"],
-    rules: { pacing: "slow", transitionPreference: ["match-cut", "crossfade"], effectPalette: ["brightness", "contrast", "saturation"], textStyle: "moderate", cutStyle: "soft", colorMood: "neutral", musicRole: "background" },
+    rules: { pacing: "slow", transitionPreference: ["flash", "crossfade"], effectPalette: ["brightness", "contrast", "saturation"], textStyle: "moderate", cutStyle: "soft", colorMood: "neutral", musicRole: "background" },
   },
   {
     id: "day-in-the-life",
@@ -228,9 +228,9 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     cutsPerMinuteTarget: [8, 20],
     captionTemplate: { fontSize: 40, fontWeight: 600, color: "#ffffff", position: { x: 0.08, y: 0.14 }, align: "left" },
     effectPalette: ["brightness", "contrast", "sharpen"],
-    transitionPalette: ["hardCut", "crossfade", "slide"],
+    transitionPalette: ["crossfade", "slide"],
     musicMoodHints: ["clean", "confident", "modern"],
-    rules: { pacing: "medium", transitionPreference: ["hardCut", "crossfade", "slide"], effectPalette: ["brightness", "contrast"], textStyle: "moderate", cutStyle: "mixed", colorMood: "cool", musicRole: "background" },
+    rules: { pacing: "medium", transitionPreference: ["crossfade", "slide"], effectPalette: ["brightness", "contrast"], textStyle: "moderate", cutStyle: "mixed", colorMood: "cool", musicRole: "background" },
   },
   {
     id: "podcast-clip",

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor as waitForDefault } from "@testing-library/react";
 import { autoLearnNoiseProfile, type Project } from "@kove-advanced/core";
 import { createEmptyProject } from "../../../stores/project/project-helpers";
 import { useProjectStore } from "../../../stores/project-store";
@@ -20,6 +20,12 @@ vi.mock("@kove-advanced/core", async () => {
 
 const clipId = "clip-noise";
 const trackId = "track-audio";
+
+// Analysis goes through FFmpeg extraction + decode before any spy is touched.
+// On a full-suite run that path regularly exceeds testing-library's 1s default,
+// so budget more time here rather than let the wait be the only failure.
+const waitFor = (fn: () => void | Promise<void>, timeout = 5000) =>
+  waitForDefault(fn, { timeout });
 
 const createValidAnalyzedProfile = () => {
   const frequencyBins = new Float32Array(1024);

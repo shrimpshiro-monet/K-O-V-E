@@ -229,7 +229,18 @@ describe("plan_edit integrity", () => {
     const clipsAfterA = timelineClips(h.project);
     expect(clipsAfterA).toHaveLength(2);
 
-    h.setLlm(planResponse(validPlan()));
+    // B differs structurally from A (extra outro text). An identical plan
+    // fingerprints equal and is a deliberate no-op, which would bypass the
+    // replace path this test exists to cover.
+    h.setLlm(
+      planResponse(
+        validPlan({
+          textElements: [
+            { content: "OUTRO", style: "title", startTime: 6, duration: 2, position: { x: 0.5, y: 0.8 }, rationale: "outro" },
+          ],
+        }),
+      ),
+    );
     const second = await executeTool(
       "plan_edit",
       { prompt: "plan B", baseRevision: 1 },
@@ -246,6 +257,31 @@ describe("plan_edit integrity", () => {
     const idsAfterA = new Set(clipsAfterA.map((clip) => clip.id));
     expect(clips.some((clip) => idsAfterA.has(clip.id))).toBe(false);
     expect(getDirectorPlanState(h.project).revision).toBe(2);
+  });
+
+  it("replaces audio ownership: a second music decision leaves exactly one music clip, none of plan A's", async () => {
+    const withMusic = (volume: number): Record<string, unknown> =>
+      validPlan({
+        audioDecisions: [
+          { type: "music", sourceVideoId: "audio-1", sourceStartTime: 0, sourceEndTime: 4, startTime: 0, duration: 4, volume, rationale: "bed under speech" },
+        ],
+      });
+    const h = harness([planResponse(withMusic(0.4))]);
+    const audioClips = () =>
+      h.project.timeline.tracks.filter((track) => track.type === "audio").flatMap((track) => track.clips);
+    expect((await executeTool("plan_edit", { prompt: "music A" }, h.host)).ok).toBe(true);
+    const audioIdsAfterA = audioClips().map((clip) => clip.id);
+    expect(audioIdsAfterA).toHaveLength(1);
+
+    // Structurally different from A (louder bed) so this exercises replace, not
+    // the fingerprint no-op that an identical plan would take.
+    h.setLlm(planResponse(withMusic(0.7)));
+    const second = await executeTool("plan_edit", { prompt: "music B", baseRevision: 1 }, h.host);
+    expect(second.ok).toBe(true);
+
+    const afterB = audioClips();
+    expect(afterB).toHaveLength(1);
+    expect(afterB.some((clip) => audioIdsAfterA.includes(clip.id))).toBe(false);
   });
 
   it("keeps intentional overlays legal: music and text over video commit fine", async () => {

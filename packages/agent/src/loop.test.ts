@@ -6,6 +6,7 @@ import { MockLLMClient } from "./llm";
 import type { LLMClient, LLMResponse, LoopMessage, LoopToolResultBlock } from "./llm";
 import { toAnthropicTools } from "./registry";
 import { makeEmptyProject, makeProjectWithClip } from "./test-fixtures";
+import type { EditingHost } from "./host";
 import type { AgentEvent } from "./types";
 
 const tools = toAnthropicTools();
@@ -273,5 +274,239 @@ describe("runTurn", () => {
     expect(result.committed).toBe(false);
     // the tool edit applied mid-turn is rolled back
     expect(host.getProject().timeline.tracks[0].clips[0].speed ?? 1).toBe(1);
+  });
+
+  it("allows a second plan_edit when the first attempt failed validation", async () => {
+    const projectId = "retry-after-failure";
+
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: {
+        items: [{ id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    const invalidPlan = {
+      segments: [{
+        sourceVideoId: "video-1",
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        trackIndex: 0,
+        targetPosition: 0,
+        effects: [],
+        effectSpecs: [{ type: "speed-ramp", params: {}, rationale: "energy" }],
+        rationale: "invalid",
+      }],
+      textElements: [],
+      effects: [],
+      transitions: [],
+      audioDecisions: [],
+      metadata: { targetDuration: 4, targetPlatform: "social", genre: "highlight-reel", pacing: "fast", rationale: "test" },
+    };
+
+    const validPlan = {
+      ...invalidPlan,
+      segments: [{
+        ...invalidPlan.segments[0],
+        effectSpecs: [],
+        speedRamp: { keyframes: [{ time: 0, speed: 1 }, { time: 1.5, speed: 3 }] },
+        rationale: "fixed",
+      }],
+    };
+
+    // Outer loop responses (returned by llm.complete in the runTurn loop)
+    const outerResponses: LLMResponse[] = [
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "outer-1", name: "plan_edit", input: { prompt: "match the reference energy" } }],
+      },
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "outer-2", name: "plan_edit", input: { prompt: "match the reference energy" } }],
+      },
+      { text: "Done.", stopReason: "end_turn", toolUses: [] },
+    ];
+
+    // Inner plan_edit responses (returned by host.llm.client.complete inside the plan_edit tool)
+    const innerResponses: LLMResponse[] = [
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "plan-1", name: "submit_edit_plan", input: structuredClone(invalidPlan) }],
+      },
+      // The bounded repair prompt gets one shot at fixing plan-1. Feed it another
+      // invalid plan so the first plan_edit genuinely fails — otherwise repair
+      // would swallow the failure this test exists to observe.
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "plan-1b", name: "submit_edit_plan", input: structuredClone(invalidPlan) }],
+      },
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "plan-2", name: "submit_edit_plan", input: structuredClone(validPlan) }],
+      },
+    ];
+
+    let outerIndex = 0;
+    let innerIndex = 0;
+
+    // Custom LLM that separates outer loop calls from inner plan_edit calls
+    const llm: LLMClient = {
+      complete: async () => {
+        return outerResponses[outerIndex++] ?? { text: "", stopReason: "end_turn", toolUses: [] };
+      },
+    };
+
+    // Set host.llm so the plan_edit tool can make its own inner LLM calls
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => {
+          return innerResponses[innerIndex++] ?? { text: "", stopReason: "end_turn", toolUses: [] };
+        },
+      },
+    };
+
+    const events: AgentEvent[] = [];
+    const result = await runTurn({
+      host,
+      llm,
+      tools,
+      messages: userMsg("match the reference energy"),
+      onEvent: (event) => events.push(event),
+    });
+
+    // First plan_edit should have failed validation
+    const planEditResults = events.filter(
+      (e): e is Extract<AgentEvent, { type: "tool_result" }> =>
+        e.type === "tool_result" && e.call.name === "plan_edit",
+    );
+    expect(planEditResults.length).toBeGreaterThanOrEqual(1);
+    expect(planEditResults[0]!.result.ok).toBe(false);
+    expect(planEditResults[0]!.result.error?.code).toBe("INVALID_EDIT_PLAN");
+
+    // Second plan_edit should have succeeded (not blocked by guard)
+    expect(planEditResults.length).toBe(2);
+    expect(planEditResults[1]!.result.ok).toBe(true);
+
+    // Timeline should have clips from the valid plan
+    expect(host.getProject().timeline.tracks[0].clips).toHaveLength(1);
+
+    expect(result.committed).toBe(true);
+  });
+
+  it("does not stack a second successful plan_edit in the same turn", async () => {
+    const projectId = "no-stack-after-success";
+
+    const project = {
+      ...makeEmptyProject(),
+      id: projectId,
+      mediaLibrary: {
+        items: [{ id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } }],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+
+    const validPlan = {
+      segments: [{
+        sourceVideoId: "video-1",
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        trackIndex: 0,
+        targetPosition: 0,
+        effects: [],
+        effectSpecs: [],
+        rationale: "plan A",
+      }],
+      textElements: [],
+      effects: [],
+      transitions: [],
+      audioDecisions: [],
+      metadata: { targetDuration: 4, targetPlatform: "social", genre: "highlight-reel", pacing: "fast", rationale: "test" },
+    };
+
+    // Outer loop: two plan_edit calls
+    const outerResponses: LLMResponse[] = [
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "outer-1", name: "plan_edit", input: { prompt: "make a highlight" } }],
+      },
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "outer-2", name: "plan_edit", input: { prompt: "make a highlight" } }],
+      },
+      { text: "Done.", stopReason: "end_turn", toolUses: [] },
+    ];
+
+    // Inner: both calls return the same valid plan
+    const innerResponses: LLMResponse[] = [
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "plan-1", name: "submit_edit_plan", input: structuredClone(validPlan) }],
+      },
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "plan-2", name: "submit_edit_plan", input: structuredClone(validPlan) }],
+      },
+    ];
+
+    let outerIndex = 0;
+    let innerIndex = 0;
+
+    const llm: LLMClient = {
+      complete: async () => {
+        return outerResponses[outerIndex++] ?? { text: "", stopReason: "end_turn", toolUses: [] };
+      },
+    };
+
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => {
+          return innerResponses[innerIndex++] ?? { text: "", stopReason: "end_turn", toolUses: [] };
+        },
+      },
+    };
+
+    const events: AgentEvent[] = [];
+    const result = await runTurn({
+      host,
+      llm,
+      tools,
+      messages: userMsg("make a highlight"),
+      onEvent: (event) => events.push(event),
+    });
+
+    const planEditResults = events.filter(
+      (e): e is Extract<AgentEvent, { type: "tool_result" }> =>
+        e.type === "tool_result" && e.call.name === "plan_edit",
+    );
+
+    // First plan_edit should have succeeded
+    expect(planEditResults.length).toBeGreaterThanOrEqual(1);
+    expect(planEditResults[0]!.result.ok).toBe(true);
+
+    // Second plan_edit should NOT have applied — either guard-blocked or
+    // fingerprint-no-op'd. Assert the behavior, not the mechanism.
+    expect(planEditResults.length).toBe(2);
+    const second = planEditResults[1]!;
+    const blockedByGuard = !second.result.ok && second.result.error?.code === "PLAN_EDIT_ALREADY_USED";
+    const noOpedByFingerprint = second.result.ok && (second.result.data as Record<string, unknown>).applied === false;
+    expect(blockedByGuard || noOpedByFingerprint).toBe(true);
+
+    // Timeline has exactly one set of clips (no double-applied artifacts)
+    expect(host.getProject().timeline.tracks[0].clips).toHaveLength(1);
+
+    expect(result.committed).toBe(true);
   });
 });

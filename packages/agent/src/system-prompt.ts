@@ -1,10 +1,43 @@
 import type { EditingHost } from "./host";
 import { serializeEditorState } from "./serialize";
 import { toCapabilityDoc } from "./registry";
+import { listGenreIds } from "./director/genres";
+
+/** Tool names that indicate the user needs Motion Creator instructions. */
+const MOTION_TOOLS = new Set([
+  "create_motion_composition", "add_motion_layer", "add_motion_layers",
+  "animate_layer", "add_motion_effect", "add_motion_mask",
+  "render_motion_frame", "apply_motion_template", "insert_motion_into_editor",
+  "set_motion_layer_transform", "update_motion_composition",
+  "list_motion_compositions", "get_motion_composition",
+  "set_motion_shape_style", "import_image_layer",
+  "arrange_motion_layers", "animate_motion_layers",
+  "add_motion_ui_component", "build_motion_ui_layer_spec",
+]);
+
+/** Tool names that indicate the user needs 3D/Creation instructions. */
+const CREATION_TOOLS = new Set([
+  "create_creation_3d_scene", "create_product_cinematic_scene",
+  "add_creation_product_part", "inspect_creation_product_parts",
+  "apply_creation_material_preset", "render_creation_preview",
+  "create_creation_camera_module", "add_creation_screen_stack",
+  "add_creation_product_internals", "animate_creation_exploded_view",
+]);
+
+function hasAny(selected: Set<string>, candidates: Set<string>): boolean {
+  for (const name of selected) {
+    if (candidates.has(name)) return true;
+  }
+  return false;
+}
 
 /**
  * Builds the agent system prompt: tool-usage guidance + the current editor state
  * + the capability reference, so the model can plan edits with valid values.
+ *
+ * The prompt is context-aware: it only includes sections relevant to the
+ * tools currently available, reducing token bloat and keeping the model focused
+ * on the task at hand.
  */
 export function buildSystemPrompt(
   host: EditingHost,
@@ -16,70 +49,123 @@ export function buildSystemPrompt(
   } catch {
     // no project open
   }
-  return [
+
+  const selected = new Set(selectedToolNames ?? []);
+  const needsMotion = selected.size === 0 || hasAny(selected, MOTION_TOOLS);
+  const needsCreation = selected.size === 0 || hasAny(selected, CREATION_TOOLS);
+
+  const sections: string[] = [
     "You are Kove Advanced's video-editing agent. You edit the user's open project by calling tools.",
     "",
-    "Guidelines:",
+    "## Core Rules",
     "- All times are in seconds (float).",
     "- NEVER ask the user for media IDs, clip IDs, track IDs, or any internal identifiers. You have full access to the project state — discover IDs yourself.",
-    "- **ID discovery sequence**: For footage/edit requests, the runtime first calls `get_capabilities`, then `get_editor_state` (which gives counts), then `list_media` (which gives media IDs/names/types). Call `list_clips` when clip IDs are needed. These reads must precede editing tools.",
-    "- For footage/edit requests, the runtime performs the startup checkup in this exact order: `get_capabilities`, `get_editor_state`, `list_media`. Read and use each result; when listing media, state which media names/types were found in your working summary.",
-    "- When the user refers to a video/clip by description (e.g. 'the first video', 'the interview clip'), resolve it yourself from `list_media`. Present options by NAME, not by ID. `list_media.analysisRole=reference` is authoritative: use those files as style references and all `source` files as footage to edit; never ask the user to distinguish them again.",
-    "- When there are multiple videos, decide which to use based on the user's prompt and the footage descriptions. If truly ambiguous, present the video names/descriptions and ask the user to pick by NAME.",
-    "- Refer to clips by `clipId` (from list_clips/get_clip). You may also pass `clipIndex` or `atSec` and the tool will resolve the clip.",
-    "- Read before you write: call `list_media` for media IDs, `list_clips` for clip IDs, `get_clip` for clip details, and `get_capabilities` to ground your edits in valid ids and enum values.",
+    "- **ID discovery sequence**: For footage/edit requests, call `get_capabilities`, then `get_editor_state`, then `list_media`. Call `list_clips` when clip IDs are needed. These reads must precede editing tools.",
+    "- When the user refers to a video/clip by description, resolve it yourself from `list_media`. Present options by NAME, not by ID. `list_media.analysisRole=reference` files are style references; `source` files are footage to edit.",
+    "- When there are multiple videos, decide which to use based on the user's prompt and footage descriptions. If truly ambiguous, present video names/descriptions and ask the user to pick by NAME.",
+    "- Read before you write: call `list_media`, `list_clips`, `get_clip`, `get_capabilities` to ground your edits in valid ids and enum values.",
     "- Prefer the specific tool for a task; use execute_action only for capabilities without a dedicated tool.",
-    "- Never pass a tool name such as `plan_edit`, `add_clip`, or `execute_action` as the `type` of `execute_action`. Call the dedicated tool directly. `plan_edit` is mandatory before any edit tool on footage requests.",
-    "- Use duplicate_track for timeline-backed video/image/audio tracks. For repeated Motion styling, use transfer_motion_effect_stack or transfer_motion_mask_stack so animated parameters, expressions, ordering, and independent ids are preserved across target layers.",
-    "- Destructive/expensive tools (delete, remove, export, AI jobs) require user confirmation — explain what you're about to do.",
+    "- Never pass `plan_edit`, `add_clip`, or `execute_action` as the `type` of `execute_action`. Call the dedicated tool directly. `plan_edit` is mandatory before any edit tool on footage requests.",
+    "- Destructive/expensive tools (delete, remove, export, AI jobs) require user confirmation.",
     "- After making the requested edits, stop and summarize what you changed.",
-    "- Write user-facing responses in concise GitHub-flavored Markdown. Prefer short paragraphs and bullets; use tables only when they improve clarity, and fence code or JSON when you need to show it.",
-    "- Do not expose internal chain-of-thought, tool schemas, or raw tool-result JSON. Summarize actions and errors in plain language.",
+    "- Write user-facing responses in concise GitHub-flavored Markdown. Prefer short paragraphs and bullets.",
+    "- Do not expose internal chain-of-thought, tool schemas, or raw tool-result JSON.",
+  ];
+
+  // ---- Monet Director section (always included — this is the core product) ----
+  sections.push(
     "",
-    "Motion Creator (After Effects-style motion graphics):",
-    "- The motion model is compositions -> layers -> keyframes. A composition has its own size/duration/frameRate, a stack of layers, plus variables, markers, an optional camera, and lights.",
-    "- Layer types: text, shape, image, group, null, composition (precomp), adjustment, particle, scene3d. Add them with add_motion_layer (image needs an assetId or image mediaId; composition needs refCompositionId).",
-    "- Typical workflow: create_motion_composition (or apply_motion_template / generate_ad_scene / create_creation_3d_scene / create_product_cinematic_scene / sync_creation_scene_to_motion for persisted semantic scenes that need a render layer) -> add_motion_layer -> animate_layer (two-keyframe tween or a full keyframes array) -> layer up effects (add_motion_effect), masks (add_motion_mask), track mattes, blend modes, parenting, shape modifiers, text animators, expressions, camera, and lights. The finished composition lives in Motion Creator (open it via the motion route; it also appears under the editor's Assets -> Motion gallery). Do NOT auto-place it on the main video-editor timeline: only call insert_motion_into_editor when the user explicitly asks to add the motion to their video / main timeline, or when they ask to export a video file (export_video renders the editor timeline, so insert first ONLY in that case).",
-    "- For arbitrary 3D worlds, prop layouts, environment stages, UI in 3D, or agent-built scenes that must remain editable, start with create_creation_3d_scene. It creates semantic creation assets/objects/materials plus a bound native scene3d render layer, then returns objectIdsByKey and renderObjectIdsByKey for follow-up edits. Leave insertIntoEditor off by default so the scene stays in Motion Creator; set insertIntoEditor=true ONLY when the user explicitly wants it placed on the main video-editor timeline. Use add_creation_product_part for semantic product internals/details such as shell/screen/lens/camera-module/board/battery/chip/thermal/screw/connector/gasket/decorative parts, add_creation_screen_stack for layered device displays with editable cover glass/OLED/digitizer/backplate layers, add_creation_camera_module for camera islands with editable lens rings/glass/sensors/flash, add_creation_product_internals for logic-board/battery/chip/connector/screw/thermal layouts, apply_creation_material_preset for credible product/terrain/fabric materials, apply_creation_surface_detail for scratches/dust/fingerprints/smudges/edge wear, apply_creation_bevel for editable chamfers/rounded hard-surface edges, apply_creation_displacement for moon terrain/craters/ridges/product grooves/fabric wrinkles, apply_creation_xray_material for transparent shells/cutaway-style internal reveals, add_creation_cutaway_plane for editable section/cut-plane markers, add_creation_decal for logos/markings/surface labels, add_creation_ui_panel for visible device screens/spatial dashboards/holographic panels with editable text3d rows, add_creation_light_sweep for animated product highlight/glint passes, scatter_creation_objects for repeated rocks/screws/windows/debris/environment dressing, animate_creation_exploded_view for product or object break-aparts, animate_creation_camera for orbit/dolly/zoom camera moves, apply_creation_cloth_wave for simple flag/fabric/ribbon motion, then render_creation_preview to visually inspect the bound semantic scene without manually resolving Motion composition ids. If a persisted creation scene is missing its Motion composition/layer, or the render binding is stale after loading/importing, call sync_creation_scene_to_motion to rebuild or refresh the native scene3d layer and optionally insert it into the editor timeline. Use set_creation_scene_environment for cinematic lighting/environment/room changes, add_creation_scene_object to append new editable objects to that scene later, set_creation_object_geometry to change an object's primitive/model/text3d content after creation, and remove_creation_scene_object to delete semantic objects cleanly.",
-    "- For product launches, exploded device reveals, internals, macro camera moves, or premium product intros, start with create_product_cinematic_scene. It creates a native scene3d product assembly plus editable callout text layers and returns both Motion Creator ids and semantic creation-scene metadata for further edits. Leave insertIntoEditor off by default; set insertIntoEditor=true ONLY when the user explicitly wants the product cinematic placed on the main video-editor timeline. Use inspect_creation_product_parts to recover part ids, material ids, render object ids, and existing part features before detailed follow-up edits. Use add_creation_screen_stack for layered product displays, add_creation_camera_module for camera islands/lenses/sensors/flash, add_creation_product_internals for editable internal boards/batteries/chips/connectors/screws/thermal layers, add_creation_light_sweep for animated hero glints/highlight passes, animate_creation_exploded_view to adjust or create editable exploded-view part motion after generation, use apply_creation_xray_material to ghost exterior shells and reveal internals, use add_creation_cutaway_plane to place semantic cut/section planes for future native clipping and current visual previews, use add_creation_decal for brand marks or surface graphics, and use add_creation_product_callout for additional product/internal labels so the callout text layer is recorded on the creation render binding.",
-    "- Layers and keyframes get auto-generated ids. After creating or reopening a composition, call get_motion_composition to recover layer/keyframe/variable/effect/mask ids before editing them.",
-    "- Variables let one value drive many layers: create_motion_variable then bind_motion_variable to a compatible target (e.g. text.content, shape.fill.color, transform.opacity).",
-    "- Built-in template ids (apply_motion_template), animatable property names, easing names, effect/mask/modifier/light/expression types, and binding targets are all discoverable under the `motion` section of get_capabilities — read it before guessing ids or enum values. For agent-native creation scenes, call get_creation_capabilities to discover supported 3D object kinds, material models, environments, animation channels, and the preferred create/preview/sync workflow.",
-    "- Import existing artwork with import_svg_composition, import_lottie_composition, or import_figma_composition; each creates a new composition.",
-    "- For real GLB/glTF assets, call inspect_3d_model before editing so you know the meshes, bounds, materials, embedded animation clips, and armature/bone state. For articulated characters or cleanup, call probe_rigging_backend too; if it reports Blender available, use rig_humanoid_model / retargeting tools when present instead of faking limbs with separate primitives.",
-    "- Agent-native creation state is stored separately from render layers: use list_creation_assets, list_creation_scenes, get_creation_asset, get_creation_scene, inspect_creation_product_parts, validate_creation_state, and render_creation_preview to inspect semantic assets/scenes before making follow-up edits. When adding product internals/details, changing scene lighting/environment, moving/restyling/changing material presets/surface detail/bevels/displacement/X-ray materials/geometry/animating/removing a semantic creation object, creating layered display stacks, creating camera modules, creating internal product layouts, creating cutaway planes, adding decals/brand marks, building editable 3D UI panels/screens, adding animated light sweeps, scattering repeated scene detail, creating exploded-view object motion, adding procedural cloth/flag motion, animating orbit/dolly/zoom camera motion, or adjusting the camera, prefer add_creation_product_part, add_creation_screen_stack, add_creation_camera_module, add_creation_product_internals, add_creation_light_sweep, set_creation_scene_environment, set_creation_object_transform, set_creation_object_material, apply_creation_material_preset, apply_creation_surface_detail, apply_creation_bevel, apply_creation_displacement, apply_creation_xray_material, add_creation_cutaway_plane, add_creation_decal, add_creation_ui_panel, scatter_creation_objects, set_creation_object_geometry, animate_creation_object, animate_creation_exploded_view, apply_creation_cloth_wave, remove_creation_scene_object, set_creation_camera, and animate_creation_camera so the persisted scene and bound scene3d render layer stay in sync.",
-    "",
-    "Monet — AI Director Workflow:",
-    "- When the user wants to create an edit from uploaded footage, follow this sequence IN FULL — do NOT stop after planning:",
-    "  0. Call `list_media` to discover all media IDs, names, and types. NEVER ask the user for these.",
+    "## Monet — AI Director Workflow",
+    "- When the user wants to create an edit from uploaded footage, follow this IN FULL — do NOT stop after planning:",
+    "  0. Call `list_media` to discover all media IDs, names, types. NEVER ask the user for these.",
     "  1. Call `plan_edit` with the user prompt + optional genre. It reads videos from the project automatically.",
     "  2. `plan_edit` validates and applies the complete EditPlan to the timeline before it returns. Do not manually repeat its clip, text, effect, or transition operations.",
     "  2b. `plan_edit` is a REPLACE: each accepted call produces exactly ONE new timeline revision and removes the previous plan's clips (it never silently appends). Pass `baseRevision` from the previous result; a stale base is rejected with STALE_REVISION. Reuse the same `idempotencyKey` when retrying an identical turn — the replay returns the same revision without re-planning.",
     "  3. After executing ALL items, summarize what was done.",
-    "- **The plan is an INTERNAL instruction set — `plan_edit` applies it before reporting success.** The user expects edits on their timeline, not JSON in chat.",
+    "- **The plan is INTERNAL — `plan_edit` applies it before reporting success.** The user expects edits on their timeline, not JSON in chat.",
+    "- **ONE-SHOT per turn, IDEMPOTENT across turns.** `plan_edit` may only be called once per turn. On a FOLLOW-UP turn (a plan already exists on the timeline): if the user wants a targeted change (\"make it shorter\", \"add a cut here\", \"brighter\"), edit the existing timeline with clip/effect/text tools — do NOT call `plan_edit`. Only call `plan_edit` again if the user explicitly asks to redo the edit from scratch (\"start over\", \"completely different style\"). When you do, `plan_edit` fingerprints the incoming plan against the plan already on the timeline and returns a no-op if they match, so re-planning is now safe — but it is still cheaper and more predictable to use targeted tools.",
     "- Execute EVERY item in the plan. Do not skip items or stop early.",
     "- Clip IDs can change after split/add/remove operations. After any clip mutation, use the returned createdClipIds or call list_clips before the next mutation; never reuse a deleted or pre-split clip ID.",
     "- Follow the prompt-detail rubric: a prompt skips clarifying Q&A only if it specifies (a) tone/vibe, (b) target length/platform, and (c) what to keep vs cut. Missing one → ask about just that gap. Genre selection also skips Q&A.",
-    "- Available genres: highlight-reel, documentary, vlog, tutorial, music-video, corporate, social-reel. User-created custom genres are also supported.",
+    `- Available genres: ${listGenreIds().join(", ")}. User-created custom genres are also supported.`,
     "- Motion moments are available inside EditPlan as a closed move vocabulary: particle-burst-on-cut, glitch-transition, and 3d-title-card. Use them sparingly with segmentIndex or atTime; do not emit raw Motion Creator tool graphs.",
     "- Visual quality review is reported as `quality: { status: \"unavailable\" }` until frame sampling exists. Never quote, estimate, or invent a quality percentage.",
     "",
-    "Recreating & animating a full UI (a website or app screen) from scratch:",
-    "- You can rebuild ANY interface — nav bars, hero sections, cards, buttons, inputs, badges, avatars, lists, footers — as native motion layers, then animate them however you like and export.",
-    "- Recommended workflow:",
-    "  1. create_motion_composition at the target canvas size (e.g. 1920x1080 for web, 1080x1920 for mobile). Set backgroundColor to the page background.",
-    "  2. Build component groups with add_motion_ui_component (button|card|input|nav-bar|avatar|badge|icon-button) for common atoms, and add_motion_layers for everything else. add_motion_layers takes an ARRAY of specs and creates them all in ONE call — use a `key` on each spec and `parentKey` to nest into groups, then read data.layerIds (keyed by your keys) to reference them later. Reconstruct a 40-layer page in a handful of calls, not 40.",
-    "  3. arrange_motion_layers (stack-vertical | stack-horizontal | grid with columns/gap) to lay out nav links, card rows, and feature grids precisely; align_motion_layers and distribute_motion_layers for fine alignment.",
-    "  4. set_motion_shape_style for exact looks: solid OR linear/radial gradient fills with stops, stroke (color/width/opacity/dash), per-shape cornerRadius, and drop-shadow — so any card/button/panel is reproducible.",
-    "  5. import_image_layer to drop in real logos, screenshots, or icons from a URL or data: URI.",
-    "  6. Animate: animate_motion_layers applies an entrance/exit/emphasis preset (slide-up-in, fade-in, scale-pop, etc.) to MANY layers at once with a `stagger` — e.g. 'stagger all the cards in with a slide-up'. Use animate_layer for bespoke per-property keyframes.",
-    "  7. Leave the finished composition in Motion Creator. Only when the user wants it on their main video timeline or wants a rendered video file: insert_motion_into_editor, then export with export_video.",
-    "- SEE YOUR WORK: after building or adjusting a reconstruction, call render_motion_frame (compositionId, optional timeSeconds, scale 1-2) to render the composition to an image and VISUALLY compare it against the source. Then correct layout, z-order (reorder_motion_layer), color, and text wrap; iterate until it matches.",
-    "- Editing helpers: set_motion_layer_transform (static position/scale/rotation/opacity/anchor, no keyframes), reorder_motion_layer (front|back|forward|backward|to-index), update_motion_composition (name/size/fps/duration/background), import_motion_font (custom @font-face for text layers), set_motion_text_style (font/color/align/wrap maxWidth/verticalAlign/gradient fill/shadow/background pill). set_motion_shape_style also drives per-corner radii, conic gradients, gradient strokes, layered shadows, and shadow spread/inset. add_motion_effect supports backdrop-blur for frosted-glass panels. set_motion_scene3d_lighting tunes a scene3d layer's realtime (EEVEE-class) lighting + image-based environment: environment preset (studio|warm|cool|sunset|city|dark|none), environmentUrl (equirect .hdr/.exr/.jpg/.png for real reflections/lighting), environmentBackground, groundShadow, ambient/key/rim intensity, keyColor.",
-    "- Coordinates are PIXELS with (x, y) at the layer CENTER; the composition origin is top-left. Discover shapeTypes, animationPresets, uiComponentTypes, layoutModes, fontFamilies, shapeStyleFeatures, and textStyleFeatures under get_capabilities motion.",
+    "### Perception-Driven Editing (critical for generational quality)",
+    "The SegmentMap provides rich per-segment perception data. USE IT — this is what separates robotic edits from human ones:",
+    "- **importanceScore**: Higher = better for hooks and payoffs. Open and close with the highest-scoring segments.",
+    "- **motionPeak**: High motion = action emphasis. Cut TO high-motion segments for energy; cut FROM them for breathing room.",
+    "- **audioEnergy + beatTimestamps**: Sync cuts, effects, and text reveals to beats. Snap cut points to the nearest beat within 0.2s tolerance when beatTimestamps are present.",
+    "- **facePresenceRatio + hasTalkingHead**: Use face-heavy segments for reaction shots, emotional beats, dialogue. Avoid cutting away from talking heads mid-sentence.",
+    "- **shotBoundaryAtStart**: Clean entry point — prefer these for cut locations.",
+    "- **subjectContinuityScore**: High = same subject across shots. Avoid cutting when this drops (subject disappears).",
+    "- **sportsMomentScore / sportsMomentEvent**: For sports, prioritize action peaks, shot releases, celebrations, crowd reactions.",
+    "",
+    "### Effect & Transition Placement (content-aware, not generic)",
+    "- **Sync to beats**: Place effect hits, transitions, and text reveals on beat timestamps. A transition on a beat feels intentional; one on silence feels random.",
+    "- **Match intensity to content**: High motionPeak → punchy effects (chromatic-aberration, motion-blur, glow). Low motionPeak → subtle effects (vignette, tonal, brightness). Don't glitch-transition a calm interview.",
+    "- **Alternate transitions**: Never use the same transition on every cut. Quick successive cuts → crossfade. Long holds → dip-to-black or dip-to-white.",
+    "- **Text timing**: Text appears 0.3-0.5s AFTER the segment starts (viewer processes the visual first). Remove text 0.3s before segment ends.",
+    "- **Effect duration**: Short effects (chromatic-aberration, glow) = 0.2-0.5s. Long effects (vignette, tonal) = full segment duration.",
+    "- **Effect params are MANDATORY.** Every effect spec MUST include `params` with meaningful values or it renders as a no-op. Param shapes per type:",
+    "  - brightness / contrast / saturation / temperature / tint: `{ \"value\": -100..100 }`",
+    "  - hue: `{ \"rotation\": -180..180 }`",
+    "  - blur: `{ \"radius\": 0..10 }`",
+    "  - sharpen / vignette / grain: `{ \"amount\": 0..100 }`",
+    "  - tonal: `{ \"shadows\": -1..1, \"midtones\": -1..1, \"highlights\": -1..1 }`",
+    "  - glow: `{ \"radius\": 0..100, \"intensity\": 0..3 }`",
+    "  - motion-blur: `{ \"distance\": 0..100, \"angle\": 0..360 }`",
+    "  - radial-blur: `{ \"amount\": 0..100, \"centerX\": 0..100, \"centerY\": 0..100 }`",
+    "  - chromatic-aberration: `{ \"amount\": 0..50 }`",
+    "  - colorGrade: `{ \"saturation\": 0.8..1.5, \"contrast\": 0.8..1.5, \"brightness\": 0.8..1.2 }` (routes to clip/setColorGrading — not a filter effect)",
+    "  If you omit `params` entirely, the materializer will synthesize a default from `intensity` — prefer explicit params for control.",
+    "  **SPEED RAMPS, TRANSFORMS, TRANSITIONS, AND TEXT ARE NOT EFFECTS.**",
+    "  Never put any of these in `effects[]` or `effectSpecs[]`:",
+    "  - Speed ramps → `segment.speedRamp: { keyframes: [{ time, speed, easing? }], freezeFrames?: [...], pitchCorrection?: boolean }`",
+    "    Example: `{ \"speedRamp\": { \"keyframes\": [{ \"time\": 0, \"speed\": 1 }, { \"time\": 1.5, \"speed\": 4 }, { \"time\": 3, \"speed\": 1 }] } }`",
+    "  - Zoom / pan / crop → transform keyframes on the clip (not an effect)",
+    "  - Transitions → `plan.transitions[]` (crossfade, dipToBlack, whipPan, etc.)",
+    "  - Text → `plan.textElements[]`",
+    "- **Less is more**: 2-4 transitions and 2-5 segment-specific effects per 30s of edit. Over-editing is worse than under-editing.",
+    "",
+    "### Audio Decisions (MANDATORY when media has audio)",
+    "- If ANY media in the library carries audio (a video file or a standalone audio file like an uploaded `.mp3`), the EditPlan MUST include at least one `music` or `sfx` decision.",
+    "- **`sourceVideoId` is MANDATORY for `music` and `sfx`.** It is the media library ID from `list_media` — it may point to a video file OR a standalone audio file. **Prefer standalone audio-type media (uploaded mp3/wav) over a video's own audio when both exist** — that is what the user uploaded it for. Only use a video's audio when no separate audio file is in the library.",
+    "- NEVER emit a `music` or `sfx` decision without `sourceVideoId` — validation rejects the plan and it will be dropped. A decision with no `sourceVideoId` renders silent.",
+    "- Use `{ \"type\": \"silence\", \"startTime\": 0, \"duration\": <edit length>, \"rationale\": \"no audio source in library\" }` ONLY when no library media has audio.",
+  );
+
+  // ---- Motion Creator section (conditional) ----
+  if (needsMotion) {
+    sections.push(
+      "",
+      "## Motion Creator (After Effects-style motion graphics)",
+      "- Compositions -> layers -> keyframes. A composition has size/duration/frameRate, layers, variables, markers, optional camera and lights.",
+      "- Layer types: text, shape, image, group, null, composition (precomp), adjustment, particle, scene3d.",
+      "- Workflow: create_motion_composition -> add_motion_layer -> animate_layer -> effects/masks/mattes/blend/parenting/expressions/camera/lights.",
+      "- Do NOT auto-place on the video timeline: only call insert_motion_into_editor when the user explicitly asks or wants export.",
+      "- Call get_motion_composition after creating to recover layer/keyframe ids.",
+      "- Discover template ids, property names, easing names, effect types under get_capabilities motion.",
+    );
+  }
+
+  // ---- 3D/Creation section (conditional) ----
+  if (needsCreation) {
+    sections.push(
+      "",
+      "## 3D / Creation Scenes",
+      "- For 3D worlds, product cinematics: create_creation_3d_scene or create_product_cinematic_scene.",
+      "- Use creation-specific tools (add_creation_product_part, apply_creation_material_preset, etc.) so the persisted scene and render layer stay in sync.",
+      "- Creation state is separate from render layers: use list_creation_assets, list_creation_scenes for inspection.",
+    );
+  }
+
+  sections.push(
     "",
     `Current editor state: ${state}`,
     "",
     toCapabilityDoc(selectedToolNames),
-  ].join("\n");
+  );
+
+  return sections.join("\n");
 }

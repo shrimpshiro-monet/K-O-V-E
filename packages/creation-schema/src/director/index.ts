@@ -73,9 +73,13 @@ export {
   COLOR_GRADE_EFFECT_TYPES,
   CUT_TRANSITION_TYPES,
   TRANSITION_TYPE_ALIASES,
+  MISPLACED_FEATURE_HINTS,
   canonicalizeTransitionType,
   isSupportedTransitionType,
   isSupportedEffectType,
+  isColorGradeType,
+  normalizeEffectType,
+  getMisplacedFeatureHint,
   canonicalizeTargetEffects,
   canonicalizeTargetTransitions,
   canonicalizePlanTransitions,
@@ -83,3 +87,13 @@ export {
 } from "./vocab";
 
 export { pacingMatches } from "./style-profile";
+
+export type {
+  PromptGap,
+  PromptExpansion,
+} from "./prompt-expansion";
+
+export {
+  scorePromptCompleteness,
+  generateExpansionQuestions,
+} from "./prompt-expansion";

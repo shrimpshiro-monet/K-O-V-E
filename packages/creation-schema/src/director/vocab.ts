@@ -74,6 +74,8 @@ export const SUPPORTED_CLIP_EFFECT_TYPES = [
 export const COLOR_GRADE_EFFECT_TYPES = [
   "colorGrade",
   "color-grade",
+  "color-grading",
+  "color_grade",
   "color_grading",
   "colorGrading",
 ] as const;
@@ -87,12 +89,20 @@ export const CUT_TRANSITION_TYPES: ReadonlySet<string> = new Set([
   "hardCut",
   "hard-cut",
   "hard cut",
+  "hardcut",
+  "hard_cut",
   "cut",
   "jumpCut",
   "jump-cut",
+  "jump cut",
+  "jumpcut",
+  "jump_cut",
   // A match cut is still a cut: adjacent similar compositions, no blend.
   "match-cut",
   "matchCut",
+  "match cut",
+  "matchcut",
+  "match_cut",
   "none",
   "",
 ]);
@@ -197,4 +207,90 @@ export function collectPlanEffectTypes(plan: EditPlan): string[] {
     for (const spec of segment.effectSpecs ?? []) types.push(spec.type);
   }
   return types;
+}
+
+/**
+ * Canonical lookup for effect names, case-insensitively. Built from the
+ * renderer-backed lists so an alias can never resolve to something the
+ * renderer cannot draw.
+ */
+const EFFECT_CANONICAL_BY_LOWER: ReadonlyMap<string, string> = new Map(
+  [...SUPPORTED_CLIP_EFFECT_TYPES, ...COLOR_GRADE_EFFECT_TYPES].map(
+    (type) => [type.toLowerCase(), type] as const,
+  ),
+);
+
+/**
+ * Common LLM inventions and variant spellings, mapped to the nearest
+ * renderer-supported type. `normalizeEditPlan` rewrites the plan with these
+ * before validation, so an accepted alias reaches the materializer as a name
+ * that actually renders. Targets that have no renderer equivalent (e.g.
+ * "shake", "zoom-punch") are deliberately absent — they stay rejected.
+ */
+const EFFECT_TYPE_ALIASES: Readonly<Record<string, string>> = {
+  warmth: "temperature",
+  "film-grain": "grain",
+  gaussianblur: "blur",
+  "gaussian-blur": "blur",
+  "hue-saturation": "hue",
+  "color-wheel": "tonal",
+  colorwheels: "tonal",
+  sharpening: "sharpen",
+  motionblur: "motion-blur",
+  motion_blur: "motion-blur",
+  radialblur: "radial-blur",
+  radial_blur: "radial-blur",
+  chromaticaberration: "chromatic-aberration",
+  chromatic_aberration: "chromatic-aberration",
+  "impact-fx": "glow",
+  impact: "glow",
+  punch: "chromatic-aberration",
+  punchy: "chromatic-aberration",
+  hit: "chromatic-aberration",
+};
+
+/** Map an LLM-proposed effect type to a renderer-backed name, or undefined. */
+export function normalizeEffectType(raw: string | undefined | null): string | undefined {
+  if (!raw || typeof raw !== "string") return undefined;
+  const key = raw.trim().toLowerCase();
+  if (!key) return undefined;
+  return EFFECT_CANONICAL_BY_LOWER.get(key) ?? EFFECT_TYPE_ALIASES[key];
+}
+
+/**
+ * True if the effect type is a color-grade action that routes to
+ * `clip/setColorGrading` rather than `effect/add`. Case-insensitive.
+ */
+export function isColorGradeType(raw: string | undefined | null): boolean {
+  if (!raw || typeof raw !== "string") return false;
+  const key = raw.trim().toLowerCase();
+  return (COLOR_GRADE_EFFECT_TYPES as readonly string[]).some(
+    (type) => type.toLowerCase() === key,
+  );
+}
+
+/**
+ * Structural features the LLM puts in effectSpecs by mistake. Rejecting them
+ * with an actionable "it belongs here" hint is what makes the single repair
+ * attempt succeed — without it the model reads "unknown effect" as "delete
+ * this feature" and drops it.
+ */
+export const MISPLACED_FEATURE_HINTS: Readonly<Record<string, string>> = {
+  "speed-ramp": "Speed ramps are not filter effects. Set `segment.speedRamp: { keyframes: [{ time, speed }] }` on the segment instead.",
+  speedramp: "Speed ramps are not filter effects. Set `segment.speedRamp` on the segment instead.",
+  speed_ramp: "Speed ramps are not filter effects. Set `segment.speedRamp` on the segment instead.",
+  speedramping: "Speed ramps are not filter effects. Set `segment.speedRamp` on the segment instead.",
+  zoom: "Zoom is a transform, not a filter effect. Use transform keyframes on the clip.",
+  "zoom-punch": "Zoom is a transform, not a filter effect. Use transform keyframes on the clip.",
+  pan: "Pan is a transform, not a filter effect. Use transform keyframes on the clip.",
+  crop: "Crop is a transform, not a filter effect. Use transform keyframes on the clip.",
+  crossfade: "Transitions go in `plan.transitions[]`, not in effectSpecs.",
+  transition: "Transitions go in `plan.transitions[]`, not in effectSpecs.",
+  fade: "Transitions go in `plan.transitions[]`, not in effectSpecs.",
+};
+
+/** Actionable hint for a misplaced feature, or undefined if there is none. */
+export function getMisplacedFeatureHint(raw: string | undefined | null): string | undefined {
+  if (!raw || typeof raw !== "string") return undefined;
+  return MISPLACED_FEATURE_HINTS[raw.trim().toLowerCase()];
 }
