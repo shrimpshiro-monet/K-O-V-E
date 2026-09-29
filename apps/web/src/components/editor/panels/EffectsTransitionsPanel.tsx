@@ -374,6 +374,98 @@ export const EDITOR_EFFECT_PREVIEWS: EditorEffectPreviewDef[] = [
       filter: `contrast(${lerp(1, 1.45, p)}) drop-shadow(0 0 ${lerp(0, 9, p)}px #4de8ff)`,
     }),
   },
+  {
+    id: "shader-halftone",
+    type: "shader",
+    label: "Halftone",
+    description: "Print-screen dots — comic book / zine look",
+    category: "Stylize",
+    params: { shaderId: "halftone", dotSize: 8, angle: 15 },
+    previewStyle: (p) => ({
+      filter: `contrast(${lerp(1, 1.5, p)}) grayscale(${lerp(0, 0.2, p)})`,
+      backgroundImage: `radial-gradient(circle, rgba(0,0,0,.4) ${lerp(0, 45, p)}%, transparent ${lerp(0, 45, p)}%)`,
+      backgroundSize: `${lerp(10, 6, p)}px ${lerp(10, 6, p)}px`,
+    }),
+  },
+  {
+    id: "shader-dither",
+    type: "shader",
+    label: "Dither",
+    description: "Ordered 8-bit quantization / risograph grain",
+    category: "Stylize",
+    params: { shaderId: "dither", levels: 4, scale: 1 },
+    previewStyle: (p) => ({
+      filter: `contrast(${lerp(1, 1.8, p)}) saturate(${lerp(1, 0.7, p)})`,
+      backgroundImage:
+        "repeating-conic-gradient(rgba(0,0,0,.25) 0 25%, transparent 0 50%)",
+      backgroundSize: `${lerp(6, 3, p)}px ${lerp(6, 3, p)}px`,
+    }),
+  },
+  {
+    id: "shader-gradient-map",
+    type: "shader",
+    label: "Gradient Map",
+    description: "Remap luma onto an indigo-to-gold ramp",
+    category: "Color",
+    params: { shaderId: "gradient-map", mix: 1 },
+    previewStyle: (p) => ({
+      filter: `grayscale(${lerp(0.2, 1, p)}) sepia(${lerp(0, 0.8, p)}) hue-rotate(${lerp(0, 205, p)}deg) saturate(${lerp(1, 2.4, p)})`,
+    }),
+  },
+  {
+    id: "shader-speed-lines",
+    type: "shader",
+    label: "Speed Lines",
+    description: "Anime action lines bursting from the frame centre",
+    category: "Stylize",
+    params: { shaderId: "speed-lines", amount: 0.6, density: 48, speed: 2 },
+    previewStyle: (p) => ({
+      filter: `contrast(${lerp(1, 1.3, p)})`,
+      backgroundImage: `repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,.45) 0 1deg, transparent 1deg ${lerp(14, 6, p)}deg)`,
+    }),
+  },
+  {
+    id: "shader-glitch-blocks",
+    type: "shader",
+    label: "Glitch Blocks",
+    description: "Row-wise data corruption with RGB split and dropout",
+    category: "Stylize",
+    params: { shaderId: "glitch-blocks", amount: 0.5, blockSize: 24, rgbSplit: 0.5, speed: 3 },
+    previewStyle: (p) => ({
+      filter: `hue-rotate(${lerp(0, 4, p)}deg)`,
+      transform: `translateX(${Math.sin(p * Math.PI * 12) * 3}px)`,
+      boxShadow: `inset ${lerp(0, 6, p)}px 0 rgba(255,0,80,.45), inset ${lerp(0, -6, p)}px 0 rgba(0,220,255,.45)`,
+      backgroundImage:
+        "repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 2px, transparent 2px 5px)",
+    }),
+  },
+  {
+    id: "shader-light-leak",
+    type: "shader",
+    label: "Light Leak",
+    description: "Warm film-burn streak sweeping with a bloom",
+    category: "Creative",
+    params: { shaderId: "light-leak", intensity: 0.5, warmth: 0.7, speed: 1 },
+    previewStyle: (p) => ({
+      filter: `saturate(${lerp(1, 1.2, p)}) brightness(${lerp(1, 1.12, p)})`,
+      backgroundImage: `linear-gradient(${lerp(120, 60, p)}deg, rgba(255,150,60,${lerp(0, 0.55, p)}) 0%, transparent 55%)`,
+      boxShadow: `inset 0 0 ${lerp(0, 60, p)}px rgba(255,170,90,.45)`,
+    }),
+  },
+  {
+    id: "shader-pixelate",
+    type: "shader",
+    label: "Pixelate",
+    description: "Blocky low-resolution mosaic",
+    category: "Creative",
+    params: { shaderId: "pixelate", size: 8 },
+    previewStyle: (p) => ({
+      filter: `contrast(${lerp(1, 1.2, p)})`,
+      backgroundImage:
+        "repeating-conic-gradient(rgba(0,0,0,.12) 0 25%, transparent 0 50%)",
+      backgroundSize: `${lerp(4, 18, p)}px ${lerp(4, 18, p)}px`,
+    }),
+  },
 ];
 
 export const EDITOR_EFFECT_CATEGORIES: EffectCategory[] = [

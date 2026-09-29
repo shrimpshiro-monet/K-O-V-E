@@ -1,4 +1,6 @@
 import type {
+  EditDensityReview,
+  EditDensityTarget,
   EditPlan,
   Genre,
   SegmentMap,
@@ -8,13 +10,30 @@ import type {
   RenderedDraftReview,
   RenderedFrameObservation,
 } from "@kove-advanced/creation-schema";
-import { canonicalizeTargetEffects, canonicalizeTargetTransitions, compareStyleProfile, reviewRenderedDraft } from "@kove-advanced/creation-schema";
+import {
+  canonicalizeTargetEffects,
+  canonicalizeTargetTransitions,
+  compareEditDensity,
+  compareStyleProfile,
+  formatDensityBrief,
+  measureEditDensity,
+  resolveDensityTarget,
+  reviewRenderedDraft,
+} from "@kove-advanced/creation-schema";
 
 export interface EditPlanReview extends StyleProfileComparison {
   readonly profile: StyleProfile;
   readonly target: StyleProfileTarget;
   readonly needsRevision: boolean;
   readonly rendered?: RenderedDraftReview;
+  /**
+   * How populated the timeline is (shot rate, treatments per minute, camera
+   * motion, text/SFX layering, escalation). Style says "right palette"; density
+   * says "someone actually edited this". Both gate the revision pass.
+   */
+  readonly density: EditDensityReview;
+  /** Human/LLM-readable list of density problems, ordered by severity. */
+  readonly revisionBrief: string;
 }
 
 export interface MaterializedDraftSummary {
@@ -101,17 +120,66 @@ export function reviewEditPlan(
   plan: EditPlan,
   genre?: Genre,
   referenceAnalysis?: unknown,
+  segmentMap?: SegmentMap,
 ): EditPlanReview {
   const profile = measureEditPlanStyle(plan);
   const target = mergeStyleTargets(genreTarget(genre), referenceTarget(referenceAnalysis));
   const comparison = compareStyleProfile(profile, target);
+  const density = compareEditDensity(
+    measureEditDensity(plan, segmentMap),
+    densityTarget(genre, plan.metadata.pacing),
+  );
+
+  // Density is a gate, not a suggestion: a plan can match the genre palette and
+  // still be eight splices. Both scores must clear their bar before execution.
+  const needsRevision = comparison.score < 0.6 || density.score < 0.6;
 
   return {
     ...comparison,
     profile,
     target,
-    needsRevision: comparison.score < 0.6,
+    density,
+    needsRevision,
+    revisionBrief: buildRevisionBrief(comparison.score, comparison.deviations, density),
   };
+}
+
+/**
+ * Density target for a genre: the pacing preset (fast/medium/slow) with the
+ * genre's own overrides applied on top. A genre with no explicit pacing falls
+ * back to its rules.
+ */
+export function densityTarget(
+  genre?: Genre,
+  fallbackPacing: Genre["pacing"] = "medium",
+): EditDensityTarget {
+  // With no genre selected, the plan's own declared pacing is the fairest
+  // baseline — a plan that calls itself "fast" is judged against the fast
+  // floor instead of the medium one.
+  const pacing = genre?.pacing ?? genre?.rules.pacing ?? fallbackPacing;
+  return resolveDensityTarget(pacing, genre?.densityTarget);
+}
+
+/**
+ * One brief for one bounded revision attempt. The style deviations are
+ * phrased as measurable gaps; the density section lists concrete additions.
+ * Keeping both in a single message is what makes the second plan a real edit
+ * instead of a differently-broken first draft.
+ */
+export function buildRevisionBrief(
+  styleScore: number,
+  deviations: readonly string[],
+  density: EditDensityReview,
+): string {
+  const lines: string[] = [];
+  if (styleScore < 0.6) {
+    lines.push(
+      `Style match is ${styleScore.toFixed(2)} against the genre target. Deviations: ` +
+      `${deviations.join("; ") || "bring the measurable style profile closer to target"}.`,
+    );
+  }
+  lines.push(formatDensityBrief(density));
+  return lines.join("\n\n");
 }
 
 export function measureEditPlanStyle(plan: EditPlan): StyleProfile {

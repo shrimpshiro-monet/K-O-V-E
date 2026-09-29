@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { SegmentMap } from "@kove-advanced/creation-schema";
-import { buildDirectorPrompt, resolveDirectorVideoId } from "./director-prompt";
+import {
+  buildDensityContract,
+  buildDirectorPrompt,
+  buildExpansionPrompt,
+  formatDensityContract,
+  inferTargetDuration,
+  resolveDirectorVideoId,
+} from "./director-prompt";
 import { PRE_BAKED_GENRES } from "./genres";
 
 const segmentMap: SegmentMap = {
@@ -44,6 +51,62 @@ describe("director prompt", () => {
     expect(prompt).toContain('"styleProfile"');
     expect(prompt).toContain('"cutsPerMinute"');
     expect(prompt).toContain('"cutStyle": "hard"');
+  });
+
+  it("sizes the density contract from the prompt and the genre", () => {
+    expect(inferTargetDuration("make a 30s tiktok edit", "fast")).toBe(30);
+    expect(inferTargetDuration("give me about 2 minutes", "slow")).toBe(120);
+    expect(inferTargetDuration("just make something cool", "fast")).toBe(30);
+
+    const contract = buildDensityContract("30 second tiktok edit", PRE_BAKED_GENRES[0]);
+    expect(contract.targetDuration).toBe(30);
+    expect(contract.shots[0]).toBeGreaterThanOrEqual(12);
+    expect(contract.cameraMoves).toBeGreaterThan(5);
+    expect(contract.effectHits[0]).toBeGreaterThan(0);
+    expect(contract.texts[1]).toBeGreaterThanOrEqual(contract.texts[0]);
+
+    const rendered = formatDensityContract(contract);
+    expect(rendered).toContain("Shots");
+    expect(rendered).toContain("Camera moves");
+    expect(rendered).toContain("Evolution");
+  });
+
+  it("injects the density contract, camera vocabulary and text presets into the task prompt", () => {
+    const prompt = buildDirectorPrompt(segmentMap, "make a 30s tiktok edit", PRE_BAKED_GENRES[0]);
+    expect(prompt).toContain("## Edit density contract (MANDATORY for this request)");
+    expect(prompt).toContain("Shots");
+    expect(prompt).toContain("slow-push");
+    expect(prompt).toContain("snap-zoom");
+    expect(prompt).toContain("cameraMoves");
+    expect(prompt).toContain("zoom-blur");
+    // No unresolved template tokens may ship to the model.
+    expect(prompt).not.toContain("{MOVE_ATLAS}");
+    expect(prompt).not.toContain("{none,");
+  });
+
+  it("advertises the signature-effect vocabulary and the genre's suggested looks", () => {
+    const genre = PRE_BAKED_GENRES.find((g) => g.id === "meme-compilation")!;
+    const prompt = buildDirectorPrompt(segmentMap, "make a 20s meme edit", genre);
+
+    expect(prompt).toContain("## Signature effects (custom looks — deliberate, never wallpaper)");
+    // Every mirrored shader look is named, with its params.
+    for (const name of ["vhs", "scanlines", "halftone", "dither", "posterize", "duotone", "gradient-map", "prism", "fisheye", "wave-warp", "edge-glow", "pixelate"]) {
+      expect(prompt, name).toContain(`\`${name}\``);
+    }
+    expect(prompt).toContain("Params:");
+    expect(prompt).toContain("never the same look on consecutive shots");
+    // The genre's own suggestion rides along, scoped to moments.
+    expect(prompt).toContain("Signature looks this genre reaches for: posterize, dither, halftone");
+    expect(prompt).toContain("never on every shot");
+  });
+
+  it("lets the expansion brief name real signature effects instead of vague 'cool effects'", () => {
+    const expansion = buildExpansionPrompt("make something cool", segmentMap, PRE_BAKED_GENRES[0]);
+    expect(expansion).toContain("## Effects you may name in the brief");
+    expect(expansion).toContain("Signature shader effects (exact names):");
+    expect(expansion).toContain("vhs");
+    expect(expansion).toContain("halftone");
+    expect(expansion).toContain("Mention at most 1-3 of these");
   });
 
   it("passes analyzed segment signals into the director prompt", () => {

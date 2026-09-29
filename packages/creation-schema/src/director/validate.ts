@@ -1,5 +1,12 @@
-import type { EditPlan, EditPlanLayout, PlannedSegment, PlannedSpeedRamp } from "./edit-plan";
+import type {
+  EditPlan,
+  EditPlanLayout,
+  PlannedCameraMove,
+  PlannedSegment,
+  PlannedSpeedRamp,
+} from "./edit-plan";
 import type { SegmentMap, VideoSegmentMap } from "./segment-map";
+import { CAMERA_MOVE_IDS, isCameraMoveId } from "./camera-moves";
 import {
   canonicalizeTransitionType,
   getMisplacedFeatureHint,
@@ -7,9 +14,17 @@ import {
   isSupportedEffectType,
   isSupportedTransitionType,
   normalizeEffectType,
+  normalizeTextAnimation,
   SUPPORTED_CLIP_EFFECT_TYPES,
+  SUPPORTED_EFFECT_TYPES,
+  SUPPORTED_TEXT_ANIMATIONS,
   SUPPORTED_TRANSITION_TYPES,
 } from "./vocab";
+import {
+  resolveSignatureEffect,
+  signatureEffectParamNames,
+  SIGNATURE_EFFECT_DEFS,
+} from "./shader-effects";
 
 export interface DirectorValidationIssue {
   readonly code: string;
@@ -170,6 +185,7 @@ export function validateEditPlan(
     }
     validateLayout(seg.layout, i, issues);
     validateSpeedRamp(seg.speedRamp, seg.sourceEndTime - seg.sourceStartTime, i, issues);
+    validateCameraMoves(seg.cameraMoves, seg.sourceEndTime - seg.sourceStartTime, i, issues);
     seg.effectSpecs?.forEach((effect, effectIndex) => {
       if (!effect.type.trim()) {
         issues.push(issue("error", "empty_effect_type", `Segment ${i} effect ${effectIndex} has no type.`, `segments.${i}.effectSpecs.${effectIndex}.type`));
@@ -247,7 +263,7 @@ export function validateEditPlan(
     issues.push(issue(
       "error",
       "unsupported_effect",
-      `Effect "${type}" is not supported by the renderer. Supported effects: ${SUPPORTED_CLIP_EFFECT_TYPES.join(", ")} (colorGrade also maps to clip color grading).`,
+      `Effect "${type}" is not supported by the renderer. Supported effects: ${SUPPORTED_CLIP_EFFECT_TYPES.join(", ")} (colorGrade also maps to clip color grading). Signature shader effects: ${SUPPORTED_EFFECT_TYPES.filter((name) => !(SUPPORTED_CLIP_EFFECT_TYPES as readonly string[]).includes(name)).join(", ")}.`,
       path,
     ));
   };
@@ -282,13 +298,52 @@ export function validateEditPlan(
       // no params and no intensity renders as a no-op. The materializer
       // synthesizes defaults from `intensity` when intensity is present —
       // this flags the remaining case for the revision pass to fill in.
+      // Signature effects are exempt: they carry renderer defaults, so
+      // `{ type: "vhs" }` is a complete request.
+      const signature = resolveSignatureEffect(spec.type);
       if (
         spec.type &&
+        !signature &&
         !isColorGradeType(spec.type) &&
         (!spec.params || Object.keys(spec.params).length === 0) &&
         spec.intensity === undefined
       ) {
         issues.push(issue("warning", "effect_spec_missing_params", `${path} effect "${spec.type}" has no params and no intensity — it will render as a no-op.`, `${path}.params`));
+      }
+      // A raw `shader` spec is the low-level form: it must name a shaderId or
+      // the effects engine resolves nothing and draws nothing. Named signature
+      // effects never hit this path (they carry their shaderId).
+      if (spec.type === "shader") {
+        const shaderId = typeof spec.params?.shaderId === "string" ? spec.params.shaderId.trim() : "";
+        if (!shaderId) {
+          issues.push(issue(
+            "error",
+            "shader_effect_missing_id",
+            `${path} type "shader" needs params.shaderId (or use a signature effect: vhs, halftone, prism, …) — without it the renderer draws nothing.`,
+            `${path}.params.shaderId`,
+          ));
+        } else if (!(SIGNATURE_EFFECT_DEFS as readonly { shaderId: string }[]).some((def) => def.shaderId === shaderId)) {
+          // Could still be a generated/project shader or a Paper catalog id,
+          // which this package cannot enumerate — warn rather than block.
+          issues.push(issue(
+            "warning",
+            "unverified_shader_effect_id",
+            `${path} shaderId "${shaderId}" is not one of the built-in effect shaders (${SIGNATURE_EFFECT_DEFS.map((def) => def.shaderId).join(", ")}). Verify it with list_motion_shaders before shipping.`,
+            `${path}.params.shaderId`,
+          ));
+        }
+      }
+      if (signature && spec.params) {
+        const allowed = signatureEffectParamNames(signature);
+        const unknownKeys = Object.keys(spec.params).filter((key) => !allowed.includes(key));
+        if (unknownKeys.length > 0) {
+          issues.push(issue(
+            "warning",
+            "unknown_shader_effect_param",
+            `${path} effect "${signature.name}" cannot tune ${unknownKeys.join(", ")} — it accepts ${allowed.join(", ")}. Unknown params are dropped at materialization.`,
+            `${path}.params`,
+          ));
+        }
       }
     });
   }
@@ -329,6 +384,25 @@ export function validateEditPlan(
     }
     if (!Number.isFinite(text.duration) || text.duration <= 0) {
       issues.push(issue("error", "invalid_text_timing", `Text element ${index} must have a positive duration.`, `textElements.${index}.duration`));
+    }
+    // Text animation names are stored verbatim on the title clip, and the
+    // title engine draws unknown presets as "none" — a silent no-op. Known
+    // spellings are canonicalized before validation; anything left over is
+    // surfaced with the supported list so the repair pass can fix it.
+    const animations: Array<{ value: string | undefined; path: string }> = [
+      { value: text.animation, path: `textElements.${index}.animation` },
+      { value: text.templateOverride?.animation, path: `textElements.${index}.templateOverride.animation` },
+    ];
+    for (const candidate of animations) {
+      if (candidate.value === undefined) continue;
+      if (normalizeTextAnimation(candidate.value) === null) {
+        issues.push(issue(
+          "error",
+          "unsupported_text_animation",
+          `${candidate.path}: text animation "${candidate.value}" is not supported by the title engine and would render as no animation. Supported presets: ${SUPPORTED_TEXT_ANIMATIONS.join(", ")}.`,
+          candidate.path,
+        ));
+      }
     }
     const position = text.position;
     if (
@@ -429,6 +503,49 @@ function validateLayout(
   }
 }
 
+/**
+ * Camera moves are a closed vocabulary compiled into clip transform keyframes,
+ * so an unsupported id is a real error (the shot would silently stay static)
+ * and the repair pass gets the supported list back.
+ */
+function validateCameraMoves(
+  moves: readonly PlannedCameraMove[] | undefined,
+  sourceDuration: number,
+  segmentIndex: number,
+  issues: DirectorValidationIssue[],
+): void {
+  if (!moves) return;
+  if (moves.length > 6) {
+    issues.push(issue(
+      "warning",
+      "too_many_camera_moves",
+      `Segment ${segmentIndex} has ${moves.length} camera moves; 1-3 composed moves per shot is the readable maximum.`,
+      `segments.${segmentIndex}.cameraMoves`,
+    ));
+  }
+  moves.forEach((move, moveIndex) => {
+    const path = `segments.${segmentIndex}.cameraMoves.${moveIndex}`;
+    if (!isCameraMoveId(move.move)) {
+      issues.push(issue(
+        "error",
+        "unsupported_camera_move",
+        `${path}: camera move "${String(move.move)}" is not supported. Supported camera moves: ${CAMERA_MOVE_IDS.join(", ")}.`,
+        `${path}.move`,
+      ));
+      return;
+    }
+    if (move.intensity !== undefined && (!Number.isFinite(move.intensity) || move.intensity < 0 || move.intensity > 1)) {
+      issues.push(issue("error", "camera_move_intensity", `${path} intensity must be between 0 and 1.`, `${path}.intensity`));
+    }
+    if (move.startTime !== undefined && (!Number.isFinite(move.startTime) || move.startTime < 0 || move.startTime > sourceDuration)) {
+      issues.push(issue("error", "camera_move_time", `${path} startTime must fall inside the shot (0-${sourceDuration.toFixed(2)}s).`, `${path}.startTime`));
+    }
+    if (move.duration !== undefined && (!Number.isFinite(move.duration) || move.duration <= 0)) {
+      issues.push(issue("error", "camera_move_duration", `${path} duration must be positive.`, `${path}.duration`));
+    }
+  });
+}
+
 function validateSpeedRamp(
   ramp: PlannedSpeedRamp | undefined,
   sourceDuration: number,
@@ -493,12 +610,16 @@ export function normalizeEditPlan(
       return canonical ? { ...spec, type: canonical } : spec;
     });
     const effects = segment.effects.map((type) => normalizeEffectType(type) ?? type);
+    // Camera-move *shapes* are coerced here; unknown move ids are left in
+    // place so validation can report them with the supported list.
+    const cameraMoves = coerceCameraMoveShapes(segment.cameraMoves, end - start);
 
     return {
       ...segment,
       sourceStartTime: start,
       sourceEndTime: end,
       ...(effectSpecs ? { effectSpecs } : {}),
+      ...(cameraMoves ? { cameraMoves } : {}),
       effects,
     };
   });
@@ -531,7 +652,72 @@ export function normalizeEditPlan(
     segments,
     effects,
     transitions,
+    textElements: plan.textElements.map((text) => {
+      const animation = canonicalTextAnimation(text.animation);
+      const overrideAnimation = canonicalTextAnimation(text.templateOverride?.animation);
+      return {
+        ...text,
+        ...(animation ? { animation } : {}),
+        ...(text.templateOverride && overrideAnimation
+          ? { templateOverride: { ...text.templateOverride, animation: overrideAnimation } }
+          : {}),
+      };
+    }),
+    ...(plan.captionTemplate
+      ? {
+          captionTemplate: {
+            ...plan.captionTemplate,
+            ...(canonicalTextAnimation(plan.captionTemplate.animation)
+              ? { animation: canonicalTextAnimation(plan.captionTemplate.animation) }
+              : {}),
+          },
+        }
+      : {}),
   };
+}
+
+/**
+ * Canonicalize a text animation name when it is a known spelling. Unknown
+ * names pass through untouched so `validateEditPlan` can reject them instead of
+ * them silently rendering as no animation.
+ */
+function canonicalTextAnimation(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const canonical = normalizeTextAnimation(raw);
+  return canonical ?? raw;
+}
+
+/**
+ * Coerce camera-move entries into the documented shape (drop non-objects,
+ * clamp numbers). Unknown move ids survive so validation can report them.
+ */
+function coerceCameraMoveShapes(
+  value: readonly PlannedCameraMove[] | undefined,
+  shotDuration: number,
+): PlannedCameraMove[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const out: PlannedCameraMove[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") continue;
+    const record = entry as unknown as Record<string, unknown>;
+    if (typeof record.move !== "string") continue;
+    const intensity = typeof record.intensity === "number" && Number.isFinite(record.intensity)
+      ? Math.max(0, Math.min(1, record.intensity))
+      : undefined;
+    const startTime = typeof record.startTime === "number" && Number.isFinite(record.startTime) && record.startTime >= 0
+      ? Math.min(record.startTime, Math.max(0, shotDuration))
+      : undefined;
+    const duration = typeof record.duration === "number" && Number.isFinite(record.duration) && record.duration > 0
+      ? record.duration
+      : undefined;
+    out.push({
+      move: record.move as PlannedCameraMove["move"],
+      ...(intensity !== undefined ? { intensity } : {}),
+      ...(startTime !== undefined ? { startTime } : {}),
+      ...(duration !== undefined ? { duration } : {}),
+    });
+  }
+  return out.length > 0 ? out : undefined;
 }
 
 export function summarizeSegmentMap(segmentMap: SegmentMap): string {

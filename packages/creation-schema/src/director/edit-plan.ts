@@ -9,8 +9,66 @@ export interface PlannedSegment {
   readonly effects: readonly string[];
   readonly effectSpecs?: readonly PlannedEffectSpec[];
   readonly layout?: EditPlanLayout;
+  /**
+   * Camera motion inside the shot (slow push, punch-in, handheld drift, …).
+   * Compiled into clip transform keyframes by `compileCameraMoves`, so the
+   * footage moves the way an editor would move it — a static shot is the
+   * single loudest tell of a machine-made edit.
+   */
+  readonly cameraMoves?: readonly PlannedCameraMove[];
   readonly rationale: string;
 }
+
+/**
+ * Named camera moves. Each id is a closed, renderer-backed recipe: the move is
+ * compiled into transform keyframes on the clip (`scale.x`/`scale.y`,
+ * `position.x`/`position.y`, `rotation`) that the preview and exporter already
+ * animate. There is intentionally no free-form keyframe escape hatch — the
+ * director picks from this vocabulary and tunes `intensity`.
+ */
+export type CameraMoveId =
+  | "punch-in"
+  | "punch-out"
+  | "slow-push"
+  | "pull-back"
+  | "drift-left"
+  | "drift-right"
+  | "tilt-up"
+  | "tilt-down"
+  | "handheld"
+  | "whip-shake"
+  | "snap-zoom"
+  | "breathe"
+  | "wobble"
+  | "sway";
+
+export interface PlannedCameraMove {
+  readonly move: CameraMoveId;
+  /** 0..1 — scales the move's amplitude. Omitted means 0.6 (clearly visible, not seasick). */
+  readonly intensity?: number;
+  /** Seconds into the segment where the move starts. Omitted means 0. */
+  readonly startTime?: number;
+  /** How long the move takes. Omitted means "rest of the shot". */
+  readonly duration?: number;
+}
+
+/** A transform keyframe the materializer can write verbatim. */
+export interface PlannedTransformKeyframe {
+  readonly property: "scale.x" | "scale.y" | "position.x" | "position.y" | "rotation" | "opacity";
+  readonly time: number;
+  readonly value: number;
+  readonly easing: PlannedKeyframeEasing;
+}
+
+export type PlannedKeyframeEasing =
+  | "linear"
+  | "easeOutQuad"
+  | "easeOutCubic"
+  | "easeOutQuart"
+  | "easeInOutQuad"
+  | "easeInOutSine"
+  | "easeOutBack"
+  | "easeOutElastic";
 
 export type EditPlanLayoutRegion =
   | "fullscreen"

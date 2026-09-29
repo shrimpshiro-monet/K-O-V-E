@@ -208,7 +208,7 @@ The agent exposes **228 tools** spanning read/observe, project, track, clip, tra
 - **set_clip_blend_opacity** — Set a clip's blend opacity (0..1).
 
 ## effect
-- **add_video_effect** — Add a video effect to a clip.
+- **add_video_effect** — Add a video effect to a clip (standard filters, or a named signature shader look: vhs, scanlines, halftone, dither, posterize, duotone, gradient-map, prism, fisheye, wave-warp, edge-glow, pixelate, speed-lines, glitch-blocks, light-leak).
 - **remove_video_effect** — Remove a clip's video effect.
 - **update_video_effect** — Update a video effect's params.
 - **toggle_video_effect** — Enable/disable a video effect.

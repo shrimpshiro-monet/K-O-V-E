@@ -1,4 +1,9 @@
 import type { EditPlan, PlannedEffect, PlannedTransition } from "./edit-plan";
+import {
+  isSignatureEffectType,
+  resolveSignatureEffectName,
+  SIGNATURE_EFFECT_NAMES,
+} from "./shader-effects";
 
 /**
  * Renderer-backed vocabulary for director plans.
@@ -68,6 +73,17 @@ export const SUPPORTED_CLIP_EFFECT_TYPES = [
 ] as const;
 
 /**
+ * Every effect type a plan may name: engine filter effects, colour-grading
+ * aliases, and the named signature shader effects (`shader-effects.ts`). Kept
+ * separate from `SUPPORTED_CLIP_EFFECT_TYPES` — that list mirrors the engine's
+ * own switch, while this one is what validation and error messages advertise.
+ */
+export const SUPPORTED_EFFECT_TYPES: readonly string[] = [
+  ...SUPPORTED_CLIP_EFFECT_TYPES,
+  ...SIGNATURE_EFFECT_NAMES,
+];
+
+/**
  * Plan effect types that materialize as clip color grading rather than a
  * rendered effect layer (see materializeEditPlan's colorGrade branch).
  */
@@ -133,10 +149,102 @@ export function isSupportedTransitionType(type: string): boolean {
   return (SUPPORTED_TRANSITION_TYPES as readonly string[]).includes(type);
 }
 
+/**
+ * Text animation presets the title engine can actually animate (mirrors
+ * `TextAnimationPreset` in packages/core/src/text/types.ts — creation-schema
+ * must not depend on core). An unsupported name is not a crash: the preset is
+ * stored on the clip and the renderer silently draws it as "none", which is
+ * exactly the class of quiet no-op the director must not be allowed to plan.
+ */
+export const SUPPORTED_TEXT_ANIMATIONS = [
+  "none",
+  "typewriter",
+  "fade",
+  "slide-left",
+  "slide-right",
+  "slide-up",
+  "slide-down",
+  "scale",
+  "blur",
+  "bounce",
+  "rotate",
+  "wave",
+  "shake",
+  "pop",
+  "glitch",
+  "split",
+  "flip",
+  "word-by-word",
+  "rainbow",
+  "rise",
+  "drop",
+  "elastic",
+  "swing",
+  "zoom-blur",
+  "cascade",
+] as const;
+
+export type SupportedTextAnimation = (typeof SUPPORTED_TEXT_ANIMATIONS)[number];
+
+/**
+ * Spellings that show up in prompts, genre templates, and LLM output that are
+ * not the renderer's canonical preset ids. Mapped instead of rejected: the
+ * genre templates themselves shipped `text-reveal-up` (a Motion text-animator
+ * id) which the title engine reads as "no animation".
+ */
+export const TEXT_ANIMATION_ALIASES: Readonly<Record<string, SupportedTextAnimation>> = {
+  "text-reveal-up": "slide-up",
+  "text-reveal-down": "slide-down",
+  "text-reveal-left": "slide-left",
+  "text-reveal-right": "slide-right",
+  "text-type-on": "typewriter",
+  "text-fade-in": "fade",
+  "text-pop": "pop",
+  "text-bounce": "bounce",
+  fadein: "fade",
+  "fade-in": "fade",
+  fadeout: "fade",
+  "fade-out": "fade",
+  slideup: "slide-up",
+  slidedown: "slide-down",
+  slideleft: "slide-left",
+  slideright: "slide-right",
+  scalein: "scale",
+  scaleout: "scale",
+  rotatein: "rotate",
+  "zoom-in": "scale",
+  zoomin: "scale",
+  wordbyword: "word-by-word",
+  "word-by-word-reveal": "word-by-word",
+  karaoke: "word-by-word",
+  shaking: "shake",
+  wiggle: "wave",
+};
+
+/** Map a requested text animation to a renderer-backed preset id, or null. */
+export function normalizeTextAnimation(raw: string | undefined | null): SupportedTextAnimation | null {
+  if (!raw || typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  if ((SUPPORTED_TEXT_ANIMATIONS as readonly string[]).includes(lower)) {
+    return lower as SupportedTextAnimation;
+  }
+  if ((SUPPORTED_TEXT_ANIMATIONS as readonly string[]).includes(trimmed)) {
+    return trimmed as SupportedTextAnimation;
+  }
+  return TEXT_ANIMATION_ALIASES[lower] ?? null;
+}
+
+export function isSupportedTextAnimation(raw: string | undefined | null): boolean {
+  return normalizeTextAnimation(raw) !== null;
+}
+
 export function isSupportedEffectType(type: string): boolean {
   return (
     (SUPPORTED_CLIP_EFFECT_TYPES as readonly string[]).includes(type) ||
-    (COLOR_GRADE_EFFECT_TYPES as readonly string[]).includes(type)
+    (COLOR_GRADE_EFFECT_TYPES as readonly string[]).includes(type) ||
+    isSignatureEffectType(type)
   );
 }
 
@@ -254,7 +362,12 @@ export function normalizeEffectType(raw: string | undefined | null): string | un
   if (!raw || typeof raw !== "string") return undefined;
   const key = raw.trim().toLowerCase();
   if (!key) return undefined;
-  return EFFECT_CANONICAL_BY_LOWER.get(key) ?? EFFECT_TYPE_ALIASES[key];
+  return (
+    EFFECT_CANONICAL_BY_LOWER.get(key) ??
+    EFFECT_TYPE_ALIASES[key] ??
+    // Signature shader effects: "crt" → "scanlines", "vhs tape" → "vhs".
+    resolveSignatureEffectName(key)
+  );
 }
 
 /**
