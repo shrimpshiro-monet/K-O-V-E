@@ -293,6 +293,104 @@ void main() {
 }
 `;
 
+const SPEED_LINES_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D u_input;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_amount;
+uniform float u_density;
+uniform float u_speed;
+out vec4 fragColor;
+
+float speedLineHash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+void main() {
+  vec4 src = texture(u_input, vUv);
+  float amount = clamp(u_amount, 0.0, 1.0);
+  vec2 centered = vUv - vec2(0.5);
+  centered.x *= u_resolution.x / max(u_resolution.y, 1.0);
+  float radius = length(centered);
+  float angle = atan(centered.y, centered.x);
+  float lanes = max(u_density, 2.0);
+  float lane = floor((angle / 6.28318530718 + 0.5) * lanes);
+  float tick = floor(u_time * max(u_speed, 0.01) * 5.0);
+  float laneNoise = speedLineHash(vec2(lane, tick));
+  float streak = step(1.0 - amount * 0.55, laneNoise);
+  float taper = smoothstep(0.12, 0.45, radius) * (1.0 - smoothstep(0.72, 1.05, radius));
+  float line = streak * taper * amount;
+  vec3 result = clamp(src.rgb + vec3(line), 0.0, 1.0);
+  fragColor = vec4(result, src.a);
+}
+`;
+
+const GLITCH_BLOCKS_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D u_input;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_amount;
+uniform float u_blockSize;
+uniform float u_rgbSplit;
+uniform float u_speed;
+out vec4 fragColor;
+
+float blockHash(float n) {
+  return fract(sin(n * 12.9898) * 43758.5453123);
+}
+
+void main() {
+  float amount = clamp(u_amount, 0.0, 1.0);
+  float slice = max(u_blockSize, 1.0);
+  float row = floor(vUv.y * u_resolution.y / slice);
+  float tick = floor(u_time * max(u_speed, 0.01));
+  float seed = blockHash(row + tick * 91.7);
+  float active = step(1.0 - amount * 0.6, seed);
+  float shift = (blockHash(row * 3.1 + tick * 17.3) - 0.5) * 0.3 * amount * active;
+  vec2 uv = vec2(clamp(vUv.x + shift, 0.0, 1.0), vUv.y);
+  float split = u_rgbSplit * amount * 14.0 / max(u_resolution.x, 1.0);
+  float r = texture(u_input, vec2(clamp(uv.x + split, 0.0, 1.0), uv.y)).r;
+  vec4 mid = texture(u_input, uv);
+  float b = texture(u_input, vec2(clamp(uv.x - split, 0.0, 1.0), uv.y)).b;
+  vec3 color = vec3(r, mid.g, b);
+  float dropout = step(0.94, seed) * active * amount;
+  color = mix(color, vec3(1.0) - color, dropout);
+  fragColor = vec4(clamp(color, 0.0, 1.0), mid.a);
+}
+`;
+
+const LIGHT_LEAK_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D u_input;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_intensity;
+uniform float u_warmth;
+uniform float u_speed;
+out vec4 fragColor;
+
+void main() {
+  vec4 src = texture(u_input, vUv);
+  float t = u_time * max(u_speed, 0.01);
+  float intensity = clamp(u_intensity, 0.0, 1.0);
+  float warmth = clamp(u_warmth, 0.0, 1.0);
+  float sweep = fract(t * 0.25);
+  float across = vUv.x * 0.7 + vUv.y * 0.3;
+  float streak = exp(-pow((across - sweep) * 5.0, 2.0));
+  float bloom = exp(-pow((vUv.x + vUv.y - 0.35) * 3.5, 2.0)) * (0.6 + 0.4 * sin(t * 1.7));
+  float leak = clamp(streak * 0.8 + bloom * 0.55, 0.0, 1.0) * intensity;
+  vec3 leakColor = mix(vec3(0.35, 0.62, 1.0), vec3(1.0, 0.62, 0.22), warmth);
+  float gain = leak * 0.85;
+  vec3 screened = 1.0 - (1.0 - clamp(src.rgb, 0.0, 1.0)) * (1.0 - leakColor * gain);
+  fragColor = vec4(clamp(screened, 0.0, 1.0), src.a);
+}
+`;
+
 export const EFFECT_SHADERS: readonly MotionShaderDef[] = [
   {
     id: "dither",
@@ -417,6 +515,40 @@ export const EFFECT_SHADERS: readonly MotionShaderDef[] = [
       { name: "strength", label: "Strength", type: "number", default: 4, min: 0, max: 12, step: 0.25 },
       { name: "radius", label: "Radius", type: "number", default: 1.5, min: 0.5, max: 6, step: 0.25 },
       { name: "color", label: "Glow Color", type: "color", default: "#4de8ff", min: 0, max: 1, step: 0.01 },
+    ],
+  },
+  {
+    id: "speed-lines",
+    name: "Speed Lines",
+    category: "effect",
+    glsl: SPEED_LINES_GLSL,
+    params: [
+      { name: "amount", label: "Amount", type: "number", default: 0.6, min: 0, max: 1, step: 0.01 },
+      { name: "density", label: "Density", type: "number", default: 48, min: 8, max: 120, step: 1 },
+      { name: "speed", label: "Speed", type: "number", default: 2, min: 0, max: 4, step: 0.05 },
+    ],
+  },
+  {
+    id: "glitch-blocks",
+    name: "Glitch Blocks",
+    category: "effect",
+    glsl: GLITCH_BLOCKS_GLSL,
+    params: [
+      { name: "amount", label: "Amount", type: "number", default: 0.5, min: 0, max: 1, step: 0.01 },
+      { name: "blockSize", label: "Block Size", type: "number", default: 24, min: 4, max: 64, step: 1 },
+      { name: "rgbSplit", label: "RGB Split", type: "number", default: 0.5, min: 0, max: 1, step: 0.01 },
+      { name: "speed", label: "Speed", type: "number", default: 3, min: 0, max: 8, step: 0.1 },
+    ],
+  },
+  {
+    id: "light-leak",
+    name: "Light Leak",
+    category: "effect",
+    glsl: LIGHT_LEAK_GLSL,
+    params: [
+      { name: "intensity", label: "Intensity", type: "number", default: 0.5, min: 0, max: 1, step: 0.01 },
+      { name: "warmth", label: "Warmth", type: "number", default: 0.7, min: 0, max: 1, step: 0.01 },
+      { name: "speed", label: "Speed", type: "number", default: 1, min: 0, max: 4, step: 0.05 },
     ],
   },
 ];
