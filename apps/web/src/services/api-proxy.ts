@@ -152,8 +152,8 @@ export async function apiFetch(
     });
   }
 
-  if (isDev) {
-    const config = DIRECT_CONFIG[service];
+  if (isDev && service in DIRECT_CONFIG) {
+    const config = DIRECT_CONFIG[service as keyof typeof DIRECT_CONFIG];
     const url = `${config.baseUrl}${path}`;
     return fetch(url, {
       ...requestOptions,

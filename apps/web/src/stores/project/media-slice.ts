@@ -431,8 +431,8 @@ export function createMediaSlice(set: Set, get: Get): MediaSlice {
       const { project } = get();
       const index = project.mediaLibrary.items.findIndex((item) => item.id === mediaId);
       const item = project.mediaLibrary.items[index];
-      if (!item) return { success: false, error: { code: "NOT_FOUND", message: "Media item not found" } };
-      if (item.type !== "video") return { success: false, error: { code: "INVALID_MEDIA", message: "Only videos can be analysis references" } };
+      if (!item) return { success: false, error: { code: "MEDIA_NOT_FOUND", message: "Media item not found" } };
+      if (item.type !== "video") return { success: false, error: { code: "INCOMPATIBLE_TYPE", message: "Only videos can be analysis references" } };
 
       const items = [...project.mediaLibrary.items];
       items[index] = { ...item, analysisRole: role };

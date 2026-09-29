@@ -241,12 +241,15 @@ export const useSettingsStore = create<SettingsState>()(
           if (version < 5 || next.defaultTtsProvider === "piper") {
             next.defaultTtsProvider = "elevenlabs";
           }
-          if (version < 8) {
-            next.defaultLlmProvider = "cloudflare";
-          }
           const previousProvider = next.defaultLlmProvider;
-          if (!isLlmProvider(previousProvider)) {
-            next.defaultLlmProvider = "cloudflare";
+          if (previousProvider === undefined || previousProvider === null) {
+            // v8: users who never picked an API format get the zero-config default.
+            if (version < 8) next.defaultLlmProvider = "cloudflare";
+          } else if (!isLlmProvider(previousProvider)) {
+            // Legacy preset providers ("openai", "anthropic") no longer exist.
+            // Clear the selection and its preset model so the user picks an
+            // API format; keep every unrelated preference intact.
+            next.defaultLlmProvider = null;
             next.llmBaseUrl = "";
             next.llmModel = "";
           } else {

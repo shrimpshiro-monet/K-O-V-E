@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { Loader2 } from "@/icons/lucide-compat";
-import { useChatStore, type AnalysisProgress } from "../../../stores/chat-store";
+import { useChatStore } from "../../../stores/chat-store";
 
 export function AnalysisProgressCard(): JSX.Element | null {
   const progress = useChatStore((s) => s.analysisProgress);

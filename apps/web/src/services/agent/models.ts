@@ -12,6 +12,9 @@ export interface LlmModelOption {
 export const LLM_MODELS: Record<LlmProvider, LlmModelOption[]> = {
   "openai-compatible": [],
   "anthropic-compatible": [],
+  // Cloudflare Workers AI uses its dedicated transport; its model catalog is
+  // provider-owned like the compatible endpoints above.
+  cloudflare: [],
 };
 
 export function defaultModelFor(provider: LlmProvider): string {
