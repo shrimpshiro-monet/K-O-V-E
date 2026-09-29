@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 describe("apiFetch desktop branch", () => {
-  it("routes through window["kove-advanced"].cloud.fetch and ignores the passed key", async () => {
+  it("routes through the kove-advanced cloud.fetch bridge and ignores the passed key", async () => {
     const res = await apiFetch("openai", "/chat/completions", "IGNORED", {
       method: "POST",
       body: "{}",

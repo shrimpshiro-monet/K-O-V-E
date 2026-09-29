@@ -4,8 +4,16 @@ import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan } from "./director/plan-review";
-import { sampleRenderedFrames, runQualityPipeline, applyTargetedCorrections } from "./director/quality-pipeline";
-import { normalizeEditPlan, validateEditPlan } from "@kove-advanced/creation-schema";
+import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES } from "@kove-advanced/creation-schema";
+import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
+import {
+  getDirectorPlanState,
+  setDirectorPlanState,
+  derivePlanIdempotencyKey,
+  replayIsIntact,
+  removeOwnedEntities,
+} from "./director/plan-state";
+import type { DirectorPlanCommit } from "@kove-advanced/core/types/project";
 import type {
   CaptionStyleTemplate,
   EditPlan,
@@ -337,6 +345,7 @@ import type {
   MotionRenderQueueAddInput,
 } from "./host";
 import type { JSONSchema, ToolDef, ToolDomain, ToolResult } from "./types";
+import type { LoopMessage } from "./llm";
 import {
   serializeEditorState,
   listMedia,
@@ -444,8 +453,10 @@ function vec2FromObject(
 function ok(summary: string, data?: unknown): ToolResult {
   return { ok: true, summary, data };
 }
-function fail(message: string, code = "ERROR"): ToolResult {
-  return { ok: false, summary: message, error: { code, message } };
+function fail(message: string, code = "ERROR", data?: unknown): ToolResult {
+  return data !== undefined
+    ? { ok: false, summary: message, error: { code, message }, data }
+    : { ok: false, summary: message, error: { code, message } };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -2009,11 +2020,38 @@ function actionTool(spec: ActionToolSpec): RegisteredTool {
   };
 }
 
+/**
+ * Output-token ceiling for the director's nested plan calls. The client
+ * default (4096) truncates dense EditPlans mid-tool-call, which then fail
+ * JSON parsing and surface as "no plan returned".
+ */
+const DIRECTOR_PLAN_MAX_TOKENS = 8192;
+
+/**
+ * Every timeline entity a single plan_edit commit creates. Filled as
+ * materialization progresses so a mid-apply failure can be compensated:
+ * the caller removes exactly what was created and leaves the previous
+ * revision untouched.
+ */
+interface PlanOwnedEntities {
+  clipIds: string[];
+  audioClipIds: string[];
+  textIds: string[];
+  transitionIds: string[];
+  motionCompositionIds: string[];
+  motionInstanceIds: string[];
+}
+
+function newPlanOwned(): PlanOwnedEntities {
+  return { clipIds: [], audioClipIds: [], textIds: [], transitionIds: [], motionCompositionIds: [], motionInstanceIds: [] };
+}
+
 async function materializeEditPlan(
   plan: EditPlan,
   segmentMap: SegmentMap,
   host: EditingHost,
-): Promise<{ clipIds: string[]; textIds: string[]; effectCount: number; transitionCount: number; audioCount: number; motionCompositionIds: string[]; motionInstanceIds: string[] }> {
+  owned: PlanOwnedEntities = newPlanOwned(),
+): Promise<{ clipIds: string[]; textIds: string[]; effectCount: number; transitionCount: number; audioCount: number; audioClipIds: string[]; motionCompositionIds: string[]; motionInstanceIds: string[] }> {
   let videoTrack = host.getProject().timeline.tracks.find((track) => track.type === "video");
   if (!videoTrack) {
     const trackResult = await host.applyAction({
@@ -2030,11 +2068,12 @@ async function materializeEditPlan(
   const videoIds = new Set(segmentMap.videos.map((video) => video.videoId));
   const clipIds: string[] = [];
   const videoTracks = [videoTrack];
-  const nextPositions = new Map(videoTracks.map((track) => [track.id, track.clips.reduce(
-    (end, clip) => Math.max(end, clip.startTime + clip.duration),
-    0,
-  )]));
-  for (const segment of plan.segments) {
+  // Plan-relative placement shared with validation: whatever is already on
+  // the timeline does not shift this plan's layout (replace-plan commits
+  // remove the previous plan's content anyway).
+  const placement = computePlanPlacement(plan);
+  for (let segmentIndex = 0; segmentIndex < plan.segments.length; segmentIndex++) {
+    const segment = plan.segments[segmentIndex];
     if (!videoIds.has(segment.sourceVideoId)) throw new Error(`Edit plan references unavailable video "${segment.sourceVideoId}"`);
     const requestedTrackIndex = Math.max(0, Math.floor(segment.trackIndex ?? 0));
     while (videoTracks.length <= requestedTrackIndex) {
@@ -2048,24 +2087,10 @@ async function materializeEditPlan(
       const createdTrack = host.getProject().timeline.tracks.filter((track) => track.type === "video").at(-1);
       if (!createdTrack) throw new Error("Video track was added but could not be recovered");
       videoTracks.push(createdTrack);
-      nextPositions.set(createdTrack.id, createdTrack.clips.reduce(
-        (end, clip) => Math.max(end, clip.startTime + clip.duration),
-        0,
-      ));
     }
     const targetTrack = videoTracks[requestedTrackIndex] ?? videoTrack;
     const duration = segment.sourceEndTime - segment.sourceStartTime;
-    const hasIncomingTransition = plan.transitions.some(
-      (transition) => transition.afterSegmentIndex === plan.segments.indexOf(segment) - 1,
-    );
-    const previousClip = clipIds.at(-1)
-      ? host.getProject().timeline.tracks.flatMap((track) => track.clips).find((clip) => clip.id === clipIds.at(-1))
-      : undefined;
-    const nextPosition = hasIncomingTransition && previousClip
-      ? previousClip.startTime + previousClip.duration
-      : Number.isFinite(segment.targetPosition)
-        ? Math.max(0, segment.targetPosition ?? 0)
-        : nextPositions.get(targetTrack.id) ?? 0;
+    const nextPosition = placement[segmentIndex] ?? 0;
     const currentTargetTrack = host.getProject().timeline.tracks.find((track) => track.id === targetTrack.id);
     const clipIdsBefore = new Set((currentTargetTrack?.clips ?? []).map((clip) => clip.id));
     const result = await host.applyAction({
@@ -2087,6 +2112,7 @@ async function materializeEditPlan(
     const created = latestTrack?.clips.find((clip) => !clipIdsBefore.has(clip.id))?.id;
     if (!created) throw new Error("Clip was added but its ID could not be recovered");
     clipIds.push(created);
+    owned.clipIds.push(created);
     if (segment.layout && segment.layout.region !== "fullscreen") {
       const transform = resolveLayoutTransform(
         segment.layout,
@@ -2128,7 +2154,6 @@ async function materializeEditPlan(
       });
       if (!rampResult.success) throw new Error(rampResult.error?.message ?? "Could not apply planned speed ramp");
     }
-    nextPositions.set(targetTrack.id, Math.max(nextPositions.get(targetTrack.id) ?? 0, nextPosition + duration));
   }
 
   let effectCount = 0;
@@ -2195,6 +2220,7 @@ async function materializeEditPlan(
     }
     if (!targetTrack) throw new Error(`No audio track is available for ${trackName}`);
     const duration = Math.max(0.01, decision.duration);
+    const audioClipsBefore = new Set(targetTrack.clips.map((clip) => clip.id));
     const result = await host.applyAction({
       type: "clip/add",
       id: genId(),
@@ -2210,6 +2236,11 @@ async function materializeEditPlan(
       },
     });
     if (!result.success) throw new Error(result.error?.message ?? `Could not add planned ${decision.type}`);
+    const latestAudioTrack = host.getProject().timeline.tracks.find((track) => track.id === targetTrack.id);
+    const createdAudio = latestAudioTrack?.clips.find((clip) => !audioClipsBefore.has(clip.id))?.id;
+    if (createdAudio) {
+      owned.audioClipIds.push(createdAudio);
+    }
     audioCount++;
   }
 
@@ -2218,6 +2249,9 @@ async function materializeEditPlan(
     const clipAId = clipIds[transition.afterSegmentIndex];
     const clipBId = clipIds[transition.afterSegmentIndex + 1];
     if (!clipAId || !clipBId) continue;
+    const transitionsBefore = new Set(
+      host.getProject().timeline.tracks.flatMap((track) => (track.transitions ?? []).map((entry) => entry.id)),
+    );
     const result = await host.applyAction({
       type: "transition/add",
       id: genId(),
@@ -2225,6 +2259,10 @@ async function materializeEditPlan(
       params: { clipAId, clipBId, transitionType: transition.type, duration: transition.duration },
     });
     if (!result.success) throw new Error(result.error?.message ?? "Could not add planned transition");
+    const createdTransition = host.getProject().timeline.tracks
+      .flatMap((track) => (track.transitions ?? []))
+      .find((entry) => !transitionsBefore.has(entry.id))?.id;
+    if (createdTransition) owned.transitionIds.push(createdTransition);
     transitionCount++;
   }
 
@@ -2232,6 +2270,9 @@ async function materializeEditPlan(
   for (const text of plan.textElements) {
     if (!host.createTextOverlay) continue;
     const textTemplate = resolveTextStyle(plan.captionTemplate, text);
+    // Position is NORMALIZED 0-1 in title-engine units — pass through
+    // unmultiplied (the renderer multiplies by canvas size on draw).
+    const textPosition = text.position ?? textTemplate.position;
     const overlay = await host.createTextOverlay({
       text: text.content,
       startSec: text.startTime,
@@ -2245,45 +2286,39 @@ async function materializeEditPlan(
         ...(textTemplate.backgroundPadding !== undefined ? { backgroundPadding: textTemplate.backgroundPadding } : {}),
         ...(textTemplate.backgroundRadius !== undefined ? { backgroundRadius: textTemplate.backgroundRadius } : {}),
         ...(textTemplate.align ? { align: textTemplate.align } : {}),
-        style: text.style,
       },
+      ...(textPosition ? { position: { x: textPosition.x, y: textPosition.y } } : {}),
       animation: textTemplate.animation,
       animationInSec: textTemplate.animationInSec,
       animationOutSec: textTemplate.animationOutSec,
     });
-    const textPosition = text.position ?? textTemplate.position;
-    if (textPosition) {
-      const transformResult = await host.applyAction({
-        type: "transform/update",
-        id: genId(),
-        timestamp: Date.now(),
-        params: {
-          clipId: overlay.id,
-          transform: {
-            position: {
-              x: text.position ? textPosition.x : textPosition.x * host.getProject().settings.width,
-              y: text.position ? textPosition.y : textPosition.y * host.getProject().settings.height,
-            },
-          },
-        },
-      });
-      if (!transformResult.success) throw new Error(transformResult.error?.message ?? "Could not position planned text");
-    }
     textIds.push(overlay.id);
+    owned.textIds.push(overlay.id);
   }
   if (clipIds.length === 0) throw new Error("Director returned an empty EditPlan; no clips were added");
-  const motion = await materializeMotionMoments(plan.motionMoments, clipIds, host);
-  return { clipIds, textIds, effectCount, transitionCount, audioCount, ...motion };
+  const motion = await materializeMotionMoments(plan.motionMoments, clipIds, host, owned);
+  return {
+    clipIds,
+    textIds,
+    effectCount,
+    transitionCount,
+    audioCount,
+    audioClipIds: [...owned.audioClipIds],
+    ...motion,
+  };
 }
 
 async function materializeMotionMoments(
   moments: readonly MotionMomentSpec[] | undefined,
   clipIds: readonly string[],
   host: EditingHost,
+  owned?: PlanOwnedEntities,
 ): Promise<{ motionCompositionIds: string[]; motionInstanceIds: string[] }> {
   const motionCompositionIds: string[] = [];
   const motionInstanceIds: string[] = [];
   if (!moments || moments.length === 0) return { motionCompositionIds, motionInstanceIds };
+  // NOTE: ids are pushed synchronously right after each successful action, so
+  // a later failure leaves no untracked entities for compensation to miss.
 
   const project = host.getProject();
   const targetTrackId = project.timeline.tracks.find((track) => track.type === "video")?.id;
@@ -2312,6 +2347,7 @@ async function materializeMotionMoments(
     });
     if (!created.ok) throw new Error(created.summary);
     motionCompositionIds.push(built.composition.id);
+    owned?.motionCompositionIds.push(built.composition.id);
 
     if (moment.insertIntoEditor) {
       const instance = motionEngine.createInstance(built.composition, {
@@ -2323,6 +2359,7 @@ async function materializeMotionMoments(
       const inserted = await applyMotionAction(host, "motion/insertInstance", { instance });
       if (!inserted.ok) throw new Error(inserted.summary);
       motionInstanceIds.push(instance.id);
+      owned?.motionInstanceIds.push(instance.id);
     }
   }
   return { motionCompositionIds, motionInstanceIds };
@@ -16089,6 +16126,13 @@ const TOOLS: RegisteredTool[] = [
       host.requireOpenProject();
       const effectType = optionalString(args.effectType);
       if (!effectType) return fail("effectType is required", "INVALID_PARAMS");
+      if (!isSupportedEffectType(effectType)) {
+        return fail(
+          `Unsupported effect type "${effectType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_CLIP_EFFECT_TYPES.join(", ")} (or a colorGrade alias for clip color grading).`,
+          "UNSUPPORTED_EFFECT",
+          { supportedEffects: [...SUPPORTED_CLIP_EFFECT_TYPES] },
+        );
+      }
       const params =
         typeof args.params === "object" && args.params !== null
           ? (args.params as Record<string, unknown>)
@@ -16153,7 +16197,41 @@ const TOOLS: RegisteredTool[] = [
   actionTool({ name: "set_clip_keyframes", domain: "keyframe", actionType: "keyframe/setAll", title: "Set keyframes", description: "Replace all keyframes on a clip.", inputSchema: obj({ clipId: str, keyframes: { type: "array" } }, ["clipId", "keyframes"]) }),
 
   // transition
-  actionTool({ name: "add_transition", domain: "transition", actionType: "transition/add", title: "Add transition", description: "Add a transition between two clips.", inputSchema: obj({ clipAId: str, clipBId: str, transitionType: str, duration: num }, ["clipAId", "clipBId", "transitionType", "duration"]) }),
+  {
+    name: "add_transition",
+    domain: "transition",
+    actionType: "transition/add",
+    title: "Add transition",
+    description: "Add a transition between two clips. transitionType must be a renderer-supported type (crossfade, dipToBlack, dipToWhite, wipe, slide, zoom, push, circleReveal, blur, whipPan, radialWipe, pixelate, glitch, blinds, diamondReveal, spin, flip, splitReveal, flash, filmBurn, mosaic, ripple, pageTurn, colorSplit). A hard cut needs NO transition object — leave the clips adjacent.",
+    inputSchema: obj({ clipAId: str, clipBId: str, transitionType: str, duration: num }, ["clipAId", "clipBId", "transitionType", "duration"]),
+    readOnly: false,
+    destructive: false,
+    expensive: false,
+    handler: async (args, host) => {
+      host.requireOpenProject();
+      const transitionType = optionalString(args.transitionType);
+      if (!transitionType) return fail("transitionType is required", "INVALID_PARAMS");
+      if (!isSupportedTransitionType(transitionType)) {
+        return fail(
+          `Unsupported transition "${transitionType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_TRANSITION_TYPES.join(", ")}. For a hard cut, add no transition.`,
+          "UNSUPPORTED_TRANSITION",
+          { supportedTransitions: [...SUPPORTED_TRANSITION_TYPES] },
+        );
+      }
+      const action: Action = {
+        type: "transition/add",
+        id: genId(),
+        timestamp: Date.now(),
+        params: args,
+      };
+      const result = await host.applyAction(action);
+      if (result.success) return ok("add_transition applied", { actionId: result.actionId });
+      return fail(
+        result.error?.message ?? "add_transition failed",
+        result.error?.code ?? "ACTION_FAILED",
+      );
+    },
+  },
   actionTool({ name: "update_transition", domain: "transition", actionType: "transition/update", title: "Update transition", description: "Update a transition.", inputSchema: obj({ transitionId: str, type: str, duration: num }, ["transitionId"]) }),
   actionTool({ name: "remove_transition", domain: "transition", actionType: "transition/remove", title: "Remove transition", description: "Remove a transition.", inputSchema: obj({ transitionId: str }, ["transitionId"]) }),
 
@@ -32775,6 +32853,7 @@ const TOOLS: RegisteredTool[] = [
         style: { type: "string", enum: ["title", "subtitle", "lower-third", "caption", "callout"] },
         startTime: num,
         duration: num,
+        position: obj({ x: num, y: num }),
         fontFamily: str,
         fontSize: num,
         color: str,
@@ -32833,9 +32912,17 @@ const TOOLS: RegisteredTool[] = [
     domain: "ai",
     title: "Plan edit",
     description:
-      "Given the user's prompt, have the director produce a structured EditPlan. Pass the source segmentMap and optional referenceAnalysis from extract_segments to reproduce a marked reference video's style on the user's own footage.",
+      "Given the user's prompt, have the director produce a structured EditPlan and commit it as ONE timeline revision. mode=replace_plan (the default) replaces any previously committed plan's output — calling this again never stacks a second plan on top. Pass baseRevision (from the last plan_edit result) to reject stale commits, and idempotencyKey to make retried turns no-ops. Pass the source segmentMap and optional referenceAnalysis from extract_segments to reproduce a marked reference video's style on the user's own footage.",
     inputSchema: obj(
-      { prompt: str, genreId: str, segmentMap: { type: "object" }, referenceAnalysis: { type: "object" } },
+      {
+        prompt: str,
+        genreId: str,
+        segmentMap: { type: "object" },
+        referenceAnalysis: { type: "object" },
+        mode: { type: "string", enum: ["replace_plan", "patch"] },
+        baseRevision: { type: "integer" },
+        idempotencyKey: str,
+      },
       ["prompt"],
     ),
     readOnly: false,
@@ -32845,14 +32932,28 @@ const TOOLS: RegisteredTool[] = [
       host.requireOpenProject();
       const prompt = (args.prompt as string | undefined)?.trim();
       const genreId = args.genreId as string | undefined;
+      const mode = (args.mode as string | undefined) ?? "replace_plan";
+      const explicitBase =
+        typeof args.baseRevision === "number" && Number.isInteger(args.baseRevision)
+          ? args.baseRevision
+          : undefined;
+      const explicitKey =
+        typeof args.idempotencyKey === "string" && args.idempotencyKey.trim()
+          ? args.idempotencyKey.trim()
+          : undefined;
 
       if (!prompt) return fail("prompt is required", "INVALID_PARAMS");
-
+      if (mode !== "replace_plan") {
+        return fail(
+          `plan_edit mode "${mode}" is not supported yet — use mode "replace_plan" (each accepted plan replaces the previous plan's output; patch semantics need stable segment IDs and land in a follow-up).`,
+          "PATCH_UNSUPPORTED",
+          { supportedModes: ["replace_plan"] },
+        );
+      }
       if (!host.llm) {
         return fail("No LLM on host — plan_edit needs host.llm set", "NOT_CONFIGURED");
       }
 
-      // Use provided segmentMap or build a fallback from project media
       const project = host.getProject();
       const allMedia = project.mediaLibrary?.items ?? [];
       const videoMedia = allMedia.filter((m) => m.type === "video");
@@ -32860,6 +32961,9 @@ const TOOLS: RegisteredTool[] = [
         return fail("No video media in the project. Import at least one video first.", "NO_VIDEO_MEDIA");
       }
 
+      const state = getDirectorPlanState(project);
+
+      // Use provided segmentMap or build a fallback from project media
       const providedMap = args.segmentMap as SegmentMap | undefined;
       const providedReferenceAnalysis = args.referenceAnalysis as unknown;
       let resolvedMap: SegmentMap;
@@ -32897,6 +33001,38 @@ const TOOLS: RegisteredTool[] = [
       }
 
       const genre = genreId ? PRE_BAKED_GENRES.find((g) => g.id === genreId) : undefined;
+
+      // ---- Idempotency: repeating an accepted planning turn is a no-op ----
+      const idempotencyKey =
+        explicitKey ??
+        derivePlanIdempotencyKey({
+          mode,
+          prompt,
+          genreId: genreId ?? null,
+          segmentMap: providedMap ?? null,
+          referenceAnalysis: providedReferenceAnalysis ?? null,
+        });
+      if (state.lastReplay?.key === idempotencyKey && replayIsIntact(project, state)) {
+        const cached = state.lastReplay;
+        const cachedData =
+          typeof cached.data === "object" && cached.data !== null
+            ? { ...(cached.data as Record<string, unknown>), idempotentReplay: true }
+            : cached.data;
+        return ok(
+          `${cached.summary} [idempotent replay: this planning turn was already accepted at revision ${cached.revision}; timeline unchanged]`,
+          cachedData,
+        );
+      }
+
+      // ---- Stale base revision: reject instead of overwriting newer state ----
+      if (explicitBase !== undefined && explicitBase !== state.revision) {
+        return fail(
+          `Stale baseRevision ${explicitBase}: the project is at revision ${state.revision}. Re-read the current revision and resubmit.`,
+          "STALE_REVISION",
+          { currentRevision: state.revision, requestedBaseRevision: explicitBase },
+        );
+      }
+
       const directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, providedReferenceAnalysis);
 
       const planTools =
@@ -32904,73 +33040,133 @@ const TOOLS: RegisteredTool[] = [
           ? toAnthropicTools(["submit_edit_plan"])
           : toOpenAITools(["submit_edit_plan"]);
 
-      const response = await host.llm.client.complete({
-        system: directorPrompt,
-        messages: [
+      const requestPlan = async (system: string, messages: LoopMessage[]) =>
+        host.llm!.client.complete({
+          system,
+          messages,
+          tools: planTools,
+          maxTokens: DIRECTOR_PLAN_MAX_TOKENS,
+        });
+
+      const initialRequest =
+        "Analyze the footage and call submit_edit_plan with your complete EditPlan. You must call submit_edit_plan — do not respond with plain text.";
+
+      // ---- Turn 1: plan (with one bounded truncation retry) ----
+      let response = await requestPlan(directorPrompt, [{ role: "user", content: initialRequest }]);
+      let planCall = response.toolUses.find((t) => t.name === "submit_edit_plan");
+      let truncatedRetries = 0;
+      while (!planCall && response.stopReason === "max_tokens" && truncatedRetries < 1) {
+        truncatedRetries += 1;
+        response = await requestPlan(directorPrompt, [
+          { role: "user", content: initialRequest },
+          { role: "assistant", content: response.text, toolUses: [] },
           {
             role: "user",
             content:
-              "Analyze the footage and call submit_edit_plan with your complete EditPlan. You must call submit_edit_plan — do not respond with plain text.",
+              "Your previous response was cut off before the tool call completed (output token limit). Resubmit the COMPLETE EditPlan via submit_edit_plan with shorter rationales.",
           },
-        ],
-        tools: planTools,
-      });
-
-      const planCall = response.toolUses.find((t) => t.name === "submit_edit_plan");
+        ]);
+        planCall = response.toolUses.find((t) => t.name === "submit_edit_plan");
+      }
       if (!planCall) {
         return fail(
-          `Director returned no EditPlan (stopReason: ${response.stopReason}). Text: ${response.text.slice(0, 300)}`,
+          `Director returned no EditPlan (stopReason: ${response.stopReason}${truncatedRetries > 0 ? " after truncation retry" : ""}). Text: ${response.text.slice(0, 300)}`,
           "NO_PLAN_RETURNED",
+          { stopReason: response.stopReason, truncatedRetries },
         );
       }
 
-      const plan = normalizeDirectorPlanInput(planCall.input);
+      const preparePlan = (
+        raw: unknown,
+      ): { plan: EditPlan; issues: readonly DirectorValidationIssue[] } => {
+        const normalized = normalizeDirectorPlanInput(raw);
+        const withVocabulary = canonicalizePlanTransitions(normalized);
+        const resolved = normalizeEditPlan(
+          {
+            ...withVocabulary,
+            segments: withVocabulary.segments.map((seg) => ({
+              ...seg,
+              sourceVideoId: resolveDirectorVideoId(resolvedMap, seg.sourceVideoId),
+            })),
+          },
+          resolvedMap,
+        );
+        return { plan: resolved, issues: validateEditPlan(resolved, resolvedMap) };
+      };
 
-      // Resolve all segment sourceVideoId references
-      const resolvedPlan = normalizeEditPlan({
-        ...plan,
-        segments: plan.segments.map((seg) => ({
-          ...seg,
-          sourceVideoId: resolveDirectorVideoId(resolvedMap, seg.sourceVideoId),
-        })),
-      }, resolvedMap);
+      const formatIssues = (issues: readonly DirectorValidationIssue[]): string =>
+        issues.map((issue) => `- [${issue.code}]${issue.path ? ` (${issue.path})` : ""} ${issue.message}`).join("\n");
 
-      let finalPlan = resolvedPlan;
-      let finalPlanIssues = validateEditPlan(finalPlan, resolvedMap);
-      const blocking = finalPlanIssues.filter((i: { severity: string }) => i.severity === "error");
+      let prepared = preparePlan(planCall.input);
+      let finalPlan = prepared.plan;
+      let finalPlanIssues = prepared.issues;
+      let blocking = finalPlanIssues.filter((issue) => issue.severity === "error");
+      let repairAttempted = false;
+
+      // ---- Bounded repair: feed structured validation errors back once ----
       if (blocking.length > 0) {
-        return fail(
-          `Director produced an invalid EditPlan: ${blocking.map((i: { code: string; message: string }) => `[${i.code}] ${i.message}`).join("; ")}`,
-          "INVALID_EDIT_PLAN",
-        );
+        repairAttempted = true;
+        try {
+          const repairResponse = await requestPlan(
+            `${directorPrompt}\n\n## Plan rejected — repair once\nYour EditPlan failed validation and was NOT applied to the timeline. Fix EVERY issue below and resubmit a complete plan via submit_edit_plan. Do not explain the fix.\n\nIssues:\n${formatIssues(blocking)}`,
+            [
+              {
+                role: "user",
+                content: `Your EditPlan was rejected for these reasons:\n${formatIssues(blocking)}\n\nResubmit the full corrected EditPlan now.\n\nRejected plan:\n${JSON.stringify(finalPlan)}`,
+              },
+            ],
+          );
+          const repairCall = repairResponse.toolUses.find((t) => t.name === "submit_edit_plan");
+          if (repairCall) {
+            const repaired = preparePlan(repairCall.input);
+            const repairedBlocking = repaired.issues.filter((issue) => issue.severity === "error");
+            if (repairedBlocking.length === 0) {
+              finalPlan = repaired.plan;
+              finalPlanIssues = repaired.issues;
+              blocking = [];
+            } else {
+              finalPlan = repaired.plan;
+              finalPlanIssues = repaired.issues;
+              blocking = repairedBlocking;
+            }
+          }
+        } catch {
+          // Fall through: report the original blocking issues below.
+        }
+        if (blocking.length > 0) {
+          return fail(
+            `Director produced an invalid EditPlan${repairAttempted ? " (one repair attempt also failed)" : ""}: ${blocking.map((issue) => `[${issue.code}] ${issue.message}`).join("; ")}`,
+            "INVALID_EDIT_PLAN",
+            {
+              issues: blocking,
+              warnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
+              repairAttempted,
+            },
+          );
+        }
       }
 
+      // ---- Style review (bounded to one revision attempt) ----
       let planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis);
       let revisionApplied = false;
       if (planReview.needsRevision) {
         try {
-          const revisionResponse = await host.llm.client.complete({
-            system: `${directorPrompt}\n\n## Internal plan review\nThe first draft scored ${planReview.score.toFixed(2)} against the style target. Revise it once before execution. Address these deviations: ${planReview.deviations.join("; ") || "bring the measurable style profile closer to target"}.`,
-            messages: [{
-              role: "user",
-              content: `Revise this EditPlan to address the internal review, then call submit_edit_plan with the complete corrected plan. Do not explain the revision.\n\n${JSON.stringify(finalPlan)}`,
-            }],
-            tools: planTools,
-          });
+          const revisionResponse = await requestPlan(
+            `${directorPrompt}\n\n## Internal plan review\nThe first draft scored ${planReview.score.toFixed(2)} against the style target. Revise it once before execution. Address these deviations: ${planReview.deviations.join("; ") || "bring the measurable style profile closer to target"}.`,
+            [
+              {
+                role: "user",
+                content: `Revise this EditPlan to address the internal review, then call submit_edit_plan with the complete corrected plan. Do not explain the revision.\n\n${JSON.stringify(finalPlan)}`,
+              },
+            ],
+          );
           const revisedCall = revisionResponse.toolUses.find((toolUse) => toolUse.name === "submit_edit_plan");
           if (revisedCall) {
-            const revisedPlan = normalizeDirectorPlanInput(revisedCall.input);
-            const resolvedRevision = normalizeEditPlan({
-              ...revisedPlan,
-              segments: revisedPlan.segments.map((seg) => ({
-                ...seg,
-                sourceVideoId: resolveDirectorVideoId(resolvedMap, seg.sourceVideoId),
-              })),
-            }, resolvedMap);
-            const revisionIssues = validateEditPlan(resolvedRevision, resolvedMap);
-            if (!revisionIssues.some((issue: { severity: string }) => issue.severity === "error")) {
-              finalPlan = resolvedRevision;
-              finalPlanIssues = revisionIssues;
+            const revised = preparePlan(revisedCall.input);
+            const revisedBlocking = revised.issues.filter((issue) => issue.severity === "error");
+            if (revisedBlocking.length === 0) {
+              finalPlan = revised.plan;
+              finalPlanIssues = revised.issues;
               planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis);
               revisionApplied = true;
             }
@@ -32980,61 +33176,92 @@ const TOOLS: RegisteredTool[] = [
         }
       }
 
+      // ---- Commit: materialize the new plan first, then remove the previous
+      // plan's output. Materialize failures compensate back to the exact
+      // pre-call state; previous-revision removal only runs after the new
+      // plan is fully applied.
+      const owned = newPlanOwned();
       let materialized;
       try {
-        materialized = await materializeEditPlan(finalPlan, resolvedMap, host);
+        materialized = await materializeEditPlan(finalPlan, resolvedMap, host, owned);
       } catch (error) {
+        const message = error instanceof Error ? error.message : "timeline mutation failed";
+        let compensation = { removed: 0, warnings: [] as string[] };
+        try {
+          compensation = await removeOwnedEntities(host, {
+            revision: -1,
+            ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
+            ownedTextClipIds: owned.textIds,
+            ownedTransitionIds: owned.transitionIds,
+            ownedMotionInstanceIds: owned.motionInstanceIds,
+            ownedMotionCompositionIds: owned.motionCompositionIds,
+          });
+        } catch {
+          // Best effort — reported below.
+        }
         return fail(
-          `EditPlan was valid but could not be applied: ${error instanceof Error ? error.message : "timeline mutation failed"}`,
+          `EditPlan was valid but could not be applied: ${message}. The timeline was left at its previous revision (${compensation.removed} partial artifact(s) removed).`,
           "EDIT_PLAN_APPLY_FAILED",
+          { compensation },
         );
       }
 
-      // Step 8: Render sampled frames for visual self-review
-      const frameSampling = await sampleRenderedFrames(finalPlan, host);
-
-      // Step 9: Run combined quality pipeline (visual review + materialized draft review)
-      const qualityResult = runQualityPipeline(
-        finalPlan,
-        resolvedMap,
-        materialized,
-        planReview,
-        frameSampling.observations,
-      );
-
-      // Step 10: Apply targeted corrections when the quality review flags issues
-      let correctionsApplied = { applied: 0, skipped: 0 };
-      if (qualityResult.needsCorrection && qualityResult.corrections.length > 0) {
-        correctionsApplied = await applyTargetedCorrections(
-          finalPlan,
-          qualityResult.corrections,
-          materialized.clipIds,
-          host,
-        );
+      const previousCommit = state.commit;
+      let cleanup = { removed: 0, warnings: [] as string[] };
+      if (previousCommit) {
+        cleanup = await removeOwnedEntities(host, previousCommit);
       }
 
-      return ok(
-        `plan_edit applied: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s). Quality: ${(qualityResult.combinedScore * 100).toFixed(0)}% (${frameSampling.sampledCount} frames sampled, ${correctionsApplied.applied} correction(s) applied).`,
-        {
-          editPlan: finalPlan,
-          ...materialized,
-          validationWarnings: finalPlanIssues.filter((i: { severity: string }) => i.severity === "warning"),
-          planReview: {
-            score: planReview.score,
-            deviations: planReview.deviations,
-            revisionApplied,
-          },
-          qualityPipeline: {
-            combinedScore: qualityResult.combinedScore,
-            renderedReview: qualityResult.renderedReview,
-            draftReview: qualityResult.draftReview,
-            needsCorrection: qualityResult.needsCorrection,
-            corrections: qualityResult.corrections,
-            correctionsApplied,
-            sampledFrameCount: frameSampling.sampledCount,
-          },
+      const nextRevision = state.revision + 1;
+      const commit: DirectorPlanCommit = {
+        revision: nextRevision,
+        ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
+        ownedTextClipIds: owned.textIds,
+        ownedTransitionIds: owned.transitionIds,
+        ownedMotionInstanceIds: owned.motionInstanceIds,
+        ownedMotionCompositionIds: owned.motionCompositionIds,
+      };
+
+      const summary =
+        `plan_edit applied as revision ${nextRevision}: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s)` +
+        (previousCommit
+          ? `, replacing revision ${previousCommit.revision} (${cleanup.removed} prior artifact(s) removed)`
+          : "") +
+        `. Style check: ${planReview.score.toFixed(2)}.`;
+
+      const data = {
+        editPlan: finalPlan,
+        ...materialized,
+        revision: nextRevision,
+        mode: "replace_plan",
+        baseRevision: explicitBase ?? null,
+        idempotencyKey,
+        idempotentReplay: false,
+        replacedPrevious: previousCommit
+          ? { revision: previousCommit.revision, removedArtifacts: cleanup.removed }
+          : null,
+        cleanupWarnings: cleanup.warnings,
+        validationWarnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
+        planReview: {
+          score: planReview.score,
+          deviations: planReview.deviations,
+          revisionApplied,
         },
-      );
+        // Honest reporting: there is no working timeline frame sampler yet, so
+        // no visual quality review was performed. NEVER report a synthetic score.
+        quality: {
+          status: "unavailable" as const,
+          reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
+        },
+      };
+
+      setDirectorPlanState(project, {
+        revision: nextRevision,
+        commit,
+        lastReplay: { key: idempotencyKey, summary, data, revision: nextRevision },
+      });
+
+      return ok(summary, data);
     },
   },
 

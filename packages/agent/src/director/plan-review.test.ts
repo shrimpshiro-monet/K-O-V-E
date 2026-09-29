@@ -9,7 +9,7 @@ const plan: EditPlan = {
       sourceStartTime: 0,
       sourceEndTime: 2,
       targetPosition: 0,
-      effects: ["zoom-punch"],
+      effects: ["chromatic-aberration"],
       rationale: "hook",
     },
     {
@@ -38,7 +38,7 @@ describe("edit plan review", () => {
   it("measures plan style and accepts a matching target", () => {
     const profile = measureEditPlanStyle(plan);
     expect(profile.cutsPerMinute).toBe(30);
-    expect(profile.effectPalette).toEqual(["zoom-punch"]);
+    expect(profile.effectPalette).toEqual(["chromatic-aberration"]);
 
     const review = reviewEditPlan(plan, {
       id: "highlight-reel",
@@ -47,7 +47,7 @@ describe("edit plan review", () => {
       rules: {
         pacing: "fast",
         transitionPreference: ["hardCut"],
-        effectPalette: ["zoom-punch"],
+        effectPalette: ["chromatic-aberration"],
         textStyle: "minimal",
         cutStyle: "hard",
         musicRole: "rhythmic",

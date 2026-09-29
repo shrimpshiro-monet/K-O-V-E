@@ -400,6 +400,12 @@ export interface TextOverlayOptions {
   readonly durationSec: number;
   readonly trackId?: string;
   readonly style?: Record<string, unknown>;
+  /**
+   * Overlay center in NORMALIZED 0-1 canvas coordinates (0,0 = top-left,
+   * 0.5,0.5 = center) — the title engine's native units. Do NOT pre-multiply
+   * by canvas dimensions; the renderer multiplies on draw.
+   */
+  readonly position?: { readonly x: number; readonly y: number };
   /** Entrance/exit animation preset (e.g. "fade", "scale", "slide-up", "pop"). */
   readonly animation?: string;
   readonly animationInSec?: number;

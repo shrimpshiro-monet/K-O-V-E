@@ -34,11 +34,11 @@ function composition(): MotionComposition {
 
 function setDesktop(enabled: boolean): void {
   if (enabled) {
-    (window as { kove-advanced?: { platform: "desktop" } }).kove-advanced = {
+    (window as { "kove-advanced"?: { platform: "desktop" } })["kove-advanced"] = {
       platform: "desktop",
     };
   } else {
-    delete (window as { kove-advanced?: unknown }).kove-advanced;
+    delete (window as { "kove-advanced"?: unknown })["kove-advanced"];
   }
 }
 

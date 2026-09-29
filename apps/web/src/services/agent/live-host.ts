@@ -521,6 +521,12 @@ export class LiveEditorHost implements EditingHost {
           options.animationOutSec ?? 0.25,
         );
     }
+    if (options.position) {
+      // Title-engine units are normalized 0-1 — pass through unmultiplied.
+      useProjectStore.getState().updateTextTransform(clip.id, {
+        position: { x: options.position.x, y: options.position.y },
+      });
+    }
     return { id: clip.id, trackId: clip.trackId };
   }
 

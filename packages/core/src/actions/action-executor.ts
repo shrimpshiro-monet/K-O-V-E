@@ -1383,7 +1383,7 @@ export class ActionExecutor {
           enabled?: boolean;
         };
         const newEffect = {
-          id: params.effectId ?? `effect-${Date.now()}`,
+          id: params.effectId ?? `effect-${crypto.randomUUID()}`,
           type: params.effectType,
           params: params.params || {},
           enabled: params.enabled ?? true,
@@ -1566,7 +1566,7 @@ export class ActionExecutor {
           value: unknown;
         };
         const newKeyframe = {
-          id: `keyframe-${Date.now()}`,
+          id: `keyframe-${crypto.randomUUID()}`,
           time: params.time,
           property: params.property,
           value: params.value,
@@ -1670,7 +1670,7 @@ export class ActionExecutor {
           );
           if (track) {
             const newTransition: Transition = {
-              id: `transition-${Date.now()}`,
+              id: `transition-${crypto.randomUUID()}`,
               clipAId: params.clipAId,
               clipBId: params.clipBId,
               type: params.transitionType,

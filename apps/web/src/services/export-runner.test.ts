@@ -421,7 +421,7 @@ describe("useExportRunner showSavePicker fallback", () => {
     const showSaveDialog = vi
       .fn()
       .mockResolvedValue("/Users/me/Movies/Rubik.mp4");
-    win.kove-advanced = {
+    win["kove-advanced"] = {
       platform: "desktop",
       fs: {
         showSaveDialog,
@@ -441,7 +441,7 @@ describe("useExportRunner showSavePicker fallback", () => {
 
   it("desktop stream writable forwards Uint8Array chunks without an ArrayBuffer copy", async () => {
     const writeChunk = vi.fn().mockResolvedValue(undefined);
-    win.kove-advanced = {
+    win["kove-advanced"] = {
       platform: "desktop",
       fs: {
         showSaveDialog: vi.fn().mockResolvedValue("/Users/me/Movies/Rubik.mp4"),
@@ -466,7 +466,7 @@ describe("useExportRunner showSavePicker fallback", () => {
   });
 
   it("createDownloadWritable rethrows AbortError when the native save dialog is cancelled", async () => {
-    win.kove-advanced = {
+    win["kove-advanced"] = {
       platform: "desktop",
       fs: {
         showSaveDialog: vi.fn().mockResolvedValue(null),

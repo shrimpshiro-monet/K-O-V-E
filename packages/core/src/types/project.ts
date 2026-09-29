@@ -48,6 +48,41 @@ export interface Project {
   readonly capabilities?: readonly string[];
   /** Oldest project reader version that can safely open this project. */
   readonly minimumReaderVersion?: string;
+  /**
+   * AI director plan-revision state. Owned by the agent's plan_edit tool:
+   * tracks the committed revision, the entities the accepted plan created
+   * (so a replace removes them instead of stacking), and the last
+   * idempotency record so repeating the same planning turn is a no-op.
+   */
+  readonly directorPlanState?: DirectorPlanState;
+}
+
+/** One committed plan revision and everything it placed on the timeline. */
+export interface DirectorPlanCommit {
+  readonly revision: number;
+  /** Timeline clips created by this plan (video + audio; removed via clip/remove). */
+  readonly ownedClipIds: readonly string[];
+  /** Text overlays created by this plan (removed via the host overlay API). */
+  readonly ownedTextClipIds: readonly string[];
+  /** Transitions created by this plan (removed before their clips). */
+  readonly ownedTransitionIds?: readonly string[];
+  readonly ownedMotionInstanceIds?: readonly string[];
+  readonly ownedMotionCompositionIds?: readonly string[];
+}
+
+/** Stored result of the last accepted planning turn, for idempotent replay. */
+export interface DirectorPlanReplay {
+  readonly key: string;
+  readonly summary: string;
+  readonly data?: unknown;
+  readonly revision: number;
+}
+
+export interface DirectorPlanState {
+  /** Monotonic commit counter; baseRevision arguments are checked against it. */
+  readonly revision: number;
+  readonly commit: DirectorPlanCommit | null;
+  readonly lastReplay?: DirectorPlanReplay;
 }
 
 export interface MediaLibrary {
