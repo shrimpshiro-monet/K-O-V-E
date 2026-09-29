@@ -54,8 +54,9 @@ export function compareStyleProfile(
   }
 
   if (target.pacing) {
-    scores.push(profile.pacing === target.pacing ? 1 : 0);
-    if (profile.pacing !== target.pacing) {
+    const matches = pacingMatches(profile.pacing, target.pacing);
+    scores.push(matches ? 1 : 0);
+    if (!matches) {
       deviations.push(`pacing ${profile.pacing} does not match ${target.pacing}`);
     }
   }
@@ -84,4 +85,19 @@ function paletteOverlap(actual: readonly string[], target: readonly string[]): n
   if (target.length === 0) return 1;
   const targetValues = new Set(target);
   return actual.filter((value) => targetValues.has(value)).length / target.length;
+}
+
+/**
+ * "medium" and "moderate" describe the same pacing band but appear on
+ * different sides of the pipeline (plan metadata says "medium", reference
+ * analysis says "moderate"). Comparing them literally made every medium-paced
+ * genre deviation permanently unfixable.
+ */
+export function pacingMatches(
+  profile: StyleProfilePacing,
+  target: StyleProfilePacing,
+): boolean {
+  const canonical = (value: StyleProfilePacing): string =>
+    value === "moderate" || value === "medium" ? "medium" : value;
+  return canonical(profile) === canonical(target);
 }

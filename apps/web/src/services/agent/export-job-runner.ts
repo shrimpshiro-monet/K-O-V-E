@@ -140,7 +140,7 @@ function sanitizeName(name: string | undefined): string {
 
 function nativeBackendFactory() {
   return new NativeFFmpegBackend(
-    () => (window as Record<string, string | undefined>).__kove_advancedExportPath ?? "",
+    () => (window as unknown as Record<string, string | undefined>).__kove_advancedExportPath ?? "",
   );
 }
 

@@ -263,7 +263,7 @@ export async function createDownloadWritable(
     if (!chosen) {
       throw new DOMException("User cancelled", "AbortError");
     }
-    (window as Record<string, string | undefined>).__kove_advancedExportPath = chosen;
+    (window as unknown as Record<string, string | undefined>).__kove_advancedExportPath = chosen;
     const handleId = await window["kove-advanced"].fs.openWrite(chosen);
     let cursor = 0;
     return {
@@ -457,7 +457,7 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
         if (!chosen) {
           throw new DOMException("User cancelled", "AbortError");
         }
-    (window as Record<string, string | undefined>).__kove_advancedExportPath = chosen;
+    (window as unknown as Record<string, string | undefined>).__kove_advancedExportPath = chosen;
 
         // The WAV path and any WebCodecs export (streamToFile) mux directly to
         // disk through the fs bridge. The native ffmpeg video path writes the

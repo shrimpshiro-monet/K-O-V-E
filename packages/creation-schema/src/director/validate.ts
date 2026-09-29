@@ -1,5 +1,12 @@
 import type { EditPlan, EditPlanLayout, PlannedSegment, PlannedSpeedRamp } from "./edit-plan";
 import type { SegmentMap, VideoSegmentMap } from "./segment-map";
+import {
+  canonicalizeTransitionType,
+  isSupportedEffectType,
+  isSupportedTransitionType,
+  SUPPORTED_CLIP_EFFECT_TYPES,
+  SUPPORTED_TRANSITION_TYPES,
+} from "./vocab";
 
 export interface DirectorValidationIssue {
   readonly code: string;
@@ -220,7 +227,130 @@ export function validateEditPlan(
     );
   }
 
+  // ---- Renderer-backed vocabulary -----------------------------------------
+  const unsupportedEffect = (type: string, path: string): void => {
+    if (!isSupportedEffectType(type)) {
+      issues.push(issue(
+        "error",
+        "unsupported_effect",
+        `Effect "${type}" is not supported by the renderer. Supported effects: ${SUPPORTED_CLIP_EFFECT_TYPES.join(", ")} (colorGrade also maps to clip color grading).`,
+        path,
+      ));
+    }
+  };
+
+  for (let i = 0; i < plan.segments.length; i++) {
+    const segment = plan.segments[i] as PlannedSegment;
+    segment.effects.forEach((type, effectIndex) => {
+      unsupportedEffect(type, `segments.${i}.effects.${effectIndex}`);
+    });
+    segment.effectSpecs?.forEach((spec, effectIndex) => {
+      unsupportedEffect(spec.type, `segments.${i}.effectSpecs.${effectIndex}.type`);
+    });
+  }
+  plan.effects.forEach((effect, effectIndex) => {
+    unsupportedEffect(effect.type, `effects.${effectIndex}.type`);
+  });
+
+  plan.transitions.forEach((transition, index) => {
+    const canonical = canonicalizeTransitionType(transition.type);
+    // Hard cuts canonicalize to null (drop) — anything else must be renderable.
+    if (canonical !== null && !isSupportedTransitionType(canonical)) {
+      issues.push(issue(
+        "error",
+        "unsupported_transition",
+        `Transition "${transition.type}" is not supported by the renderer. Supported transitions: ${SUPPORTED_TRANSITION_TYPES.join(", ")}. Hard cuts should be emitted as adjacent clips with no transition entry.`,
+        `transitions.${index}.type`,
+      ));
+    }
+  });
+
+  // ---- Text position contract (normalized 0-1, title-engine units) --------
+  plan.textElements.forEach((text, index) => {
+    if (!text || !Number.isFinite(text.startTime) || text.startTime < 0) {
+      issues.push(issue("error", "invalid_text_timing", `Text element ${index} has an invalid startTime.`, `textElements.${index}.startTime`));
+      return;
+    }
+    if (!Number.isFinite(text.duration) || text.duration <= 0) {
+      issues.push(issue("error", "invalid_text_timing", `Text element ${index} must have a positive duration.`, `textElements.${index}.duration`));
+    }
+    const position = text.position;
+    if (
+      position &&
+      (!Number.isFinite(position.x) || !Number.isFinite(position.y) ||
+        position.x < 0 || position.x > 1 || position.y < 0 || position.y > 1)
+    ) {
+      issues.push(issue(
+        "error",
+        "invalid_text_position",
+        `Text element ${index} position (${String(position.x)}, ${String(position.y)}) is outside the normalized 0-1 range (0,0 = top-left; 0.5,0.5 = center).`,
+        `textElements.${index}.position`,
+      ));
+    }
+  });
+
+  // ---- Same-track primary-video overlap ------------------------------------
+  const placement = computePlanPlacement(plan);
+  const byTrack = new Map<number, { start: number; end: number; index: number }[]>();
+  plan.segments.forEach((segment, index) => {
+    const trackKey = Math.max(0, Math.floor(segment.trackIndex ?? 0));
+    const start = placement[index] ?? 0;
+    const end = start + Math.max(0, segment.sourceEndTime - segment.sourceStartTime);
+    const list = byTrack.get(trackKey) ?? [];
+    for (const other of list) {
+      if (start < other.end - 1e-6 && other.start < end - 1e-6) {
+        issues.push(issue(
+          "error",
+          "overlapping_timeline_segments",
+          `Segments ${other.index} and ${index} overlap in time on the same track (${other.start.toFixed(2)}-${other.end.toFixed(2)}s vs ${start.toFixed(2)}-${end.toFixed(2)}s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.`,
+          `segments.${index}.targetPosition`,
+        ));
+        break;
+      }
+    }
+    list.push({ start, end, index });
+    byTrack.set(trackKey, list);
+  });
+
   return issues;
+}
+
+/**
+ * Plan-relative timeline positions for every segment — the single source of
+ * truth shared by validation (overlap checks) and materialization.
+ *
+ * Rules (mirroring what materializeEditPlan commits):
+ * 1. If the segment follows a transition (afterSegmentIndex === i-1), place it
+ *    directly after the previous segment.
+ * 2. Otherwise an explicit `targetPosition` wins (clamped at 0).
+ * 3. Otherwise the segment follows the previous content on its own track.
+ *
+ * Positions are relative to the plan itself and ignore whatever is already on
+ * the timeline: replace-plan commits remove the previous plan's content, so
+ * placement must not shift based on state that is about to be removed.
+ */
+export function computePlanPlacement(plan: EditPlan): number[] {
+  const positions: number[] = [];
+  const trackEnd = new Map<number, number>();
+  const transitionAfter = new Set(
+    plan.transitions.map((transition) => transition.afterSegmentIndex),
+  );
+  plan.segments.forEach((segment, index) => {
+    const trackKey = Math.max(0, Math.floor(segment.trackIndex ?? 0));
+    const duration = Math.max(0, segment.sourceEndTime - segment.sourceStartTime);
+    const previous = positions[index - 1];
+    let position: number;
+    if (index > 0 && transitionAfter.has(index - 1) && previous !== undefined) {
+      position = previous + Math.max(0, (plan.segments[index - 1]?.sourceEndTime ?? 0) - (plan.segments[index - 1]?.sourceStartTime ?? 0));
+    } else if (Number.isFinite(segment.targetPosition)) {
+      position = Math.max(0, segment.targetPosition as number);
+    } else {
+      position = trackEnd.get(trackKey) ?? 0;
+    }
+    positions.push(position);
+    trackEnd.set(trackKey, Math.max(trackEnd.get(trackKey) ?? 0, position + duration));
+  });
+  return positions;
 }
 
 function rangesOverlap(left: PlannedSegment, right: PlannedSegment): boolean {

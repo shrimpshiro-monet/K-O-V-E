@@ -18,14 +18,14 @@ const DesktopApp = React.lazy(() =>
 );
 
 const isDesktop =
-  typeof window !== "undefined" && (window as Record<string, unknown>)["kove-advanced"] != null;
+  typeof window !== "undefined" && (window as unknown as Record<string, unknown>)["kove-advanced"] != null;
 
 if (isDesktop) {
   setEncoderBackendFactory(
     () =>
       new NativeFFmpegBackend(
         () =>
-          (window as Record<string, string | undefined>).__kove_advancedExportPath ??
+          (window as unknown as Record<string, string | undefined>).__kove_advancedExportPath ??
           "",
       ),
   );

@@ -145,6 +145,11 @@ function normalizeRenderQueueScale(
  * and the timeline stay in sync and the whole turn undoes as one history group.
  */
 export class LiveEditorHost implements EditingHost {
+  /**
+   * Wired by chat-store before a run so nested director calls (plan_edit)
+   * share the session's LLM client. Matches EditingHost["llm"].
+   */
+  llm?: EditingHost["llm"];
   private jobRunner?: JobRunner;
   private appliedInTxn = 0;
   readonly multicam: MulticamHostBridge = createMulticamHostBridge((timeMs) =>
@@ -520,6 +525,12 @@ export class LiveEditorHost implements EditingHost {
           options.animationInSec ?? 0.3,
           options.animationOutSec ?? 0.25,
         );
+    }
+    if (options.position) {
+      // Title-engine units are normalized 0-1 — pass through unmultiplied.
+      useProjectStore.getState().updateTextTransform(clip.id, {
+        position: { x: options.position.x, y: options.position.y },
+      });
     }
     return { id: clip.id, trackId: clip.trackId };
   }

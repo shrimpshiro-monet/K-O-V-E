@@ -13,7 +13,7 @@ import { Icon } from "@/icons/Icon";
 const NO_DRAG = { WebkitAppRegion: "no-drag" } as React.CSSProperties;
 
 const resolveExportOutputPath = (): string =>
-  (window as Record<string, string | undefined>).__kove_advancedExportPath ?? "";
+  (window as unknown as Record<string, string | undefined>).__kove_advancedExportPath ?? "";
 
 // Native ffmpeg writes the file itself via the resolved output path, so it does
 // not consume the writable stream — a no-op stream satisfies the interface.

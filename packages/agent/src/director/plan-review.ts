@@ -8,7 +8,7 @@ import type {
   RenderedDraftReview,
   RenderedFrameObservation,
 } from "@kove-advanced/creation-schema";
-import { compareStyleProfile, reviewRenderedDraft } from "@kove-advanced/creation-schema";
+import { canonicalizeTargetEffects, canonicalizeTargetTransitions, compareStyleProfile, reviewRenderedDraft } from "@kove-advanced/creation-schema";
 
 export interface EditPlanReview extends StyleProfileComparison {
   readonly profile: StyleProfile;
@@ -124,16 +124,26 @@ export function measureEditPlanStyle(plan: EditPlan): StyleProfile {
   const shotDurations = plan.segments
     .map((segment) => Math.max(0, segment.sourceEndTime - segment.sourceStartTime))
     .sort((left, right) => left - right);
-  const transitionPalette = [...new Set(plan.transitions.map((transition) => transition.type))];
-  const effectPalette = [...new Set([
-    ...plan.effects.map((effect) => effect.type),
-    ...plan.segments.flatMap((segment) => segment.effects),
-  ])];
-  const cutStyle = transitionPalette.length === 0
-    ? "unknown"
-    : transitionPalette.every((type) => ["crossfade", "dipToBlack", "fade"].includes(type))
+  // Normalize palettes to what the renderer will actually draw, so legacy
+  // names ("hardCut", "warmth", "zoom-punch") measure the same way the style
+  // target does instead of permanently tanking the score.
+  const rawTransitionTypes = [...new Set(plan.transitions.map((transition) => transition.type))];
+  const transitionPalette = canonicalizeTargetTransitions(rawTransitionTypes);
+  const effectPalette = canonicalizeTargetEffects([
+    ...new Set([
+      ...plan.effects.map((effect) => effect.type),
+      ...plan.segments.flatMap((segment) => segment.effects),
+    ]),
+  ]);
+  // cutStyle uses the RAW names: hardCut entries still mean "hard cut" even
+  // though they are not rendered as transitions.
+  const cutStyle = rawTransitionTypes.length === 0
+    // No transition entries means every junction is a cut — that IS a
+    // hard-cut edit (plans no longer need to emit hardCut entries).
+    ? plan.segments.length > 1 ? "hard" : "unknown"
+    : rawTransitionTypes.every((type) => ["crossfade", "dipToBlack", "dipToWhite", "fade"].includes(type))
       ? "soft"
-      : transitionPalette.every((type) => ["hardCut", "cut"].includes(type))
+      : rawTransitionTypes.every((type) => ["hardCut", "cut", "flash", "glitch", "whipPan"].includes(type))
         ? "hard"
         : "mixed";
 
@@ -161,12 +171,24 @@ export function measureEditPlanStyle(plan: EditPlan): StyleProfile {
 
 function genreTarget(genre?: Genre): StyleProfileTarget | undefined {
   if (!genre) return undefined;
-  return genre.styleProfile ?? {
+  const target = genre.styleProfile ?? {
     pacing: genre.pacing ?? genre.rules.pacing,
     cutsPerMinute: genre.cutsPerMinuteTarget,
     cutStyle: genre.rules.cutStyle,
     effectPalette: genre.effectPalette ?? genre.rules.effectPalette,
     transitionPalette: genre.transitionPalette ?? genre.rules.transitionPreference,
+  };
+  // Canonicalize target palettes with the same renderer-backed vocabulary the
+  // plan is validated against, so a genre suggesting "hardCut"/"warmth" can be
+  // matched by a plan that correctly emits no entry / "temperature".
+  return {
+    ...target,
+    effectPalette: target.effectPalette
+      ? canonicalizeTargetEffects(target.effectPalette)
+      : target.effectPalette,
+    transitionPalette: target.transitionPalette
+      ? canonicalizeTargetTransitions(target.transitionPalette)
+      : target.transitionPalette,
   };
 }
 

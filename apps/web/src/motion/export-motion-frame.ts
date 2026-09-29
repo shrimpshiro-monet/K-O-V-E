@@ -463,7 +463,7 @@ async function prepareNativeAuroraOutputPath(
   if (!chosen) {
     throw new DOMException("User cancelled", "AbortError");
   }
-  (window as Record<string, string | undefined>).__kove_advancedExportPath = chosen;
+  (window as unknown as Record<string, string | undefined>).__kove_advancedExportPath = chosen;
 }
 
 async function encodeMotionSceneAudioToNativeBackend(
@@ -538,7 +538,7 @@ async function exportMotionCompositionSceneWithNativeAurora(
     Math.ceil(composition.duration * composition.frameRate),
   );
   const backend = new NativeFFmpegBackend(
-    () => (window as Record<string, string | undefined>).__kove_advancedExportPath ?? "",
+    () => (window as unknown as Record<string, string | undefined>).__kove_advancedExportPath ?? "",
   );
   const requestedSessionId = `aurora-export-${composition.id}-${Math.random()
     .toString(36)

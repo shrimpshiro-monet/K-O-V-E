@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { getDeviceProfile } from "./device-capabilities";
 
 afterEach(() => {
-  delete (globalThis as unknown as { kove-advanced?: unknown }).kove-advanced;
+  delete (globalThis as unknown as { "kove-advanced"?: unknown })["kove-advanced"];
 });
 
 describe("getDeviceProfile desktop branch", () => {
@@ -15,7 +15,7 @@ describe("getDeviceProfile desktop branch", () => {
       platform: "darwin" as const,
       arch: "arm64",
     }));
-    (globalThis as unknown as { kove-advanced?: unknown }).kove-advanced = { platform: "desktop", probeHardware };
+    (globalThis as unknown as { "kove-advanced"?: unknown })["kove-advanced"] = { platform: "desktop", probeHardware };
 
     const profile = await getDeviceProfile(true);
 

@@ -183,13 +183,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     const projectState = useProjectStore.getState();
+    if (!projectState.hasOpenProject) {
+      set({ error: "Open a project before running AI edits." });
+      return;
+    }
     const currentProjectId = projectState.project?.id ?? null;
     if (current.projectId && currentProjectId && current.projectId !== currentProjectId) {
       get().setProjectContext(currentProjectId);
     }
 
     const settings = useSettingsStore.getState();
-    const provider = settings.defaultLlmProvider ?? "cloudflare";
+    const provider = settings.defaultLlmProvider;
+    if (!provider) {
+      set({ error: "Choose an API format in AI settings." });
+      return;
+    }
 
     let model: string;
     let baseUrl: string;
@@ -206,10 +214,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     } else {
       // BYOK providers: require settings configuration
-      if (!provider) {
-        set({ error: "Choose an API format in AI settings." });
-        return;
-      }
       model = settings.llmModel.trim();
       if (!model) {
         set({ error: "Enter or choose a model ID in AI settings." });

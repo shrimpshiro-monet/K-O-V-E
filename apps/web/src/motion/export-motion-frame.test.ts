@@ -206,7 +206,7 @@ describe("motion frame export helpers", () => {
       configurable: true,
       value: undefined,
     });
-    delete (window as Record<string, string | undefined>).__kove_advancedExportPath;
+    delete (window as unknown as Record<string, string | undefined>).__kove_advancedExportPath;
     createDownloadWritableMock.mockResolvedValue({ close: vi.fn() });
     initializeMock.mockResolvedValue(undefined);
     audioEngineClearCacheMock.mockReturnValue(undefined);
@@ -274,7 +274,7 @@ describe("motion frame export helpers", () => {
       configurable: true,
       value: undefined,
     });
-    delete (window as Record<string, string | undefined>).__kove_advancedExportPath;
+    delete (window as unknown as Record<string, string | undefined>).__kove_advancedExportPath;
   });
 
   it("builds stable filenames", () => {
@@ -494,7 +494,7 @@ describe("motion frame export helpers", () => {
         totalFrames: 2,
       }),
     );
-    expect((window as Record<string, string | undefined>).__kove_advancedExportPath).toBe(
+    expect((window as unknown as Record<string, string | undefined>).__kove_advancedExportPath).toBe(
       "/Users/me/Movies/native-launch.mp4",
     );
   });

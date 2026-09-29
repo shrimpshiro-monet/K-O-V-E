@@ -200,7 +200,7 @@ describe("executeTool", () => {
                   speed: 1,
                   effects: [],
                   effectSpecs: [{
-                    type: "zoom-punch",
+                    type: "chromatic-aberration",
                     params: { amount: 1.2 },
                     intensity: 0.7,
                     startOffset: 0.25,

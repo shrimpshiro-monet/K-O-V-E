@@ -231,7 +231,8 @@ export interface KoveAdvancedBridge {
         | "openai"
         | "anthropic"
         | "openai-compatible"
-        | "anthropic-compatible",
+        | "anthropic-compatible"
+        | "cloudflare",
       path: string,
       options?: {
         method?: string;

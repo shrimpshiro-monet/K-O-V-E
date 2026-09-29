@@ -96,7 +96,9 @@ export interface UIState {
   keyframeEditorOpen: boolean;
   inspectorActiveTab: string;
   desktopPage: DesktopPage;
+  skipWelcomeScreen: boolean;
   setDesktopPage(page: DesktopPage): void;
+  setSkipWelcomeScreen(skip: boolean): void;
   select: (item: SelectionItem, addToSelection?: boolean) => void;
   selectMultiple: (items: SelectionItem[]) => void;
   deselect: (itemId: string) => void;
@@ -216,6 +218,7 @@ export const useUIStore = create<UIState>()(
         shortcuts: DEFAULT_SHORTCUTS,
 
         theme: "dark",
+        skipWelcomeScreen: false,
         showWaveforms: true,
         showThumbnails: true,
         showKeyframes: true,
@@ -343,6 +346,10 @@ export const useUIStore = create<UIState>()(
           return selectedItems
             .filter((s) => s.type === "track")
             .map((s) => s.id);
+        },
+
+        setSkipWelcomeScreen: (skip: boolean) => {
+          set({ skipWelcomeScreen: skip });
         },
 
         setSnapEnabled: (enabled: boolean) => {
@@ -602,6 +609,7 @@ export const useUIStore = create<UIState>()(
           playbackQuality: state.playbackQuality,
           inspectorActiveTab: state.inspectorActiveTab,
           desktopPage: state.desktopPage,
+          skipWelcomeScreen: state.skipWelcomeScreen,
         }),
       },
     ),

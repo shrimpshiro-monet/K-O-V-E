@@ -39,7 +39,7 @@ contextBridge.exposeInMainWorld("kove-advanced", {
           // A live MessagePort cannot survive contextBridge serialization into
           // the main world, so forward it via window.postMessage transfer (the
           // documented Electron path) and resolve with just the jobId.
-          window.postMessage({ __kove-advancedExportPort: true, jobId }, "*", [port]);
+          window.postMessage({ "__kove-advancedExportPort": true, jobId }, "*", [port]);
           resolve({ jobId });
         });
         ipcRenderer.invoke(CHANNELS.exportStart, args);
