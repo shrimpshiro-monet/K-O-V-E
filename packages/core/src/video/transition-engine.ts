@@ -1,3 +1,4 @@
+import { TRANSITION_TYPES } from "../types/effects";
 import type { TransitionType, TransitionParams } from "../types/effects";
 import type { Transition, Clip, Track, TransitionEdge } from "../types/timeline";
 
@@ -178,6 +179,15 @@ export class TransitionEngine {
     transition: Transition,
     progress: number,
   ): Promise<OffscreenCanvas> {
+    // Refuse an unrecognised type before touching the canvas. The dispatch
+    // below used to fall through to a crossfade, which meant a project carrying
+    // a bad transition type rendered something the user never asked for instead
+    // of reporting the problem.
+    if (!TRANSITION_TYPES.includes(transition.type)) {
+      throw new Error(
+        `Unknown transition type: ${String(transition.type)}. Supported: ${TRANSITION_TYPES.join(", ")}`,
+      );
+    }
     if (!this.canvas || !this.ctx) {
       throw new Error(
         "Canvas not available. Rendering requires a browser environment.",
@@ -2179,6 +2189,10 @@ export class TransitionEngine {
     duration: number,
     params?: Partial<TransitionParams[typeof type]>,
   ): Transition | null {
+    // A type outside the schema cannot be built; `null` is this method's
+    // "cannot create" answer, so the caller's existing null-check handles it.
+    if (!TRANSITION_TYPES.includes(type)) return null;
+
     const validation = this.validateTransition(clipA, clipB, duration);
     if (!validation.valid && !validation.warning) {
       return null;
@@ -2208,6 +2222,8 @@ export class TransitionEngine {
     duration: number,
     params?: Partial<TransitionParams[typeof type]>,
   ): Transition | null {
+    if (!TRANSITION_TYPES.includes(type)) return null;
+
     const validation = this.validateClipEdgeTransition(clip, duration);
     if (!validation.valid && !validation.warning) {
       return null;
@@ -2308,7 +2324,9 @@ export class TransitionEngine {
       case "filmRoll":
         return { direction: "up", barWidth: 0.06 };
       default:
-        return {};
+        throw new Error(
+          `Unknown transition type: ${String(type)}. Supported: ${TRANSITION_TYPES.join(", ")}`,
+        );
     }
   }
 
