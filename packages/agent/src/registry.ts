@@ -16580,7 +16580,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "transition",
     actionType: "transition/add",
     title: "Add transition",
-    description: "Add a transition between two clips. transitionType must be a renderer-supported type (crossfade, dipToBlack, dipToWhite, wipe, slide, zoom, push, circleReveal, blur, whipPan, radialWipe, pixelate, glitch, blinds, diamondReveal, spin, flip, splitReveal, flash, filmBurn, mosaic, ripple, pageTurn, colorSplit). A hard cut needs NO transition object — leave the clips adjacent.",
+    description: `Add a transition between two clips. transitionType must be a renderer-supported type (${SUPPORTED_TRANSITION_TYPES.join(", ")}). A hard cut needs NO transition object — leave the clips adjacent.`,
     inputSchema: obj({ clipAId: str, clipBId: str, transitionType: str, duration: num }, ["clipAId", "clipBId", "transitionType", "duration"]),
     readOnly: false,
     destructive: false,

@@ -51,7 +51,9 @@ const DirectionSelector: React.FC<{
   value: string;
   onChange: (direction: string) => void;
   options?: string[];
-}> = ({ value, onChange, options = ["left", "right", "up", "down"] }) => {
+  /** Heading text — some transitions label this "Sweep", "Roll", "Flip Axis". */
+  label?: string;
+}> = ({ value, onChange, options = ["left", "right", "up", "down"], label = "Direction" }) => {
   const directionIcons: Record<string, React.ReactNode> = {
     left: <ArrowLeft size={14} />,
     right: <ArrowRight size={14} />,
@@ -62,7 +64,7 @@ const DirectionSelector: React.FC<{
   return (
     <div className="space-y-1">
       <Text type="supporting" color="secondary" className="text-[10px]">
-        Direction
+        {label}
       </Text>
       <div className="grid grid-cols-4 gap-1">
         {options.map((dir) => (
@@ -97,6 +99,13 @@ const Toggle: React.FC<{
     <MockToggle ariaLabel={label} checked={value} onChange={onChange} />
   </div>
 );
+
+/** Per-clip styles plus an optional full-frame overlay layer (flash, leak, scanlines). */
+export interface TransitionPreviewStyles {
+  clipA: React.CSSProperties;
+  clipB: React.CSSProperties;
+  overlay?: React.CSSProperties;
+}
 
 /**
  * Transition Preview Animation Component
@@ -133,10 +142,7 @@ const TransitionPreview: React.FC<{
     return () => cancelAnimationFrame(animationFrame);
   }, [isPlaying]);
 
-  const getTransitionStyle = (): {
-    clipA: React.CSSProperties;
-    clipB: React.CSSProperties;
-  } => {
+  const getTransitionStyle = (): TransitionPreviewStyles => {
     const p = progress;
     switch (type) {
       case "crossfade":
@@ -350,6 +356,133 @@ const TransitionPreview: React.FC<{
           },
           clipB: {},
         };
+      case "crossZoom": {
+        const punch = 1 + (2.2 - 1) * (p * p * (3 - 2 * p));
+        return {
+          clipA: {
+            opacity: Math.max(0, 1 - p * 1.35),
+            transform: `scale(${punch})`,
+            filter: `blur(${Math.sin(p * Math.PI) * 3}px)`,
+          },
+          clipB: {
+            opacity: Math.min(1, Math.max(0, (p - 0.12) * 1.35)),
+            transform: `scale(${1 - (1 - 1 / 2.2) * (1 - p)})`,
+          },
+        };
+      }
+      case "zoomBlur": {
+        const reach = Math.sin(p * Math.PI) * 0.35;
+        const stage = p < 0.5 ? "clipA" : "clipB";
+        const style = {
+          opacity: p < 0.5 ? 1 - p * 0.4 : 0.35 + p * 0.6,
+          transform: `scale(${1 + reach})`,
+          filter: `blur(${reach * 6}px)`,
+        };
+        return stage === "clipA" ? { clipA: style, clipB: { opacity: 0 } } : { clipA: { opacity: 0 }, clipB: style };
+      }
+      case "motionSmear": {
+        const smear = Math.sin(p * Math.PI) * 8;
+        const incoming = Math.max(0, (p - 0.5) * 2);
+        return {
+          clipA: { opacity: Math.max(0, 1 - incoming), filter: `blur(${smear}px)` },
+          clipB: { opacity: incoming, filter: `blur(${smear}px)` },
+        };
+      }
+      case "strobeCut": {
+        const phase = Math.floor((Math.min(p, 0.7) / 0.7) * 6);
+        const showIncoming = p >= 0.7 || phase % 2 === 1 || p > 0.42;
+        return {
+          clipA: { opacity: showIncoming ? 0 : 1 },
+          clipB: { opacity: showIncoming ? 1 : 0 },
+          overlay: { background: "#fff", opacity: 0.25 * Math.sin(p * Math.PI) },
+        };
+      }
+      case "impactShake": {
+        const power = Math.pow(1 - p, 2);
+        const shake = Math.sin(p * 46.1) * 7 * power;
+        return {
+          clipA: { opacity: 1 - p, transform: `translate(${shake}px, ${shake * 0.4}px)` },
+          clipB: { opacity: p, transform: `translate(${shake}px, ${shake * 0.4}px)` },
+          overlay: { background: "#fff", opacity: Math.min(0.7, 0.55 * Math.pow(1 - p, 3)) },
+        };
+      }
+      case "lumaWipe":
+      case "inkBleed":
+      case "paperBurn": {
+        const softness = jump !== undefined ? jump : 20;
+        const mask =
+          type === "inkBleed"
+            ? `radial-gradient(circle at 38% 46%, #000 ${p * 70}%, transparent ${p * 95}%), radial-gradient(circle at 66% 62%, #000 ${p * 55}%, transparent ${p * 85}%)`
+            : type === "paperBurn"
+              ? `radial-gradient(circle at 50% 50%, #000 ${Math.max(0, p * 85 - 6)}%, transparent ${p * 85}%)`
+              : `linear-gradient(90deg, #000 ${p * 100}%, transparent ${Math.min(100, p * 100 + softness)}%)`;
+        return {
+          clipA: {},
+          clipB: { maskImage: mask, WebkitMaskImage: mask },
+        };
+      }
+      case "tileFlip": {
+        const squeeze = Math.max(0.02, Math.abs(1 - p * 2));
+        return {
+          clipA: { opacity: p < 0.5 ? 1 : 0, transform: `scaleX(${squeeze})` },
+          clipB: { opacity: p < 0.5 ? 0 : 1, transform: `scaleX(${squeeze})` },
+        };
+      }
+      case "sliceSlide": {
+        const eased = p * p * (3 - 2 * p);
+        return {
+          clipA: {},
+          clipB: { transform: `translateX(${(1 - eased) * 100}%)` },
+        };
+      }
+      case "lightLeak": {
+        const sweep = p * 100;
+        return {
+          clipA: { opacity: 1 - p * 0.4 },
+          clipB: { opacity: p * 0.6 },
+          overlay: {
+            background: `linear-gradient(90deg, transparent ${Math.max(0, sweep - 30)}%, rgba(255,170,90,.9) ${sweep}%, transparent ${Math.min(100, sweep + 30)}%)`,
+            mixBlendMode: "screen",
+            opacity: Math.sin(p * Math.PI),
+          },
+        };
+      }
+      case "vhsScan": {
+        return {
+          clipA: { opacity: 1 - p, filter: `hue-rotate(${Math.sin(p * 12) * 8}deg)` },
+          clipB: { opacity: p, filter: `hue-rotate(${Math.sin(p * 12) * -8}deg)` },
+          overlay: {
+            backgroundImage:
+              "repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px)",
+            opacity: 0.7,
+          },
+        };
+      }
+      case "pixelSort": {
+        return {
+          clipA: { opacity: 1 - p * 0.5 },
+          clipB: {
+            opacity: p,
+            backgroundImage:
+              "repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 1px, transparent 1px 5px)",
+          },
+          overlay: {
+            background: `repeating-linear-gradient(90deg, rgba(0,220,255,.35) 0 1px, transparent 1px ${10 - p * 7}px)`,
+            mixBlendMode: "screen",
+            opacity: Math.sin(p * Math.PI) * 0.8,
+          },
+        };
+      }
+      case "filmRoll": {
+        return {
+          clipA: {},
+          clipB: { transform: `translateY(${(1 - p) * 100}%)` },
+          overlay: {
+            backgroundImage:
+              "linear-gradient(90deg, #08080a 0 5%, transparent 5% 95%, #08080a 95% 100%)",
+          },
+        };
+      }
       case "colorSplit": {
         const split = Math.sin(p * Math.PI) * 10;
         return {
@@ -387,6 +520,12 @@ const TransitionPreview: React.FC<{
         className="absolute inset-0 bg-green-500/30"
         style={{ ...styles.clipB, transition: "none" }}
       />
+      {styles.overlay && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ ...styles.overlay, transition: "none" }}
+        />
+      )}
       {(type === "dipToBlack" || type === "dipToWhite") && (
         <div
           className={`absolute inset-0 ${dipColor}`}
@@ -950,6 +1089,319 @@ export const TransitionInspector: React.FC<TransitionInspectorProps> = ({
               min={0}
               max={100}
               step={5}
+              unit="%"
+            />
+          </>
+        );
+
+      case "crossZoom":
+        return (
+          <>
+            <TransitionSlider
+              label="Zoom Strength"
+              value={(params.strength as number) ?? 2.2}
+              onChange={(value) => handleParamChange("strength", value)}
+              min={1.1}
+              max={4}
+              step={0.1}
+              unit="x"
+            />
+            {renderCenterControls()}
+          </>
+        );
+
+      case "zoomBlur":
+        return (
+          <>
+            <TransitionSlider
+              label="Streak Samples"
+              value={(params.streaks as number) ?? 12}
+              onChange={(value) => handleParamChange("streaks", value)}
+              min={4}
+              max={24}
+              step={1}
+            />
+            <TransitionSlider
+              label="Reach"
+              value={((params.strength as number) ?? 0.35) * 100}
+              onChange={(value) => handleParamChange("strength", value / 100)}
+              min={2}
+              max={60}
+              step={2}
+              unit="%"
+            />
+          </>
+        );
+
+      case "motionSmear":
+        return (
+          <>
+            <DirectionSelector
+              value={(params.direction as string) || "left"}
+              onChange={(direction) => handleParamChange("direction", direction)}
+            />
+            <TransitionSlider
+              label="Smear Distance"
+              value={((params.distance as number) ?? 0.25) * 100}
+              onChange={(value) => handleParamChange("distance", value / 100)}
+              min={0}
+              max={60}
+              step={2}
+              unit="%"
+            />
+          </>
+        );
+
+      case "strobeCut":
+        return (
+          <TransitionSlider
+            label="Strobes"
+            value={(params.strobes as number) ?? 6}
+            onChange={(value) => handleParamChange("strobes", value)}
+            min={2}
+            max={24}
+            step={1}
+          />
+        );
+
+      case "impactShake":
+        return (
+          <>
+            <TransitionSlider
+              label="Shake Intensity"
+              value={((params.intensity as number) ?? 1) * 100}
+              onChange={(value) => handleParamChange("intensity", value / 100)}
+              min={0}
+              max={200}
+              step={5}
+              unit="%"
+            />
+            <TransitionSlider
+              label="Flash"
+              value={((params.flash as number) ?? 0.55) * 100}
+              onChange={(value) => handleParamChange("flash", value / 100)}
+              min={0}
+              max={100}
+              step={5}
+              unit="%"
+            />
+          </>
+        );
+
+      case "lumaWipe":
+        return (
+          <>
+            <TransitionSlider
+              label="Edge Softness"
+              value={((params.softness as number) ?? 0.25) * 100}
+              onChange={(value) => handleParamChange("softness", value / 100)}
+              min={2}
+              max={80}
+              step={2}
+              unit="%"
+            />
+            <Toggle
+              label="Reveal Bright First"
+              value={(params.invert as boolean) ?? false}
+              onChange={(value) => handleParamChange("invert", value)}
+            />
+          </>
+        );
+
+      case "inkBleed":
+        return (
+          <>
+            <TransitionSlider
+              label="Lobes"
+              value={(params.lobes as number) ?? 7}
+              onChange={(value) => handleParamChange("lobes", value)}
+              min={3}
+              max={16}
+              step={1}
+            />
+            <TransitionSlider
+              label="Softness"
+              value={((params.softness as number) ?? 0.35) * 100}
+              onChange={(value) => handleParamChange("softness", value / 100)}
+              min={5}
+              max={90}
+              step={5}
+              unit="%"
+            />
+            {renderCenterControls()}
+          </>
+        );
+
+      case "tileFlip":
+        return (
+          <>
+            <TransitionSlider
+              label="Columns"
+              value={(params.columns as number) ?? 6}
+              onChange={(value) => handleParamChange("columns", value)}
+              min={2}
+              max={16}
+              step={1}
+            />
+            <TransitionSlider
+              label="Stagger"
+              value={((params.stagger as number) ?? 0.6) * 100}
+              onChange={(value) => handleParamChange("stagger", value / 100)}
+              min={0}
+              max={90}
+              step={5}
+              unit="%"
+            />
+            <DirectionSelector
+              label="Flip Axis"
+              value={(params.axis as string) || "horizontal"}
+              onChange={(axis) => handleParamChange("axis", axis)}
+              options={["horizontal", "vertical"]}
+            />
+          </>
+        );
+
+      case "sliceSlide":
+        return (
+          <>
+            <DirectionSelector
+              value={(params.direction as string) || "left"}
+              onChange={(direction) => handleParamChange("direction", direction)}
+            />
+            <TransitionSlider
+              label="Slices"
+              value={(params.slices as number) ?? 9}
+              onChange={(value) => handleParamChange("slices", value)}
+              min={3}
+              max={24}
+              step={1}
+            />
+            <TransitionSlider
+              label="Gap Lines"
+              value={((params.gap as number) ?? 0) * 100}
+              onChange={(value) => handleParamChange("gap", value / 100)}
+              min={0}
+              max={60}
+              step={5}
+              unit="%"
+            />
+          </>
+        );
+
+      case "lightLeak":
+        return (
+          <>
+            <DirectionSelector
+              label="Sweep"
+              value={(params.direction as string) || "right"}
+              onChange={(direction) => handleParamChange("direction", direction)}
+              options={["left", "right"]}
+            />
+            <TransitionSlider
+              label="Intensity"
+              value={((params.intensity as number) ?? 1) * 100}
+              onChange={(value) => handleParamChange("intensity", value / 100)}
+              min={0}
+              max={200}
+              step={5}
+              unit="%"
+            />
+            <TransitionSlider
+              label="Warmth"
+              value={((params.warmth as number) ?? 0.7) * 100}
+              onChange={(value) => handleParamChange("warmth", value / 100)}
+              min={0}
+              max={100}
+              step={5}
+              unit="%"
+            />
+          </>
+        );
+
+      case "vhsScan":
+        return (
+          <>
+            <TransitionSlider
+              label="Intensity"
+              value={((params.intensity as number) ?? 0.8) * 100}
+              onChange={(value) => handleParamChange("intensity", value / 100)}
+              min={0}
+              max={200}
+              step={5}
+              unit="%"
+            />
+            <TransitionSlider
+              label="Slices"
+              value={(params.slices as number) ?? 14}
+              onChange={(value) => handleParamChange("slices", value)}
+              min={6}
+              max={32}
+              step={1}
+            />
+          </>
+        );
+
+      case "paperBurn":
+        return (
+          <>
+            <TransitionSlider
+              label="Edge Softness"
+              value={((params.softness as number) ?? 0.3) * 100}
+              onChange={(value) => handleParamChange("softness", value / 100)}
+              min={5}
+              max={90}
+              step={5}
+              unit="%"
+            />
+            {renderCenterControls()}
+          </>
+        );
+
+      case "pixelSort":
+        return (
+          <>
+            <DirectionSelector
+              label="Streak Direction"
+              value={(params.direction as string) || "right"}
+              onChange={(direction) => handleParamChange("direction", direction)}
+            />
+            <TransitionSlider
+              label="Streak Length"
+              value={((params.amount as number) ?? 1) * 100}
+              onChange={(value) => handleParamChange("amount", value / 100)}
+              min={0}
+              max={100}
+              step={5}
+              unit="%"
+            />
+            <TransitionSlider
+              label="Brightness Cutoff"
+              value={((params.threshold as number) ?? 0.55) * 100}
+              onChange={(value) => handleParamChange("threshold", value / 100)}
+              min={5}
+              max={95}
+              step={5}
+              unit="%"
+            />
+          </>
+        );
+
+      case "filmRoll":
+        return (
+          <>
+            <DirectionSelector
+              label="Roll"
+              value={(params.direction as string) || "up"}
+              onChange={(direction) => handleParamChange("direction", direction)}
+              options={["up", "down"]}
+            />
+            <TransitionSlider
+              label="Gate Bar Width"
+              value={((params.barWidth as number) ?? 0.06) * 100}
+              onChange={(value) => handleParamChange("barWidth", value / 100)}
+              min={2}
+              max={20}
+              step={1}
               unit="%"
             />
           </>

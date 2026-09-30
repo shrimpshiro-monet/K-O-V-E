@@ -511,7 +511,11 @@ const transitionCategory = (type: TransitionType): TransitionCategory => {
     type === "blinds" ||
     type === "diamondReveal" ||
     type === "splitReveal" ||
-    type === "mosaic"
+    type === "mosaic" ||
+    type === "lumaWipe" ||
+    type === "inkBleed" ||
+    type === "paperBurn" ||
+    type === "sliceSlide"
   ) {
     return "Wipes";
   }
@@ -521,7 +525,12 @@ const transitionCategory = (type: TransitionType): TransitionCategory => {
     type === "whipPan" ||
     type === "spin" ||
     type === "flip" ||
-    type === "pageTurn"
+    type === "pageTurn" ||
+    type === "crossZoom" ||
+    type === "zoomBlur" ||
+    type === "motionSmear" ||
+    type === "tileFlip" ||
+    type === "filmRoll"
   ) {
     return "Movement";
   }
@@ -1104,6 +1113,335 @@ const TRANSITIONS: TransitionDef[] = [
         </>
       );
     },
+  },
+  {
+    type: "crossZoom",
+    label: "Cross Zoom",
+    description: "Punchy whip zoom through the cut",
+    params: { strength: 2.2, center: { x: 0.5, y: 0.5 } },
+    renderPreview: (p, thumb) => {
+      const punch = 1 + (2.2 - 1) * (p * p * (3 - 2 * p));
+      const out = Math.max(0, 1 - p * 1.35);
+      const incoming = Math.max(0, (p - 0.12) * 1.35);
+      return (
+        <>
+          {renderThumb(thumb, { opacity: out, transform: `scale(${punch})` }, "oklch(0.55 0.14 295)")}
+          {renderThumb(
+            thumb,
+            { opacity: Math.min(1, incoming), transform: `scale(${1 - (1 - 1 / 2.2) * (1 - p)})` },
+            "oklch(0.72 0.16 162)",
+          )}
+        </>
+      );
+    },
+  },
+  {
+    type: "zoomBlur",
+    label: "Zoom Blur",
+    description: "Radial streaks rushing into the next shot",
+    params: { streaks: 12, strength: 0.35 },
+    renderPreview: (p, thumb) => {
+      const reach = Math.sin(p * Math.PI) * 0.35;
+      return (
+        <>
+          {Array.from({ length: 6 }, (_, index) => {
+            const t = index / 5;
+            return (
+              <React.Fragment key={index}>
+                {renderThumb(
+                  thumb,
+                  {
+                    opacity: (p < 0.5 ? 1 - p * 0.4 : 0.35 + p * 0.1) / 6,
+                    transform: `scale(${1 + reach * t})`,
+                  },
+                  p < 0.5 ? "oklch(0.55 0.14 295)" : "oklch(0.72 0.16 162)",
+                )}
+              </React.Fragment>
+            );
+          })}
+        </>
+      );
+    },
+  },
+  {
+    type: "motionSmear",
+    label: "Motion Smear",
+    description: "Directional smear that holds the frame",
+    params: { direction: "left", distance: 0.25 },
+    renderPreview: (p, thumb) => {
+      const smear = Math.sin(p * Math.PI) * 16;
+      const incoming = Math.max(0, (p - 0.5) * 2);
+      return (
+        <>
+          {renderThumb(
+            thumb,
+            { opacity: Math.max(0, 1 - incoming), filter: `blur(${smear * 0.35}px)` },
+            "oklch(0.55 0.14 295)",
+          )}
+          {renderThumb(
+            thumb,
+            { opacity: incoming, filter: `blur(${smear * 0.35}px)` },
+            "oklch(0.72 0.16 162)",
+          )}
+        </>
+      );
+    },
+  },
+  {
+    type: "strobeCut",
+    label: "Strobe Cut",
+    description: "Machine-gun flicker that lands on the cut",
+    params: { strobes: 6 },
+    renderPreview: (p, thumb) => {
+      const settled = p >= 0.7;
+      const phase = Math.floor((p / 0.7) * 6);
+      const showIncoming = settled || phase % 2 === 1 || p > 0.42;
+      return (
+        <>
+          {renderThumb(thumb, { opacity: showIncoming ? 0 : 1 }, "oklch(0.55 0.14 295)")}
+          {renderThumb(thumb, { opacity: showIncoming ? 1 : 0 }, "oklch(0.72 0.16 162)")}
+          <div className="pointer-events-none absolute inset-0 bg-white" style={{ opacity: 0.25 * Math.sin(p * Math.PI) }} />
+        </>
+      );
+    },
+  },
+  {
+    type: "impactShake",
+    label: "Impact Shake",
+    description: "Camera shake and flash on the hit",
+    params: { intensity: 1, flash: 0.55 },
+    renderPreview: (p, thumb) => {
+      const power = Math.pow(1 - p, 2);
+      const shake = Math.sin(p * 46.1) * 6 * power;
+      return (
+        <>
+          {renderThumb(thumb, { opacity: 1 - p, transform: `translate(${shake}px, ${shake * 0.4}px)` }, "oklch(0.55 0.14 295)")}
+          {renderThumb(thumb, { opacity: p, transform: `translate(${shake}px, ${shake * 0.4}px)` }, "oklch(0.72 0.16 162)")}
+          <div className="pointer-events-none absolute inset-0 bg-white" style={{ opacity: Math.min(0.7, 0.55 * Math.pow(1 - p, 3)) }} />
+        </>
+      );
+    },
+  },
+  {
+    type: "lumaWipe",
+    label: "Luma Wipe",
+    description: "Reveal keyed to the shot's own brightness",
+    params: { softness: 0.25, invert: false },
+    renderPreview: (p, thumb) => {
+      const mask = `linear-gradient(90deg, #000 ${p * 100}%, transparent ${Math.min(100, p * 100 + 22)}%)`;
+      return (
+        <>
+          {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+          {renderThumb(
+            thumb,
+            { maskImage: mask, WebkitMaskImage: mask },
+            "oklch(0.72 0.16 162)",
+          )}
+        </>
+      );
+    },
+  },
+  {
+    type: "inkBleed",
+    label: "Ink Bleed",
+    description: "Organic ink blot eats the frame",
+    params: { lobes: 7, softness: 0.35, center: { x: 0.5, y: 0.5 } },
+    renderPreview: (p, thumb) => {
+      const reach = p * 90;
+      const blot = `radial-gradient(circle at ${30 + 10 * Math.sin(p * 9)}% ${45 + 12 * Math.cos(p * 7)}%, #000 ${reach * 0.6}%, transparent ${reach}%), radial-gradient(circle at ${68 + 8 * Math.cos(p * 11)}% ${60 + 10 * Math.sin(p * 5)}%, #000 ${reach * 0.5}%, transparent ${reach * 0.9}%)`;
+      return (
+        <>
+          {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+          {renderThumb(thumb, { maskImage: blot, WebkitMaskImage: blot }, "oklch(0.72 0.16 162)")}
+        </>
+      );
+    },
+  },
+  {
+    type: "tileFlip",
+    label: "Tile Flip",
+    description: "Staggered card flips assemble the shot",
+    params: { columns: 6, stagger: 0.6, axis: "horizontal" },
+    renderPreview: (p, thumb) => (
+      <>
+        {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+        {Array.from({ length: 3 }, (_, row) =>
+          Array.from({ length: 3 }, (_, column) => {
+            const order = (row * 3 + column) / 8;
+            const local = Math.max(0, Math.min(1, (p - order * 0.6) / 0.4));
+            const squeeze = Math.max(0.02, Math.abs(1 - local * 2));
+            return (
+              <div
+                key={`${row}-${column}`}
+                className="absolute overflow-hidden"
+                style={{
+                  left: `${(column / 3) * 100}%`,
+                  top: `${(row / 3) * 100}%`,
+                  width: `${100 / 3}%`,
+                  height: `${100 / 3}%`,
+                  transform: `scaleX(${squeeze})`,
+                }}
+              >
+                {renderThumb(
+                  thumb,
+                  {},
+                  local < 0.5 ? "oklch(0.55 0.14 295)" : "oklch(0.72 0.16 162)",
+                )}
+              </div>
+            );
+          }),
+        )}
+      </>
+    ),
+  },
+  {
+    type: "sliceSlide",
+    label: "Slice Slide",
+    description: "Alternating bands slide in from opposite edges",
+    params: { slices: 9, direction: "left", gap: 0 },
+    renderPreview: (p, thumb) => {
+      const eased = p * p * (3 - 2 * p);
+      return (
+        <>
+          {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+          {Array.from({ length: 5 }, (_, index) => (
+            <div
+              key={index}
+              className="absolute overflow-hidden"
+              style={{
+                top: `${(index / 5) * 100}%`,
+                height: `${100 / 5}%`,
+                width: "100%",
+                transform: `translateX(${(index % 2 === 0 ? 1 : -1) * (1 - eased) * 100}%)`,
+              }}
+            >
+              {renderThumb(thumb, {}, "oklch(0.72 0.16 162)")}
+            </div>
+          ))}
+        </>
+      );
+    },
+  },
+  {
+    type: "lightLeak",
+    label: "Light Leak",
+    description: "Warm film leak sweeping the cut",
+    params: { intensity: 1, warmth: 0.7, direction: "right" },
+    renderPreview: (p, thumb) => (
+      <>
+        {renderThumb(thumb, { opacity: 1 - p * 0.4 }, "oklch(0.55 0.14 295)")}
+        {renderThumb(thumb, { opacity: p * 0.6 }, "oklch(0.72 0.16 162)")}
+        <div
+          className="pointer-events-none absolute inset-0 mix-blend-screen"
+          style={{
+            background: `linear-gradient(90deg, transparent ${Math.max(0, p * 100 - 30)}%, rgba(255,170,90,.85) ${p * 100}%, transparent ${Math.min(100, p * 100 + 30)}%)`,
+            opacity: Math.sin(p * Math.PI),
+          }}
+        />
+      </>
+    ),
+  },
+  {
+    type: "vhsScan",
+    label: "VHS Scan",
+    description: "Tape scan with jitter and chroma fringe",
+    params: { intensity: 0.8, slices: 14 },
+    renderPreview: (p, thumb) => (
+      <>
+        {renderThumb(thumb, { opacity: 1 - p, filter: `hue-rotate(${Math.sin(p * 12) * 8}deg)` }, "oklch(0.55 0.14 295)")}
+        {renderThumb(thumb, { opacity: p, filter: `hue-rotate(${Math.sin(p * 12) * -8}deg)` }, "oklch(0.72 0.16 162)")}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: "repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px)",
+            opacity: 0.7,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 h-2 bg-white/40"
+          style={{ top: `${(1 - p) * 100}%` }}
+        />
+      </>
+    ),
+  },
+  {
+    type: "paperBurn",
+    label: "Paper Burn",
+    description: "Ember-edged burn through the outgoing shot",
+    params: { softness: 0.3, center: { x: 0.5, y: 0.5 } },
+    renderPreview: (p, thumb) => {
+      const reach = p * 85;
+      const hole = `radial-gradient(circle at 50% 50%, #000 ${Math.max(0, reach - 8)}%, rgba(255,140,40,.6) ${reach}%, transparent ${Math.min(100, reach + 6)}%)`;
+      return (
+        <>
+          {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+          {renderThumb(thumb, { maskImage: hole, WebkitMaskImage: hole }, "oklch(0.72 0.16 162)")}
+          <div
+            className="pointer-events-none absolute inset-0 rounded-full border-2 border-orange-400/70"
+            style={{ transform: `scale(${p})`, opacity: Math.sin(p * Math.PI) }}
+          />
+        </>
+      );
+    },
+  },
+  {
+    type: "pixelSort",
+    label: "Pixel Sort",
+    description: "Bright pixels dragged into glitch streaks",
+    params: { amount: 1, threshold: 0.55, direction: "right" },
+    renderPreview: (p, thumb) => (
+      <>
+        {renderThumb(thumb, { opacity: 1 - p * 0.5 }, "oklch(0.55 0.14 295)")}
+        {renderThumb(
+          thumb,
+          {
+            opacity: p,
+            backgroundImage:
+              "repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 1px, transparent 1px 5px)",
+          },
+          "oklch(0.72 0.16 162)",
+        )}
+        <div
+          className="pointer-events-none absolute inset-0 mix-blend-screen"
+          style={{
+            background: `repeating-linear-gradient(90deg, rgba(0,220,255,.35) 0 1px, transparent 1px ${lerp(10, 3, p)}px)`,
+            opacity: Math.sin(p * Math.PI) * 0.8,
+          }}
+        />
+      </>
+    ),
+  },
+  {
+    type: "filmRoll",
+    label: "Film Roll",
+    description: "Projector roll with sprocket bars",
+    params: { direction: "up", barWidth: 0.06 },
+    renderPreview: (p, thumb) => (
+      <>
+        {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+        {renderThumb(
+          thumb,
+          { transform: `translateY(${(1 - p) * 100}%)` },
+          "oklch(0.72 0.16 162)",
+        )}
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-[6%] bg-black/90" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-[6%] bg-black/90" />
+        <div
+          className="pointer-events-none absolute inset-y-0 left-[1.5%] w-[3%]"
+          style={{
+            backgroundImage: "repeating-linear-gradient(180deg, rgba(245,245,245,.9) 0 6px, transparent 6px 14px)",
+            backgroundPositionY: `${p * 40}px`,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-[1.5%] w-[3%]"
+          style={{
+            backgroundImage: "repeating-linear-gradient(180deg, rgba(245,245,245,.9) 0 6px, transparent 6px 14px)",
+            backgroundPositionY: `${p * 40}px`,
+          }}
+        />
+      </>
+    ),
   },
   ...([
     {

@@ -541,7 +541,7 @@ You transform raw footage into polished edits by:
 
 A plan of four hard cuts is no longer an acceptable answer to "make me a 30 second edit". Three additions make density a hard requirement instead of a vibe:
 
-1. **Contract injected into the prompt** — `buildDensityContract(prompt, genre)` (`packages/agent/src/director/director-prompt.ts`) infers the target duration from the user's own words (`inferTargetDuration`: "30s", "2 minutes"; pacing fallback 30/45/75s) and converts the genre's `densityTarget` into concrete floors: shots, effect hits, camera moves, treated shots, text overlays + animations, speed ramps, SFX, hook shots, transitions and on-beat cut ratio. `formatDensityContract` injects it as `## Edit density contract (MANDATORY for this request)` — explicitly a floor, not the goal. `CAMERA_MOVE_BLOCK` / `TEXT_ANIMATION_BLOCK` are derived from the schema at module load, so the prompt can never drift from what validation and the renderer accept.
+1. **Contract injected into the prompt** — `buildDensityContract(prompt, genre)` (`packages/agent/src/director/director-prompt.ts`) infers the target duration from the user's own words (`inferTargetDuration`: "30s", "2 minutes"; pacing fallback 30/45/75s) and converts the genre's `densityTarget` into concrete floors: shots, effect hits, camera moves, treated shots, text overlays + animations, speed ramps, SFX, hook shots, transitions and on-beat cut ratio. `formatDensityContract` injects it as `## Edit density contract (MANDATORY for this request)` — explicitly a floor, not the goal. `CAMERA_MOVE_BLOCK` / `TEXT_ANIMATION_BLOCK` / `TRANSITION_BLOCK` are derived from the schema at module load, so the prompt can never drift from what validation and the renderer accept.
 2. **Closed vocabularies with real render targets** — `packages/creation-schema/src/director/camera-moves.ts` defines the 14 move ids (`snap-zoom`, `slow-push`, `whip-shake`, …); `segment.cameraMoves` compiles to additive transform keyframes and is written to the clip through `keyframe/setAll` in `materializeEditPlan`. `vocab.ts` pins the 25 supported text animation presets and canonicalizes aliases (`text-reveal-up → slide-up`, `karaoke → word-by-word`) inside `normalizeEditPlan`. Unknown ids surface as `unsupported_camera_move` / `unsupported_text_animation` validation errors — they are never silently dropped.
 3. **Review gate with one bounded revision** — after validation, `reviewEditPlan` measures `measureEditDensity` (cuts/min, shot-length contrast, effect hits, camera moves, texts, ramps, SFX, treated-shot ratio, evolution) and demands both style ≥ 0.6 and density ≥ 0.6. A plan that fails gets exactly one revision call carrying `buildRevisionBrief` (score, named deficiencies, concrete floors, "add the missing density rather than replacing the edit"), and the revised plan replaces the thin one before anything touches the timeline. Under-dense turns cost one extra LLM call; no more.
 
@@ -584,6 +584,51 @@ The main system prompt explicitly instructs the agent to execute the plan, not j
 "  3. After executing ALL items, summarize what was done.",
 "- **The plan is an INTERNAL instruction set — execute it, don't just show it.**",
 ```
+
+---
+
+### 8h. Transition library: 38 rendered blends, described by craft
+
+A hard cut is still the edit's default rhythm, but "cut" was the only thing the
+model could reach for beyond the original 24 blends. `TRANSITION_TYPES`
+(`packages/core/src/types/effects.ts`) now carries 38 renderer-backed types and
+the prompt quotes them verbatim.
+
+- **Renderer** — `packages/core/src/video/transition-engine.ts` gained 14 render
+  paths on top of the original 24: `crossZoom`, `zoomBlur`, `motionSmear`,
+  `strobeCut`, `impactShake`, `lumaWipe`, `inkBleed`, `tileFlip`, `sliceSlide`,
+  `lightLeak`, `vhsScan`, `paperBurn`, `pixelSort`, `filmRoll`. Each one has a
+  `getDefaultParams` entry, likes the others, so a plan that sets only
+  `{ type, duration }` still renders. Pixel-level looks (`lumaWipe`,
+  `pixelSort`) run on a reduced-resolution key canvas (`getMaskContext`, 1/8
+  scale capped at 320px) and composite through `compositeMaskedIncoming`
+  (copy → `destination-in` mask → `source-over` layer). When `OffscreenCanvas`
+  or `getImageData` is unavailable they degrade to a wipe/crossfade instead of
+  throwing — a headless render never dies on a mask.
+- **Schema** — `SUPPORTED_TRANSITION_TYPES` (`packages/creation-schema/src/director/vocab.ts`)
+  mirrors the list, and `TRANSITION_TYPE_ALIASES` maps model spellings onto it
+  (`whip-zoom` → `crossZoom`, `datamosh` → `pixelSort`, `burn-through` →
+  `paperBurn`, …). Lookup normalizes case, spaces and underscores, so
+  "Whip Zoom" and `whip_zoom` land on the same type instead of failing
+  validation. Hard cuts (`hardCut`, `cut`) still canonicalize to `null` and are
+  dropped before commit.
+- **Prompt** — `TRANSITION_BLOCK` is interpolated into the Critical Rules, and a
+  "Transition craft" rule tells the model *when* each family earns its place
+  (punch → `crossZoom`/`zoomBlur`, hit → `impactShake`, flicker → `strobeCut`,
+  picture-driven reveals → `lumaWipe`/`inkBleed`/`paperBurn`, graphic assembly →
+  `tileFlip`/`sliceSlide`, treatment changes → `lightLeak`/`vhsScan`/`pixelSort`/`filmRoll`),
+  with "most junctions stay hard cuts" and "never the same one twice in a row".
+- **Style scoring** — `measureEditPlanStyle` classifies the punch-through wave
+  (`crossZoom`, `zoomBlur`, `motionSmear`, `strobeCut`, `impactShake`, `vhsScan`,
+  `pixelSort`, `filmRoll`) as a hard cut style, so a plan built from them scores
+  the same as one built from the legacy punchy set and does not silently fall to
+  "mixed".
+- **Editor** — `transition-bridge.ts` (type catalogue), `TransitionInspector.tsx`
+  (per-type parameter controls + animated preview, including a full-frame
+  overlay layer for flashes/leaks/scanlines) and `EffectsTransitionsPanel.tsx`
+  (38 preview cards grouped into Dissolves / Wipes / Movement / Stylized) all
+  moved to the full list together — no surface advertises a name another
+  surface would reject.
 
 ---
 

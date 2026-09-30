@@ -18,7 +18,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     pacing: "fast",
     cutsPerMinuteTarget: [24, 45],
     effectPalette: ["brightness", "contrast", "saturation", "chromatic-aberration"],
-    transitionPalette: ["hardCut", "whipPan", "flash"],
+    transitionPalette: ["hardCut", "whipPan", "flash", "crossZoom", "impactShake"],
     musicMoodHints: ["energetic", "rhythmic", "modern"],
     densityTarget: {
       shotsPerMinute: [26, 70],
@@ -123,7 +123,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     pacing: "fast",
     cutsPerMinuteTarget: [18, 42],
     effectPalette: ["brightness", "contrast", "saturation", "chromatic-aberration", "motion-blur"],
-    transitionPalette: ["crossfade", "glitch", "flash", "whipPan"],
+    transitionPalette: ["crossfade", "glitch", "flash", "whipPan", "zoomBlur", "motionSmear", "tileFlip"],
     musicMoodHints: ["rhythmic", "featured", "high energy"],
     densityTarget: {
       shotsPerMinute: [24, 60],
@@ -180,7 +180,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     pacing: "fast",
     cutsPerMinuteTarget: [20, 40],
     effectPalette: ["brightness", "saturation", "contrast", "chromatic-aberration"],
-    transitionPalette: ["hardCut", "zoom", "slide"],
+    transitionPalette: ["hardCut", "zoom", "slide", "crossZoom", "strobeCut", "lightLeak"],
     musicMoodHints: ["upbeat", "rhythmic", "modern"],
     densityTarget: {
       shotsPerMinute: [24, 65],
@@ -237,7 +237,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     pacing: "fast",
     cutsPerMinuteTarget: [30, 60],
     effectPalette: ["chromatic-aberration", "motion-blur"],
-    transitionPalette: ["hardCut"],
+    transitionPalette: ["hardCut", "impactShake", "vhsScan", "pixelSort"],
     musicMoodHints: ["aggressive", "electronic", "impact-driven"],
     densityTarget: {
       shotsPerMinute: [35, 110],
@@ -399,7 +399,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     pacing: "fast",
     cutsPerMinuteTarget: [30, 75],
     effectPalette: ["chromatic-aberration", "brightness"],
-    transitionPalette: ["hardCut"],
+    transitionPalette: ["hardCut", "strobeCut", "sliceSlide"],
     musicMoodHints: ["comedic", "chaotic", "viral"],
     densityTarget: {
       shotsPerMinute: [35, 110],
@@ -426,7 +426,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     pacing: "fast",
     cutsPerMinuteTarget: [20, 45],
     effectPalette: ["chromatic-aberration", "motion-blur", "contrast", "saturation"],
-    transitionPalette: ["hardCut", "whipPan", "flash"],
+    transitionPalette: ["hardCut", "whipPan", "flash", "crossZoom", "impactShake"],
     musicMoodHints: ["anthemic", "stadium", "high energy"],
     densityTarget: {
       shotsPerMinute: [22, 55],
@@ -455,7 +455,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     pacing: "medium",
     cutsPerMinuteTarget: [10, 24],
     effectPalette: ["brightness", "saturation", "chromatic-aberration"],
-    transitionPalette: ["match-cut", "flash", "crossfade"],
+    transitionPalette: ["match-cut", "flash", "crossfade", "lightLeak", "inkBleed"],
     musicMoodHints: ["suspenseful", "playful", "reveal"],
     densityTarget: {
       shotsPerMinute: [16, 44],

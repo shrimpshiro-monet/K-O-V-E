@@ -211,7 +211,25 @@ export function measureEditPlanStyle(plan: EditPlan): StyleProfile {
     ? plan.segments.length > 1 ? "hard" : "unknown"
     : rawTransitionTypes.every((type) => ["crossfade", "dipToBlack", "dipToWhite", "fade"].includes(type))
       ? "soft"
-      : rawTransitionTypes.every((type) => ["hardCut", "cut", "flash", "glitch", "whipPan"].includes(type))
+      : rawTransitionTypes.every((type) =>
+        [
+          "hardCut",
+          "cut",
+          "flash",
+          "glitch",
+          "whipPan",
+          // Second-wave punch-throughs: they land ON the beat like a cut does,
+          // so a plan built from them still reads as a hard-cut edit.
+          "crossZoom",
+          "zoomBlur",
+          "motionSmear",
+          "strobeCut",
+          "impactShake",
+          "vhsScan",
+          "pixelSort",
+          "filmRoll",
+        ].includes(type),
+      )
         ? "hard"
         : "mixed";
 

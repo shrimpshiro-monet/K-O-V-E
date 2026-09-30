@@ -617,6 +617,42 @@ describe("plan_edit integrity", () => {
     expect(halftone!.params.dotSize).toBe(6);
   });
 
+  it("materializes second-wave transitions (crossZoom, lightLeak) onto the track", async () => {
+    const durations = [0.6, 0.5, 1.5, 0.6, 0.5, 1.6, 0.4, 0.4];
+    let cursor = 0;
+    const segments = durations.map((duration, index) => {
+      const start = cursor;
+      cursor += duration;
+      return {
+        sourceVideoId: "video_0",
+        sourceStartTime: start,
+        sourceEndTime: cursor,
+        trackIndex: 0,
+        targetPosition: index === 0 ? 0 : undefined,
+        effects: [],
+        cameraMoves: [{ move: ["snap-zoom", "slow-push", "handheld", "punch-in"][index % 4] }],
+        effectSpecs: [{ type: "vhs", params: {}, intensity: 0.8, duration: 0.2, rationale: "tape hit" }],
+        rationale: `shot ${index}`,
+      };
+    });
+    const plan = validPlan({
+      segments,
+      transitions: [
+        { afterSegmentIndex: 1, type: "crossZoom", duration: 0.3, rationale: "whip into the drop" },
+        { afterSegmentIndex: 5, type: "lightLeak", duration: 0.25, rationale: "leak into the payoff" },
+      ],
+      metadata: { targetDuration: 8, targetPlatform: "tiktok", genre: "social-reel", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(plan), planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "make a 8s tiktok edit" }, h.host);
+    expect(result.ok).toBe(true);
+
+    const transitions = h.project.timeline.tracks
+      .filter((track) => track.type === "video")
+      .flatMap((track) => track.transitions);
+    expect(transitions.map((transition) => transition.type).sort()).toEqual(["crossZoom", "lightLeak"]);
+  });
+
   it("rejects an unknown signature effect name instead of shipping a silent no-op", async () => {
     const bad = validPlan({
       segments: [

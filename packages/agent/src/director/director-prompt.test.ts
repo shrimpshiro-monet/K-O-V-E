@@ -109,6 +109,16 @@ describe("director prompt", () => {
     expect(expansion).toContain("Mention at most 1-3 of these");
   });
 
+  it("advertises the full transition vocabulary with craft guidance", () => {
+    const prompt = buildDirectorPrompt(segmentMap, "make a 30s tiktok edit", PRE_BAKED_GENRES[0]);
+    expect(prompt).toContain("The full vocabulary:");
+    for (const name of ["crossZoom", "zoomBlur", "motionSmear", "strobeCut", "impactShake", "lumaWipe", "inkBleed", "tileFlip", "sliceSlide", "lightLeak", "vhsScan", "paperBurn", "pixelSort", "filmRoll"]) {
+      expect(prompt, name).toContain(name);
+    }
+    expect(prompt).toContain("Most junctions should stay hard cuts");
+    expect(prompt).toContain("never the same one twice in a row");
+  });
+
   it("passes analyzed segment signals into the director prompt", () => {
     const prompt = buildDirectorPrompt({
       videos: [{

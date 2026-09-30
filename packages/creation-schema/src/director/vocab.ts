@@ -46,6 +46,20 @@ export const SUPPORTED_TRANSITION_TYPES = [
   "ripple",
   "pageTurn",
   "colorSplit",
+  "crossZoom",
+  "zoomBlur",
+  "motionSmear",
+  "strobeCut",
+  "impactShake",
+  "lumaWipe",
+  "inkBleed",
+  "tileFlip",
+  "sliceSlide",
+  "lightLeak",
+  "vhsScan",
+  "paperBurn",
+  "pixelSort",
+  "filmRoll",
 ] as const;
 
 export const SUPPORTED_CLIP_EFFECT_TYPES = [
@@ -127,6 +141,52 @@ export const CUT_TRANSITION_TYPES: ReadonlySet<string> = new Set([
 export const TRANSITION_TYPE_ALIASES: Readonly<Record<string, string>> = {
   fade: "crossfade",
   dissolve: "crossfade",
+  // Common spellings for the second wave. Aliases keep a plan's intent instead
+  // of rejecting it: "whip zoom" is a crossZoom, "datamosh" is a pixelSort.
+  "whip-zoom": "crossZoom",
+  whipzoom: "crossZoom",
+  "zoom-punch": "crossZoom",
+  "crash-zoom": "crossZoom",
+  crashzoom: "crossZoom",
+  "radial-blur-wipe": "zoomBlur",
+  "zoom-blur-transition": "zoomBlur",
+  smear: "motionSmear",
+  "motion-blur-cut": "motionSmear",
+  "directional-smear": "motionSmear",
+  strobe: "strobeCut",
+  "flash-cut-strobe": "strobeCut",
+  "flicker-cut": "strobeCut",
+  "shake-cut": "impactShake",
+  "impact-hit": "impactShake",
+  "camera-shake": "impactShake",
+  "luma-dissolve": "lumaWipe",
+  "luminance-wipe": "lumaWipe",
+  "brightness-wipe": "lumaWipe",
+  "ink-wipe": "inkBleed",
+  "ink-reveal": "inkBleed",
+  "blot-reveal": "inkBleed",
+  "bleed-in": "inkBleed",
+  "tile-flip-in": "tileFlip",
+  "card-flip": "tileFlip",
+  "flip-tiles": "tileFlip",
+  "shutter-wipe": "sliceSlide",
+  "band-slide": "sliceSlide",
+  "slice-wipe": "sliceSlide",
+  "light-leak-transition": "lightLeak",
+  leak: "lightLeak",
+  "leak-flare": "lightLeak",
+  "vhs-cut": "vhsScan",
+  "tape-wipe": "vhsScan",
+  "vhs-glitch-cut": "vhsScan",
+  "burn-through": "paperBurn",
+  "burn-reveal": "paperBurn",
+  "fire-wipe": "paperBurn",
+  datamosh: "pixelSort",
+  "pixel-sort-transition": "pixelSort",
+  "sort-smear": "pixelSort",
+  "film-roll": "filmRoll",
+  "roll-up": "filmRoll",
+  "projector-roll": "filmRoll",
 };
 
 /**
@@ -137,10 +197,24 @@ export const TRANSITION_TYPE_ALIASES: Readonly<Record<string, string>> = {
  * Throws nothing: unsupported names come back unchanged for validation to
  * reject with a structured error.
  */
+/** `"Whip Zoom"`, `"whip_zoom"` and `"whipZoom"` all normalize to `whip-zoom`. */
+function transitionLookupKey(type: string): string {
+  return type
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
+}
+
 export function canonicalizeTransitionType(type: string): string | null {
   const trimmed = type.trim();
-  if (CUT_TRANSITION_TYPES.has(trimmed)) return null;
-  const alias = TRANSITION_TYPE_ALIASES[trimmed] ?? TRANSITION_TYPE_ALIASES[trimmed.toLowerCase()];
+  if (CUT_TRANSITION_TYPES.has(trimmed) || CUT_TRANSITION_TYPES.has(trimmed.toLowerCase())) {
+    return null;
+  }
+  const alias =
+    TRANSITION_TYPE_ALIASES[trimmed] ??
+    TRANSITION_TYPE_ALIASES[trimmed.toLowerCase()] ??
+    TRANSITION_TYPE_ALIASES[transitionLookupKey(trimmed)];
   if (alias) return alias;
   return trimmed;
 }

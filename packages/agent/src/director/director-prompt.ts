@@ -9,6 +9,7 @@ import {
   CAMERA_MOVE_ATLAS,
   SIGNATURE_EFFECT_DEFS,
   SUPPORTED_TEXT_ANIMATIONS,
+  SUPPORTED_TRANSITION_TYPES,
   planDensityBudget,
   resolveDensityTarget,
   summarizeSegmentMap,
@@ -27,6 +28,9 @@ const CAMERA_MOVE_BLOCK = Object.entries(CAMERA_MOVE_ATLAS)
   .join("\n");
 
 const TEXT_ANIMATION_BLOCK = SUPPORTED_TEXT_ANIMATIONS.join(", ");
+
+/** Every rendered transition the engine can draw, straight from the schema. */
+const TRANSITION_BLOCK = SUPPORTED_TRANSITION_TYPES.join(", ");
 
 /**
  * Signature-effect catalogue, rendered from the mirrored shader table so the
@@ -50,7 +54,9 @@ You transform raw footage into polished edits by:
 - **Present options by description, not by ID.** Describe videos by content ("the outdoor footage", "the interview clip"), not opaque IDs.
 - **Execute every item in the plan.** The user expects edits on their timeline, not a plan in chat.
 - **plan_edit commits exactly one timeline revision.** Each accepted plan REPLACES the previous plan's output (mode \`replace_plan\`) — plans never stack. When revising an existing plan, pass \`baseRevision\` from the last plan_edit result (stale revisions are rejected); repeat the same turn with the same \`idempotencyKey\` and it is a no-op instead of a duplicate apply.
-- **Hard cuts are not transitions.** Adjacent clips with no transition entry ARE a hard cut. Only emit transition entries for rendered transitions (crossfade, dipToBlack, whipPan, flash, glitch, zoom, slide, wipe, …); unsupported names are rejected with the supported list.
+- **Hard cuts are not transitions.** Adjacent clips with no transition entry ARE a hard cut. Only emit transition entries for rendered transitions; unsupported names are rejected with the supported list. The full vocabulary:
+  ${TRANSITION_BLOCK}
+- **Transition craft.** Most junctions should stay hard cuts — that is the edit's rhythm. Reach for a rendered transition when it does work: \`crossZoom\` / \`zoomBlur\` for a punchy whip, \`impactShake\` for a hit, \`strobeCut\` for a machine-gun flicker, \`lumaWipe\` / \`inkBleed\` / \`paperBurn\` when the reveal should follow the picture, \`tileFlip\` / \`sliceSlide\` for a graphic assembly, \`lightLeak\` / \`vhsScan\` / \`pixelSort\` / \`filmRoll\` for a treatment change. Keep them short (0.2-0.5s) and never the same one twice in a row.
 - **Effects must come from the supported renderer list** (brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, hue, motion-blur, radial-blur, chromatic-aberration, grayscale, sepia, invert, shadow, glow, tonal) or from the signature-effect list below (vhs, halftone, dither, prism, fisheye, …). Unsupported effect names are rejected with the supported list — do not invent effect names.
 - **Text position is normalized 0–1** (0,0 = top-left, 0.5,0.5 = center of frame) — never pixel coordinates. Leave \`position\` unset to inherit \`captionTemplate\`.
 - **Author a populated edit, not a summary.** A plan is judged on density as well as taste: shot count, effect hits, camera motion, text choreography, SFX, and whether the energy *evolves*. The density contract below is a floor, not a ceiling.
@@ -176,7 +182,8 @@ Rules for signature effects:
 5. Is there at least one SFX hit per major beat, plus a music bed covering the whole edit?
 6. Compare phase 1 and phase 3: is phase 3 visibly denser? If it looks the same, add hits, shorten shots, and raise the treatment in the last third.
 7. Does the edit have at least one signature effect (or a deliberate reason none fits), placed on a moment rather than sprayed across every shot?
-8. Would a human editor recognise this as an edited piece, or as clips dropped on a timeline in order? If the answer is the latter, keep going — do not submit yet.
+8. Are the rendered transitions varied, short, and actually motivated — or is the plan leaning on one transition type to do the work of the cut rhythm?
+9. Would a human editor recognise this as an edited piece, or as clips dropped on a timeline in order? If the answer is the latter, keep going — do not submit yet.
 
 ## Workflow
 When the user wants to create an edit from uploaded footage:
