@@ -173,11 +173,15 @@ export class ActionExecutor {
       };
     }
     const projectSnapshot = JSON.parse(JSON.stringify(project));
-    const inverseAction = this.inverseGenerator.generate(
-      action,
-      projectSnapshot,
-    );
     try {
+      // Inverse generation runs off a snapshot and can refuse a malformed
+      // action (a restore with no payload, say). It belongs inside the guard:
+      // a bad action must come back as a failed result, never as a throw that
+      // escapes the executor's own error handling.
+      const inverseAction = this.inverseGenerator.generate(
+        action,
+        projectSnapshot,
+      );
       await this.applyAction(action as TimelineAction, project);
       // Resolve generated-id markers while this action's newly-created entity is
       // still the latest one. Deferring resolution until undo makes every entry
@@ -354,6 +358,10 @@ export class ActionExecutor {
       this.applySubtitleAction(action as SubtitleAction, project);
     } else if (type.startsWith("marker/")) {
       this.applyMarkerAction(action as MarkerAction, project);
+    } else {
+      // No registered handler and no known domain prefix: refuse loudly rather
+      // than reporting success for an action that changed nothing.
+      throw new Error(`Unknown action type: ${type}`);
     }
 
     // Recompute timeline duration from clips after any action that may affect it
@@ -426,6 +434,8 @@ export class ActionExecutor {
         unregisterMotionShader(shaderId);
         break;
       }
+        default:
+          throw new Error(`Unknown project action type: ${(action as Action).type}`);
     }
   }
 
@@ -483,6 +493,8 @@ export class ActionExecutor {
         mediaLibrary.items = [...mediaLibrary.items, params.mediaItem];
         break;
       }
+        default:
+          throw new Error(`Unknown media action type: ${(action as Action).type}`);
     }
   }
 
@@ -730,6 +742,63 @@ export class ActionExecutor {
         );
         break;
       }
+      case "track/consolidate": {
+        // Walk the track left-to-right and shift each clip backward so
+        // there is no empty space between consecutive clips. Already
+        // packed tracks are left alone.
+        const params = action.params as { trackId: string };
+        timeline.tracks = timeline.tracks.map((t: MutableTrack) => {
+          if (t.id !== params.trackId) return t;
+          const sorted = [...t.clips].sort(
+            (a, b) => a.startTime - b.startTime,
+          );
+          let cursor = 0;
+          const newPositions = new Map<string, number>();
+          for (const c of sorted) {
+            const newStart = Math.max(0, cursor);
+            newPositions.set(c.id, newStart);
+            cursor = newStart + c.duration;
+          }
+          return {
+            ...t,
+            clips: t.clips.map((c: MutableClip) => {
+              const ns = newPositions.get(c.id);
+              return ns !== undefined && ns !== c.startTime
+                ? { ...c, startTime: ns }
+                : c;
+            }),
+          };
+        });
+        break;
+      }
+
+      case "track/restorePositions": {
+        // Inverse of track/consolidate — restore the captured per-clip
+        // start times.
+        const params = action.params as {
+          trackId: string;
+          positions: Array<{ clipId: string; startTime: number }>;
+        };
+        const lookup = new Map(
+          params.positions.map((p) => [p.clipId, p.startTime] as const),
+        );
+        timeline.tracks = timeline.tracks.map((t: MutableTrack) => {
+          if (t.id !== params.trackId) return t;
+          return {
+            ...t,
+            clips: t.clips.map((c: MutableClip) => {
+              const ns = lookup.get(c.id);
+              return ns !== undefined && ns !== c.startTime
+                ? { ...c, startTime: ns }
+                : c;
+            }),
+          };
+        });
+        break;
+      }
+
+        default:
+          throw new Error(`Unknown track action type: ${(action as Action).type}`);
     }
   }
 
@@ -787,6 +856,8 @@ export class ActionExecutor {
         );
         break;
       }
+        default:
+          throw new Error(`Unknown marker action type: ${(action as Action).type}`);
     }
   }
 
@@ -1278,61 +1349,8 @@ export class ActionExecutor {
         }
         break;
       }
-
-      case "track/consolidate": {
-        // Walk the track left-to-right and shift each clip backward so
-        // there is no empty space between consecutive clips. Already
-        // packed tracks are left alone.
-        const params = action.params as { trackId: string };
-        timeline.tracks = timeline.tracks.map((t: MutableTrack) => {
-          if (t.id !== params.trackId) return t;
-          const sorted = [...t.clips].sort(
-            (a, b) => a.startTime - b.startTime,
-          );
-          let cursor = 0;
-          const newPositions = new Map<string, number>();
-          for (const c of sorted) {
-            const newStart = Math.max(0, cursor);
-            newPositions.set(c.id, newStart);
-            cursor = newStart + c.duration;
-          }
-          return {
-            ...t,
-            clips: t.clips.map((c: MutableClip) => {
-              const ns = newPositions.get(c.id);
-              return ns !== undefined && ns !== c.startTime
-                ? { ...c, startTime: ns }
-                : c;
-            }),
-          };
-        });
-        break;
-      }
-
-      case "track/restorePositions": {
-        // Inverse of track/consolidate — restore the captured per-clip
-        // start times.
-        const params = action.params as {
-          trackId: string;
-          positions: Array<{ clipId: string; startTime: number }>;
-        };
-        const lookup = new Map(
-          params.positions.map((p) => [p.clipId, p.startTime] as const),
-        );
-        timeline.tracks = timeline.tracks.map((t: MutableTrack) => {
-          if (t.id !== params.trackId) return t;
-          return {
-            ...t,
-            clips: t.clips.map((c: MutableClip) => {
-              const ns = lookup.get(c.id);
-              return ns !== undefined && ns !== c.startTime
-                ? { ...c, startTime: ns }
-                : c;
-            }),
-          };
-        });
-        break;
-      }
+        default:
+          throw new Error(`Unknown clip action type: ${(action as Action).type}`);
     }
 
     // A compound instance has a normal timeline clip as its editable shell.
@@ -1519,6 +1537,8 @@ export class ActionExecutor {
         }));
         break;
       }
+        default:
+          throw new Error(`Unknown effect action type: ${(action as Action).type}`);
     }
   }
 
@@ -1644,6 +1664,8 @@ export class ActionExecutor {
         }));
         break;
       }
+        default:
+          throw new Error(`Unknown keyframe action type: ${(action as Action).type}`);
     }
   }
 
@@ -1775,6 +1797,8 @@ export class ActionExecutor {
         }));
         break;
       }
+        default:
+          throw new Error(`Unknown transition action type: ${(action as Action).type}`);
     }
   }
 
@@ -1948,6 +1972,8 @@ export class ActionExecutor {
         }));
         break;
       }
+        default:
+          throw new Error(`Unknown audio action type: ${(action as Action).type}`);
     }
   }
 
@@ -2053,6 +2079,8 @@ export class ActionExecutor {
         }
         break;
       }
+        default:
+          throw new Error(`Unknown subtitle action type: ${(action as Action).type}`);
     }
   }
 

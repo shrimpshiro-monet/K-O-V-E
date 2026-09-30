@@ -409,7 +409,8 @@ const TransitionPreview: React.FC<{
       case "lumaWipe":
       case "inkBleed":
       case "paperBurn": {
-        const softness = jump !== undefined ? jump : 20;
+        // Feather width of the luma key's leading edge.
+        const softness = 20;
         const mask =
           type === "inkBleed"
             ? `radial-gradient(circle at 38% 46%, #000 ${p * 70}%, transparent ${p * 95}%), radial-gradient(circle at 66% 62%, #000 ${p * 55}%, transparent ${p * 85}%)`

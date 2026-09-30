@@ -4,7 +4,7 @@ import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
-import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
+import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
 import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
@@ -16587,11 +16587,21 @@ const TOOLS: RegisteredTool[] = [
     expensive: false,
     handler: async (args, host) => {
       host.requireOpenProject();
-      const transitionType = optionalString(args.transitionType);
-      if (!transitionType) return fail("transitionType is required", "INVALID_PARAMS");
+      const requestedType = optionalString(args.transitionType);
+      if (!requestedType) return fail("transitionType is required", "INVALID_PARAMS");
+      // Canonicalize before validating: the director prompt and the docs both
+      // promise that aliases ("whip-zoom", "datamosh") resolve to a real type.
+      // A hard cut canonicalizes to null — that is a cut, not a transition.
+      const transitionType = canonicalizeTransitionType(requestedType);
+      if (transitionType === null) {
+        return fail(
+          `"${requestedType}" is a hard cut — leave the clips adjacent instead of adding a transition.`,
+          "INVALID_PARAMS",
+        );
+      }
       if (!isSupportedTransitionType(transitionType)) {
         return fail(
-          `Unsupported transition "${transitionType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_TRANSITION_TYPES.join(", ")}. For a hard cut, add no transition.`,
+          `Unsupported transition "${requestedType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_TRANSITION_TYPES.join(", ")}. For a hard cut, add no transition.`,
           "UNSUPPORTED_TRANSITION",
           { supportedTransitions: [...SUPPORTED_TRANSITION_TYPES] },
         );
@@ -16600,7 +16610,7 @@ const TOOLS: RegisteredTool[] = [
         type: "transition/add",
         id: genId(),
         timestamp: Date.now(),
-        params: args,
+        params: { ...args, transitionType },
       };
       const result = await host.applyAction(action);
       if (result.success) return ok("add_transition applied", { actionId: result.actionId });

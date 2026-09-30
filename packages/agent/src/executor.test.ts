@@ -9253,7 +9253,7 @@ describe("executeTool", () => {
           return {
             text: "",
             stopReason: "tool_use" as const,
-            toolUses: [{ id: `plan-${currentTurn[0]}`, name: "submit_edit_plan", input: structuredClone(currentTurn[1]) }],
+            toolUses: [{ id: `plan-${currentTurn[0]}`, name: "submit_edit_plan", input: structuredClone(currentTurn[1]) as Record<string, unknown> }],
           };
         },
       },
@@ -9340,7 +9340,7 @@ describe("executeTool", () => {
           return {
             text: "",
             stopReason: "tool_use" as const,
-            toolUses: [{ id: `plan-${currentTurn[0]}`, name: "submit_edit_plan", input: structuredClone(currentTurn[1]) }],
+            toolUses: [{ id: `plan-${currentTurn[0]}`, name: "submit_edit_plan", input: structuredClone(currentTurn[1]) as Record<string, unknown> }],
           };
         },
       },

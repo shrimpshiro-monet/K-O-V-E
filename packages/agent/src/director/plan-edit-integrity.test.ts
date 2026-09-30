@@ -876,6 +876,38 @@ describe("renderer-backed vocabulary boundary", () => {
       host,
     );
     expect(accepted.ok).toBe(true);
+
+    // A model spelling (alias) must resolve, not be rejected — the prompt
+    // promises aliases work, so the tool boundary has to honor that.
+    const aliased = await executeTool(
+      "add_transition",
+      { clipAId: clipA!.id, clipBId: clipB!.id, transitionType: "whip-zoom", duration: 0.3 },
+      host,
+    );
+    expect(aliased.ok).toBe(true);
+    const stored = host
+      .getProject()
+      .timeline.tracks.flatMap((track) => track.transitions)
+      .map((transition) => transition.type);
+    expect(stored).toContain("crossZoom");
+    expect(stored).not.toContain("whip-zoom");
+
+    // Second-wave types are accepted verbatim too.
+    const secondWave = await executeTool(
+      "add_transition",
+      { clipAId: clipA!.id, clipBId: clipB!.id, transitionType: "paperBurn", duration: 0.3 },
+      host,
+    );
+    expect(secondWave.ok).toBe(true);
+
+    // A hard cut is not a transition — say so instead of storing a no-op.
+    const hardCut = await executeTool(
+      "add_transition",
+      { clipAId: clipA!.id, clipBId: clipB!.id, transitionType: "hardCut", duration: 0.3 },
+      host,
+    );
+    expect(hardCut.ok).toBe(false);
+    expect(hardCut.summary).toContain("hard cut");
   });
 });
 
