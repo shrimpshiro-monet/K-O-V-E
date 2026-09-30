@@ -391,6 +391,146 @@ void main() {
 }
 `;
 
+const KALEIDOSCOPE_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D u_input;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_segments;
+uniform float u_spin;
+uniform float u_zoom;
+out vec4 fragColor;
+
+void main() {
+  float aspect = u_resolution.x / max(u_resolution.y, 1.0);
+  vec2 point = vUv - 0.5;
+  point.x *= aspect;
+  float segments = max(u_segments, 2.0);
+  float span = 6.28318530718 / segments;
+  // Spin the fold itself, so the mirror seams never sit still on a held shot.
+  float angle = atan(point.y, point.x) + u_time * u_spin;
+  float fold = mod(angle, span);
+  float mirrored = abs(fold - span * 0.5);
+  float radius = length(point);
+  vec2 uv = vec2(cos(mirrored), sin(mirrored)) * radius / max(u_zoom, 0.05);
+  uv.x /= max(aspect, 0.0001);
+  fragColor = texture(u_input, clamp(uv + 0.5, 0.0, 1.0));
+}
+`;
+
+const MIRROR_TILES_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D u_input;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_columns;
+uniform float u_rows;
+uniform float u_shift;
+out vec4 fragColor;
+
+void main() {
+  vec2 grid = vec2(max(u_columns, 1.0), max(u_rows, 1.0));
+  vec2 drift = vec2(u_time * u_shift * 0.08, 0.0);
+  vec2 scaled = vUv * grid + drift;
+  vec2 cell = floor(scaled);
+  vec2 local = fract(scaled);
+  // Alternate cells read the frame mirrored, so the grid stitches seamlessly
+  // instead of showing a hard tile edge.
+  vec2 flip = mod(cell, 2.0);
+  vec2 mirrored = mix(local, 1.0 - local, flip);
+  vec2 uv = (cell + mirrored) / grid;
+  fragColor = texture(u_input, clamp(uv, 0.0, 1.0));
+}
+`;
+
+const SWIRL_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D u_input;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_amount;
+uniform float u_radius;
+uniform float u_speed;
+out vec4 fragColor;
+
+void main() {
+  float aspect = u_resolution.x / max(u_resolution.y, 1.0);
+  vec2 point = vUv - 0.5;
+  point.x *= aspect;
+  float fromCenter = length(point) / max(u_radius, 0.01);
+  float falloff = 1.0 - smoothstep(0.0, 1.0, clamp(fromCenter, 0.0, 1.0));
+  float angle = (u_amount + u_time * u_speed) * falloff;
+  float s = sin(angle);
+  float c = cos(angle);
+  vec2 rotated = vec2(c * point.x - s * point.y, s * point.x + c * point.y);
+  rotated.x /= max(aspect, 0.0001);
+  fragColor = texture(u_input, clamp(rotated + 0.5, 0.0, 1.0));
+}
+`;
+
+const CRT_CURVE_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D u_input;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_curvature;
+uniform float u_phosphor;
+uniform float u_flicker;
+out vec4 fragColor;
+
+void main() {
+  vec2 centered = vUv * 2.0 - 1.0;
+  float bulge = 1.0 + u_curvature * dot(centered, centered) * 0.35;
+  vec2 curved = centered * bulge;
+  vec2 uv = curved * 0.5 + 0.5;
+  // Outside the tube stays black — a smeared edge pixel would read as a bug.
+  float inside = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
+  vec4 src = texture(u_input, clamp(uv, 0.0, 1.0));
+  vec3 tinted = src.rgb * mix(vec3(1.0), vec3(1.06, 0.98, 0.93), u_curvature);
+  float raster = sin(uv.y * u_resolution.y * 3.14159265);
+  float phosphor = 1.0 - u_phosphor * 0.35 * (1.0 - raster * raster);
+  float flicker = 1.0 - u_flicker * 0.12 * (0.5 + 0.5 * sin(u_time * 9.0));
+  float vignette = clamp(1.0 - 0.45 * u_curvature * dot(curved, curved), 0.0, 1.0);
+  fragColor = vec4(tinted * phosphor * flicker * vignette * inside, src.a * inside);
+}
+`;
+
+const ECHO_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D u_input;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_amount;
+uniform float u_offset;
+uniform float u_speed;
+out vec4 fragColor;
+
+void main() {
+  // A trail dragged down-right: eight taps that fade as they walk away from
+  // the frame, wobbling over time so the smear breathes instead of freezing.
+  vec2 direction = normalize(vec2(0.86, 0.5));
+  float reach = u_offset * clamp(u_amount, 0.0, 1.0);
+  vec2 texel = vec2(reach) / max(u_resolution, vec2(1.0));
+  vec4 base = texture(u_input, vUv);
+  vec3 accumulated = base.rgb;
+  float total = 1.0;
+  for (int index = 1; index <= 8; index++) {
+    float step01 = float(index) / 8.0;
+    float wobble = 1.0 + 0.3 * sin(u_time * u_speed * 2.5 + step01 * 8.0);
+    vec2 uv = vUv - direction * texel * step01 * wobble;
+    float weight = 1.0 - step01 * 0.7;
+    accumulated += texture(u_input, clamp(uv, 0.0, 1.0)).rgb * weight;
+    total += weight;
+  }
+  fragColor = vec4(accumulated / total, base.a);
+}
+`;
+
 export const EFFECT_SHADERS: readonly MotionShaderDef[] = [
   {
     id: "dither",
@@ -549,6 +689,61 @@ export const EFFECT_SHADERS: readonly MotionShaderDef[] = [
       { name: "intensity", label: "Intensity", type: "number", default: 0.5, min: 0, max: 1, step: 0.01 },
       { name: "warmth", label: "Warmth", type: "number", default: 0.7, min: 0, max: 1, step: 0.01 },
       { name: "speed", label: "Speed", type: "number", default: 1, min: 0, max: 4, step: 0.05 },
+    ],
+  },
+  {
+    id: "kaleidoscope",
+    name: "Kaleidoscope",
+    category: "effect",
+    glsl: KALEIDOSCOPE_GLSL,
+    params: [
+      { name: "segments", label: "Segments", type: "number", default: 6, min: 2, max: 16, step: 1 },
+      { name: "spin", label: "Spin", type: "number", default: 0.35, min: 0, max: 2, step: 0.05 },
+      { name: "zoom", label: "Zoom", type: "number", default: 1, min: 0.5, max: 2, step: 0.05 },
+    ],
+  },
+  {
+    id: "mirror-tiles",
+    name: "Mirror Tiles",
+    category: "effect",
+    glsl: MIRROR_TILES_GLSL,
+    params: [
+      { name: "columns", label: "Columns", type: "number", default: 4, min: 2, max: 12, step: 1 },
+      { name: "rows", label: "Rows", type: "number", default: 3, min: 1, max: 8, step: 1 },
+      { name: "shift", label: "Drift", type: "number", default: 0.5, min: 0, max: 2, step: 0.05 },
+    ],
+  },
+  {
+    id: "swirl",
+    name: "Swirl",
+    category: "effect",
+    glsl: SWIRL_GLSL,
+    params: [
+      { name: "amount", label: "Twist", type: "number", default: 1.6, min: 0, max: 6, step: 0.1 },
+      { name: "radius", label: "Radius", type: "number", default: 0.75, min: 0.1, max: 1.2, step: 0.05 },
+      { name: "speed", label: "Speed", type: "number", default: 1.2, min: 0, max: 4, step: 0.1 },
+    ],
+  },
+  {
+    id: "crt-curve",
+    name: "CRT Curve",
+    category: "effect",
+    glsl: CRT_CURVE_GLSL,
+    params: [
+      { name: "curvature", label: "Curvature", type: "number", default: 0.35, min: 0, max: 1, step: 0.01 },
+      { name: "phosphor", label: "Phosphor", type: "number", default: 0.35, min: 0, max: 1, step: 0.01 },
+      { name: "flicker", label: "Flicker", type: "number", default: 0.15, min: 0, max: 1, step: 0.01 },
+    ],
+  },
+  {
+    id: "echo",
+    name: "Echo Trail",
+    category: "effect",
+    glsl: ECHO_GLSL,
+    params: [
+      { name: "amount", label: "Amount", type: "number", default: 0.6, min: 0, max: 1, step: 0.01 },
+      { name: "offset", label: "Distance", type: "number", default: 18, min: 0, max: 48, step: 1 },
+      { name: "speed", label: "Speed", type: "number", default: 1.5, min: 0, max: 6, step: 0.1 },
     ],
   },
 ];

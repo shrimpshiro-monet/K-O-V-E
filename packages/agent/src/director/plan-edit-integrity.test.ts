@@ -827,6 +827,19 @@ describe("renderer-backed vocabulary boundary", () => {
     expect(stored.type).toBe("shader");
     expect(stored.params.shaderId).toBe("edge-glow");
     expect(stored.params.strength).toBeCloseTo(5.4, 5);
+
+    // Second-wave looks go through the same path, aliases included.
+    const secondWave = await executeTool(
+      "add_video_effect",
+      { clipId, effectType: "vortex", params: { intensity: 0.75 } },
+      host,
+    );
+    expect(secondWave.ok).toBe(true);
+    expect((secondWave.data as { shaderId?: string }).shaderId).toBe("swirl");
+    const swirl = host.getProject().timeline.tracks[0]!.clips[0]!.effects.at(-1)!;
+    expect(swirl.type).toBe("shader");
+    expect(swirl.params.shaderId).toBe("swirl");
+    expect(swirl.params.amount as number).toBeCloseTo(0.5 + 0.75 * 4, 5);
   });
 
   it("rejects unsupported transition types at the add_transition boundary", async () => {

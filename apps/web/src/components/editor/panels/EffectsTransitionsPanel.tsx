@@ -453,6 +453,75 @@ export const EDITOR_EFFECT_PREVIEWS: EditorEffectPreviewDef[] = [
     }),
   },
   {
+    id: "shader-kaleidoscope",
+    type: "shader",
+    label: "Kaleidoscope",
+    description: "Mirrored wedges folded into a spinning tunnel",
+    category: "Stylize",
+    params: { shaderId: "kaleidoscope", segments: 6, spin: 0.35, zoom: 1 },
+    previewStyle: (p) => ({
+      filter: `saturate(${lerp(1, 1.35, p)}) contrast(${lerp(1, 1.2, p)})`,
+      backgroundImage: `repeating-conic-gradient(from ${lerp(0, 90, p)}deg, rgba(255,255,255,.28) 0 12%, transparent 12% 24%)`,
+      transform: `rotate(${lerp(0, 8, p)}deg)`,
+    }),
+  },
+  {
+    id: "shader-mirror-tiles",
+    type: "shader",
+    label: "Mirror Tiles",
+    description: "The frame tiled and mirrored into a grid of copies",
+    category: "Stylize",
+    params: { shaderId: "mirror-tiles", columns: 4, rows: 3, shift: 0.5 },
+    previewStyle: (p) => ({
+      backgroundImage:
+        "repeating-linear-gradient(45deg, rgba(255,255,255,.22) 0 2px, transparent 2px 10px)",
+      transform: `scaleX(${lerp(1, -1, p)})`,
+      filter: `contrast(${lerp(1, 1.15, p)})`,
+    }),
+  },
+  {
+    id: "shader-swirl",
+    type: "shader",
+    label: "Swirl",
+    description: "Space twisted into a spiral around the centre",
+    category: "Stylize",
+    params: { shaderId: "swirl", amount: 1.6, radius: 0.75, speed: 1.2 },
+    previewStyle: (p) => ({
+      transform: `rotate(${lerp(0, 14, p)}deg) scale(${lerp(1, 1.08, p)})`,
+      filter: `blur(${lerp(0, 1.2, p)}px)`,
+      backgroundImage:
+        "repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.2) 0 3px, transparent 3px 9px)",
+    }),
+  },
+  {
+    id: "shader-crt-curve",
+    type: "shader",
+    label: "CRT Curve",
+    description: "Curved picture tube with phosphor lines and flicker",
+    category: "Stylize",
+    params: { shaderId: "crt-curve", curvature: 0.35, phosphor: 0.35, flicker: 0.15 },
+    previewStyle: (p) => ({
+      filter: `contrast(${lerp(1, 1.18, p)}) brightness(${lerp(1, 0.96, p)})`,
+      backgroundImage:
+        "repeating-linear-gradient(0deg, rgba(0,0,0,.32) 0 1px, transparent 1px 3px)",
+      boxShadow: `inset 0 0 ${lerp(6, 28, p)}px rgba(0,0,0,.75)`,
+      transform: `scale(${lerp(1, 1.02, p)})`,
+    }),
+  },
+  {
+    id: "shader-echo",
+    type: "shader",
+    label: "Echo Trail",
+    description: "Afterimage smeared along the frame",
+    category: "Creative",
+    params: { shaderId: "echo", amount: 0.6, offset: 18, speed: 1.5 },
+    previewStyle: (p) => ({
+      filter: `blur(${lerp(0.2, 1.6, p)}px) saturate(${lerp(1, 1.15, p)})`,
+      boxShadow: `inset ${lerp(0, -26, p)}px ${lerp(0, -14, p)}px ${lerp(0, 18, p)}px rgba(255,255,255,.28)`,
+      transform: `translate(${lerp(0, -4, p)}px, ${lerp(0, -2, p)}px)`,
+    }),
+  },
+  {
     id: "shader-pixelate",
     type: "shader",
     label: "Pixelate",

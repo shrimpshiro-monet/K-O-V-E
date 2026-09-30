@@ -73,6 +73,20 @@ describe("signature shader effects", () => {
     }
   });
 
+  it("covers the second wave of looks with ids, aliases and intensity knobs", () => {
+    for (const name of ["kaleidoscope", "mirror-tiles", "swirl", "crt-curve", "echo"]) {
+      expect(isSignatureEffectType(name), name).toBe(true);
+      expect(isSupportedEffectType(name), name).toBe(true);
+    }
+    expect(normalizeEffectType("vortex")).toBe("swirl");
+    expect(normalizeEffectType("ghost")).toBe("echo");
+    expect(normalizeEffectType("crt-monitor")).toBe("crt-curve");
+    expect(normalizeEffectType("mirror grid")).toBe("mirror-tiles");
+    expect(normalizeEffectType("kaleido")).toBe("kaleidoscope");
+    // "crt" itself still means the cheap scanline pass, not the curved tube.
+    expect(normalizeEffectType("crt")).toBe("scanlines");
+  });
+
   it("treats aliases as supported effect types and canonicalizes them", () => {
     expect(normalizeEffectType("VHS tape")).toBe("vhs");
     expect(normalizeEffectType("crt")).toBe("scanlines");

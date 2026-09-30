@@ -103,7 +103,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Music Video",
     description:
       "Rhythm-synced cuts with heavy visual effects. The music drives the edit.",
-    signatureEffects: ["prism", "wave-warp", "edge-glow"],
+    signatureEffects: ["prism", "wave-warp", "edge-glow", "swirl", "echo"],
     rules: {
       pacing: "fast",
       transitionPreference: ["crossfade", "glitch", "flash", "whipPan"],
@@ -256,7 +256,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
       minimumOnBeatCutRatio: 0.6,
       requiresEscalation: true,
     },
-    signatureEffects: ["vhs", "scanlines", "pixelate"],
+    signatureEffects: ["vhs", "scanlines", "pixelate", "echo"],
     rules: { pacing: "fast", transitionPreference: ["hardCut"], effectPalette: ["chromatic-aberration", "motion-blur"], textStyle: "minimal", cutStyle: "hard", colorMood: "vibrant", musicRole: "rhythmic" },
   },
   {
@@ -416,7 +416,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
       hookShots: 4,
       requiresEscalation: true,
     },
-    signatureEffects: ["posterize", "dither", "halftone"],
+    signatureEffects: ["posterize", "dither", "halftone", "mirror-tiles"],
     rules: { pacing: "fast", transitionPreference: ["hardCut"], effectPalette: ["chromatic-aberration", "brightness"], textStyle: "heavy", cutStyle: "hard", colorMood: "vibrant", musicRole: "rhythmic" },
   },
   {
@@ -474,7 +474,7 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
       hookShots: 2,
       requiresEscalation: true,
     },
-    signatureEffects: ["prism", "duotone"],
+    signatureEffects: ["prism", "duotone", "kaleidoscope"],
     rules: { pacing: "medium", transitionPreference: ["match-cut", "flash", "crossfade"], effectPalette: ["brightness", "saturation", "chromatic-aberration"], textStyle: "moderate", cutStyle: "mixed", colorMood: "vibrant", musicRole: "featured" },
   },
 ];

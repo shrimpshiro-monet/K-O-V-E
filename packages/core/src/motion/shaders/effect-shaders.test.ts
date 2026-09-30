@@ -47,9 +47,19 @@ describe("effect shader library", () => {
 
   it("ships the signature looks the director plans by name", () => {
     const ids = new Set(EFFECT_SHADERS.map((def) => def.id));
-    for (const id of ["speed-lines", "glitch-blocks", "light-leak"]) {
+    for (const id of [
+      "speed-lines",
+      "glitch-blocks",
+      "light-leak",
+      "kaleidoscope",
+      "mirror-tiles",
+      "swirl",
+      "crt-curve",
+      "echo",
+    ]) {
       expect(ids.has(id), id).toBe(true);
     }
+    expect(EFFECT_SHADERS).toHaveLength(20);
   });
 
   it("animates the time-driven looks instead of freezing at frame zero", () => {
