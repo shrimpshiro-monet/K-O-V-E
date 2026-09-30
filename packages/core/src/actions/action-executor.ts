@@ -1546,6 +1546,13 @@ export class ActionExecutor {
     action: TransformAction,
     project: Project,
   ): void {
+    // The prefix router hands every `transform/…` type here, and this method
+    // has no switch of its own, so without this guard any invented type would
+    // mutate the clip and report success.
+    if (action.type !== "transform/update") {
+      throw new Error(`Unknown transform action type: ${String(action.type)}`);
+    }
+
     const timeline = project.timeline as MutableTimeline;
 
     timeline.tracks = timeline.tracks.map((track: MutableTrack) => ({

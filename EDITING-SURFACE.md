@@ -3,6 +3,11 @@
 Every number below was produced by running the command shown next to it, in this
 checkout, at commit `697a8a7`. Nothing here is inferred from reading code.
 
+**Per-item evidence lives in [`evidence/`](evidence/README.md)** — every tool,
+action type, transition, shader, text animation and genre, with its parameters
+and the file that implements it. This document is the summary; that directory is
+the inventory.
+
 Branch `arena/01a0edb9-k-o-v-e`:
 
 ```
@@ -21,7 +26,7 @@ b50fa61 feat(transitions): expand the rendered transition library from 24 to 38
 | --- | --- | --- |
 | TypeScript | `tsc --noEmit` per workspace (14 configs) | **0 errors** |
 | ESLint | `eslint src` per app (repo's own flat configs) | **0 errors**, 120 warnings |
-| Tests (JS/TS) | `vitest run` over the whole suite | **919 passed** \| 3 failed \| 10 skipped (995) |
+| Tests (JS/TS) | `vitest run` over the whole suite | **931 passed** \| 3 failed \| 10 skipped (1007) |
 | Tests (Python) | `pytest tests` in `packages/python-engine` | **36 passed** |
 | Python syntax | `python3 -m py_compile` on all 42 `.py` files | **all compile** |
 | GLSL | `@shaderfrog/glsl-parser` over all 20 effect shaders | **20/20 parse** |
@@ -62,7 +67,7 @@ warnings, just at shifted line numbers.
 ## 2. Bugs this audit found and fixed
 
 The point of the exercise was to prove things work rather than assume it. It
-turned up **six** defects: four that failed silently or produced the wrong
+turned up **seven** defects: five that failed silently or produced the wrong
 result, one that escaped the executor's error handling entirely, and one that
 did not compile:
 
@@ -136,7 +141,22 @@ the call sites are unaffected. The two production call sites (`video-engine`,
 `render-bridge`) already wrap rendering in `try`/`catch` and log, so a bad type
 now surfaces as a logged error and a hard cut instead of a wrong blend.
 
-### 2.6 A preview referenced an undefined binding
+### 2.6 The transform domain accepted any action type
+
+`applyTransformAction` has no switch — it merges `params.transform` into the
+clip unconditionally — and the router sends *every* `transform/…` string there.
+So an invented type was applied and reported success:
+
+```
+execute_action { type: "transform/deleteEverything", params: { clipId, transform } }
+→ { ok: true }        // clip rotated
+```
+
+It now refuses anything but `transform/update`, and a runtime test walks all 21
+routed domains asserting that an invented type is refused and the project is
+left byte-identical (`action-dispatch.test.ts`).
+
+### 2.7 A preview referenced an undefined binding
 
 `TransitionInspector.tsx` referenced an undefined `jump` binding in the
 `lumaWipe` / `inkBleed` / `paperBurn` preview code — a real compile error in a
@@ -150,7 +170,7 @@ signature error).
 
 ### How these are prevented from coming back
 
-Four new regression files, all passing:
+Five new regression files, all passing:
 
 | File | What it pins |
 | --- | --- |
@@ -158,6 +178,7 @@ Four new regression files, all passing:
 | `packages/agent/src/registry.wiring.test.ts` | Walks **all 316 tools**: unique names, valid schemas, three provider projections in sync, every read tool callable, and **every action-backed tool reaches a live executor branch**. |
 | `packages/agent/src/editing-surface.test.ts` | 23 tests pressing every editing capability through the tool boundary, asserted on project state. |
 | `packages/core/src/video/transition-library.test.ts` | Walks the whole chain for all 38 transitions at runtime: schema list, engine dispatch, default-parameter table, available-types list — plus the 20 shaders' uniforms. |
+| `packages/agent/src/evidence/generate-evidence.test.ts` | Recomputes every figure in `evidence/` and asserts it: tool surface, action wiring against the runtime handler registry, transition/shader/text libraries, alias targets, genre density contracts. |
 
 The wiring test is the one that matters most: it calls every action-backed tool
 and fails if any of them comes back "Unknown … action type". A renamed executor
@@ -634,6 +655,11 @@ executor, `destructive` = needs confirmation, `expensive` = long-running,
 
 ## 5. The shot-making vocabulary
 
+There are **113 action types** across 22 domains: 74 switch cases in the
+monolithic executor, 1 type-guarded method, and 38 handler modules that register
+themselves at import. [`evidence/actions.md`](evidence/actions.md) lists each one
+with the properties it reads and the tool that produces it.
+
 The director speaks in closed vocabularies, all derived from the schema at
 module load, so the prompt cannot advertise something the renderer would drop.
 
@@ -679,7 +705,7 @@ Each carries a unique React key (`id ?? \`${type}-${label}\``), so nothing
 collides; they exist so a user can pick "Slow In Dissolve" or "Whip Left"
 directly rather than picking a transition and then editing a parameter.
 
-38 aliases are folded onto them, matched case-, space- and underscore-
+46 aliases are folded onto them, matched case-, space- and underscore-
 insensitively, so "Whip Zoom", `whip_zoom` and `whip-zoom` all reach `crossZoom`.
 
 ### 5.2 Effect shaders — 20 looks

@@ -1,0 +1,1835 @@
+{
+  "genres": [
+    {
+      "id": "highlight-reel",
+      "name": "Highlight Reel",
+      "description": "Fast-paced compilation of the best moments. High energy, quick cuts, rhythm-driven editing.",
+      "rules": {
+        "pacing": "fast",
+        "transitionPreference": [
+          "crossfade",
+          "whipPan",
+          "flash"
+        ],
+        "effectPalette": [
+          "brightness",
+          "contrast",
+          "saturation"
+        ],
+        "textStyle": "minimal",
+        "cutStyle": "hard",
+        "colorMood": "vibrant",
+        "musicRole": "rhythmic"
+      },
+      "pacing": "fast",
+      "cutsPerMinuteTarget": [
+        24,
+        45
+      ],
+      "effectPalette": [
+        "brightness",
+        "contrast",
+        "saturation",
+        "chromatic-aberration"
+      ],
+      "transitionPalette": [
+        "hardCut",
+        "whipPan",
+        "flash",
+        "crossZoom",
+        "impactShake"
+      ],
+      "musicMoodHints": [
+        "energetic",
+        "rhythmic",
+        "modern"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          26,
+          70
+        ],
+        "minimumShotContrast": 3.5,
+        "effectHitsPerMinute": [
+          14,
+          90
+        ],
+        "minimumEffectTypes": 4,
+        "minimumTreatedShotRatio": 0.85,
+        "minimumCameraMoveRatio": 0.7,
+        "minimumCameraMoveVariety": 4,
+        "minimumSpeedRamps": 3,
+        "textsPerMinute": [
+          6,
+          30
+        ],
+        "minimumTextAnimations": 3,
+        "minimumSfxHits": 4,
+        "minimumMotionMoments": 1,
+        "hookShots": 3,
+        "minimumOnBeatCutRatio": 0.55,
+        "requiresEscalation": true
+      }
+    },
+    {
+      "id": "documentary",
+      "name": "Documentary",
+      "description": "Slow, deliberate pacing with context-rich text overlays. Lets the footage breathe.",
+      "rules": {
+        "pacing": "slow",
+        "transitionPreference": [
+          "crossfade",
+          "dipToBlack"
+        ],
+        "effectPalette": [
+          "temperature",
+          "vignette"
+        ],
+        "textStyle": "moderate",
+        "cutStyle": "soft",
+        "colorMood": "neutral",
+        "musicRole": "background"
+      },
+      "pacing": "slow",
+      "cutsPerMinuteTarget": [
+        4,
+        14
+      ],
+      "effectPalette": [
+        "temperature",
+        "vignette"
+      ],
+      "transitionPalette": [
+        "crossfade",
+        "dipToBlack"
+      ],
+      "musicMoodHints": [
+        "documentary",
+        "restrained",
+        "atmospheric"
+      ]
+    },
+    {
+      "id": "vlog",
+      "name": "Vlog",
+      "description": "Conversational, personal feel. Mixed pacing with natural transitions.",
+      "rules": {
+        "pacing": "medium",
+        "transitionPreference": [
+          "crossfade",
+          "wipe",
+          "slide"
+        ],
+        "effectPalette": [
+          "brightness",
+          "temperature"
+        ],
+        "textStyle": "moderate",
+        "cutStyle": "mixed",
+        "colorMood": "warm",
+        "musicRole": "background"
+      },
+      "pacing": "medium",
+      "cutsPerMinuteTarget": [
+        8,
+        20
+      ],
+      "effectPalette": [
+        "brightness",
+        "temperature"
+      ],
+      "transitionPalette": [
+        "crossfade",
+        "wipe",
+        "slide"
+      ],
+      "musicMoodHints": [
+        "warm",
+        "casual",
+        "ambient"
+      ]
+    },
+    {
+      "id": "tutorial",
+      "name": "Tutorial",
+      "description": "Step-by-step clarity. Text-heavy with deliberate pacing on key moments.",
+      "rules": {
+        "pacing": "medium",
+        "transitionPreference": [
+          "crossfade",
+          "dipToBlack"
+        ],
+        "effectPalette": [
+          "brightness",
+          "contrast"
+        ],
+        "textStyle": "heavy",
+        "cutStyle": "soft",
+        "colorMood": "neutral",
+        "musicRole": "background"
+      },
+      "pacing": "medium",
+      "cutsPerMinuteTarget": [
+        10,
+        24
+      ],
+      "effectPalette": [
+        "brightness",
+        "contrast"
+      ],
+      "transitionPalette": [
+        "crossfade",
+        "dipToBlack"
+      ],
+      "musicMoodHints": [
+        "focused",
+        "light",
+        "low volume"
+      ]
+    },
+    {
+      "id": "music-video",
+      "name": "Music Video",
+      "description": "Rhythm-synced cuts with heavy visual effects. The music drives the edit.",
+      "signatureEffects": [
+        "prism",
+        "wave-warp",
+        "edge-glow",
+        "swirl",
+        "echo"
+      ],
+      "rules": {
+        "pacing": "fast",
+        "transitionPreference": [
+          "crossfade",
+          "glitch",
+          "flash",
+          "whipPan"
+        ],
+        "effectPalette": [
+          "brightness",
+          "contrast",
+          "saturation",
+          "hue",
+          "chromatic-aberration",
+          "motion-blur"
+        ],
+        "textStyle": "minimal",
+        "cutStyle": "hard",
+        "colorMood": "vibrant",
+        "musicRole": "featured"
+      },
+      "pacing": "fast",
+      "cutsPerMinuteTarget": [
+        18,
+        42
+      ],
+      "effectPalette": [
+        "brightness",
+        "contrast",
+        "saturation",
+        "chromatic-aberration",
+        "motion-blur"
+      ],
+      "transitionPalette": [
+        "crossfade",
+        "glitch",
+        "flash",
+        "whipPan",
+        "zoomBlur",
+        "motionSmear",
+        "tileFlip"
+      ],
+      "musicMoodHints": [
+        "rhythmic",
+        "featured",
+        "high energy"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          24,
+          60
+        ],
+        "minimumShotContrast": 3,
+        "effectHitsPerMinute": [
+          18,
+          100
+        ],
+        "minimumEffectTypes": 5,
+        "minimumTreatedShotRatio": 0.9,
+        "minimumCameraMoveRatio": 0.75,
+        "minimumCameraMoveVariety": 4,
+        "minimumSpeedRamps": 3,
+        "minimumTransitions": 2,
+        "minimumTransitionTypes": 3,
+        "minimumSfxHits": 3,
+        "hookShots": 3,
+        "minimumOnBeatCutRatio": 0.7,
+        "requiresEscalation": true
+      }
+    },
+    {
+      "id": "corporate",
+      "name": "Corporate",
+      "description": "Clean, professional. Minimal effects, clear messaging, polished feel.",
+      "rules": {
+        "pacing": "slow",
+        "transitionPreference": [
+          "crossfade",
+          "dipToWhite"
+        ],
+        "effectPalette": [
+          "brightness",
+          "contrast"
+        ],
+        "textStyle": "moderate",
+        "cutStyle": "soft",
+        "colorMood": "cool",
+        "musicRole": "background"
+      },
+      "pacing": "slow",
+      "cutsPerMinuteTarget": [
+        4,
+        12
+      ],
+      "effectPalette": [
+        "brightness",
+        "contrast"
+      ],
+      "transitionPalette": [
+        "crossfade",
+        "dipToWhite"
+      ],
+      "musicMoodHints": [
+        "polished",
+        "corporate",
+        "subtle"
+      ]
+    },
+    {
+      "id": "social-reel",
+      "name": "Social Reel",
+      "description": "Short-form, punchy, caption-heavy. Optimized for vertical mobile viewing.",
+      "signatureEffects": [
+        "vhs",
+        "prism"
+      ],
+      "rules": {
+        "pacing": "fast",
+        "transitionPreference": [
+          "crossfade",
+          "zoom",
+          "slide"
+        ],
+        "effectPalette": [
+          "brightness",
+          "saturation",
+          "contrast"
+        ],
+        "textStyle": "heavy",
+        "cutStyle": "hard",
+        "colorMood": "vibrant",
+        "musicRole": "rhythmic"
+      },
+      "pacing": "fast",
+      "cutsPerMinuteTarget": [
+        20,
+        40
+      ],
+      "effectPalette": [
+        "brightness",
+        "saturation",
+        "contrast",
+        "chromatic-aberration"
+      ],
+      "transitionPalette": [
+        "hardCut",
+        "zoom",
+        "slide",
+        "crossZoom",
+        "strobeCut",
+        "lightLeak"
+      ],
+      "musicMoodHints": [
+        "upbeat",
+        "rhythmic",
+        "modern"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          24,
+          65
+        ],
+        "minimumShotContrast": 3,
+        "effectHitsPerMinute": [
+          16,
+          100
+        ],
+        "minimumEffectTypes": 4,
+        "minimumTreatedShotRatio": 0.9,
+        "minimumCameraMoveRatio": 0.75,
+        "minimumCameraMoveVariety": 4,
+        "minimumSpeedRamps": 3,
+        "textsPerMinute": [
+          14,
+          60
+        ],
+        "minimumTextAnimations": 4,
+        "minimumTransitions": 2,
+        "minimumSfxHits": 5,
+        "hookShots": 4,
+        "minimumOnBeatCutRatio": 0.6,
+        "requiresEscalation": true
+      }
+    },
+    {
+      "id": "same-person-compare",
+      "name": "Same Person / Comparison",
+      "description": "A fast split-screen comparison format with consistent captions and two sources visible at once.",
+      "layoutHint": "split-compare",
+      "pacing": "fast",
+      "cutsPerMinuteTarget": [
+        18,
+        36
+      ],
+      "captionTemplate": {
+        "fontFamily": "Arial",
+        "fontSize": 48,
+        "fontWeight": 700,
+        "color": "#ffffff",
+        "position": {
+          "x": 0.5,
+          "y": 0.86
+        },
+        "align": "center",
+        "animation": "slide-up"
+      },
+      "effectPalette": [
+        "brightness",
+        "contrast",
+        "saturation",
+        "chromatic-aberration"
+      ],
+      "transitionPalette": [
+        "hardCut",
+        "match-cut"
+      ],
+      "musicMoodHints": [
+        "playful",
+        "punchy",
+        "social"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          20,
+          50
+        ],
+        "minimumShotContrast": 3,
+        "effectHitsPerMinute": [
+          10,
+          60
+        ],
+        "minimumEffectTypes": 4,
+        "minimumTreatedShotRatio": 0.85,
+        "minimumCameraMoveRatio": 0.6,
+        "minimumCameraMoveVariety": 3,
+        "minimumLayoutVariety": 2,
+        "minimumSpeedRamps": 2,
+        "minimumTransitions": 2,
+        "textsPerMinute": [
+          14,
+          60
+        ],
+        "minimumTextAnimations": 3,
+        "minimumSfxHits": 3,
+        "hookShots": 3,
+        "requiresEscalation": true
+      },
+      "rules": {
+        "pacing": "fast",
+        "transitionPreference": [
+          "crossfade",
+          "flash"
+        ],
+        "effectPalette": [
+          "brightness",
+          "contrast",
+          "saturation"
+        ],
+        "textStyle": "heavy",
+        "cutStyle": "hard",
+        "colorMood": "vibrant",
+        "musicRole": "rhythmic"
+      }
+    },
+    {
+      "id": "kill-montage",
+      "name": "Gaming Kill Montage",
+      "description": "Very fast gameplay montage with impact effects and short hit-marker SFX cues.",
+      "pacing": "fast",
+      "cutsPerMinuteTarget": [
+        30,
+        60
+      ],
+      "effectPalette": [
+        "chromatic-aberration",
+        "motion-blur"
+      ],
+      "transitionPalette": [
+        "hardCut",
+        "impactShake",
+        "vhsScan",
+        "pixelSort"
+      ],
+      "musicMoodHints": [
+        "aggressive",
+        "electronic",
+        "impact-driven"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          35,
+          110
+        ],
+        "minimumShotContrast": 4,
+        "effectHitsPerMinute": [
+          24,
+          140
+        ],
+        "minimumEffectTypes": 5,
+        "minimumTreatedShotRatio": 0.95,
+        "minimumCameraMoveRatio": 0.8,
+        "minimumCameraMoveVariety": 5,
+        "minimumSpeedRamps": 4,
+        "minimumSfxHits": 6,
+        "minimumMotionMoments": 1,
+        "textsPerMinute": [
+          8,
+          40
+        ],
+        "minimumTextAnimations": 3,
+        "hookShots": 4,
+        "minimumOnBeatCutRatio": 0.6,
+        "requiresEscalation": true
+      },
+      "signatureEffects": [
+        "vhs",
+        "scanlines",
+        "pixelate",
+        "echo"
+      ],
+      "rules": {
+        "pacing": "fast",
+        "transitionPreference": [
+          "hardCut"
+        ],
+        "effectPalette": [
+          "chromatic-aberration",
+          "motion-blur"
+        ],
+        "textStyle": "minimal",
+        "cutStyle": "hard",
+        "colorMood": "vibrant",
+        "musicRole": "rhythmic"
+      }
+    },
+    {
+      "id": "cinematic-trailer",
+      "name": "Cinematic Trailer",
+      "description": "A restrained opening that accelerates into a dramatic climax with title cards and audio swells.",
+      "pacing": "slow",
+      "cutsPerMinuteTarget": [
+        8,
+        24
+      ],
+      "effectPalette": [
+        "vignette",
+        "temperature",
+        "motion-blur"
+      ],
+      "transitionPalette": [
+        "crossfade",
+        "dipToBlack",
+        "hardCut"
+      ],
+      "musicMoodHints": [
+        "orchestral",
+        "ominous",
+        "rising tension"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          10,
+          30
+        ],
+        "minimumShotContrast": 3,
+        "effectHitsPerMinute": [
+          5,
+          30
+        ],
+        "minimumEffectTypes": 3,
+        "minimumTreatedShotRatio": 0.7,
+        "minimumCameraMoveRatio": 0.6,
+        "minimumCameraMoveVariety": 3,
+        "minimumSpeedRamps": 2,
+        "minimumTransitions": 2,
+        "minimumTransitionTypes": 2,
+        "textsPerMinute": [
+          2,
+          14
+        ],
+        "minimumTextAnimations": 2,
+        "minimumSfxHits": 2,
+        "hookShots": 2,
+        "requiresEscalation": true
+      },
+      "signatureEffects": [
+        "duotone",
+        "gradient-map"
+      ],
+      "rules": {
+        "pacing": "slow",
+        "transitionPreference": [
+          "crossfade",
+          "dipToBlack",
+          "hardCut"
+        ],
+        "effectPalette": [
+          "vignette",
+          "temperature",
+          "motion-blur"
+        ],
+        "textStyle": "minimal",
+        "cutStyle": "mixed",
+        "colorMood": "cool",
+        "musicRole": "featured"
+      }
+    },
+    {
+      "id": "tutorial-howto",
+      "name": "Tutorial / How-To",
+      "description": "Clear instructional pacing with lower-thirds, step callouts, and consistent explanatory captions.",
+      "layoutHint": "sequential",
+      "pacing": "medium",
+      "cutsPerMinuteTarget": [
+        10,
+        24
+      ],
+      "captionTemplate": {
+        "fontSize": 36,
+        "color": "#ffffff",
+        "backgroundColor": "#111111",
+        "backgroundPadding": 12,
+        "backgroundRadius": 6,
+        "position": {
+          "x": 0.08,
+          "y": 0.86
+        },
+        "align": "left"
+      },
+      "effectPalette": [
+        "brightness",
+        "contrast"
+      ],
+      "transitionPalette": [
+        "crossfade"
+      ],
+      "musicMoodHints": [
+        "light",
+        "focused",
+        "low volume"
+      ],
+      "rules": {
+        "pacing": "medium",
+        "transitionPreference": [
+          "crossfade"
+        ],
+        "effectPalette": [
+          "brightness",
+          "contrast"
+        ],
+        "textStyle": "heavy",
+        "cutStyle": "soft",
+        "colorMood": "neutral",
+        "musicRole": "background"
+      }
+    },
+    {
+      "id": "before-after",
+      "name": "Before / After Transformation",
+      "description": "A measured transformation reveal using held frames and a clean split comparison.",
+      "layoutHint": "split-compare",
+      "pacing": "slow",
+      "cutsPerMinuteTarget": [
+        4,
+        14
+      ],
+      "effectPalette": [
+        "brightness",
+        "contrast",
+        "saturation"
+      ],
+      "transitionPalette": [
+        "flash",
+        "crossfade"
+      ],
+      "musicMoodHints": [
+        "anticipatory",
+        "uplifting",
+        "minimal"
+      ],
+      "rules": {
+        "pacing": "slow",
+        "transitionPreference": [
+          "flash",
+          "crossfade"
+        ],
+        "effectPalette": [
+          "brightness",
+          "contrast",
+          "saturation"
+        ],
+        "textStyle": "moderate",
+        "cutStyle": "soft",
+        "colorMood": "neutral",
+        "musicRole": "background"
+      }
+    },
+    {
+      "id": "day-in-the-life",
+      "name": "Day in the Life / Vlog",
+      "description": "Personal, natural pacing with timestamp captions and an ambient music bed.",
+      "pacing": "medium",
+      "cutsPerMinuteTarget": [
+        8,
+        20
+      ],
+      "effectPalette": [
+        "brightness",
+        "temperature"
+      ],
+      "transitionPalette": [
+        "crossfade",
+        "hardCut",
+        "slide"
+      ],
+      "musicMoodHints": [
+        "warm",
+        "ambient",
+        "casual"
+      ],
+      "rules": {
+        "pacing": "medium",
+        "transitionPreference": [
+          "crossfade",
+          "hardCut",
+          "slide"
+        ],
+        "effectPalette": [
+          "brightness",
+          "temperature"
+        ],
+        "textStyle": "moderate",
+        "cutStyle": "mixed",
+        "colorMood": "warm",
+        "musicRole": "background"
+      }
+    },
+    {
+      "id": "product-demo",
+      "name": "Product Demo",
+      "description": "Feature-led product presentation with callouts, clean cuts, and optional reaction PIP.",
+      "layoutHint": "pip-reaction",
+      "pacing": "medium",
+      "cutsPerMinuteTarget": [
+        8,
+        20
+      ],
+      "captionTemplate": {
+        "fontSize": 40,
+        "fontWeight": 600,
+        "color": "#ffffff",
+        "position": {
+          "x": 0.08,
+          "y": 0.14
+        },
+        "align": "left"
+      },
+      "effectPalette": [
+        "brightness",
+        "contrast",
+        "sharpen"
+      ],
+      "transitionPalette": [
+        "crossfade",
+        "slide"
+      ],
+      "musicMoodHints": [
+        "clean",
+        "confident",
+        "modern"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          12,
+          32
+        ],
+        "minimumShotContrast": 2,
+        "effectHitsPerMinute": [
+          6,
+          35
+        ],
+        "minimumEffectTypes": 3,
+        "minimumTreatedShotRatio": 0.7,
+        "minimumCameraMoveRatio": 0.45,
+        "minimumCameraMoveVariety": 3,
+        "minimumLayoutVariety": 1,
+        "minimumSpeedRamps": 1,
+        "textsPerMinute": [
+          8,
+          36
+        ],
+        "minimumTextAnimations": 3,
+        "minimumSfxHits": 3,
+        "hookShots": 2,
+        "requiresEscalation": true
+      },
+      "signatureEffects": [
+        "duotone"
+      ],
+      "rules": {
+        "pacing": "medium",
+        "transitionPreference": [
+          "crossfade",
+          "slide"
+        ],
+        "effectPalette": [
+          "brightness",
+          "contrast"
+        ],
+        "textStyle": "moderate",
+        "cutStyle": "mixed",
+        "colorMood": "cool",
+        "musicRole": "background"
+      }
+    },
+    {
+      "id": "podcast-clip",
+      "name": "Podcast Clip",
+      "description": "Dialogue-forward edit with readable captions, speaker identification, and restrained visual motion.",
+      "pacing": "slow",
+      "cutsPerMinuteTarget": [
+        4,
+        12
+      ],
+      "captionTemplate": {
+        "fontSize": 42,
+        "fontWeight": 700,
+        "color": "#ffffff",
+        "position": {
+          "x": 0.5,
+          "y": 0.78
+        },
+        "align": "center",
+        "animation": "slide-up"
+      },
+      "effectPalette": [
+        "contrast",
+        "temperature"
+      ],
+      "transitionPalette": [
+        "hardCut",
+        "crossfade"
+      ],
+      "musicMoodHints": [
+        "none",
+        "subtle",
+        "dialogue-first"
+      ],
+      "rules": {
+        "pacing": "slow",
+        "transitionPreference": [
+          "hardCut",
+          "crossfade"
+        ],
+        "effectPalette": [
+          "contrast",
+          "temperature"
+        ],
+        "textStyle": "heavy",
+        "cutStyle": "soft",
+        "colorMood": "neutral",
+        "musicRole": "background"
+      }
+    },
+    {
+      "id": "listicle-countdown",
+      "name": "Countdown / Listicle",
+      "description": "Fast numbered beats with one clear title card or caption treatment per item.",
+      "pacing": "fast",
+      "cutsPerMinuteTarget": [
+        18,
+        36
+      ],
+      "effectPalette": [
+        "chromatic-aberration",
+        "brightness",
+        "saturation"
+      ],
+      "transitionPalette": [
+        "hardCut",
+        "slide",
+        "whipPan"
+      ],
+      "musicMoodHints": [
+        "upbeat",
+        "countdown",
+        "playful"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          22,
+          55
+        ],
+        "minimumShotContrast": 3,
+        "effectHitsPerMinute": [
+          12,
+          70
+        ],
+        "minimumEffectTypes": 4,
+        "minimumTreatedShotRatio": 0.85,
+        "minimumCameraMoveRatio": 0.65,
+        "minimumCameraMoveVariety": 3,
+        "minimumSpeedRamps": 2,
+        "textsPerMinute": [
+          14,
+          60
+        ],
+        "minimumTextAnimations": 3,
+        "minimumSfxHits": 3,
+        "hookShots": 3,
+        "requiresEscalation": true
+      },
+      "rules": {
+        "pacing": "fast",
+        "transitionPreference": [
+          "hardCut",
+          "slide",
+          "whipPan"
+        ],
+        "effectPalette": [
+          "chromatic-aberration",
+          "brightness",
+          "saturation"
+        ],
+        "textStyle": "heavy",
+        "cutStyle": "hard",
+        "colorMood": "vibrant",
+        "musicRole": "rhythmic"
+      }
+    },
+    {
+      "id": "meme-compilation",
+      "name": "Meme Compilation",
+      "description": "Very fast comedic compilation using hard cuts and minimal transition decoration.",
+      "pacing": "fast",
+      "cutsPerMinuteTarget": [
+        30,
+        75
+      ],
+      "effectPalette": [
+        "chromatic-aberration",
+        "brightness"
+      ],
+      "transitionPalette": [
+        "hardCut",
+        "strobeCut",
+        "sliceSlide"
+      ],
+      "musicMoodHints": [
+        "comedic",
+        "chaotic",
+        "viral"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          35,
+          110
+        ],
+        "minimumShotContrast": 4,
+        "effectHitsPerMinute": [
+          20,
+          120
+        ],
+        "minimumEffectTypes": 4,
+        "minimumTreatedShotRatio": 0.9,
+        "minimumCameraMoveRatio": 0.7,
+        "minimumCameraMoveVariety": 4,
+        "minimumSpeedRamps": 3,
+        "minimumSfxHits": 5,
+        "textsPerMinute": [
+          12,
+          60
+        ],
+        "minimumTextAnimations": 4,
+        "hookShots": 4,
+        "requiresEscalation": true
+      },
+      "signatureEffects": [
+        "posterize",
+        "dither",
+        "halftone",
+        "mirror-tiles"
+      ],
+      "rules": {
+        "pacing": "fast",
+        "transitionPreference": [
+          "hardCut"
+        ],
+        "effectPalette": [
+          "chromatic-aberration",
+          "brightness"
+        ],
+        "textStyle": "heavy",
+        "cutStyle": "hard",
+        "colorMood": "vibrant",
+        "musicRole": "rhythmic"
+      }
+    },
+    {
+      "id": "sports-highlight",
+      "name": "Sports Highlight Reel",
+      "description": "Energetic sports edit with slow motion on key moments, score overlays, and impact sound cues.",
+      "pacing": "fast",
+      "cutsPerMinuteTarget": [
+        20,
+        45
+      ],
+      "effectPalette": [
+        "chromatic-aberration",
+        "motion-blur",
+        "contrast",
+        "saturation"
+      ],
+      "transitionPalette": [
+        "hardCut",
+        "whipPan",
+        "flash",
+        "crossZoom",
+        "impactShake"
+      ],
+      "musicMoodHints": [
+        "anthemic",
+        "stadium",
+        "high energy"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          22,
+          55
+        ],
+        "minimumShotContrast": 3,
+        "effectHitsPerMinute": [
+          12,
+          70
+        ],
+        "minimumEffectTypes": 4,
+        "minimumTreatedShotRatio": 0.85,
+        "minimumCameraMoveRatio": 0.6,
+        "minimumCameraMoveVariety": 4,
+        "minimumSpeedRamps": 3,
+        "minimumSfxHits": 4,
+        "textsPerMinute": [
+          6,
+          30
+        ],
+        "minimumTextAnimations": 3,
+        "hookShots": 3,
+        "minimumOnBeatCutRatio": 0.45,
+        "requiresEscalation": true
+      },
+      "signatureEffects": [
+        "scanlines",
+        "prism"
+      ],
+      "rules": {
+        "pacing": "fast",
+        "transitionPreference": [
+          "hardCut",
+          "whipPan",
+          "flash"
+        ],
+        "effectPalette": [
+          "chromatic-aberration",
+          "motion-blur",
+          "contrast",
+          "saturation"
+        ],
+        "textStyle": "moderate",
+        "cutStyle": "hard",
+        "colorMood": "vibrant",
+        "musicRole": "rhythmic"
+      }
+    },
+    {
+      "id": "glow-up-reveal",
+      "name": "Glow-Up / Prank Reveal",
+      "description": "A suspenseful setup that resolves into a visual reveal, often using a split comparison or reveal transition.",
+      "layoutHint": "split-compare",
+      "pacing": "medium",
+      "cutsPerMinuteTarget": [
+        10,
+        24
+      ],
+      "effectPalette": [
+        "brightness",
+        "saturation",
+        "chromatic-aberration"
+      ],
+      "transitionPalette": [
+        "match-cut",
+        "flash",
+        "crossfade",
+        "lightLeak",
+        "inkBleed"
+      ],
+      "musicMoodHints": [
+        "suspenseful",
+        "playful",
+        "reveal"
+      ],
+      "densityTarget": {
+        "shotsPerMinute": [
+          16,
+          44
+        ],
+        "minimumShotContrast": 3,
+        "effectHitsPerMinute": [
+          8,
+          50
+        ],
+        "minimumEffectTypes": 3,
+        "minimumTreatedShotRatio": 0.75,
+        "minimumCameraMoveRatio": 0.5,
+        "minimumCameraMoveVariety": 3,
+        "minimumLayoutVariety": 2,
+        "minimumSpeedRamps": 2,
+        "minimumTransitions": 2,
+        "textsPerMinute": [
+          10,
+          45
+        ],
+        "minimumTextAnimations": 3,
+        "minimumSfxHits": 2,
+        "hookShots": 2,
+        "requiresEscalation": true
+      },
+      "signatureEffects": [
+        "prism",
+        "duotone",
+        "kaleidoscope"
+      ],
+      "rules": {
+        "pacing": "medium",
+        "transitionPreference": [
+          "match-cut",
+          "flash",
+          "crossfade"
+        ],
+        "effectPalette": [
+          "brightness",
+          "saturation",
+          "chromatic-aberration"
+        ],
+        "textStyle": "moderate",
+        "cutStyle": "mixed",
+        "colorMood": "vibrant",
+        "musicRole": "featured"
+      }
+    }
+  ],
+  "cameraMoves": [
+    {
+      "id": "punch-in",
+      "direction": "Snap closer at the start of the shot (~0.3s) and hold the tighter frame.",
+      "useWhen": "Emphasis: a reaction, a line landing, a hit on the beat.",
+      "properties": [
+        "scale.x",
+        "scale.y"
+      ],
+      "settles": false
+    },
+    {
+      "id": "punch-out",
+      "direction": "Start tight, snap back to the wide frame (~0.3s).",
+      "useWhen": "Reveals — the payoff of a setup shot.",
+      "properties": [
+        "scale.x",
+        "scale.y"
+      ],
+      "settles": false
+    },
+    {
+      "id": "slow-push",
+      "direction": "Creep in across the whole shot (≈8% zoom).",
+      "useWhen": "The default for talking heads and any shot you want to feel intentional.",
+      "properties": [
+        "scale.x",
+        "scale.y"
+      ],
+      "settles": false
+    },
+    {
+      "id": "pull-back",
+      "direction": "Start slightly tight and ease out to the wide frame across the shot.",
+      "useWhen": "Ending a sequence, final beat, end of a chapter.",
+      "properties": [
+        "scale.x",
+        "scale.y"
+      ],
+      "settles": false
+    },
+    {
+      "id": "drift-left",
+      "direction": "Lateral drift to the left across the shot.",
+      "useWhen": "B-roll, establishing shots, anything already stable.",
+      "properties": [
+        "position.x"
+      ],
+      "settles": false
+    },
+    {
+      "id": "drift-right",
+      "direction": "Lateral drift to the right across the shot.",
+      "useWhen": "B-roll, establishing shots, mirrors drift-left for variety.",
+      "properties": [
+        "position.x"
+      ],
+      "settles": false
+    },
+    {
+      "id": "tilt-up",
+      "direction": "Slight upward drift across the shot.",
+      "useWhen": "Reveals that build upward, entrances.",
+      "properties": [
+        "position.y"
+      ],
+      "settles": false
+    },
+    {
+      "id": "tilt-down",
+      "direction": "Slight downward drift across the shot.",
+      "useWhen": "Falls, drops, deflating beats.",
+      "properties": [
+        "position.y"
+      ],
+      "settles": false
+    },
+    {
+      "id": "handheld",
+      "direction": "Low-amplitude handheld jitter held under the whole shot.",
+      "useWhen": "Energy without a zoom — interviews, walk-and-talk, raw footage.",
+      "properties": [
+        "position.x",
+        "position.y",
+        "rotation"
+      ],
+      "settles": true
+    },
+    {
+      "id": "whip-shake",
+      "direction": "Sharp rotational snap at the shot head, settling in ~0.25s.",
+      "useWhen": "Impact frames, big hits, transitions into a new beat.",
+      "properties": [
+        "rotation"
+      ],
+      "settles": true
+    },
+    {
+      "id": "snap-zoom",
+      "direction": "Start heavily zoomed and snap out to normal in ~0.2s.",
+      "useWhen": "Cold opens, drop hits, the moment the music breaks.",
+      "properties": [
+        "scale.x",
+        "scale.y"
+      ],
+      "settles": false
+    },
+    {
+      "id": "breathe",
+      "direction": "Slow sinusoidal zoom in and back out across the shot.",
+      "useWhen": "Holding on a face or a product without letting the frame die.",
+      "properties": [
+        "scale.x",
+        "scale.y"
+      ],
+      "settles": true
+    },
+    {
+      "id": "wobble",
+      "direction": "Gentle rotational sway, returning to level.",
+      "useWhen": "Playful beats, comedic timing, meme cutaways.",
+      "properties": [
+        "rotation"
+      ],
+      "settles": true
+    },
+    {
+      "id": "sway",
+      "direction": "Slow tilt of a couple of degrees across the shot.",
+      "useWhen": "Stylised b-roll, dreamy or disoriented moments.",
+      "properties": [
+        "rotation"
+      ],
+      "settles": false
+    }
+  ],
+  "signatureLooks": [
+    {
+      "name": "vhs",
+      "label": "VHS Tape",
+      "shaderId": "vhs",
+      "feel": "Camcorder tape: chroma bleed, rolling scanlines, horizontal jitter.",
+      "useWhen": "Nostalgia hooks, throwback compilations, a beat that should read as found footage.",
+      "defaults": {
+        "intensity": 0.75,
+        "scanlines": 0.4,
+        "jitter": 0.45
+      }
+    },
+    {
+      "name": "scanlines",
+      "label": "CRT Scanlines",
+      "shaderId": "scanlines",
+      "feel": "Raster lines crawling down the frame like a CRT.",
+      "useWhen": "Retro UI, arcade, early-internet or surveillance beats.",
+      "defaults": {
+        "density": 360,
+        "intensity": 0.3,
+        "speed": 0.2
+      }
+    },
+    {
+      "name": "halftone",
+      "label": "Halftone Print",
+      "shaderId": "halftone",
+      "feel": "Print-screen dots: comic book, zine, newsprint.",
+      "useWhen": "Punchline frames, comic-cutaway jokes, a poster-style title card.",
+      "defaults": {
+        "dotSize": 8,
+        "angle": 15
+      }
+    },
+    {
+      "name": "dither",
+      "label": "Ordered Dither",
+      "shaderId": "dither",
+      "feel": "Bayer-ordered quantization — 8-bit console, risograph grain.",
+      "useWhen": "Glitch beats, lo-fi reveals, a frame that should look printed rather than filmed.",
+      "defaults": {
+        "levels": 4,
+        "scale": 1
+      }
+    },
+    {
+      "name": "posterize",
+      "label": "Posterize",
+      "shaderId": "posterize",
+      "feel": "Flattened colour bands — screen-print poster.",
+      "useWhen": "Graphic match cuts, hard style turns, a frame that should stop looking photographic.",
+      "defaults": {
+        "levels": 5,
+        "mix": 1
+      }
+    },
+    {
+      "name": "duotone",
+      "label": "Duotone",
+      "shaderId": "duotone",
+      "feel": "Two-colour remap with contrast boost — album-cover grade.",
+      "useWhen": "Moody chapter breaks, flashback frames, a colour signature for one section.",
+      "defaults": {
+        "shadowColor": "#11133f",
+        "highlightColor": "#ffca6b",
+        "mix": 0.9,
+        "contrast": 1.15
+      }
+    },
+    {
+      "name": "gradient-map",
+      "label": "Gradient Map",
+      "shaderId": "gradient-map",
+      "feel": "Luma remapped onto a dark-to-light colour ramp — thermal, false-colour.",
+      "useWhen": "Heat-check moments, night-vision reveals, a hard tonal flip on a drop.",
+      "defaults": {
+        "mix": 1
+      }
+    },
+    {
+      "name": "prism",
+      "label": "Prism Split",
+      "shaderId": "prism",
+      "feel": "Channel offset along an angle — a heavier, animated sibling of chromatic aberration.",
+      "useWhen": "Impact frames, whip transitions, a hit that needs to feel optical rather than digital.",
+      "defaults": {
+        "amount": 8,
+        "angle": 0,
+        "mix": 1
+      }
+    },
+    {
+      "name": "fisheye",
+      "label": "Fisheye",
+      "shaderId": "fisheye",
+      "feel": "Lens warp: barrel distortion out from the centre.",
+      "useWhen": "Action-cam inserts, skate/sport footage, comedy zooms into a face.",
+      "defaults": {
+        "strength": 0.55,
+        "radius": 0.8
+      }
+    },
+    {
+      "name": "wave-warp",
+      "label": "Wave Warp",
+      "shaderId": "wave-warp",
+      "feel": "Animated liquid displacement — heat haze, underwater, wobble.",
+      "useWhen": "Dream sequences, drunk/comedic beats, a transition into memory.",
+      "defaults": {
+        "amplitude": 0.025,
+        "frequency": 5,
+        "speed": 1.5
+      }
+    },
+    {
+      "name": "edge-glow",
+      "label": "Edge Glow",
+      "shaderId": "edge-glow",
+      "feel": "Neon outline traced over every edge in the shot.",
+      "useWhen": "Neon/tech reveals, Tron-style titles, a silhouette beat that needs to read as a drawing.",
+      "defaults": {
+        "strength": 4,
+        "radius": 1.5,
+        "color": "#4de8ff"
+      }
+    },
+    {
+      "name": "speed-lines",
+      "label": "Speed Lines",
+      "shaderId": "speed-lines",
+      "feel": "Anime action lines bursting from the centre of the frame.",
+      "useWhen": "Impact moments, chases, a punchline reaction that needs the frame to explode.",
+      "defaults": {
+        "amount": 0.6,
+        "density": 48,
+        "speed": 2
+      }
+    },
+    {
+      "name": "glitch-blocks",
+      "label": "Glitch Blocks",
+      "shaderId": "glitch-blocks",
+      "feel": "Row-wise data corruption: shifted slices, RGB split, dropout flashes.",
+      "useWhen": "Hard transitions, freezing/rewinding a beat, a hard drive or signal-failure gag.",
+      "defaults": {
+        "amount": 0.5,
+        "blockSize": 24,
+        "rgbSplit": 0.5,
+        "speed": 3
+      }
+    },
+    {
+      "name": "light-leak",
+      "label": "Light Leak",
+      "shaderId": "light-leak",
+      "feel": "A warm film-burn streak and bloom sweeping across the frame.",
+      "useWhen": "Scene changes, memory/romance beats, a reveal that should feel like exposed film.",
+      "defaults": {
+        "intensity": 0.5,
+        "warmth": 0.7,
+        "speed": 1
+      }
+    },
+    {
+      "name": "pixelate",
+      "label": "Pixelate",
+      "shaderId": "pixelate",
+      "feel": "Blocky low-resolution mosaic — censor gag or 8-bit reveal.",
+      "useWhen": "Blurred-out punchlines, countdown or censor beats, a hard degrade into a drop.",
+      "defaults": {
+        "size": 8
+      }
+    },
+    {
+      "name": "kaleidoscope",
+      "label": "Kaleidoscope",
+      "shaderId": "kaleidoscope",
+      "feel": "Mirrored wedges folding the frame into a spinning tunnel.",
+      "useWhen": "Dream states, dance/party peaks, a drop that should stop looking like a camera shot.",
+      "defaults": {
+        "segments": 6,
+        "spin": 0.35,
+        "zoom": 1
+      }
+    },
+    {
+      "name": "mirror-tiles",
+      "label": "Mirror Tiles",
+      "shaderId": "mirror-tiles",
+      "feel": "The frame tiled and mirrored into a drifting grid of copies.",
+      "useWhen": "Graphic interludes, chorus repeats, a frame that should read as designed rather than filmed.",
+      "defaults": {
+        "columns": 4,
+        "rows": 3,
+        "shift": 0.5
+      }
+    },
+    {
+      "name": "swirl",
+      "label": "Swirl",
+      "shaderId": "swirl",
+      "feel": "Space rotated around the centre — the picture twists itself into a spiral.",
+      "useWhen": "Dizzy/comedic beats, spell or transformation moments, a transition into a flashback.",
+      "defaults": {
+        "amount": 1.6,
+        "radius": 0.75,
+        "speed": 1.2
+      }
+    },
+    {
+      "name": "crt-curve",
+      "label": "CRT Curve",
+      "shaderId": "crt-curve",
+      "feel": "A curved picture tube with phosphor lines, flicker and rounded glass.",
+      "useWhen": "Retro TV framing, security-cam reveals, a whole-section treatment rather than a beat.",
+      "defaults": {
+        "curvature": 0.35,
+        "phosphor": 0.35,
+        "flicker": 0.15
+      }
+    },
+    {
+      "name": "echo",
+      "label": "Echo Trail",
+      "shaderId": "echo",
+      "feel": "An eight-tap afterimage dragging the frame into a breathing trail.",
+      "useWhen": "Speed ramps, whip moves, a held moment that needs to keep moving after the cut.",
+      "defaults": {
+        "amount": 0.6,
+        "offset": 18,
+        "speed": 1.5
+      }
+    }
+  ],
+  "signatureAliases": {
+    "vhs-tape": "vhs",
+    "vhstape": "vhs",
+    "vhs-glitch": "vhs",
+    "tape": "vhs",
+    "camcorder": "vhs",
+    "home-video": "vhs",
+    "crt": "scanlines",
+    "scanline": "scanlines",
+    "crt-scanlines": "scanlines",
+    "interlace": "scanlines",
+    "interlaced": "scanlines",
+    "crt-lines": "scanlines",
+    "tv": "scanlines",
+    "comic": "halftone",
+    "comic-book": "halftone",
+    "newsprint": "halftone",
+    "dot-screen": "halftone",
+    "print-halftone": "halftone",
+    "risograph": "dither",
+    "riso": "dither",
+    "8-bit": "dither",
+    "eight-bit": "dither",
+    "retro-dither": "dither",
+    "bayer": "dither",
+    "poster": "posterize",
+    "posterized": "posterize",
+    "flat-color": "posterize",
+    "color-banding": "posterize",
+    "two-tone": "duotone",
+    "dual-tone": "duotone",
+    "twotone": "duotone",
+    "heatmap": "gradient-map",
+    "heat-map": "gradient-map",
+    "thermal": "gradient-map",
+    "false-color": "gradient-map",
+    "thermal-camera": "gradient-map",
+    "luminance-map": "gradient-map",
+    "prism-split": "prism",
+    "prismsplit": "prism",
+    "rgb-split": "prism",
+    "lens-split": "prism",
+    "channel-split": "prism",
+    "gopro": "fisheye",
+    "go-pro": "fisheye",
+    "action-cam": "fisheye",
+    "wide-angle": "fisheye",
+    "lens-warp": "fisheye",
+    "underwater": "wave-warp",
+    "water-warp": "wave-warp",
+    "heat-haze": "wave-warp",
+    "wobble": "wave-warp",
+    "wobblewarp": "wave-warp",
+    "liquid": "wave-warp",
+    "neon": "edge-glow",
+    "neon-outline": "edge-glow",
+    "neonoutline": "edge-glow",
+    "tron": "edge-glow",
+    "edge-neon": "edge-glow",
+    "speedlines": "speed-lines",
+    "action-lines": "speed-lines",
+    "impact-lines": "speed-lines",
+    "manga-lines": "speed-lines",
+    "anime-lines": "speed-lines",
+    "datamosh": "glitch-blocks",
+    "data-mosh": "glitch-blocks",
+    "glitch": "glitch-blocks",
+    "block-glitch": "glitch-blocks",
+    "corrupt": "glitch-blocks",
+    "signal-failure": "glitch-blocks",
+    "light-leak-transition": "light-leak",
+    "leak": "light-leak",
+    "film-burn-leak": "light-leak",
+    "flare": "light-leak",
+    "lens-flare": "light-leak",
+    "sun-flare": "light-leak",
+    "bokeh-leak": "light-leak",
+    "pixelated": "pixelate",
+    "pixelize": "pixelate",
+    "pixelized": "pixelate",
+    "mosaic-pixel": "pixelate",
+    "kaleido": "kaleidoscope",
+    "calidoscope": "kaleidoscope",
+    "kaleidoscope-tunnel": "kaleidoscope",
+    "mirror-tunnel": "kaleidoscope",
+    "hex-mirror": "kaleidoscope",
+    "mirror": "mirror-tiles",
+    "mirrored": "mirror-tiles",
+    "mirror-grid": "mirror-tiles",
+    "tile-mirror": "mirror-tiles",
+    "mosaic-mirror": "mirror-tiles",
+    "symmetrical": "mirror-tiles",
+    "twist": "swirl",
+    "twirl": "swirl",
+    "vortex": "swirl",
+    "whirl": "swirl",
+    "spiral": "swirl",
+    "spiral-warp": "swirl",
+    "crt-monitor": "crt-curve",
+    "crt-tv": "crt-curve",
+    "curved-screen": "crt-curve",
+    "curved-tv": "crt-curve",
+    "tube-tv": "crt-curve",
+    "old-tv": "crt-curve",
+    "cathode": "crt-curve",
+    "trail": "echo",
+    "trails": "echo",
+    "afterimage": "echo",
+    "after-image": "echo",
+    "ghost": "echo",
+    "ghosting": "echo",
+    "ghost-echo": "echo",
+    "echo-trail": "echo",
+    "motion-echo": "echo"
+  },
+  "transitionAliases": {
+    "fade": "crossfade",
+    "dissolve": "crossfade",
+    "whip-zoom": "crossZoom",
+    "whipzoom": "crossZoom",
+    "zoom-punch": "crossZoom",
+    "crash-zoom": "crossZoom",
+    "crashzoom": "crossZoom",
+    "radial-blur-wipe": "zoomBlur",
+    "zoom-blur-transition": "zoomBlur",
+    "smear": "motionSmear",
+    "motion-blur-cut": "motionSmear",
+    "directional-smear": "motionSmear",
+    "strobe": "strobeCut",
+    "flash-cut-strobe": "strobeCut",
+    "flicker-cut": "strobeCut",
+    "shake-cut": "impactShake",
+    "impact-hit": "impactShake",
+    "camera-shake": "impactShake",
+    "luma-dissolve": "lumaWipe",
+    "luminance-wipe": "lumaWipe",
+    "brightness-wipe": "lumaWipe",
+    "ink-wipe": "inkBleed",
+    "ink-reveal": "inkBleed",
+    "blot-reveal": "inkBleed",
+    "bleed-in": "inkBleed",
+    "tile-flip-in": "tileFlip",
+    "card-flip": "tileFlip",
+    "flip-tiles": "tileFlip",
+    "shutter-wipe": "sliceSlide",
+    "band-slide": "sliceSlide",
+    "slice-wipe": "sliceSlide",
+    "light-leak-transition": "lightLeak",
+    "leak": "lightLeak",
+    "leak-flare": "lightLeak",
+    "vhs-cut": "vhsScan",
+    "tape-wipe": "vhsScan",
+    "vhs-glitch-cut": "vhsScan",
+    "burn-through": "paperBurn",
+    "burn-reveal": "paperBurn",
+    "fire-wipe": "paperBurn",
+    "datamosh": "pixelSort",
+    "pixel-sort-transition": "pixelSort",
+    "sort-smear": "pixelSort",
+    "film-roll": "filmRoll",
+    "roll-up": "filmRoll",
+    "projector-roll": "filmRoll"
+  },
+  "textAnimationAliases": {
+    "text-reveal-up": "slide-up",
+    "text-reveal-down": "slide-down",
+    "text-reveal-left": "slide-left",
+    "text-reveal-right": "slide-right",
+    "text-type-on": "typewriter",
+    "text-fade-in": "fade",
+    "text-pop": "pop",
+    "text-bounce": "bounce",
+    "fadein": "fade",
+    "fade-in": "fade",
+    "fadeout": "fade",
+    "fade-out": "fade",
+    "slideup": "slide-up",
+    "slidedown": "slide-down",
+    "slideleft": "slide-left",
+    "slideright": "slide-right",
+    "scalein": "scale",
+    "scaleout": "scale",
+    "rotatein": "rotate",
+    "zoom-in": "scale",
+    "zoomin": "scale",
+    "wordbyword": "word-by-word",
+    "word-by-word-reveal": "word-by-word",
+    "karaoke": "word-by-word",
+    "shaking": "shake",
+    "wiggle": "wave"
+  },
+  "supportedClipEffectTypes": [
+    "brightness",
+    "contrast",
+    "saturation",
+    "grayscale",
+    "sepia",
+    "invert",
+    "hue",
+    "blur",
+    "sharpen",
+    "vignette",
+    "grain",
+    "temperature",
+    "tint",
+    "tonal",
+    "chromaKey",
+    "shadow",
+    "glow",
+    "motion-blur",
+    "radial-blur",
+    "chromatic-aberration",
+    "shader"
+  ],
+  "supportedEffectTypes": [
+    "brightness",
+    "contrast",
+    "saturation",
+    "grayscale",
+    "sepia",
+    "invert",
+    "hue",
+    "blur",
+    "sharpen",
+    "vignette",
+    "grain",
+    "temperature",
+    "tint",
+    "tonal",
+    "chromaKey",
+    "shadow",
+    "glow",
+    "motion-blur",
+    "radial-blur",
+    "chromatic-aberration",
+    "shader",
+    "vhs",
+    "scanlines",
+    "halftone",
+    "dither",
+    "posterize",
+    "duotone",
+    "gradient-map",
+    "prism",
+    "fisheye",
+    "wave-warp",
+    "edge-glow",
+    "speed-lines",
+    "glitch-blocks",
+    "light-leak",
+    "pixelate",
+    "kaleidoscope",
+    "mirror-tiles",
+    "swirl",
+    "crt-curve",
+    "echo"
+  ],
+  "colorGradeEffectTypes": [
+    "colorGrade",
+    "color-grade",
+    "color-grading",
+    "color_grade",
+    "color_grading",
+    "colorGrading"
+  ],
+  "cutTransitions": [
+    "hardCut",
+    "hard-cut",
+    "hard cut",
+    "hardcut",
+    "hard_cut",
+    "cut",
+    "jumpCut",
+    "jump-cut",
+    "jump cut",
+    "jumpcut",
+    "jump_cut",
+    "match-cut",
+    "matchCut",
+    "match cut",
+    "matchcut",
+    "match_cut",
+    "none",
+    ""
+  ],
+  "supportedTextAnimations": [
+    "none",
+    "typewriter",
+    "fade",
+    "slide-left",
+    "slide-right",
+    "slide-up",
+    "slide-down",
+    "scale",
+    "blur",
+    "bounce",
+    "rotate",
+    "wave",
+    "shake",
+    "pop",
+    "glitch",
+    "split",
+    "flip",
+    "word-by-word",
+    "rainbow",
+    "rise",
+    "drop",
+    "elastic",
+    "swing",
+    "zoom-blur",
+    "cascade"
+  ]
+}

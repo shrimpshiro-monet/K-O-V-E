@@ -191,4 +191,37 @@ describe("action dispatch integrity", () => {
     expect(byId.get("c1")).toBe(0);
     expect(byId.get("c2")).toBe(2);
   });
+
+  it("refuses an invented type in every domain the router recognises", async () => {
+    // The router dispatches by prefix; a domain whose target method lacked a
+    // switch (transform/ was one) accepted any string and mutated the clip.
+    const domains = [
+      "project", "media", "track", "marker", "clip", "effect", "keyframe",
+      "transform", "transition", "audio", "subtitle", "mask", "adjustment",
+      "nested", "multicam", "creation", "motion", "text", "shape", "svg", "sticker",
+    ];
+    const executor = new ActionExecutor(new ActionHistory());
+
+    const accepted: string[] = [];
+    const threw: Array<{ domain: string; message: string }> = [];
+
+    for (const domain of domains) {
+      const project = makeProjectWithTrack();
+      const before = JSON.stringify(project);
+      try {
+        const result = await executor.execute(
+          action(`${domain}/zzzNotAThing`, { clipId: "c1" }),
+          project,
+        );
+        if (result.success || JSON.stringify(project) !== before) {
+          accepted.push(domain);
+        }
+      } catch (error) {
+        threw.push({ domain, message: (error as Error).message });
+      }
+    }
+
+    expect(accepted).toEqual([]);
+    expect(threw).toEqual([]);
+  });
 });
