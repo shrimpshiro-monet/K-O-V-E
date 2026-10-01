@@ -9,11 +9,13 @@ export interface AudioWaveformData {
 }
 
 export interface LoudnessMetrics {
-  readonly integrated: number; // LUFS
-  readonly shortTerm: number; // LUFS
-  readonly momentary: number; // LUFS
-  readonly truePeak: number; // dBTP
-  readonly range: number; // LU
+  readonly integrated: number; // LUFS (-Infinity when not measurable)
+  readonly shortTerm: number; // LUFS, maximum over the measured signal
+  readonly momentary: number; // LUFS, maximum over the measured signal
+  readonly truePeak: number; // dBTP (4x oversampled)
+  readonly range: number; // LU (0 when not measurable)
+  /** Full BS.1770-4 / EBU R128 result with nullable fields and gating statistics. */
+  readonly detail?: import("./loudness").LoudnessResult;
 }
 
 export interface TimeRange {

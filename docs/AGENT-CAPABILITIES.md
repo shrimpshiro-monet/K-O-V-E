@@ -2,7 +2,7 @@
 
 # Kove Advanced Agent — Capability Reference
 
-The agent exposes **321 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
+The agent exposes **322 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
 
 ## Tools
 
@@ -296,6 +296,7 @@ The agent exposes **321 tools** spanning read/observe, project, track, clip, tra
 - **remove_audio_effect** — Remove an audio effect.
 - **update_audio_effect** — Update an audio effect's params.
 - **toggle_audio_effect** — Enable/disable an audio effect.
+- **measure_loudness** (read-only, expensive) — Measure programme loudness of a clip's or media item's SOURCE audio per ITU-R BS.1770-4 / EBU R128: integrated LUFS (gated), loudness range (LU, EBU Tech 3342), momentary and short-term maxima, and 4x-oversampled true peak (dBTP). Measures the source before clip effects, faders and the timeline mix, and ignores clip speed/reverse. Pass exactly one of clipId or mediaId; optional startTime/endTime are source seconds. Pass targetLufs (e.g. -23 EBU R128, -14 streaming) to also get the gain needed. Values that cannot be measured (silence, under 0.4 s for integrated / 3 s for range) are null, never estimated. Check get_capabilities → host.analyzeAudio first.
 
 ## subtitle
 - **add_subtitle** — Add a subtitle (text, start, end seconds).

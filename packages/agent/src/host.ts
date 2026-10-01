@@ -42,6 +42,15 @@ export interface HostFeatures {
   readonly exportVideo: boolean;
   /** create/restore_checkpoint, undo, redo. */
   readonly checkpoints: boolean;
+  /** Decode a media item's audio to samples (measure_loudness). */
+  readonly analyzeAudio: boolean;
+}
+
+/** Decoded audio handed to analysis tools. Source audio: before any clip effect, fader or mix. */
+export interface AudioSamples {
+  /** One array per channel, equal lengths. Channel order: L R C LFE Ls Rs (BS.775). */
+  readonly channels: readonly ArrayLike<number>[];
+  readonly sampleRate: number;
 }
 
 export interface TxnHandle {
@@ -343,6 +352,11 @@ export interface EditingHost {
   readonly historyControl: HistoryControl;
   /** Honest capability report (optional so minimal test hosts need not implement it). */
   features?(): HostFeatures;
+  /**
+   * Decode a media item's audio track to samples. Optional: hosts without media access omit it
+   * and report `features().analyzeAudio === false`.
+   */
+  loadAudioSamples?(mediaId: string, audioTrackIndex?: number): Promise<AudioSamples | null>;
 
   /**
    * Project lifecycle + media ingest. Optional because they require a real

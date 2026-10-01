@@ -6,11 +6,13 @@ import type { Action, ActionResult } from "@kove-advanced/core/types/actions";
 import type { Project } from "@kove-advanced/core/types/project";
 import { HistoryLedger, fingerprintProject } from "./checkpoints";
 import type { HistoryBackend } from "./checkpoints";
-import type { EditingHost, HostFeatures, JobKind, JobResult, JobRunner, OverlayRef, TextOverlayOptions, TxnHandle } from "./host";
+import type { AudioSamples, EditingHost, HostFeatures, JobKind, JobResult, JobRunner, OverlayRef, TextOverlayOptions, TxnHandle } from "./host";
 
 export interface HeadlessHostOptions {
   readonly history?: ActionHistory;
   readonly jobRunner?: JobRunner;
+  /** Supplies decoded audio for analysis tools (measure_loudness). Without it they report UNSUPPORTED_HOST. */
+  readonly audioSource?: (mediaId: string, audioTrackIndex: number) => Promise<AudioSamples | null>;
 }
 
 /**
@@ -23,6 +25,7 @@ export class HeadlessHost implements EditingHost {
   private readonly executor: ActionExecutor;
   private readonly history: ActionHistory;
   private readonly jobRunner?: JobRunner;
+  private readonly audioSource?: HeadlessHostOptions["audioSource"];
   private txnCounter = 0;
   private readonly txnSnapshots = new Map<string, Project>();
   private readonly ledger: HistoryLedger;
@@ -33,6 +36,7 @@ export class HeadlessHost implements EditingHost {
     this.history = options.history ?? new ActionHistory();
     this.executor = new ActionExecutor(this.history);
     this.jobRunner = options.jobRunner;
+    this.audioSource = options.audioSource;
     this.ledger = new HistoryLedger(this.historyBackend());
     this.historyControl = this.ledger;
   }
@@ -45,7 +49,12 @@ export class HeadlessHost implements EditingHost {
       renderMulticamPreview: false,
       exportVideo: hasRunner,
       checkpoints: true,
+      analyzeAudio: this.audioSource !== undefined,
     };
+  }
+
+  loadAudioSamples(mediaId: string, audioTrackIndex = 0): Promise<AudioSamples | null> {
+    return this.audioSource ? this.audioSource(mediaId, audioTrackIndex) : Promise.resolve(null);
   }
 
   private historyBackend(): HistoryBackend {

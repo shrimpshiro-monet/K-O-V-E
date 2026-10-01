@@ -1,0 +1,65 @@
+{
+  "generator": "scripts/loudness-oracle.py",
+  "seconds": 40,
+  "ffmpeg": "ffmpeg version 7.0.2-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2024 the FFmpeg developers",
+  "pyloudnorm": "unknown",
+  "cases": {
+    "stereo-44k1": {
+      "fs": 44100,
+      "channels": 2,
+      "ffmpeg": {
+        "integratedLufs": -14.204,
+        "loudnessRangeLu": 16.69,
+        "truePeakDbtp": 2.6
+      },
+      "pyloudnorm": {
+        "integratedLufs": -14.244370055541518
+      }
+    },
+    "stereo-48k": {
+      "fs": 48000,
+      "channels": 2,
+      "ffmpeg": {
+        "integratedLufs": -14.207,
+        "loudnessRangeLu": 16.7,
+        "truePeakDbtp": 2.6
+      },
+      "pyloudnorm": {
+        "integratedLufs": -14.244470849974991
+      }
+    },
+    "stereo-96k": {
+      "fs": 96000,
+      "channels": 2,
+      "ffmpeg": {
+        "integratedLufs": -14.229,
+        "loudnessRangeLu": 16.7,
+        "truePeakDbtp": 2.5
+      },
+      "pyloudnorm": {
+        "integratedLufs": -14.245015848561401
+      }
+    },
+    "mono-48k": {
+      "fs": 48000,
+      "channels": 1,
+      "ffmpeg": {
+        "integratedLufs": -17.218,
+        "loudnessRangeLu": 16.7,
+        "truePeakDbtp": 2.1
+      },
+      "pyloudnorm": {
+        "integratedLufs": -17.25480334907491
+      }
+    },
+    "5.1-48k": {
+      "fs": 48000,
+      "channels": 6,
+      "ffmpeg": {
+        "integratedLufs": -9.568,
+        "loudnessRangeLu": 16.7,
+        "truePeakDbtp": 3.0
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import type {
+  AudioSamples,
   EditingHost,
   JobKind,
   JobResult,
@@ -110,6 +111,25 @@ function projectRef(project: Project): ProjectRef {
 
 export interface LiveEditorHostOptions {
   readonly jobRunner?: JobRunner;
+  /** Decodes a media item's audio. Defaults to the browser decode path (loadAudioBuffer). Injectable for tests. */
+  readonly audioSource?: (mediaId: string, audioTrackIndex: number) => Promise<AudioSamples | null>;
+}
+
+/** Browser decode: media blob -> extract/decode audio track -> samples. Source audio, pre-effects. */
+async function decodeMediaAudio(mediaId: string, audioTrackIndex: number): Promise<AudioSamples | null> {
+  const item = useProjectStore.getState().getMediaItem(mediaId);
+  if (!item?.blob) return null;
+  const { loadAudioBuffer } = await import("../../utils/load-audio-buffer");
+  const context = new AudioContext();
+  try {
+    const buffer = await loadAudioBuffer(context, item.blob, { audioTrackIndex });
+    if (!buffer) return null;
+    const channels: Float32Array[] = [];
+    for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+    return { channels, sampleRate: buffer.sampleRate };
+  } finally {
+    void context.close();
+  }
 }
 
 const RENDER_QUEUE_FORMATS: readonly MotionRenderQueueFormat[] = [
@@ -194,11 +214,13 @@ export class LiveEditorHost implements EditingHost {
     error: "Multicam preview rendering is not implemented in this host",
   }));
 
+  private readonly audioSource?: LiveEditorHostOptions["audioSource"];
   private readonly ledger: HistoryLedger;
   readonly historyControl: HistoryLedger;
 
   constructor(options: LiveEditorHostOptions = {}) {
     this.jobRunner = options.jobRunner;
+    this.audioSource = options.audioSource;
     this.ledger = new HistoryLedger(this.historyBackend());
     this.historyControl = this.ledger;
     for (const name of AGENT_MUTATORS) {
@@ -283,7 +305,12 @@ export class LiveEditorHost implements EditingHost {
       renderMulticamPreview: false,
       exportVideo: hasRunner,
       checkpoints: true,
+      analyzeAudio: this.audioSource !== undefined || typeof AudioContext !== "undefined",
     };
+  }
+
+  loadAudioSamples(mediaId: string, audioTrackIndex = 0): Promise<AudioSamples | null> {
+    return (this.audioSource ?? decodeMediaAudio)(mediaId, audioTrackIndex);
   }
 
   setJobRunner(runner: JobRunner): void {

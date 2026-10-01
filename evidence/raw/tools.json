@@ -1,6 +1,6 @@
 {
   "generatedFrom": "listTools()",
-  "count": 321,
+  "count": 322,
   "tools": [
     {
       "name": "get_editor_state",
@@ -18799,6 +18799,52 @@
       "kind": "direct",
       "flags": "direct-handler",
       "params": []
+    },
+    {
+      "name": "measure_loudness",
+      "domain": "audio",
+      "title": "Measure loudness",
+      "actionType": null,
+      "kind": "read",
+      "flags": "read-only, expensive, direct-handler",
+      "params": [
+        {
+          "name": "clipId",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "mediaId",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "startTime",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "endTime",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "audioTrackIndex",
+          "type": "integer",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "targetLufs",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        }
+      ]
     }
   ]
 }

@@ -12,7 +12,7 @@ Every tool the agent can call, with the parameters each one accepts.
 > Every figure here is asserted by that file against the running code, so a
 > rename or a dropped registration fails the suite rather than rotting here.
 
-**321 tools across 23 domains.** Kinds: `action` dispatches through the action executor, `direct` runs a handler, `read` is read-only.
+**322 tools across 23 domains.** Kinds: `action` dispatches through the action executor, `direct` runs a handler, `read` is read-only.
 
 | domain | tools |
 | --- | --- |
@@ -21,9 +21,9 @@ Every tool the agent can call, with the parameters each one accepts.
 | [clip](#clip) | 11 |
 | [track](#track) | 10 |
 | [graphics](#graphics) | 9 |
+| [audio](#audio) | 8 |
 | [multicam](#multicam) | 8 |
 | [project](#project) | 7 |
-| [audio](#audio) | 7 |
 | [export](#export) | 7 |
 | [speed](#speed) | 6 |
 | [effect](#effect) | 5 |
@@ -570,6 +570,30 @@ Every tool the agent can call, with the parameters each one accepts.
 - **`update_sticker_clip`** — Update sticker
 - **`update_svg_clip`** — Update SVG
 
+## audio
+
+8 tools.
+
+| tool | kind | action type | parameters |
+| --- | --- | --- | --- |
+| `add_audio_automation` | action | `audio/addAutomation` | `clipId`: string<br>`points`: array |
+| `add_audio_effect` | action | `audio/addEffect` | `clipId`: string<br>`effect`: object |
+| `measure_loudness` | read | — | `clipId`?: string<br>`mediaId`?: string<br>`startTime`?: number<br>`endTime`?: number<br>`audioTrackIndex`?: integer<br>`targetLufs`?: number |
+| `remove_audio_effect` | action | `audio/removeEffect` | `clipId`: string<br>`effectId`: string |
+| `set_clip_fade` | action | `audio/setFade` | `clipId`: string<br>`fadeIn`?: number<br>`fadeOut`?: number |
+| `set_clip_volume` | action | `audio/setVolume` | `clipId`: string<br>`volume`: number |
+| `toggle_audio_effect` | action | `audio/toggleEffect` | `clipId`: string<br>`effectId`: string<br>`enabled`: boolean |
+| `update_audio_effect` | action | `audio/updateEffect` | `clipId`: string<br>`effectId`: string<br>`params`: object |
+
+- **`add_audio_automation`** — Audio automation
+- **`add_audio_effect`** — Add audio effect
+- **`measure_loudness`** — Measure loudness
+- **`remove_audio_effect`** — Remove audio effect
+- **`set_clip_fade`** — Set fade
+- **`set_clip_volume`** — Set volume
+- **`toggle_audio_effect`** — Toggle audio effect
+- **`update_audio_effect`** — Update audio effect
+
 ## multicam
 
 8 tools.
@@ -615,28 +639,6 @@ Every tool the agent can call, with the parameters each one accepts.
 - **`save_project`** — Save project
 - **`set_canvas_background`** — Canvas background
 - **`update_project_settings`** — Update settings
-
-## audio
-
-7 tools.
-
-| tool | kind | action type | parameters |
-| --- | --- | --- | --- |
-| `add_audio_automation` | action | `audio/addAutomation` | `clipId`: string<br>`points`: array |
-| `add_audio_effect` | action | `audio/addEffect` | `clipId`: string<br>`effect`: object |
-| `remove_audio_effect` | action | `audio/removeEffect` | `clipId`: string<br>`effectId`: string |
-| `set_clip_fade` | action | `audio/setFade` | `clipId`: string<br>`fadeIn`?: number<br>`fadeOut`?: number |
-| `set_clip_volume` | action | `audio/setVolume` | `clipId`: string<br>`volume`: number |
-| `toggle_audio_effect` | action | `audio/toggleEffect` | `clipId`: string<br>`effectId`: string<br>`enabled`: boolean |
-| `update_audio_effect` | action | `audio/updateEffect` | `clipId`: string<br>`effectId`: string<br>`params`: object |
-
-- **`add_audio_automation`** — Audio automation
-- **`add_audio_effect`** — Add audio effect
-- **`remove_audio_effect`** — Remove audio effect
-- **`set_clip_fade`** — Set fade
-- **`set_clip_volume`** — Set volume
-- **`toggle_audio_effect`** — Toggle audio effect
-- **`update_audio_effect`** — Update audio effect
 
 ## export
 
