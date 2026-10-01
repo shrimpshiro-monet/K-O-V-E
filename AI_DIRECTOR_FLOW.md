@@ -537,7 +537,34 @@ You transform raw footage into polished edits by:
 - **Less is more**: Don't over-edit.`;
 ```
 
-### 8e. System prompt tells Monet to execute
+### 8e. Density contract and movement vocabulary
+
+A plan of four hard cuts is no longer an acceptable answer to "make me a 30 second edit". Three additions make density a hard requirement instead of a vibe:
+
+1. **Contract injected into the prompt** — `buildDensityContract(prompt, genre)` (`packages/agent/src/director/director-prompt.ts`) infers the target duration from the user's own words (`inferTargetDuration`: "30s", "2 minutes"; pacing fallback 30/45/75s) and converts the genre's `densityTarget` into concrete floors: shots, effect hits, camera moves, treated shots, text overlays + animations, speed ramps, SFX, hook shots, transitions and on-beat cut ratio. `formatDensityContract` injects it as `## Edit density contract (MANDATORY for this request)` — explicitly a floor, not the goal. `CAMERA_MOVE_BLOCK` / `TEXT_ANIMATION_BLOCK` / `TRANSITION_BLOCK` are derived from the schema at module load, so the prompt can never drift from what validation and the renderer accept.
+2. **Closed vocabularies with real render targets** — `packages/creation-schema/src/director/camera-moves.ts` defines the 14 move ids (`snap-zoom`, `slow-push`, `whip-shake`, …); `segment.cameraMoves` compiles to additive transform keyframes and is written to the clip through `keyframe/setAll` in `materializeEditPlan`. `vocab.ts` pins the 25 supported text animation presets and canonicalizes aliases (`text-reveal-up → slide-up`, `karaoke → word-by-word`) inside `normalizeEditPlan`. Unknown ids surface as `unsupported_camera_move` / `unsupported_text_animation` validation errors — they are never silently dropped.
+3. **Review gate with one bounded revision** — after validation, `reviewEditPlan` measures `measureEditDensity` (cuts/min, shot-length contrast, effect hits, camera moves, texts, ramps, SFX, treated-shot ratio, evolution) and demands both style ≥ 0.6 and density ≥ 0.6. A plan that fails gets exactly one revision call carrying `buildRevisionBrief` (score, named deficiencies, concrete floors, "add the missing density rather than replacing the edit"), and the revised plan replaces the thin one before anything touches the timeline. Under-dense turns cost one extra LLM call; no more.
+
+### 8f. Signature effects: named looks, not shader plumbing
+
+`shader` is a single effect type that only renders when `params.shaderId` names a real effect shader. That shape fails *silently* (no shader resolved → nothing drawn) and is exactly the kind of plumbing an LLM cannot be trusted to remember, so the renderer-backed effect shaders are exposed as named looks a plan can request by intent:
+
+| Where | What it holds |
+| --- | --- |
+| `packages/core/src/motion/shaders/effect-shaders.ts` | The GLSL library, 20 looks: dither, gradient-map, pixelate, halftone, vhs, posterize, duotone, prism, fisheye, wave-warp, scanlines, edge-glow, speed-lines (anime action lines), glitch-blocks (row-wise corruption + RGB split), light-leak (film-burn streak + bloom), and the second wave — **kaleidoscope** (mirrored spinning wedges), **mirror-tiles** (drifting mirrored grid), **swirl** (radius-weighted twist), **crt-curve** (curved tube + phosphor + flicker) and **echo** (eight-tap afterimage trail). |
+| `packages/creation-schema/src/director/shader-effects.ts` | The plan-facing table: canonical name → `shaderId`, parameter defaults, an intensity mapping, plus aliases (`crt` → scanlines, `comic-book` → halftone, `datamosh`/`glitch` → glitch-blocks, `lens-flare` → light-leak, `gopro` → fisheye, `vortex`/`twist` → swirl, `ghost`/`afterimage` → echo, `crt-monitor` → crt-curve, `mirror` → mirror-tiles, `kaleido` → kaleidoscope, …). |
+
+A plan writes `{ type: "vhs", intensity: 0.8 }`; `validateEditPlan` accepts it (unknown names are rejected with the signature list included in the message so the repair pass can fix them); `materializeEditPlan` resolves it to `effect/add` with `effectType: "shader"` and `params: { shaderId, …defaults, …intensity, …overrides }`. Because the stored layer is a normal shader effect, the inspector's existing shader UI (name + sliders + colour pickers, from `getMotionShaderDef`) and the Effects panel presets work with no extra wiring.
+
+`add_video_effect` takes the same names, so the agent can drop a signature look on a single clip without going through a plan.
+
+Guardrails:
+- `packages/agent/src/director/signature-effects.test.ts` asserts the mirrored table equals the core effect-shader list exactly, that every mirrored param exists in the core def with the default inside its min/max, and that the intensity mapping stays in range at 0/0.25/0.5/0.75/1. Adding a shader in core without mirroring it here fails the suite.
+- `packages/core/src/motion/shaders/effect-shaders.test.ts` checks the GLSL dialect (`#version 300 es`, no `gl_FragColor`/`texture2D`), that each param has a matching `uniform <type> u_<name>`, and that defaults are in range.
+- Validation rejects a raw `shader` spec with no `shaderId` (`shader_effect_missing_id`) and warns on a shaderId outside the built-in set (`unverified_shader_effect_id`).
+- Prompt side: the signature catalogue is rendered into the system prompt from the same table, with a budget rule (1-3 per edit, never on consecutive shots, land them on a hook/punchline/chapter break), genres can name their preferred looks (`Genre.signatureEffects`, e.g. kill-montage → vhs/scanlines/pixelate), and `buildExpansionPrompt` lists the looks so a vague ask can be expanded into "a VHS-tape hook" rather than "cool effects". `scorePromptCompleteness` counts signature names and aliases as style coverage, so "make it look like a VHS tape" is no longer asked a style question.
+
+### 8g. System prompt tells Monet to execute
 
 **File:** `packages/agent/src/system-prompt.ts:49-62`
 
@@ -557,6 +584,51 @@ The main system prompt explicitly instructs the agent to execute the plan, not j
 "  3. After executing ALL items, summarize what was done.",
 "- **The plan is an INTERNAL instruction set — execute it, don't just show it.**",
 ```
+
+---
+
+### 8h. Transition library: 38 rendered blends, described by craft
+
+A hard cut is still the edit's default rhythm, but "cut" was the only thing the
+model could reach for beyond the original 24 blends. `TRANSITION_TYPES`
+(`packages/core/src/types/effects.ts`) now carries 38 renderer-backed types and
+the prompt quotes them verbatim.
+
+- **Renderer** — `packages/core/src/video/transition-engine.ts` gained 14 render
+  paths on top of the original 24: `crossZoom`, `zoomBlur`, `motionSmear`,
+  `strobeCut`, `impactShake`, `lumaWipe`, `inkBleed`, `tileFlip`, `sliceSlide`,
+  `lightLeak`, `vhsScan`, `paperBurn`, `pixelSort`, `filmRoll`. Each one has a
+  `getDefaultParams` entry, likes the others, so a plan that sets only
+  `{ type, duration }` still renders. Pixel-level looks (`lumaWipe`,
+  `pixelSort`) run on a reduced-resolution key canvas (`getMaskContext`, 1/8
+  scale capped at 320px) and composite through `compositeMaskedIncoming`
+  (copy → `destination-in` mask → `source-over` layer). When `OffscreenCanvas`
+  or `getImageData` is unavailable they degrade to a wipe/crossfade instead of
+  throwing — a headless render never dies on a mask.
+- **Schema** — `SUPPORTED_TRANSITION_TYPES` (`packages/creation-schema/src/director/vocab.ts`)
+  mirrors the list, and `TRANSITION_TYPE_ALIASES` maps model spellings onto it
+  (`whip-zoom` → `crossZoom`, `datamosh` → `pixelSort`, `burn-through` →
+  `paperBurn`, …). Lookup normalizes case, spaces and underscores, so
+  "Whip Zoom" and `whip_zoom` land on the same type instead of failing
+  validation. Hard cuts (`hardCut`, `cut`) still canonicalize to `null` and are
+  dropped before commit.
+- **Prompt** — `TRANSITION_BLOCK` is interpolated into the Critical Rules, and a
+  "Transition craft" rule tells the model *when* each family earns its place
+  (punch → `crossZoom`/`zoomBlur`, hit → `impactShake`, flicker → `strobeCut`,
+  picture-driven reveals → `lumaWipe`/`inkBleed`/`paperBurn`, graphic assembly →
+  `tileFlip`/`sliceSlide`, treatment changes → `lightLeak`/`vhsScan`/`pixelSort`/`filmRoll`),
+  with "most junctions stay hard cuts" and "never the same one twice in a row".
+- **Style scoring** — `measureEditPlanStyle` classifies the punch-through wave
+  (`crossZoom`, `zoomBlur`, `motionSmear`, `strobeCut`, `impactShake`, `vhsScan`,
+  `pixelSort`, `filmRoll`) as a hard cut style, so a plan built from them scores
+  the same as one built from the legacy punchy set and does not silently fall to
+  "mixed".
+- **Editor** — `transition-bridge.ts` (type catalogue), `TransitionInspector.tsx`
+  (per-type parameter controls + animated preview, including a full-frame
+  overlay layer for flashes/leaks/scanlines) and `EffectsTransitionsPanel.tsx`
+  (38 preview cards grouped into Dissolves / Wipes / Movement / Stylized) all
+  moved to the full list together — no surface advertises a name another
+  surface would reject.
 
 ---
 

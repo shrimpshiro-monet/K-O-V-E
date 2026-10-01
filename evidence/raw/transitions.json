@@ -1,0 +1,533 @@
+{
+  "generatedFrom": "TransitionEngine + TRANSITION_TYPES",
+  "count": 38,
+  "transitions": [
+    {
+      "type": "crossfade",
+      "category": "Dissolves",
+      "label": "Crossfade",
+      "defaults": {
+        "curve": "ease"
+      },
+      "aliases": [
+        "fade",
+        "dissolve"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "dipToBlack",
+      "category": "Dissolves",
+      "label": "Dip to Black",
+      "defaults": {
+        "holdDuration": 0.1
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "dipToWhite",
+      "category": "Dissolves",
+      "label": "Dip to White",
+      "defaults": {
+        "holdDuration": 0.1
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "wipe",
+      "category": "Wipes",
+      "label": "Wipe",
+      "defaults": {
+        "direction": "left",
+        "softness": 0
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "slide",
+      "category": "Movement",
+      "label": "Slide",
+      "defaults": {
+        "direction": "left",
+        "pushOut": false
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "zoom",
+      "category": "Stylized",
+      "label": "Zoom",
+      "defaults": {
+        "scale": 2,
+        "center": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "push",
+      "category": "Movement",
+      "label": "Push",
+      "defaults": {
+        "direction": "left"
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "circleReveal",
+      "category": "Wipes",
+      "label": "Circle Reveal",
+      "defaults": {
+        "center": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "blur",
+      "category": "Stylized",
+      "label": "Blur Dissolve",
+      "defaults": {
+        "intensity": 1
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "whipPan",
+      "category": "Movement",
+      "label": "Whip Pan",
+      "defaults": {
+        "direction": "left",
+        "blurIntensity": 1
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "radialWipe",
+      "category": "Wipes",
+      "label": "Radial Wipe",
+      "defaults": {
+        "startAngle": -90,
+        "clockwise": true
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "pixelate",
+      "category": "Stylized",
+      "label": "Pixelate",
+      "defaults": {
+        "maxPixelSize": 48
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "glitch",
+      "category": "Stylized",
+      "label": "Glitch Cut",
+      "defaults": {
+        "intensity": 0.08,
+        "slices": 12
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "blinds",
+      "category": "Wipes",
+      "label": "Venetian Blinds",
+      "defaults": {
+        "count": 8,
+        "direction": "vertical"
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "diamondReveal",
+      "category": "Wipes",
+      "label": "Diamond Reveal",
+      "defaults": {
+        "center": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "spin",
+      "category": "Movement",
+      "label": "Spin Clockwise",
+      "defaults": {
+        "rotations": 1
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "flip",
+      "category": "Movement",
+      "label": "Flip Horizontal",
+      "defaults": {
+        "axis": "horizontal"
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "splitReveal",
+      "category": "Wipes",
+      "label": "Split Horizontal",
+      "defaults": {
+        "orientation": "horizontal"
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "flash",
+      "category": "Stylized",
+      "label": "Flash Cut",
+      "defaults": {
+        "intensity": 1
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "filmBurn",
+      "category": "Stylized",
+      "label": "Film Burn",
+      "defaults": {
+        "intensity": 1,
+        "warmth": 0.75
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "mosaic",
+      "category": "Wipes",
+      "label": "Mosaic Reveal",
+      "defaults": {
+        "tiles": 8,
+        "randomness": 0.85
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "ripple",
+      "category": "Stylized",
+      "label": "Ripple",
+      "defaults": {
+        "amplitude": 0.04,
+        "waves": 3
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "pageTurn",
+      "category": "Movement",
+      "label": "Page Turn Left",
+      "defaults": {
+        "direction": "left",
+        "shadow": 0.55
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "colorSplit",
+      "category": "Stylized",
+      "label": "Color Split",
+      "defaults": {
+        "maxOffset": 18,
+        "angle": 0
+      },
+      "aliases": [],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "crossZoom",
+      "category": "Movement",
+      "label": "Cross Zoom",
+      "defaults": {
+        "strength": 2.2,
+        "center": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "aliases": [
+        "whip-zoom",
+        "whipzoom",
+        "zoom-punch",
+        "crash-zoom",
+        "crashzoom"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "zoomBlur",
+      "category": "Movement",
+      "label": "Zoom Blur",
+      "defaults": {
+        "streaks": 12,
+        "strength": 0.35
+      },
+      "aliases": [
+        "radial-blur-wipe",
+        "zoom-blur-transition"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "motionSmear",
+      "category": "Movement",
+      "label": "Motion Smear",
+      "defaults": {
+        "direction": "left",
+        "distance": 0.25
+      },
+      "aliases": [
+        "smear",
+        "motion-blur-cut",
+        "directional-smear"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "strobeCut",
+      "category": "Stylized",
+      "label": "Strobe Cut",
+      "defaults": {
+        "strobes": 6
+      },
+      "aliases": [
+        "strobe",
+        "flash-cut-strobe",
+        "flicker-cut"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "impactShake",
+      "category": "Stylized",
+      "label": "Impact Shake",
+      "defaults": {
+        "intensity": 1,
+        "flash": 0.55
+      },
+      "aliases": [
+        "shake-cut",
+        "impact-hit",
+        "camera-shake"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "lumaWipe",
+      "category": "Wipes",
+      "label": "Luma Wipe",
+      "defaults": {
+        "softness": 0.25,
+        "invert": false
+      },
+      "aliases": [
+        "luma-dissolve",
+        "luminance-wipe",
+        "brightness-wipe"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "inkBleed",
+      "category": "Wipes",
+      "label": "Ink Bleed",
+      "defaults": {
+        "lobes": 7,
+        "softness": 0.35,
+        "center": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "aliases": [
+        "ink-wipe",
+        "ink-reveal",
+        "blot-reveal",
+        "bleed-in"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "tileFlip",
+      "category": "Movement",
+      "label": "Tile Flip",
+      "defaults": {
+        "columns": 6,
+        "stagger": 0.6,
+        "axis": "horizontal"
+      },
+      "aliases": [
+        "tile-flip-in",
+        "card-flip",
+        "flip-tiles"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "sliceSlide",
+      "category": "Wipes",
+      "label": "Slice Slide",
+      "defaults": {
+        "slices": 9,
+        "direction": "left",
+        "gap": 0
+      },
+      "aliases": [
+        "shutter-wipe",
+        "band-slide",
+        "slice-wipe"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "lightLeak",
+      "category": "Stylized",
+      "label": "Light Leak",
+      "defaults": {
+        "intensity": 1,
+        "warmth": 0.7,
+        "direction": "right"
+      },
+      "aliases": [
+        "light-leak-transition",
+        "leak",
+        "leak-flare"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "vhsScan",
+      "category": "Stylized",
+      "label": "VHS Scan",
+      "defaults": {
+        "intensity": 0.8,
+        "slices": 14
+      },
+      "aliases": [
+        "vhs-cut",
+        "tape-wipe",
+        "vhs-glitch-cut"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "paperBurn",
+      "category": "Wipes",
+      "label": "Paper Burn",
+      "defaults": {
+        "softness": 0.3,
+        "center": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "aliases": [
+        "burn-through",
+        "burn-reveal",
+        "fire-wipe"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "pixelSort",
+      "category": "Stylized",
+      "label": "Pixel Sort",
+      "defaults": {
+        "amount": 1,
+        "threshold": 0.55,
+        "direction": "right"
+      },
+      "aliases": [
+        "datamosh",
+        "pixel-sort-transition",
+        "sort-smear"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    },
+    {
+      "type": "filmRoll",
+      "category": "Movement",
+      "label": "Film Roll",
+      "defaults": {
+        "direction": "up",
+        "barWidth": 0.06
+      },
+      "aliases": [
+        "film-roll",
+        "roll-up",
+        "projector-roll"
+      ],
+      "renderDispatched": true,
+      "inspectorPreview": true
+    }
+  ]
+}

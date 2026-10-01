@@ -1,4 +1,9 @@
 import type { EditPlan, PlannedEffect, PlannedTransition } from "./edit-plan";
+import {
+  isSignatureEffectType,
+  resolveSignatureEffectName,
+  SIGNATURE_EFFECT_NAMES,
+} from "./shader-effects";
 
 /**
  * Renderer-backed vocabulary for director plans.
@@ -41,6 +46,20 @@ export const SUPPORTED_TRANSITION_TYPES = [
   "ripple",
   "pageTurn",
   "colorSplit",
+  "crossZoom",
+  "zoomBlur",
+  "motionSmear",
+  "strobeCut",
+  "impactShake",
+  "lumaWipe",
+  "inkBleed",
+  "tileFlip",
+  "sliceSlide",
+  "lightLeak",
+  "vhsScan",
+  "paperBurn",
+  "pixelSort",
+  "filmRoll",
 ] as const;
 
 export const SUPPORTED_CLIP_EFFECT_TYPES = [
@@ -66,6 +85,17 @@ export const SUPPORTED_CLIP_EFFECT_TYPES = [
   "chromatic-aberration",
   "shader",
 ] as const;
+
+/**
+ * Every effect type a plan may name: engine filter effects, colour-grading
+ * aliases, and the named signature shader effects (`shader-effects.ts`). Kept
+ * separate from `SUPPORTED_CLIP_EFFECT_TYPES` — that list mirrors the engine's
+ * own switch, while this one is what validation and error messages advertise.
+ */
+export const SUPPORTED_EFFECT_TYPES: readonly string[] = [
+  ...SUPPORTED_CLIP_EFFECT_TYPES,
+  ...SIGNATURE_EFFECT_NAMES,
+];
 
 /**
  * Plan effect types that materialize as clip color grading rather than a
@@ -111,6 +141,52 @@ export const CUT_TRANSITION_TYPES: ReadonlySet<string> = new Set([
 export const TRANSITION_TYPE_ALIASES: Readonly<Record<string, string>> = {
   fade: "crossfade",
   dissolve: "crossfade",
+  // Common spellings for the second wave. Aliases keep a plan's intent instead
+  // of rejecting it: "whip zoom" is a crossZoom, "datamosh" is a pixelSort.
+  "whip-zoom": "crossZoom",
+  whipzoom: "crossZoom",
+  "zoom-punch": "crossZoom",
+  "crash-zoom": "crossZoom",
+  crashzoom: "crossZoom",
+  "radial-blur-wipe": "zoomBlur",
+  "zoom-blur-transition": "zoomBlur",
+  smear: "motionSmear",
+  "motion-blur-cut": "motionSmear",
+  "directional-smear": "motionSmear",
+  strobe: "strobeCut",
+  "flash-cut-strobe": "strobeCut",
+  "flicker-cut": "strobeCut",
+  "shake-cut": "impactShake",
+  "impact-hit": "impactShake",
+  "camera-shake": "impactShake",
+  "luma-dissolve": "lumaWipe",
+  "luminance-wipe": "lumaWipe",
+  "brightness-wipe": "lumaWipe",
+  "ink-wipe": "inkBleed",
+  "ink-reveal": "inkBleed",
+  "blot-reveal": "inkBleed",
+  "bleed-in": "inkBleed",
+  "tile-flip-in": "tileFlip",
+  "card-flip": "tileFlip",
+  "flip-tiles": "tileFlip",
+  "shutter-wipe": "sliceSlide",
+  "band-slide": "sliceSlide",
+  "slice-wipe": "sliceSlide",
+  "light-leak-transition": "lightLeak",
+  leak: "lightLeak",
+  "leak-flare": "lightLeak",
+  "vhs-cut": "vhsScan",
+  "tape-wipe": "vhsScan",
+  "vhs-glitch-cut": "vhsScan",
+  "burn-through": "paperBurn",
+  "burn-reveal": "paperBurn",
+  "fire-wipe": "paperBurn",
+  datamosh: "pixelSort",
+  "pixel-sort-transition": "pixelSort",
+  "sort-smear": "pixelSort",
+  "film-roll": "filmRoll",
+  "roll-up": "filmRoll",
+  "projector-roll": "filmRoll",
 };
 
 /**
@@ -121,10 +197,24 @@ export const TRANSITION_TYPE_ALIASES: Readonly<Record<string, string>> = {
  * Throws nothing: unsupported names come back unchanged for validation to
  * reject with a structured error.
  */
+/** `"Whip Zoom"`, `"whip_zoom"` and `"whipZoom"` all normalize to `whip-zoom`. */
+function transitionLookupKey(type: string): string {
+  return type
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
+}
+
 export function canonicalizeTransitionType(type: string): string | null {
   const trimmed = type.trim();
-  if (CUT_TRANSITION_TYPES.has(trimmed)) return null;
-  const alias = TRANSITION_TYPE_ALIASES[trimmed] ?? TRANSITION_TYPE_ALIASES[trimmed.toLowerCase()];
+  if (CUT_TRANSITION_TYPES.has(trimmed) || CUT_TRANSITION_TYPES.has(trimmed.toLowerCase())) {
+    return null;
+  }
+  const alias =
+    TRANSITION_TYPE_ALIASES[trimmed] ??
+    TRANSITION_TYPE_ALIASES[trimmed.toLowerCase()] ??
+    TRANSITION_TYPE_ALIASES[transitionLookupKey(trimmed)];
   if (alias) return alias;
   return trimmed;
 }
@@ -133,10 +223,102 @@ export function isSupportedTransitionType(type: string): boolean {
   return (SUPPORTED_TRANSITION_TYPES as readonly string[]).includes(type);
 }
 
+/**
+ * Text animation presets the title engine can actually animate (mirrors
+ * `TextAnimationPreset` in packages/core/src/text/types.ts — creation-schema
+ * must not depend on core). An unsupported name is not a crash: the preset is
+ * stored on the clip and the renderer silently draws it as "none", which is
+ * exactly the class of quiet no-op the director must not be allowed to plan.
+ */
+export const SUPPORTED_TEXT_ANIMATIONS = [
+  "none",
+  "typewriter",
+  "fade",
+  "slide-left",
+  "slide-right",
+  "slide-up",
+  "slide-down",
+  "scale",
+  "blur",
+  "bounce",
+  "rotate",
+  "wave",
+  "shake",
+  "pop",
+  "glitch",
+  "split",
+  "flip",
+  "word-by-word",
+  "rainbow",
+  "rise",
+  "drop",
+  "elastic",
+  "swing",
+  "zoom-blur",
+  "cascade",
+] as const;
+
+export type SupportedTextAnimation = (typeof SUPPORTED_TEXT_ANIMATIONS)[number];
+
+/**
+ * Spellings that show up in prompts, genre templates, and LLM output that are
+ * not the renderer's canonical preset ids. Mapped instead of rejected: the
+ * genre templates themselves shipped `text-reveal-up` (a Motion text-animator
+ * id) which the title engine reads as "no animation".
+ */
+export const TEXT_ANIMATION_ALIASES: Readonly<Record<string, SupportedTextAnimation>> = {
+  "text-reveal-up": "slide-up",
+  "text-reveal-down": "slide-down",
+  "text-reveal-left": "slide-left",
+  "text-reveal-right": "slide-right",
+  "text-type-on": "typewriter",
+  "text-fade-in": "fade",
+  "text-pop": "pop",
+  "text-bounce": "bounce",
+  fadein: "fade",
+  "fade-in": "fade",
+  fadeout: "fade",
+  "fade-out": "fade",
+  slideup: "slide-up",
+  slidedown: "slide-down",
+  slideleft: "slide-left",
+  slideright: "slide-right",
+  scalein: "scale",
+  scaleout: "scale",
+  rotatein: "rotate",
+  "zoom-in": "scale",
+  zoomin: "scale",
+  wordbyword: "word-by-word",
+  "word-by-word-reveal": "word-by-word",
+  karaoke: "word-by-word",
+  shaking: "shake",
+  wiggle: "wave",
+};
+
+/** Map a requested text animation to a renderer-backed preset id, or null. */
+export function normalizeTextAnimation(raw: string | undefined | null): SupportedTextAnimation | null {
+  if (!raw || typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  if ((SUPPORTED_TEXT_ANIMATIONS as readonly string[]).includes(lower)) {
+    return lower as SupportedTextAnimation;
+  }
+  if ((SUPPORTED_TEXT_ANIMATIONS as readonly string[]).includes(trimmed)) {
+    return trimmed as SupportedTextAnimation;
+  }
+  return TEXT_ANIMATION_ALIASES[lower] ?? null;
+}
+
+export function isSupportedTextAnimation(raw: string | undefined | null): boolean {
+  return normalizeTextAnimation(raw) !== null;
+}
+
 export function isSupportedEffectType(type: string): boolean {
   return (
     (SUPPORTED_CLIP_EFFECT_TYPES as readonly string[]).includes(type) ||
-    (COLOR_GRADE_EFFECT_TYPES as readonly string[]).includes(type)
+    (COLOR_GRADE_EFFECT_TYPES as readonly string[]).includes(type) ||
+    isSignatureEffectType(type)
   );
 }
 
@@ -254,7 +436,12 @@ export function normalizeEffectType(raw: string | undefined | null): string | un
   if (!raw || typeof raw !== "string") return undefined;
   const key = raw.trim().toLowerCase();
   if (!key) return undefined;
-  return EFFECT_CANONICAL_BY_LOWER.get(key) ?? EFFECT_TYPE_ALIASES[key];
+  return (
+    EFFECT_CANONICAL_BY_LOWER.get(key) ??
+    EFFECT_TYPE_ALIASES[key] ??
+    // Signature shader effects: "crt" → "scanlines", "vhs tape" → "vhs".
+    resolveSignatureEffectName(key)
+  );
 }
 
 /**

@@ -374,6 +374,167 @@ export const EDITOR_EFFECT_PREVIEWS: EditorEffectPreviewDef[] = [
       filter: `contrast(${lerp(1, 1.45, p)}) drop-shadow(0 0 ${lerp(0, 9, p)}px #4de8ff)`,
     }),
   },
+  {
+    id: "shader-halftone",
+    type: "shader",
+    label: "Halftone",
+    description: "Print-screen dots — comic book / zine look",
+    category: "Stylize",
+    params: { shaderId: "halftone", dotSize: 8, angle: 15 },
+    previewStyle: (p) => ({
+      filter: `contrast(${lerp(1, 1.5, p)}) grayscale(${lerp(0, 0.2, p)})`,
+      backgroundImage: `radial-gradient(circle, rgba(0,0,0,.4) ${lerp(0, 45, p)}%, transparent ${lerp(0, 45, p)}%)`,
+      backgroundSize: `${lerp(10, 6, p)}px ${lerp(10, 6, p)}px`,
+    }),
+  },
+  {
+    id: "shader-dither",
+    type: "shader",
+    label: "Dither",
+    description: "Ordered 8-bit quantization / risograph grain",
+    category: "Stylize",
+    params: { shaderId: "dither", levels: 4, scale: 1 },
+    previewStyle: (p) => ({
+      filter: `contrast(${lerp(1, 1.8, p)}) saturate(${lerp(1, 0.7, p)})`,
+      backgroundImage:
+        "repeating-conic-gradient(rgba(0,0,0,.25) 0 25%, transparent 0 50%)",
+      backgroundSize: `${lerp(6, 3, p)}px ${lerp(6, 3, p)}px`,
+    }),
+  },
+  {
+    id: "shader-gradient-map",
+    type: "shader",
+    label: "Gradient Map",
+    description: "Remap luma onto an indigo-to-gold ramp",
+    category: "Color",
+    params: { shaderId: "gradient-map", mix: 1 },
+    previewStyle: (p) => ({
+      filter: `grayscale(${lerp(0.2, 1, p)}) sepia(${lerp(0, 0.8, p)}) hue-rotate(${lerp(0, 205, p)}deg) saturate(${lerp(1, 2.4, p)})`,
+    }),
+  },
+  {
+    id: "shader-speed-lines",
+    type: "shader",
+    label: "Speed Lines",
+    description: "Anime action lines bursting from the frame centre",
+    category: "Stylize",
+    params: { shaderId: "speed-lines", amount: 0.6, density: 48, speed: 2 },
+    previewStyle: (p) => ({
+      filter: `contrast(${lerp(1, 1.3, p)})`,
+      backgroundImage: `repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,.45) 0 1deg, transparent 1deg ${lerp(14, 6, p)}deg)`,
+    }),
+  },
+  {
+    id: "shader-glitch-blocks",
+    type: "shader",
+    label: "Glitch Blocks",
+    description: "Row-wise data corruption with RGB split and dropout",
+    category: "Stylize",
+    params: { shaderId: "glitch-blocks", amount: 0.5, blockSize: 24, rgbSplit: 0.5, speed: 3 },
+    previewStyle: (p) => ({
+      filter: `hue-rotate(${lerp(0, 4, p)}deg)`,
+      transform: `translateX(${Math.sin(p * Math.PI * 12) * 3}px)`,
+      boxShadow: `inset ${lerp(0, 6, p)}px 0 rgba(255,0,80,.45), inset ${lerp(0, -6, p)}px 0 rgba(0,220,255,.45)`,
+      backgroundImage:
+        "repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 2px, transparent 2px 5px)",
+    }),
+  },
+  {
+    id: "shader-light-leak",
+    type: "shader",
+    label: "Light Leak",
+    description: "Warm film-burn streak sweeping with a bloom",
+    category: "Creative",
+    params: { shaderId: "light-leak", intensity: 0.5, warmth: 0.7, speed: 1 },
+    previewStyle: (p) => ({
+      filter: `saturate(${lerp(1, 1.2, p)}) brightness(${lerp(1, 1.12, p)})`,
+      backgroundImage: `linear-gradient(${lerp(120, 60, p)}deg, rgba(255,150,60,${lerp(0, 0.55, p)}) 0%, transparent 55%)`,
+      boxShadow: `inset 0 0 ${lerp(0, 60, p)}px rgba(255,170,90,.45)`,
+    }),
+  },
+  {
+    id: "shader-kaleidoscope",
+    type: "shader",
+    label: "Kaleidoscope",
+    description: "Mirrored wedges folded into a spinning tunnel",
+    category: "Stylize",
+    params: { shaderId: "kaleidoscope", segments: 6, spin: 0.35, zoom: 1 },
+    previewStyle: (p) => ({
+      filter: `saturate(${lerp(1, 1.35, p)}) contrast(${lerp(1, 1.2, p)})`,
+      backgroundImage: `repeating-conic-gradient(from ${lerp(0, 90, p)}deg, rgba(255,255,255,.28) 0 12%, transparent 12% 24%)`,
+      transform: `rotate(${lerp(0, 8, p)}deg)`,
+    }),
+  },
+  {
+    id: "shader-mirror-tiles",
+    type: "shader",
+    label: "Mirror Tiles",
+    description: "The frame tiled and mirrored into a grid of copies",
+    category: "Stylize",
+    params: { shaderId: "mirror-tiles", columns: 4, rows: 3, shift: 0.5 },
+    previewStyle: (p) => ({
+      backgroundImage:
+        "repeating-linear-gradient(45deg, rgba(255,255,255,.22) 0 2px, transparent 2px 10px)",
+      transform: `scaleX(${lerp(1, -1, p)})`,
+      filter: `contrast(${lerp(1, 1.15, p)})`,
+    }),
+  },
+  {
+    id: "shader-swirl",
+    type: "shader",
+    label: "Swirl",
+    description: "Space twisted into a spiral around the centre",
+    category: "Stylize",
+    params: { shaderId: "swirl", amount: 1.6, radius: 0.75, speed: 1.2 },
+    previewStyle: (p) => ({
+      transform: `rotate(${lerp(0, 14, p)}deg) scale(${lerp(1, 1.08, p)})`,
+      filter: `blur(${lerp(0, 1.2, p)}px)`,
+      backgroundImage:
+        "repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.2) 0 3px, transparent 3px 9px)",
+    }),
+  },
+  {
+    id: "shader-crt-curve",
+    type: "shader",
+    label: "CRT Curve",
+    description: "Curved picture tube with phosphor lines and flicker",
+    category: "Stylize",
+    params: { shaderId: "crt-curve", curvature: 0.35, phosphor: 0.35, flicker: 0.15 },
+    previewStyle: (p) => ({
+      filter: `contrast(${lerp(1, 1.18, p)}) brightness(${lerp(1, 0.96, p)})`,
+      backgroundImage:
+        "repeating-linear-gradient(0deg, rgba(0,0,0,.32) 0 1px, transparent 1px 3px)",
+      boxShadow: `inset 0 0 ${lerp(6, 28, p)}px rgba(0,0,0,.75)`,
+      transform: `scale(${lerp(1, 1.02, p)})`,
+    }),
+  },
+  {
+    id: "shader-echo",
+    type: "shader",
+    label: "Echo Trail",
+    description: "Afterimage smeared along the frame",
+    category: "Creative",
+    params: { shaderId: "echo", amount: 0.6, offset: 18, speed: 1.5 },
+    previewStyle: (p) => ({
+      filter: `blur(${lerp(0.2, 1.6, p)}px) saturate(${lerp(1, 1.15, p)})`,
+      boxShadow: `inset ${lerp(0, -26, p)}px ${lerp(0, -14, p)}px ${lerp(0, 18, p)}px rgba(255,255,255,.28)`,
+      transform: `translate(${lerp(0, -4, p)}px, ${lerp(0, -2, p)}px)`,
+    }),
+  },
+  {
+    id: "shader-pixelate",
+    type: "shader",
+    label: "Pixelate",
+    description: "Blocky low-resolution mosaic",
+    category: "Creative",
+    params: { shaderId: "pixelate", size: 8 },
+    previewStyle: (p) => ({
+      filter: `contrast(${lerp(1, 1.2, p)})`,
+      backgroundImage:
+        "repeating-conic-gradient(rgba(0,0,0,.12) 0 25%, transparent 0 50%)",
+      backgroundSize: `${lerp(4, 18, p)}px ${lerp(4, 18, p)}px`,
+    }),
+  },
 ];
 
 export const EDITOR_EFFECT_CATEGORIES: EffectCategory[] = [
@@ -419,7 +580,11 @@ const transitionCategory = (type: TransitionType): TransitionCategory => {
     type === "blinds" ||
     type === "diamondReveal" ||
     type === "splitReveal" ||
-    type === "mosaic"
+    type === "mosaic" ||
+    type === "lumaWipe" ||
+    type === "inkBleed" ||
+    type === "paperBurn" ||
+    type === "sliceSlide"
   ) {
     return "Wipes";
   }
@@ -429,7 +594,12 @@ const transitionCategory = (type: TransitionType): TransitionCategory => {
     type === "whipPan" ||
     type === "spin" ||
     type === "flip" ||
-    type === "pageTurn"
+    type === "pageTurn" ||
+    type === "crossZoom" ||
+    type === "zoomBlur" ||
+    type === "motionSmear" ||
+    type === "tileFlip" ||
+    type === "filmRoll"
   ) {
     return "Movement";
   }
@@ -1012,6 +1182,335 @@ const TRANSITIONS: TransitionDef[] = [
         </>
       );
     },
+  },
+  {
+    type: "crossZoom",
+    label: "Cross Zoom",
+    description: "Punchy whip zoom through the cut",
+    params: { strength: 2.2, center: { x: 0.5, y: 0.5 } },
+    renderPreview: (p, thumb) => {
+      const punch = 1 + (2.2 - 1) * (p * p * (3 - 2 * p));
+      const out = Math.max(0, 1 - p * 1.35);
+      const incoming = Math.max(0, (p - 0.12) * 1.35);
+      return (
+        <>
+          {renderThumb(thumb, { opacity: out, transform: `scale(${punch})` }, "oklch(0.55 0.14 295)")}
+          {renderThumb(
+            thumb,
+            { opacity: Math.min(1, incoming), transform: `scale(${1 - (1 - 1 / 2.2) * (1 - p)})` },
+            "oklch(0.72 0.16 162)",
+          )}
+        </>
+      );
+    },
+  },
+  {
+    type: "zoomBlur",
+    label: "Zoom Blur",
+    description: "Radial streaks rushing into the next shot",
+    params: { streaks: 12, strength: 0.35 },
+    renderPreview: (p, thumb) => {
+      const reach = Math.sin(p * Math.PI) * 0.35;
+      return (
+        <>
+          {Array.from({ length: 6 }, (_, index) => {
+            const t = index / 5;
+            return (
+              <React.Fragment key={index}>
+                {renderThumb(
+                  thumb,
+                  {
+                    opacity: (p < 0.5 ? 1 - p * 0.4 : 0.35 + p * 0.1) / 6,
+                    transform: `scale(${1 + reach * t})`,
+                  },
+                  p < 0.5 ? "oklch(0.55 0.14 295)" : "oklch(0.72 0.16 162)",
+                )}
+              </React.Fragment>
+            );
+          })}
+        </>
+      );
+    },
+  },
+  {
+    type: "motionSmear",
+    label: "Motion Smear",
+    description: "Directional smear that holds the frame",
+    params: { direction: "left", distance: 0.25 },
+    renderPreview: (p, thumb) => {
+      const smear = Math.sin(p * Math.PI) * 16;
+      const incoming = Math.max(0, (p - 0.5) * 2);
+      return (
+        <>
+          {renderThumb(
+            thumb,
+            { opacity: Math.max(0, 1 - incoming), filter: `blur(${smear * 0.35}px)` },
+            "oklch(0.55 0.14 295)",
+          )}
+          {renderThumb(
+            thumb,
+            { opacity: incoming, filter: `blur(${smear * 0.35}px)` },
+            "oklch(0.72 0.16 162)",
+          )}
+        </>
+      );
+    },
+  },
+  {
+    type: "strobeCut",
+    label: "Strobe Cut",
+    description: "Machine-gun flicker that lands on the cut",
+    params: { strobes: 6 },
+    renderPreview: (p, thumb) => {
+      const settled = p >= 0.7;
+      const phase = Math.floor((p / 0.7) * 6);
+      const showIncoming = settled || phase % 2 === 1 || p > 0.42;
+      return (
+        <>
+          {renderThumb(thumb, { opacity: showIncoming ? 0 : 1 }, "oklch(0.55 0.14 295)")}
+          {renderThumb(thumb, { opacity: showIncoming ? 1 : 0 }, "oklch(0.72 0.16 162)")}
+          <div className="pointer-events-none absolute inset-0 bg-white" style={{ opacity: 0.25 * Math.sin(p * Math.PI) }} />
+        </>
+      );
+    },
+  },
+  {
+    type: "impactShake",
+    label: "Impact Shake",
+    description: "Camera shake and flash on the hit",
+    params: { intensity: 1, flash: 0.55 },
+    renderPreview: (p, thumb) => {
+      const power = Math.pow(1 - p, 2);
+      const shake = Math.sin(p * 46.1) * 6 * power;
+      return (
+        <>
+          {renderThumb(thumb, { opacity: 1 - p, transform: `translate(${shake}px, ${shake * 0.4}px)` }, "oklch(0.55 0.14 295)")}
+          {renderThumb(thumb, { opacity: p, transform: `translate(${shake}px, ${shake * 0.4}px)` }, "oklch(0.72 0.16 162)")}
+          <div className="pointer-events-none absolute inset-0 bg-white" style={{ opacity: Math.min(0.7, 0.55 * Math.pow(1 - p, 3)) }} />
+        </>
+      );
+    },
+  },
+  {
+    type: "lumaWipe",
+    label: "Luma Wipe",
+    description: "Reveal keyed to the shot's own brightness",
+    params: { softness: 0.25, invert: false },
+    renderPreview: (p, thumb) => {
+      const mask = `linear-gradient(90deg, #000 ${p * 100}%, transparent ${Math.min(100, p * 100 + 22)}%)`;
+      return (
+        <>
+          {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+          {renderThumb(
+            thumb,
+            { maskImage: mask, WebkitMaskImage: mask },
+            "oklch(0.72 0.16 162)",
+          )}
+        </>
+      );
+    },
+  },
+  {
+    type: "inkBleed",
+    label: "Ink Bleed",
+    description: "Organic ink blot eats the frame",
+    params: { lobes: 7, softness: 0.35, center: { x: 0.5, y: 0.5 } },
+    renderPreview: (p, thumb) => {
+      const reach = p * 90;
+      const blot = `radial-gradient(circle at ${30 + 10 * Math.sin(p * 9)}% ${45 + 12 * Math.cos(p * 7)}%, #000 ${reach * 0.6}%, transparent ${reach}%), radial-gradient(circle at ${68 + 8 * Math.cos(p * 11)}% ${60 + 10 * Math.sin(p * 5)}%, #000 ${reach * 0.5}%, transparent ${reach * 0.9}%)`;
+      return (
+        <>
+          {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+          {renderThumb(thumb, { maskImage: blot, WebkitMaskImage: blot }, "oklch(0.72 0.16 162)")}
+        </>
+      );
+    },
+  },
+  {
+    type: "tileFlip",
+    label: "Tile Flip",
+    description: "Staggered card flips assemble the shot",
+    params: { columns: 6, stagger: 0.6, axis: "horizontal" },
+    renderPreview: (p, thumb) => (
+      <>
+        {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+        {Array.from({ length: 3 }, (_, row) =>
+          Array.from({ length: 3 }, (_, column) => {
+            const order = (row * 3 + column) / 8;
+            const local = Math.max(0, Math.min(1, (p - order * 0.6) / 0.4));
+            const squeeze = Math.max(0.02, Math.abs(1 - local * 2));
+            return (
+              <div
+                key={`${row}-${column}`}
+                className="absolute overflow-hidden"
+                style={{
+                  left: `${(column / 3) * 100}%`,
+                  top: `${(row / 3) * 100}%`,
+                  width: `${100 / 3}%`,
+                  height: `${100 / 3}%`,
+                  transform: `scaleX(${squeeze})`,
+                }}
+              >
+                {renderThumb(
+                  thumb,
+                  {},
+                  local < 0.5 ? "oklch(0.55 0.14 295)" : "oklch(0.72 0.16 162)",
+                )}
+              </div>
+            );
+          }),
+        )}
+      </>
+    ),
+  },
+  {
+    type: "sliceSlide",
+    label: "Slice Slide",
+    description: "Alternating bands slide in from opposite edges",
+    params: { slices: 9, direction: "left", gap: 0 },
+    renderPreview: (p, thumb) => {
+      const eased = p * p * (3 - 2 * p);
+      return (
+        <>
+          {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+          {Array.from({ length: 5 }, (_, index) => (
+            <div
+              key={index}
+              className="absolute overflow-hidden"
+              style={{
+                top: `${(index / 5) * 100}%`,
+                height: `${100 / 5}%`,
+                width: "100%",
+                transform: `translateX(${(index % 2 === 0 ? 1 : -1) * (1 - eased) * 100}%)`,
+              }}
+            >
+              {renderThumb(thumb, {}, "oklch(0.72 0.16 162)")}
+            </div>
+          ))}
+        </>
+      );
+    },
+  },
+  {
+    type: "lightLeak",
+    label: "Light Leak",
+    description: "Warm film leak sweeping the cut",
+    params: { intensity: 1, warmth: 0.7, direction: "right" },
+    renderPreview: (p, thumb) => (
+      <>
+        {renderThumb(thumb, { opacity: 1 - p * 0.4 }, "oklch(0.55 0.14 295)")}
+        {renderThumb(thumb, { opacity: p * 0.6 }, "oklch(0.72 0.16 162)")}
+        <div
+          className="pointer-events-none absolute inset-0 mix-blend-screen"
+          style={{
+            background: `linear-gradient(90deg, transparent ${Math.max(0, p * 100 - 30)}%, rgba(255,170,90,.85) ${p * 100}%, transparent ${Math.min(100, p * 100 + 30)}%)`,
+            opacity: Math.sin(p * Math.PI),
+          }}
+        />
+      </>
+    ),
+  },
+  {
+    type: "vhsScan",
+    label: "VHS Scan",
+    description: "Tape scan with jitter and chroma fringe",
+    params: { intensity: 0.8, slices: 14 },
+    renderPreview: (p, thumb) => (
+      <>
+        {renderThumb(thumb, { opacity: 1 - p, filter: `hue-rotate(${Math.sin(p * 12) * 8}deg)` }, "oklch(0.55 0.14 295)")}
+        {renderThumb(thumb, { opacity: p, filter: `hue-rotate(${Math.sin(p * 12) * -8}deg)` }, "oklch(0.72 0.16 162)")}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: "repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px)",
+            opacity: 0.7,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 h-2 bg-white/40"
+          style={{ top: `${(1 - p) * 100}%` }}
+        />
+      </>
+    ),
+  },
+  {
+    type: "paperBurn",
+    label: "Paper Burn",
+    description: "Ember-edged burn through the outgoing shot",
+    params: { softness: 0.3, center: { x: 0.5, y: 0.5 } },
+    renderPreview: (p, thumb) => {
+      const reach = p * 85;
+      const hole = `radial-gradient(circle at 50% 50%, #000 ${Math.max(0, reach - 8)}%, rgba(255,140,40,.6) ${reach}%, transparent ${Math.min(100, reach + 6)}%)`;
+      return (
+        <>
+          {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+          {renderThumb(thumb, { maskImage: hole, WebkitMaskImage: hole }, "oklch(0.72 0.16 162)")}
+          <div
+            className="pointer-events-none absolute inset-0 rounded-full border-2 border-orange-400/70"
+            style={{ transform: `scale(${p})`, opacity: Math.sin(p * Math.PI) }}
+          />
+        </>
+      );
+    },
+  },
+  {
+    type: "pixelSort",
+    label: "Pixel Sort",
+    description: "Bright pixels dragged into glitch streaks",
+    params: { amount: 1, threshold: 0.55, direction: "right" },
+    renderPreview: (p, thumb) => (
+      <>
+        {renderThumb(thumb, { opacity: 1 - p * 0.5 }, "oklch(0.55 0.14 295)")}
+        {renderThumb(
+          thumb,
+          {
+            opacity: p,
+            backgroundImage:
+              "repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 1px, transparent 1px 5px)",
+          },
+          "oklch(0.72 0.16 162)",
+        )}
+        <div
+          className="pointer-events-none absolute inset-0 mix-blend-screen"
+          style={{
+            background: `repeating-linear-gradient(90deg, rgba(0,220,255,.35) 0 1px, transparent 1px ${lerp(10, 3, p)}px)`,
+            opacity: Math.sin(p * Math.PI) * 0.8,
+          }}
+        />
+      </>
+    ),
+  },
+  {
+    type: "filmRoll",
+    label: "Film Roll",
+    description: "Projector roll with sprocket bars",
+    params: { direction: "up", barWidth: 0.06 },
+    renderPreview: (p, thumb) => (
+      <>
+        {renderThumb(thumb, {}, "oklch(0.55 0.14 295)")}
+        {renderThumb(
+          thumb,
+          { transform: `translateY(${(1 - p) * 100}%)` },
+          "oklch(0.72 0.16 162)",
+        )}
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-[6%] bg-black/90" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-[6%] bg-black/90" />
+        <div
+          className="pointer-events-none absolute inset-y-0 left-[1.5%] w-[3%]"
+          style={{
+            backgroundImage: "repeating-linear-gradient(180deg, rgba(245,245,245,.9) 0 6px, transparent 6px 14px)",
+            backgroundPositionY: `${p * 40}px`,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-[1.5%] w-[3%]"
+          style={{
+            backgroundImage: "repeating-linear-gradient(180deg, rgba(245,245,245,.9) 0 6px, transparent 6px 14px)",
+            backgroundPositionY: `${p * 40}px`,
+          }}
+        />
+      </>
+    ),
   },
   ...([
     {

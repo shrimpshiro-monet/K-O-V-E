@@ -28,12 +28,15 @@ function planResponse(input: Record<string, unknown>): LLMResponse {
 /** Counts complete() calls so tests can assert bounded LLM usage. */
 class CountingLLM implements LLMClient {
   calls = 0;
+  /** System prompt of every call, in order — used to assert what the model was told. */
+  readonly systems: string[] = [];
   private readonly inner: MockLLMClient;
   constructor(script: LLMResponse[]) {
     this.inner = new MockLLMClient([...script, END]);
   }
-  async complete(): Promise<LLMResponse> {
+  async complete(input: { system?: string }): Promise<LLMResponse> {
     this.calls += 1;
+    if (input.system) this.systems.push(input.system);
     return this.inner.complete();
   }
 }
@@ -192,7 +195,9 @@ describe("plan_edit integrity", () => {
     const first = await executeTool("plan_edit", { prompt: "make a highlight" }, h.host);
     expect(first.ok).toBe(true);
     const edlAfterFirst = snapshotEdl(h.project);
-    expect(h.llm.calls).toBe(1);
+    // plan + the bounded density revision (the fixture is thin; the scripted
+    // revision returned no tool call, so the original plan is what committed).
+    expect(h.llm.calls).toBe(2);
 
     const second = await executeTool("plan_edit", { prompt: "make a highlight" }, h.host);
     expect(second.ok).toBe(true);
@@ -202,7 +207,7 @@ describe("plan_edit integrity", () => {
     // Exact persisted EDL — byte-identical.
     expect(snapshotEdl(h.project)).toBe(edlAfterFirst);
     // No second planning call: the repeat was free.
-    expect(h.llm.calls).toBe(1);
+    expect(h.llm.calls).toBe(2);
   });
 
   it("rejects a stale base revision and leaves the committed EDL untouched", async () => {
@@ -373,7 +378,7 @@ describe("plan_edit integrity", () => {
 
     expect(result.ok).toBe(true);
     expect(timelineClips(h.project)).toHaveLength(2);
-    expect(h.llm.calls).toBe(2); // plan + one repair
+    expect(h.llm.calls).toBe(3); // plan + one repair + one density revision
     expect(getDirectorPlanState(h.project).revision).toBe(1);
   });
 
@@ -458,8 +463,273 @@ describe("plan_edit integrity", () => {
     const result = await executeTool("plan_edit", { prompt: "long plan" }, h.host);
 
     expect(result.ok).toBe(true);
-    expect(h.llm.calls).toBe(2);
+    expect(h.llm.calls).toBe(3); // truncated plan + retry + one density revision
     expect(getDirectorPlanState(h.project).revision).toBe(1);
+  });
+
+  it("revises a thin plan once, then commits the denser plan with camera moves on the clips", async () => {
+    // A populated 8s short-form plan: shots inside the first 2s, camera motion
+    // on every shot, varied effect hits, text choreography, SFX, and a denser
+    // final third so the density review sees evolution rather than a loop.
+    const durations = [0.5, 0.5, 0.6, 1.4, 0.6, 1.6, 0.5, 0.4];
+    const moves = ["snap-zoom", "slow-push", "handheld", "drift-left", "whip-shake", "breathe", "punch-in", "sway"];
+    const effects = ["chromatic-aberration", "glow", "motion-blur", "grain"];
+    let cursor = 0;
+    const denseSegments = durations.map((duration, index) => {
+      const start = cursor;
+      cursor += duration;
+      const late = index >= 6;
+      return {
+        sourceVideoId: "video_0",
+        sourceStartTime: start,
+        sourceEndTime: cursor,
+        trackIndex: 0,
+        targetPosition: index === 0 ? 0 : undefined,
+        effects: [],
+        cameraMoves: [{ move: moves[index], intensity: late ? 0.9 : 0.7 }],
+        effectSpecs: Array.from({ length: late ? 2 : 1 }, (_, hit) => ({
+          type: effects[(index + hit) % effects.length],
+          params: { amount: 20 },
+          intensity: 0.8,
+          duration: 0.3,
+          rationale: "hit on the cut",
+        })),
+        ...(index % 3 === 0 ? { speedRamp: { keyframes: [{ time: 0, speed: 1 }, { time: 0.3, speed: 0.4 }] } } : {}),
+        rationale: `shot ${index}`,
+      };
+    });
+    const densePlan = validPlan({
+      segments: denseSegments,
+      textElements: [0, 2.5, 5, 7].map((startTime, index) => ({
+        content: `TEXT ${index}`,
+        style: "caption",
+        startTime,
+        duration: 1,
+        position: { x: 0.5, y: 0.8 },
+        animation: ["pop", "slide-up", "typewriter", "cascade"][index % 4],
+        rationale: "text beat",
+      })),
+      transitions: [
+        { afterSegmentIndex: 2, type: "flash", duration: 0.2, rationale: "chapter" },
+        { afterSegmentIndex: 5, type: "whipPan", duration: 0.2, rationale: "chapter" },
+      ],
+      audioDecisions: [
+        { type: "music", sourceVideoId: "audio-1", startTime: 0, duration: 8, volume: 0.7, rationale: "bed" },
+        ...[0, 2.5, 6, 7.4].map((startTime) => ({
+          type: "sfx",
+          sourceVideoId: "audio-1",
+          startTime,
+          duration: 0.25,
+          volume: 1,
+          rationale: "impact",
+        })),
+      ],
+      metadata: { targetDuration: 8, targetPlatform: "tiktok", genre: "social-reel", pacing: "fast", rationale: "dense" },
+    });
+
+    const h = harness([planResponse(validPlan()), planResponse(densePlan)]);
+    const result = await executeTool("plan_edit", { prompt: "make a 8s tiktok edit" }, h.host);
+
+    expect(result.ok).toBe(true);
+    expect(h.llm.calls).toBe(2); // thin plan + exactly one density revision
+
+    // The revision prompt is a concrete brief, not a vague "make it better".
+    const revisionPrompt = h.llm.systems[1] ?? "";
+    expect(revisionPrompt).toContain("Density score");
+    expect(revisionPrompt).toContain("cameraMoves");
+
+    const data = result.data as {
+      density: { score: number; revisionApplied?: boolean; cameraMoveCount: number };
+      editPlan: { segments: unknown[] };
+    };
+    expect(data.density.revisionApplied).toBe(true);
+    expect(data.density.score).toBeGreaterThan(0.6);
+    expect(data.editPlan.segments).toHaveLength(8);
+
+    // The camera moves reached the timeline as real clip keyframes on the
+    // video track (the audio decisions land on their own tracks).
+    const videoClips = h.project.timeline.tracks
+      .filter((track) => track.type === "video")
+      .flatMap((track) => track.clips);
+    expect(videoClips).toHaveLength(8);
+    const keyframed = videoClips.filter((clip) => (clip.keyframes ?? []).length > 0);
+    expect(keyframed.length).toBeGreaterThanOrEqual(6);
+    const animatable = new Set(["scale.x", "scale.y", "position.x", "position.y", "rotation", "opacity"]);
+    expect(
+      keyframed.every((clip) =>
+        clip.keyframes.every((keyframe) => animatable.has(keyframe.property)),
+      ),
+    ).toBe(true);
+    expect(data.density.cameraMoveCount).toBeGreaterThanOrEqual(6);
+  });
+
+  it("materializes a named signature effect as a shader layer with real params", async () => {
+    const h = harness([
+      planResponse(validPlan({
+        segments: [
+          {
+            sourceVideoId: "video_0",
+            sourceStartTime: 0,
+            sourceEndTime: 4,
+            trackIndex: 0,
+            targetPosition: 0,
+            effects: [],
+            effectSpecs: [
+              {
+                type: "vhs",
+                params: {},
+                intensity: 0.8,
+                duration: 1.2,
+                rationale: "tape the hook",
+              },
+              {
+                type: "comic-book", // alias → halftone
+                params: { dotSize: 6 },
+                rationale: "punched-in gag frame",
+              },
+            ],
+            rationale: "hook",
+          },
+        ],
+        transitions: [],
+        metadata: { targetDuration: 4, targetPlatform: "tiktok", genre: "meme-compilation", pacing: "fast", rationale: "x" },
+      })),
+    ]);
+
+    const result = await executeTool("plan_edit", { prompt: "make it look like a vhs tape" }, h.host);
+    expect(result.ok).toBe(true);
+
+    const clip = timelineClips(h.project)[0]!;
+    const effects = (clip.effects ?? []) as Array<{ type: string; params: Record<string, unknown> }>;
+    expect(effects).toHaveLength(2);
+
+    const [vhs, halftone] = effects;
+    // The plan said "vhs"; the timeline stores a shader the renderer can draw.
+    expect(vhs!.type).toBe("shader");
+    expect(vhs!.params.shaderId).toBe("vhs");
+    expect(vhs!.params.intensity).toBeCloseTo(0.8, 5);
+    expect(vhs!.params.jitter).toBeCloseTo(0.48, 5);
+    expect(vhs!.params.duration).toBeCloseTo(1.2, 5);
+
+    // Aliases canonicalize on the way in, and explicit params survive.
+    expect(halftone!.type).toBe("shader");
+    expect(halftone!.params.shaderId).toBe("halftone");
+    expect(halftone!.params.dotSize).toBe(6);
+  });
+
+  it("materializes second-wave transitions (crossZoom, lightLeak) onto the track", async () => {
+    const durations = [0.6, 0.5, 1.5, 0.6, 0.5, 1.6, 0.4, 0.4];
+    let cursor = 0;
+    const segments = durations.map((duration, index) => {
+      const start = cursor;
+      cursor += duration;
+      return {
+        sourceVideoId: "video_0",
+        sourceStartTime: start,
+        sourceEndTime: cursor,
+        trackIndex: 0,
+        targetPosition: index === 0 ? 0 : undefined,
+        effects: [],
+        cameraMoves: [{ move: ["snap-zoom", "slow-push", "handheld", "punch-in"][index % 4] }],
+        effectSpecs: [{ type: "vhs", params: {}, intensity: 0.8, duration: 0.2, rationale: "tape hit" }],
+        rationale: `shot ${index}`,
+      };
+    });
+    const plan = validPlan({
+      segments,
+      transitions: [
+        { afterSegmentIndex: 1, type: "crossZoom", duration: 0.3, rationale: "whip into the drop" },
+        { afterSegmentIndex: 5, type: "lightLeak", duration: 0.25, rationale: "leak into the payoff" },
+      ],
+      metadata: { targetDuration: 8, targetPlatform: "tiktok", genre: "social-reel", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(plan), planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "make a 8s tiktok edit" }, h.host);
+    expect(result.ok).toBe(true);
+
+    const transitions = h.project.timeline.tracks
+      .filter((track) => track.type === "video")
+      .flatMap((track) => track.transitions);
+    expect(transitions.map((transition) => transition.type).sort()).toEqual(["crossZoom", "lightLeak"]);
+  });
+
+  it("rejects an unknown signature effect name instead of shipping a silent no-op", async () => {
+    const bad = validPlan({
+      segments: [
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 0,
+          sourceEndTime: 4,
+          trackIndex: 0,
+          effects: [],
+          effectSpecs: [{ type: "instagram-filter", params: {}, rationale: "made up" }],
+          rationale: "shot",
+        },
+      ],
+      transitions: [],
+      metadata: { targetDuration: 4, targetPlatform: "tiktok", genre: "social-reel", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(bad), planResponse(bad)]);
+    const result = await executeTool("plan_edit", { prompt: "filter it" }, h.host);
+
+    expect(result.ok).toBe(false);
+    const data = result.data as { issues: Array<{ code: string; message: string }> };
+    expect(data.issues.some((issue) => issue.code === "unsupported_effect")).toBe(true);
+    // The rejection advertises the signature vocabulary so the repair pass can fix it.
+    const message = data.issues.find((issue) => issue.code === "unsupported_effect")!.message;
+    expect(message).toContain("vhs");
+    expect(message).toContain("halftone");
+    expect(timelineClips(h.project)).toHaveLength(0);
+  });
+
+  it("flags a raw shader spec with no shaderId before it can render nothing", async () => {
+    const bad = validPlan({
+      segments: [
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 0,
+          sourceEndTime: 4,
+          trackIndex: 0,
+          effects: [],
+          effectSpecs: [{ type: "shader", params: {}, rationale: "shader with no id" }],
+          rationale: "shot",
+        },
+      ],
+      transitions: [],
+      metadata: { targetDuration: 4, targetPlatform: "tiktok", genre: "social-reel", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(bad), planResponse(bad)]);
+    const result = await executeTool("plan_edit", { prompt: "shader it" }, h.host);
+
+    expect(result.ok).toBe(false);
+    const data = result.data as { issues: Array<{ code: string }> };
+    expect(data.issues.some((issue) => issue.code === "shader_effect_missing_id")).toBe(true);
+    expect(timelineClips(h.project)).toHaveLength(0);
+  });
+
+  it("treats unknown camera moves as a repairable validation error, not a silent drop", async () => {
+    const bad = validPlan({
+      segments: [
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 0,
+          sourceEndTime: 4,
+          effects: [],
+          cameraMoves: [{ move: "cinematic-drone-orbit" }],
+          rationale: "invented move",
+        },
+      ],
+      transitions: [],
+      metadata: { targetDuration: 4, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(bad), planResponse(bad)]);
+    const result = await executeTool("plan_edit", { prompt: "orbit it" }, h.host);
+
+    expect(result.ok).toBe(false);
+    const data = result.data as { issues: Array<{ code: string; message: string }> };
+    expect(data.issues.some((issue) => issue.code === "unsupported_camera_move")).toBe(true);
+    expect(data.issues.some((issue) => issue.message.includes("slow-push"))).toBe(true);
+    expect(timelineClips(h.project)).toHaveLength(0);
   });
 
   it("interrupted mid-apply leaves the previous revision untouched; the retry commits exactly once", async () => {
@@ -544,6 +814,32 @@ describe("renderer-backed vocabulary boundary", () => {
       host,
     );
     expect(accepted.ok).toBe(true);
+
+    // A named signature effect is accepted and stored as a shader layer.
+    const signature = await executeTool(
+      "add_video_effect",
+      { clipId, effectType: "neon-outline", params: { intensity: 0.6 } },
+      host,
+    );
+    expect(signature.ok).toBe(true);
+    expect((signature.data as { shaderId?: string }).shaderId).toBe("edge-glow");
+    const stored = host.getProject().timeline.tracks[0]!.clips[0]!.effects.at(-1)!;
+    expect(stored.type).toBe("shader");
+    expect(stored.params.shaderId).toBe("edge-glow");
+    expect(stored.params.strength).toBeCloseTo(5.4, 5);
+
+    // Second-wave looks go through the same path, aliases included.
+    const secondWave = await executeTool(
+      "add_video_effect",
+      { clipId, effectType: "vortex", params: { intensity: 0.75 } },
+      host,
+    );
+    expect(secondWave.ok).toBe(true);
+    expect((secondWave.data as { shaderId?: string }).shaderId).toBe("swirl");
+    const swirl = host.getProject().timeline.tracks[0]!.clips[0]!.effects.at(-1)!;
+    expect(swirl.type).toBe("shader");
+    expect(swirl.params.shaderId).toBe("swirl");
+    expect(swirl.params.amount as number).toBeCloseTo(0.5 + 0.75 * 4, 5);
   });
 
   it("rejects unsupported transition types at the add_transition boundary", async () => {
@@ -580,6 +876,38 @@ describe("renderer-backed vocabulary boundary", () => {
       host,
     );
     expect(accepted.ok).toBe(true);
+
+    // A model spelling (alias) must resolve, not be rejected — the prompt
+    // promises aliases work, so the tool boundary has to honor that.
+    const aliased = await executeTool(
+      "add_transition",
+      { clipAId: clipA!.id, clipBId: clipB!.id, transitionType: "whip-zoom", duration: 0.3 },
+      host,
+    );
+    expect(aliased.ok).toBe(true);
+    const stored = host
+      .getProject()
+      .timeline.tracks.flatMap((track) => track.transitions)
+      .map((transition) => transition.type);
+    expect(stored).toContain("crossZoom");
+    expect(stored).not.toContain("whip-zoom");
+
+    // Second-wave types are accepted verbatim too.
+    const secondWave = await executeTool(
+      "add_transition",
+      { clipAId: clipA!.id, clipBId: clipB!.id, transitionType: "paperBurn", duration: 0.3 },
+      host,
+    );
+    expect(secondWave.ok).toBe(true);
+
+    // A hard cut is not a transition — say so instead of storing a no-op.
+    const hardCut = await executeTool(
+      "add_transition",
+      { clipAId: clipA!.id, clipBId: clipB!.id, transitionType: "hardCut", duration: 0.3 },
+      host,
+    );
+    expect(hardCut.ok).toBe(false);
+    expect(hardCut.summary).toContain("hard cut");
   });
 });
 

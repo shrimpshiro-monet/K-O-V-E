@@ -1,3 +1,8 @@
+import {
+  SIGNATURE_EFFECT_ALIASES,
+  SIGNATURE_EFFECT_NAMES,
+} from "./shader-effects";
+
 export type PromptGap = "tone" | "platform" | "content-direction" | "length" | "style";
 
 export interface PromptExpansion {
@@ -98,6 +103,13 @@ export function scorePromptCompleteness(prompt: string): {
   if (!hasLength) gaps.push("length");
 
   // ---- Style detection ----
+  // Signature-effect names and their common spellings count as style: "make it
+  // look like a VHS tape" or "give it a comic look" already names a look the
+  // renderer can build, so the expansion should not ask about style again.
+  const signatureStyleKeywords = [
+    ...SIGNATURE_EFFECT_NAMES,
+    ...Object.keys(SIGNATURE_EFFECT_ALIASES),
+  ];
   const directStyleKeywords = [
     "effect", "transition", "color", "grade", "filter", "lut",
     "text", "title", "caption", "subtitle", "font", "animation",
@@ -111,6 +123,7 @@ export function scorePromptCompleteness(prompt: string): {
     /\b(smooth|punchy|dynamic|kinetic)\b/,
   ];
   const hasStyle = directStyleKeywords.some((kw) => lower.includes(kw))
+    || signatureStyleKeywords.some((kw) => lower.includes(kw))
     || contextualStylePatterns.some((re) => re.test(lower));
   if (!hasStyle) gaps.push("style");
 

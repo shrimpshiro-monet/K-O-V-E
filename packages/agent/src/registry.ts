@@ -3,8 +3,8 @@ import { extractSegments as runFrameWorkerPipeline } from "@kove-advanced/frame-
 import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
-import { reviewEditPlan } from "./director/plan-review";
-import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES } from "@kove-advanced/creation-schema";
+import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
+import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
 import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
@@ -16,6 +16,7 @@ import {
 import type { DirectorPlanCommit } from "@kove-advanced/core/types/project";
 import type {
   CaptionStyleTemplate,
+  EditDensityProfile,
   EditPlan,
   EditPlanLayout,
   MotionMoveId,
@@ -2204,7 +2205,7 @@ async function materializeEditPlan(
   segmentMap: SegmentMap,
   host: EditingHost,
   owned: PlanOwnedEntities = newPlanOwned(),
-): Promise<{ clipIds: string[]; textIds: string[]; effectCount: number; transitionCount: number; audioCount: number; audioClipIds: string[]; motionCompositionIds: string[]; motionInstanceIds: string[] }> {
+): Promise<{ clipIds: string[]; textIds: string[]; effectCount: number; transitionCount: number; audioCount: number; audioClipIds: string[]; cameraMoveCount: number; keyframedClipIds: string[]; motionCompositionIds: string[]; motionInstanceIds: string[] }> {
   let videoTrack = host.getProject().timeline.tracks.find((track) => track.type === "video");
   if (!videoTrack) {
     const trackResult = await host.applyAction({
@@ -2220,6 +2221,11 @@ async function materializeEditPlan(
 
   const videoIds = new Set(segmentMap.videos.map((video) => video.videoId));
   const clipIds: string[] = [];
+  // Clip ids that carry plan-authored transform keyframes. Tracked so the
+  // result can report camera motion honestly (and so a future teardown can
+  // clear keyframes it owns).
+  const ownedKeyframeClipIds: string[] = [];
+  let cameraMoveCount = 0;
   const videoTracks = [videoTrack];
   // Plan-relative placement shared with validation: whatever is already on
   // the timeline does not shift this plan's layout (replace-plan commits
@@ -2307,6 +2313,37 @@ async function materializeEditPlan(
       });
       if (!rampResult.success) throw new Error(rampResult.error?.message ?? "Could not apply planned speed ramp");
     }
+    // Camera moves compile to transform keyframes. Without them every shot is
+    // static and the edit reads as a slideshow no matter how many effects are
+    // stacked on it, which is exactly the gap this vocabulary closes.
+    const cameraKeyframes = compileCameraMoves(segment.cameraMoves, duration);
+    if (cameraKeyframes.length > 0) {
+      const keyframeResult = await host.applyAction({
+        type: "keyframe/setAll",
+        id: genId(),
+        timestamp: Date.now(),
+        params: {
+          clipId: created,
+          keyframes: cameraKeyframes.map((keyframe, index) => ({
+            id: `${created}-move-${index}`,
+            time: keyframe.time,
+            property: keyframe.property,
+            value: keyframe.value,
+            easing: keyframe.easing,
+          })),
+        },
+      });
+      // A camera move is decoration relative to the rest of the plan: if the
+      // host cannot keyframe this clip, log and keep the shot.
+      if (!keyframeResult.success) {
+        console.warn(
+          `[plan_edit] camera moves skipped for clip ${created}: ${keyframeResult.error?.message ?? "keyframe/setAll failed"}`,
+        );
+      } else {
+        cameraMoveCount += segment.cameraMoves?.length ?? 0;
+        ownedKeyframeClipIds.push(created);
+      }
+    }
   }
 
   let effectCount = 0;
@@ -2327,19 +2364,34 @@ async function materializeEditPlan(
     const clipId = effect.targetSegmentIndex === undefined ? undefined : clipIds[effect.targetSegmentIndex];
     if (!clipId) continue;
     const isColorGrade = isColorGradeType(effect.type);
+    // Signature effects (vhs, halftone, prism, …) are named shader looks: the
+    // plan says WHAT it wants, the materializer resolves the shaderId and the
+    // parameter defaults. A plan never has to know the `shader` plumbing, and
+    // an unknown shaderId can never be committed.
+    const signature = isColorGrade ? undefined : resolveSignatureEffect(effect.type);
     // If the director omitted params, synthesize a sensible default from
     // intensity so the effect is actually VISIBLE. Video-effects-engine
     // defaults every numeric param to 0, so {type:"brightness"} becomes
     // brightness(1.0) (no change) unless we fill the param in for it.
+    const timingParams = {
+      ...(effect.startOffset !== undefined ? { startOffset: Math.max(0, effect.startOffset) } : {}),
+      ...(effect.duration !== undefined ? { duration: Math.max(0.01, effect.duration) } : {}),
+      ...(effect.easing !== undefined ? { easing: effect.easing } : {}),
+    };
     const resolvedEffectParams = isColorGrade
       ? effect.params
-      : {
-          ...synthesizeEffectParams(effect.type, effect.params, effect.intensity),
-          ...(effect.intensity !== undefined ? { intensity: Math.max(0, Math.min(1, effect.intensity)) } : {}),
-          ...(effect.startOffset !== undefined ? { startOffset: Math.max(0, effect.startOffset) } : {}),
-          ...(effect.duration !== undefined ? { duration: Math.max(0.01, effect.duration) } : {}),
-          ...(effect.easing !== undefined ? { easing: effect.easing } : {}),
-        };
+      : signature
+        ? {
+            shaderId: signature.shaderId,
+            ...buildSignatureEffectParams(signature, effect.intensity, effect.params),
+            ...timingParams,
+          }
+        : {
+            ...synthesizeEffectParams(effect.type, effect.params, effect.intensity),
+            ...(effect.intensity !== undefined ? { intensity: Math.max(0, Math.min(1, effect.intensity)) } : {}),
+            ...timingParams,
+          };
+    const actionEffectType = signature ? "shader" : effect.type;
     const result = await host.applyAction({
       type: isColorGrade ? "clip/setColorGrading" : "effect/add",
       id: genId(),
@@ -2348,7 +2400,7 @@ async function materializeEditPlan(
         ? { clipId, colorGrading: resolvedEffectParams }
         : {
           clipId,
-          effectType: effect.type,
+          effectType: actionEffectType,
           params: resolvedEffectParams,
         },
     });
@@ -2524,6 +2576,8 @@ async function materializeEditPlan(
     transitionCount,
     audioCount,
     audioClipIds: [...owned.audioClipIds],
+    cameraMoveCount,
+    keyframedClipIds: ownedKeyframeClipIds,
     ...motion,
   };
 }
@@ -2620,6 +2674,47 @@ function resolveLayoutTransform(
   };
 }
 
+/**
+ * Density is reported alongside the style score so callers (agent loop, UI,
+ * evals) can see *why* a plan is considered thin instead of a bare number.
+ * `revisionApplied` is included so a caller can tell "this is the best the
+ * bounded revision could do" from "no revision was needed".
+ */
+function densityPayload(
+  review: EditPlanReview,
+  revisionApplied?: boolean,
+): {
+  score: number;
+  summary: string;
+  escalation: EditDensityProfile["escalation"];
+  shotsPerMinute: number;
+  effectHitsPerMinute: number;
+  cameraMoveCount: number;
+  textsPerMinute: number;
+  sfxHits: number;
+  onBeatCutRatio: number | null;
+  deficiencies: readonly { code: string; severity: string; directive: string }[];
+  revisionApplied?: boolean;
+} {
+  return {
+    score: Math.round(review.density.score * 1000) / 1000,
+    summary: review.density.summary,
+    escalation: review.density.profile.escalation,
+    shotsPerMinute: Math.round(review.density.profile.shotsPerMinute * 100) / 100,
+    effectHitsPerMinute: Math.round(review.density.profile.effectHitsPerMinute * 100) / 100,
+    cameraMoveCount: review.density.profile.cameraMoveCount,
+    textsPerMinute: Math.round(review.density.profile.textsPerMinute * 100) / 100,
+    sfxHits: review.density.profile.sfxHits,
+    onBeatCutRatio: review.density.profile.onBeatCutRatio,
+    deficiencies: review.density.deficiencies.map((deficiency) => ({
+      code: deficiency.code,
+      severity: deficiency.severity,
+      directive: deficiency.directive,
+    })),
+    ...(revisionApplied !== undefined ? { revisionApplied } : {}),
+  };
+}
+
 function resolveTextStyle<T extends { readonly templateOverride?: Partial<CaptionStyleTemplate> }>(
   template: CaptionStyleTemplate | undefined,
   element: T & {
@@ -2672,6 +2767,12 @@ function normalizeDirectorPlanInput(value: unknown): EditPlan {
           : [],
         effectSpecs: Array.isArray(segment.effectSpecs)
           ? segment.effectSpecs.filter((effect): effect is Record<string, unknown> => Boolean(effect && typeof effect === "object"))
+          : undefined,
+        // Camera moves keep their raw shape: `normalizeEditPlan` coerces the
+        // numbers and validation reports unknown move ids with the supported
+        // list, so a typo gets repaired instead of silently dropped.
+        cameraMoves: Array.isArray(segment.cameraMoves)
+          ? segment.cameraMoves.filter((move): move is Record<string, unknown> => Boolean(move && typeof move === "object"))
           : undefined,
         speedRamp: speedRamp ? {
           keyframes: Array.isArray(speedRamp.keyframes)
@@ -16355,7 +16456,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "effect",
     title: "Add effect",
     description:
-      "Add a video effect to a clip. Standard effectType values include brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, shadow, glow, motion-blur, radial-blur, chromatic-aberration. Set effectType to 'shader' to run a GPU shader effect from the Motion shader library (only category 'effect' shaders, e.g. the Paper Design catalog like paper-halftone-dots or paper-liquid-metal — use list_motion_shaders with category 'effect' to discover ids); for shader effects, params MUST include a valid shaderId plus optional numeric params (name/value pairs from the shader's params) and an optional numeric time. Shader effects no-op gracefully when WebGL2 is unavailable.",
+      `Add a video effect to a clip. Standard effectType values include brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, shadow, glow, motion-blur, radial-blur, chromatic-aberration. Signature shader effects are named looks that are expensive to recreate by hand — ${SIGNATURE_EFFECT_NAMES.join(", ")} — and take an optional 0..1 params.intensity. You may instead set effectType to 'shader' with params.shaderId for any other Motion shader (category 'effect'; use list_motion_shaders to discover ids) plus optional numeric params. Shader effects no-op gracefully when WebGL2 is unavailable.`,
     inputSchema: obj(
       { clipId: str, effectType: str, params: { type: "object" } },
       ["clipId", "effectType"],
@@ -16369,15 +16470,51 @@ const TOOLS: RegisteredTool[] = [
       if (!effectType) return fail("effectType is required", "INVALID_PARAMS");
       if (!isSupportedEffectType(effectType)) {
         return fail(
-          `Unsupported effect type "${effectType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_CLIP_EFFECT_TYPES.join(", ")} (or a colorGrade alias for clip color grading).`,
+          `Unsupported effect type "${effectType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_CLIP_EFFECT_TYPES.join(", ")} (or a colorGrade alias for clip color grading). Signature shader effects: ${SUPPORTED_EFFECT_TYPES.filter((name) => !(SUPPORTED_CLIP_EFFECT_TYPES as readonly string[]).includes(name)).join(", ")}.`,
           "UNSUPPORTED_EFFECT",
-          { supportedEffects: [...SUPPORTED_CLIP_EFFECT_TYPES] },
+          { supportedEffects: [...SUPPORTED_EFFECT_TYPES] },
         );
       }
-      const params =
+      const baseParams =
         typeof args.params === "object" && args.params !== null
           ? (args.params as Record<string, unknown>)
           : {};
+      // A named signature effect ("vhs", "halftone", "prism", …) is sugar for
+      // the shader type plus a shaderId and param defaults: resolve it here so
+      // the stored layer is a normal shader effect the inspector understands.
+      const signature = resolveSignatureEffect(effectType);
+      if (signature) {
+        const intensity =
+          typeof baseParams.intensity === "number" ? baseParams.intensity : undefined;
+        const action: Action = {
+          type: "effect/add",
+          id: genId(),
+          timestamp: Date.now(),
+          params: {
+            clipId: args.clipId,
+            effectType: "shader",
+            params: {
+              shaderId: signature.shaderId,
+              ...buildSignatureEffectParams(signature, intensity, baseParams),
+              ...(typeof baseParams.startOffset === "number" ? { startOffset: baseParams.startOffset } : {}),
+              ...(typeof baseParams.duration === "number" ? { duration: baseParams.duration } : {}),
+            },
+          },
+        };
+        const signatureResult = await host.applyAction(action);
+        if (signatureResult.success) {
+          return ok(`add_video_effect applied (${signature.name} → shader ${signature.shaderId})`, {
+            actionId: signatureResult.actionId,
+            effectType: "shader",
+            shaderId: signature.shaderId,
+          });
+        }
+        return fail(
+          signatureResult.error?.message ?? "add_video_effect failed",
+          signatureResult.error?.code ?? "ACTION_FAILED",
+        );
+      }
+      const params = baseParams;
       if (effectType === "shader") {
         const shaderId = optionalString(params.shaderId);
         if (!shaderId) {
@@ -16443,18 +16580,28 @@ const TOOLS: RegisteredTool[] = [
     domain: "transition",
     actionType: "transition/add",
     title: "Add transition",
-    description: "Add a transition between two clips. transitionType must be a renderer-supported type (crossfade, dipToBlack, dipToWhite, wipe, slide, zoom, push, circleReveal, blur, whipPan, radialWipe, pixelate, glitch, blinds, diamondReveal, spin, flip, splitReveal, flash, filmBurn, mosaic, ripple, pageTurn, colorSplit). A hard cut needs NO transition object — leave the clips adjacent.",
+    description: `Add a transition between two clips. transitionType must be a renderer-supported type (${SUPPORTED_TRANSITION_TYPES.join(", ")}). A hard cut needs NO transition object — leave the clips adjacent.`,
     inputSchema: obj({ clipAId: str, clipBId: str, transitionType: str, duration: num }, ["clipAId", "clipBId", "transitionType", "duration"]),
     readOnly: false,
     destructive: false,
     expensive: false,
     handler: async (args, host) => {
       host.requireOpenProject();
-      const transitionType = optionalString(args.transitionType);
-      if (!transitionType) return fail("transitionType is required", "INVALID_PARAMS");
+      const requestedType = optionalString(args.transitionType);
+      if (!requestedType) return fail("transitionType is required", "INVALID_PARAMS");
+      // Canonicalize before validating: the director prompt and the docs both
+      // promise that aliases ("whip-zoom", "datamosh") resolve to a real type.
+      // A hard cut canonicalizes to null — that is a cut, not a transition.
+      const transitionType = canonicalizeTransitionType(requestedType);
+      if (transitionType === null) {
+        return fail(
+          `"${requestedType}" is a hard cut — leave the clips adjacent instead of adding a transition.`,
+          "INVALID_PARAMS",
+        );
+      }
       if (!isSupportedTransitionType(transitionType)) {
         return fail(
-          `Unsupported transition "${transitionType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_TRANSITION_TYPES.join(", ")}. For a hard cut, add no transition.`,
+          `Unsupported transition "${requestedType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_TRANSITION_TYPES.join(", ")}. For a hard cut, add no transition.`,
           "UNSUPPORTED_TRANSITION",
           { supportedTransitions: [...SUPPORTED_TRANSITION_TYPES] },
         );
@@ -16463,7 +16610,7 @@ const TOOLS: RegisteredTool[] = [
         type: "transition/add",
         id: genId(),
         timestamp: Date.now(),
-        params: args,
+        params: { ...args, transitionType },
       };
       const result = await host.applyAction(action);
       if (result.success) return ok("add_transition applied", { actionId: result.actionId });
@@ -33508,17 +33655,23 @@ const TOOLS: RegisteredTool[] = [
         }
       }
 
-      // ---- Style review (bounded to one revision attempt) ----
-      let planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis);
+      // ---- Style + density review (bounded to one revision attempt) ----
+      // The brief combines both gates: a plan can match the genre palette and
+      // still be eight splices, and the revision pass is the one chance to fix
+      // that before it reaches the timeline.
+      let planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis, resolvedMap);
       let revisionApplied = false;
       if (planReview.needsRevision) {
         try {
           const revisionResponse = await requestPlan(
-            `${directorPrompt}\n\n## Internal plan review\nThe first draft scored ${planReview.score.toFixed(2)} against the style target. Revise it once before execution. Address these deviations: ${planReview.deviations.join("; ") || "bring the measurable style profile closer to target"}.`,
+            `${directorPrompt}\n\n## Internal plan review — revise once before execution\n${planReview.revisionBrief}`,
             [
               {
                 role: "user",
-                content: `Revise this EditPlan to address the internal review, then call submit_edit_plan with the complete corrected plan. Do not explain the revision.\n\n${JSON.stringify(finalPlan)}`,
+                content:
+                  `Revise this EditPlan to address the internal review, then call submit_edit_plan with the complete corrected plan. ` +
+                  `Keep every choice that already works; add the missing density rather than replacing the edit. Do not explain the revision.\n\n` +
+                  JSON.stringify(finalPlan),
               },
             ],
           );
@@ -33529,7 +33682,7 @@ const TOOLS: RegisteredTool[] = [
             if (revisedBlocking.length === 0) {
               finalPlan = revised.plan;
               finalPlanIssues = revised.issues;
-              planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis);
+              planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis, resolvedMap);
               revisionApplied = true;
             }
           }
@@ -33596,6 +33749,10 @@ const TOOLS: RegisteredTool[] = [
               effectCount: 0,
               transitionCount: storedState.transitionIds.length,
               audioCount: storedState.audioClipIds.length,
+              cameraMoveCount: finalPlan.segments.reduce(
+                (sum, segment) => sum + (segment.cameraMoves?.length ?? 0),
+                0,
+              ),
               motionCompositionIds: [],
               motionInstanceIds: [],
               validationWarnings: finalPlanIssues.filter(
@@ -33606,6 +33763,7 @@ const TOOLS: RegisteredTool[] = [
                 deviations: planReview.deviations,
                 revisionApplied: false,
               },
+              density: densityPayload(planReview),
               quality: {
                 status: "unavailable" as const,
                 reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
@@ -33659,11 +33817,11 @@ const TOOLS: RegisteredTool[] = [
       };
 
       const summary =
-        `plan_edit applied as revision ${nextRevision}: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s)` +
+        `plan_edit applied as revision ${nextRevision}: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s), ${materialized.cameraMoveCount} camera move(s)` +
         (previousCommit
           ? `, replacing revision ${previousCommit.revision} (${cleanup.removed} prior artifact(s) removed)`
           : "") +
-        `. Style check: ${planReview.score.toFixed(2)}.`;
+        `. Style check: ${planReview.score.toFixed(2)} · density: ${planReview.density.score.toFixed(2)} (${planReview.density.summary}).`;
 
       const data = {
         editPlan: finalPlan,
@@ -33683,6 +33841,7 @@ const TOOLS: RegisteredTool[] = [
           deviations: planReview.deviations,
           revisionApplied,
         },
+        density: densityPayload(planReview, revisionApplied),
         // Honest reporting: there is no working timeline frame sampler yet, so
         // no visual quality review was performed. NEVER report a synthetic score.
         quality: {
