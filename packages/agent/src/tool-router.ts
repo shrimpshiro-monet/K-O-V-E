@@ -27,6 +27,12 @@ const ALWAYS_AVAILABLE = new Set([
   "insert_motion_into_editor",
   "execute_action",
   "batch_actions",
+  // safety net: must be reachable on every turn
+  "create_checkpoint",
+  "list_checkpoints",
+  "restore_checkpoint",
+  "undo",
+  "redo",
 ]);
 
 const MOTION_TERMS = /\b(motion|composition|layer|keyframe|animate|animation|after effects|lower third|title card|kinetic|lottie|svg|figma|particle|shader|mask|matte|precomp|camera|render frame)\b/i;

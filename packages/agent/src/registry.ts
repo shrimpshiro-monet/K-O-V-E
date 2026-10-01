@@ -1,4 +1,11 @@
 import type { Action } from "@kove-advanced/core/types/actions";
+import { HISTORY_TOOLS } from "./tools-history";
+import {
+  resolveMs,
+  resolveRange,
+  withSecondFields,
+  withWarnings,
+} from "./multicam-units";
 import { extractSegments as runFrameWorkerPipeline } from "@kove-advanced/frame-worker";
 import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
@@ -457,6 +464,21 @@ function fail(message: string, code = "ERROR", data?: unknown): ToolResult {
   return data !== undefined
     ? { ok: false, summary: message, error: { code, message }, data }
     : { ok: false, summary: message, error: { code, message } };
+}
+
+/** Explicit "this host cannot do that" — never a placeholder result. */
+function unsupportedHost(tool: string): ToolResult {
+  const message = `${tool} is not available on this host.`;
+  return {
+    ok: false,
+    summary: message,
+    error: {
+      code: "UNSUPPORTED_HOST",
+      message,
+      suggestedFix:
+        "Do not retry. Check get_capabilities → host for supported rendering features, or use render_motion_frame for motion compositions.",
+    },
+  };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -11493,8 +11515,12 @@ const TOOLS: RegisteredTool[] = [
   readTool("get_clip", "Get clip", "Full detail for one clip by id.", obj({ clipId: str }, ["clipId"]), (a, h) =>
     getClipDetail(h.getProject(), a.clipId as string),
   ),
-  readTool("get_capabilities", "Capabilities", "Valid enums + parameter ranges.", obj({}), (_a, h) =>
-    h.capabilities(),
+  readTool(
+    "get_capabilities",
+    "Capabilities",
+    "Valid enums + parameter ranges, plus `host`: what this host can actually do (renderMotionFrame, renderTimelineFrame, renderMulticamPreview, exportVideo, checkpoints). Check `host` before relying on a rendering tool; a false flag means the tool will return UNSUPPORTED_HOST.",
+    obj({}),
+    (_a, h) => ({ ...h.capabilities(), host: h.features?.() ?? null }),
   ),
   readTool(
     "get_creation_capabilities",
@@ -32704,23 +32730,29 @@ const TOOLS: RegisteredTool[] = [
     domain: "multicam",
     title: "Get multicam activity map",
     description:
-      "Read the reusable .orma speech activity map for an optional millisecond range. Large maps are deterministically sampled to at most 2,000 points.",
-    inputSchema: obj({ groupId: str, startMs: num, endMs: num }),
+      "Read the reusable .orma speech activity map for an optional range in SECONDS (startTime/endTime). Large maps are deterministically sampled to at most 2,000 points. Output keeps its *Ms fields and adds second-based siblings (e.g. windowMs → windowDuration). startMs/endMs are deprecated millisecond aliases.",
+    inputSchema: obj({
+      groupId: str,
+      startTime: { type: "number", minimum: 0, description: "Range start in seconds." },
+      endTime: { type: "number", minimum: 0, description: "Range end in seconds (> startTime)." },
+      startMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of startTime." },
+      endMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of endTime." },
+    }),
     readOnly: true,
     destructive: false,
     expensive: false,
     handler: async (args, host) => {
       if (!host.multicam) return fail("Multicam tools are unavailable in this host", "UNSUPPORTED");
-      const startMs = optionalNumber(args.startMs);
-      const endMs = optionalNumber(args.endMs);
-      if ((startMs !== undefined && startMs < 0) || (endMs !== undefined && endMs < 0) ||
-          (startMs !== undefined && endMs !== undefined && endMs <= startMs)) {
-        return fail("Activity range must satisfy 0 <= startMs < endMs", "INVALID_PARAMS");
-      }
-      return ok("Loaded multicam activity map", await host.multicam.getActivityMap(
-        optionalString(args.groupId),
-        { startMs, endMs },
-      ));
+      const range = resolveRange(args, "Activity");
+      if (range.error) return range.error;
+      const { startMs, endMs } = range;
+      return withWarnings(
+        ok("Loaded multicam activity map", withSecondFields(await host.multicam.getActivityMap(
+          optionalString(args.groupId),
+          { startMs, endMs },
+        ))),
+        range.warnings,
+      );
     },
   },
   {
@@ -32728,23 +32760,29 @@ const TOOLS: RegisteredTool[] = [
     domain: "multicam",
     title: "Get multicam transcript",
     description:
-      "Read optional per-participant local Whisper transcript segments from the separate .orma artifact.",
-    inputSchema: obj({ groupId: str, startMs: num, endMs: num }),
+      "Read optional per-participant local Whisper transcript segments from the separate .orma artifact, for an optional range in SECONDS (startTime/endTime). Each segment keeps startMs/endMs and adds startTime/endTime in seconds. startMs/endMs inputs are deprecated millisecond aliases.",
+    inputSchema: obj({
+      groupId: str,
+      startTime: { type: "number", minimum: 0, description: "Range start in seconds." },
+      endTime: { type: "number", minimum: 0, description: "Range end in seconds (> startTime)." },
+      startMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of startTime." },
+      endMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of endTime." },
+    }),
     readOnly: true,
     destructive: false,
     expensive: false,
     handler: async (args, host) => {
       if (!host.multicam) return fail("Multicam tools are unavailable in this host", "UNSUPPORTED");
-      const startMs = optionalNumber(args.startMs);
-      const endMs = optionalNumber(args.endMs);
-      if ((startMs !== undefined && startMs < 0) || (endMs !== undefined && endMs < 0) ||
-          (startMs !== undefined && endMs !== undefined && endMs <= startMs)) {
-        return fail("Transcript range must satisfy 0 <= startMs < endMs", "INVALID_PARAMS");
-      }
-      return ok("Loaded multicam transcript", await host.multicam.getTranscript(
-        optionalString(args.groupId),
-        { startMs, endMs },
-      ));
+      const range = resolveRange(args, "Transcript");
+      if (range.error) return range.error;
+      const { startMs, endMs } = range;
+      return withWarnings(
+        ok("Loaded multicam transcript", withSecondFields(await host.multicam.getTranscript(
+          optionalString(args.groupId),
+          { startMs, endMs },
+        ))),
+        range.warnings,
+      );
     },
   },
   {
@@ -32752,16 +32790,20 @@ const TOOLS: RegisteredTool[] = [
     domain: "multicam",
     title: "Set multicam edit policy",
     description:
-      "Re-plan the automatic multicam edit from cached analysis. All values are schema-validated and manifest shot constraints remain hard bounds.",
+      "Re-plan the automatic multicam edit from cached analysis. Durations are in SECONDS (commitDuration, layoutEnterDuration, layoutExitDuration, minLayoutLifeDuration); the commitMs/layoutEnterMs/layoutExitMs/minLayoutLifeMs milliseconds names are deprecated aliases. All values are schema-validated and manifest shot constraints remain hard bounds.",
     inputSchema: obj({
       groupId: str,
       strategy: { type: "string", enum: ["hold", "winner", "priority", "wide", "composite", "progressive"] },
       escalateTo: { type: "string", enum: ["winner", "priority", "wide", "composite", "progressive"] },
       priorityParticipantIds: { type: "array", items: str, maxItems: 16 },
-      commitMs: { type: "number", minimum: 0, maximum: 5_000 },
-      layoutEnterMs: { type: "number", minimum: 0, maximum: 5_000 },
-      layoutExitMs: { type: "number", minimum: 0, maximum: 10_000 },
-      minLayoutLifeMs: { type: "number", minimum: 100, maximum: 30_000 },
+      commitDuration: { type: "number", minimum: 0, maximum: 5, description: "Seconds a new speaker must hold before a cut commits." },
+      layoutEnterDuration: { type: "number", minimum: 0, maximum: 5, description: "Seconds of sustained activity before entering a multi-panel layout." },
+      layoutExitDuration: { type: "number", minimum: 0, maximum: 10, description: "Seconds of inactivity before leaving a multi-panel layout." },
+      minLayoutLifeDuration: { type: "number", minimum: 0.1, maximum: 30, description: "Minimum seconds a layout stays on screen." },
+      commitMs: { type: "number", minimum: 0, maximum: 5_000, description: "DEPRECATED milliseconds alias of commitDuration." },
+      layoutEnterMs: { type: "number", minimum: 0, maximum: 5_000, description: "DEPRECATED milliseconds alias of layoutEnterDuration." },
+      layoutExitMs: { type: "number", minimum: 0, maximum: 10_000, description: "DEPRECATED milliseconds alias of layoutExitDuration." },
+      minLayoutLifeMs: { type: "number", minimum: 100, maximum: 30_000, description: "DEPRECATED milliseconds alias of minLayoutLifeDuration." },
       maxLayoutChangesPerMinute: { type: "number", minimum: 1, maximum: 60 },
     }, ["groupId"]),
     readOnly: false,
@@ -32781,14 +32823,24 @@ const TOOLS: RegisteredTool[] = [
       if (escalateTo && !(escalations as readonly string[]).includes(escalateTo)) {
         return fail("escalateTo is invalid", "INVALID_PARAMS");
       }
+      const warnings: string[] = [];
+      let unitError: ToolResult | undefined;
       const bounded = (
-        key: string,
+        spec: { sec: string; ms: string },
         minimum: number,
         maximum: number,
       ): number | undefined => {
-        const value = optionalNumber(args[key]);
+        const resolved = resolveMs(args, spec);
+        warnings.push(...resolved.warnings);
+        if (resolved.error) {
+          unitError = resolved.error;
+          return undefined;
+        }
+        const value = resolved.ms;
         if (value === undefined) return undefined;
-        if (value < minimum || value > maximum) throw new Error(`${key} must be between ${minimum} and ${maximum}`);
+        if (value < minimum || value > maximum) {
+          throw new Error(`${spec.sec} must be between ${minimum / 1000} and ${maximum / 1000} seconds`);
+        }
         return value;
       };
       try {
@@ -32801,17 +32853,26 @@ const TOOLS: RegisteredTool[] = [
           }
           updates.priorityParticipantIds = args.priorityParticipantIds;
         }
-        for (const [key, minimum, maximum] of [
-          ["commitMs", 0, 5_000],
-          ["layoutEnterMs", 0, 5_000],
-          ["layoutExitMs", 0, 10_000],
-          ["minLayoutLifeMs", 100, 30_000],
-          ["maxLayoutChangesPerMinute", 1, 60],
+        for (const [spec, minimum, maximum] of [
+          [{ sec: "commitDuration", ms: "commitMs" }, 0, 5_000],
+          [{ sec: "layoutEnterDuration", ms: "layoutEnterMs" }, 0, 5_000],
+          [{ sec: "layoutExitDuration", ms: "layoutExitMs" }, 0, 10_000],
+          [{ sec: "minLayoutLifeDuration", ms: "minLayoutLifeMs" }, 100, 30_000],
         ] as const) {
-          const value = bounded(key, minimum, maximum);
-          if (value !== undefined) updates[key] = value;
+          const value = bounded(spec, minimum, maximum);
+          if (unitError) return unitError;
+          // The bridge/policy contract stays in milliseconds.
+          if (value !== undefined) updates[spec.ms] = value;
         }
-        return ok("Updated multicam edit policy", await host.multicam.setEditPolicy(groupId, updates));
+        const perMinute = optionalNumber(args.maxLayoutChangesPerMinute);
+        if (perMinute !== undefined) {
+          if (perMinute < 1 || perMinute > 60) throw new Error("maxLayoutChangesPerMinute must be between 1 and 60");
+          updates.maxLayoutChangesPerMinute = perMinute;
+        }
+        return withWarnings(
+          ok("Updated multicam edit policy", withSecondFields(await host.multicam.setEditPolicy(groupId, updates))),
+          warnings,
+        );
       } catch (error) {
         return fail(error instanceof Error ? error.message : "Invalid edit policy", "INVALID_PARAMS");
       }
@@ -32821,47 +32882,59 @@ const TOOLS: RegisteredTool[] = [
     name: "annotate_segment",
     domain: "multicam",
     title: "Annotate multicam segment",
-    description: "Attach a concise planning note to a bounded multicam time range without modifying cached analysis.",
-    inputSchema: obj({ groupId: str, startMs: num, endMs: num, note: str }, ["groupId", "startMs", "endMs", "note"]),
+    description: "Attach a concise planning note to a bounded multicam time range (startTime/endTime in SECONDS) without modifying cached analysis. startMs/endMs are deprecated millisecond aliases.",
+    inputSchema: obj({
+      groupId: str,
+      startTime: { type: "number", minimum: 0, description: "Range start in seconds." },
+      endTime: { type: "number", minimum: 0, description: "Range end in seconds (> startTime)." },
+      startMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of startTime." },
+      endMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of endTime." },
+      note: str,
+    }, ["groupId", "note"]),
     readOnly: false,
     destructive: false,
     expensive: false,
     handler: async (args, host) => {
       if (!host.multicam) return fail("Multicam tools are unavailable in this host", "UNSUPPORTED");
       const groupId = optionalString(args.groupId);
-      const startMs = optionalNumber(args.startMs);
-      const endMs = optionalNumber(args.endMs);
+      const range = resolveRange(args, "Annotation", { required: true });
+      if (range.error) return range.error;
+      const { startMs, endMs } = range;
       const note = optionalString(args.note);
-      if (!groupId || startMs === undefined || endMs === undefined || startMs < 0 || endMs <= startMs || !note || note.length > 500) {
-        return fail("groupId, a valid millisecond range, and a note of at most 500 characters are required", "INVALID_PARAMS");
+      if (!groupId || startMs === undefined || endMs === undefined || !note || note.length > 500) {
+        return fail("groupId and a note of at most 500 characters are required", "INVALID_PARAMS");
       }
-      return ok("Annotated multicam segment", await host.multicam.annotateSegment({ groupId, startMs, endMs, note }));
+      return withWarnings(
+        ok("Annotated multicam segment", withSecondFields(await host.multicam.annotateSegment({ groupId, startMs, endMs, note }))),
+        range.warnings,
+      );
     },
   },
   {
     name: "get_edit_summary",
     domain: "multicam",
     title: "Get multicam edit summary",
-    description: "Summarize shots, layouts, pending cut review, annotations, and top deterministic social candidates.",
+    description: "Summarize shots, layouts, pending cut review, annotations, and top deterministic social candidates. *Ms fields in the output are accompanied by second-based siblings (e.g. minShotMs → minShotDuration).",
     inputSchema: obj({ groupId: str }),
     readOnly: true,
     destructive: false,
     expensive: false,
     handler: async (args, host) => {
       if (!host.multicam) return fail("Multicam tools are unavailable in this host", "UNSUPPORTED");
-      return ok("Loaded multicam edit summary", await host.multicam.getEditSummary(optionalString(args.groupId)));
+      return ok("Loaded multicam edit summary", withSecondFields(await host.multicam.getEditSummary(optionalString(args.groupId))));
     },
   },
   {
     name: "override_cut",
     domain: "multicam",
     title: "Override multicam cut",
-    description: "Accept, reject, nudge by at most 2 seconds, or assign a valid manifest camera to one generated cut.",
+    description: "Accept, reject, nudge by at most 2 seconds (delta, in SECONDS), or assign a valid manifest camera to one generated cut. deltaMs is a deprecated milliseconds alias of delta.",
     inputSchema: obj({
       groupId: str,
       switchId: str,
       operation: { type: "string", enum: ["accept", "reject", "nudge", "set-camera"] },
-      deltaMs: { type: "number", minimum: -2_000, maximum: 2_000 },
+      delta: { type: "number", minimum: -2, maximum: 2, description: "Nudge amount in seconds (negative = earlier)." },
+      deltaMs: { type: "number", minimum: -2_000, maximum: 2_000, description: "DEPRECATED milliseconds alias of delta." },
       cameraId: str,
     }, ["groupId", "switchId", "operation"]),
     readOnly: false,
@@ -32872,45 +32945,65 @@ const TOOLS: RegisteredTool[] = [
       const groupId = optionalString(args.groupId);
       const switchId = optionalString(args.switchId);
       const operation = optionalString(args.operation);
-      const deltaMs = optionalNumber(args.deltaMs);
+      const delta = resolveMs(args, { sec: "delta", ms: "deltaMs" });
+      if (delta.error) return delta.error;
+      const deltaMs = delta.ms;
       const cameraId = optionalString(args.cameraId);
       if (!groupId || !switchId || !operation || !["accept", "reject", "nudge", "set-camera"].includes(operation)) {
         return fail("groupId, switchId, and a valid operation are required", "INVALID_PARAMS");
       }
       if (operation === "nudge" && (deltaMs === undefined || Math.abs(deltaMs) > 2_000)) {
-        return fail("nudge requires deltaMs between -2000 and 2000", "INVALID_PARAMS");
+        return {
+          ok: false,
+          summary: "nudge requires delta between -2 and 2 seconds",
+          error: {
+            code: "INVALID_PARAMS",
+            message: "nudge requires delta between -2 and 2 seconds",
+            suggestedFix: "Pass delta in SECONDS, e.g. delta: -0.25 moves the cut 250 ms earlier.",
+          },
+        };
       }
       if (operation === "set-camera" && !cameraId) {
         return fail("set-camera requires cameraId", "INVALID_PARAMS");
       }
-      return ok("Applied multicam cut override", await host.multicam.overrideCut({
-        groupId,
-        switchId,
-        operation: operation as "accept" | "reject" | "nudge" | "set-camera",
-        deltaMs,
-        cameraId,
-      }));
+      return withWarnings(
+        ok("Applied multicam cut override", withSecondFields(await host.multicam.overrideCut({
+          groupId,
+          switchId,
+          operation: operation as "accept" | "reject" | "nudge" | "set-camera",
+          deltaMs,
+          cameraId,
+        }))),
+        delta.warnings,
+      );
     },
   },
   {
     name: "preview_frame",
     domain: "multicam",
     title: "Preview multicam frame",
-    description: "Render a frame at a bounded millisecond time for visual inspection of the current multicam edit.",
-    inputSchema: obj({ groupId: str, timeMs: { type: "number", minimum: 0 } }, ["groupId", "timeMs"]),
+    description: "Render a frame at a bounded time (time, in SECONDS; timeMs is a deprecated milliseconds alias) for visual inspection of the current multicam edit. Only works when get_capabilities → host.renderMulticamPreview is true; otherwise returns UNSUPPORTED_HOST (do not retry).",
+    inputSchema: obj({
+      groupId: str,
+      time: { type: "number", minimum: 0, description: "Time in seconds." },
+      timeMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of time." },
+    }, ["groupId"]),
     readOnly: true,
     destructive: false,
     expensive: true,
     handler: async (args, host) => {
-      if (!host.multicam) return fail("Multicam tools are unavailable in this host", "UNSUPPORTED");
+      if (!host.multicam || host.features?.().renderMulticamPreview === false) return unsupportedHost("preview_frame");
       const groupId = optionalString(args.groupId);
-      const timeMs = optionalNumber(args.timeMs);
+      const resolvedTime = resolveMs(args, { sec: "time", ms: "timeMs" });
+      if (resolvedTime.error) return resolvedTime.error;
+      const timeMs = resolvedTime.ms;
       if (!groupId || timeMs === undefined || timeMs < 0) {
-        return fail("groupId and non-negative timeMs are required", "INVALID_PARAMS");
+        return fail("groupId and a non-negative time (seconds) are required", "INVALID_PARAMS");
       }
       const result = await host.multicam.previewFrame(groupId, timeMs);
+      if (result.code === "unsupported_host") return unsupportedHost("preview_frame");
       return result.ok
-        ? ok("Rendered multicam preview frame", result.data)
+        ? withWarnings(ok("Rendered multicam preview frame", result.data), resolvedTime.warnings)
         : fail(result.error ?? "Preview frame failed", "PREVIEW_FAILED");
     },
   },
@@ -33721,7 +33814,9 @@ const TOOLS: RegisteredTool[] = [
 ];
 
 // ---- Registry --------------------------------------------------------------
-const REGISTRY = new Map<string, RegisteredTool>(TOOLS.map((t) => [t.name, t]));
+const REGISTRY = new Map<string, RegisteredTool>(
+  [...TOOLS, ...HISTORY_TOOLS].map((t) => [t.name, t]),
+);
 
 export function getTool(name: string): RegisteredTool | undefined {
   return REGISTRY.get(name);

@@ -275,6 +275,7 @@ describe("tool registry", () => {
         rollbackTransaction: async () => undefined,
         runJob: async () => ({ ok: true }),
         capabilities: () => ({}) as ReturnType<EditingHost["capabilities"]>,
+        historyControl: {} as EditingHost["historyControl"],
       } as EditingHost,
     );
 

@@ -1,6 +1,8 @@
 export * from "./types";
 export * from "./host";
 export { HeadlessHost } from "./headless-host";
+export { HistoryLedger, fingerprintProject } from "./checkpoints";
+export type { HistoryBackend, HistoryPosition } from "./checkpoints";
 export type { HeadlessHostOptions } from "./headless-host";
 export * from "./serialize";
 export {

@@ -144,6 +144,8 @@ export class ActionHistory {
   private listeners: Set<() => void> = new Set();
   private lastActionTime: number = 0;
   private autoGroupWindow: number = 100;
+  /** Monotonic; bumped by every push/undo/redo/clear. Never reset, so it can detect change across clear(). */
+  private revision = 0;
 
   constructor(maxHistorySize: number = 1000) {
     this.maxHistorySize = maxHistorySize;
@@ -202,6 +204,7 @@ export class ActionHistory {
 
     this.undoStack.push(entry);
     this.redoStack = [];
+    this.revision += 1;
 
     this.snapshots = this.snapshots.filter(
       (s) => s.stackIndex <= this.undoStack.length,
@@ -237,6 +240,24 @@ export class ActionHistory {
     this.notify();
   }
 
+  /**
+   * Force a group boundary at the current position: entries pushed afterwards
+   * never share a group with entries pushed before, even inside an open
+   * beginGroup() (e.g. an agent turn) or within the auto-group time window.
+   * Checkpoints rely on this so a restore can stop exactly at the boundary.
+   */
+  sealGroup(): void {
+    this.lastActionTime = 0;
+    if (this.currentGroupId) {
+      this.currentGroupId = `group-${Date.now()}-${this.revision}`;
+    }
+  }
+
+  /** Monotonic change counter (push/undo/redo/clear). Not reset by clear(). */
+  getRevision(): number {
+    return this.revision;
+  }
+
   setAutoGroupWindow(ms: number): void {
     this.autoGroupWindow = ms;
   }
@@ -245,6 +266,7 @@ export class ActionHistory {
     const entry = this.undoStack.pop();
     if (entry) {
       this.redoStack.push(entry);
+      this.revision += 1;
       this.notify();
       return entry.inverseAction;
     }
@@ -277,6 +299,7 @@ export class ActionHistory {
     const entry = this.redoStack.pop();
     if (entry) {
       this.undoStack.push(entry);
+      this.revision += 1;
       this.notify();
       return entry.action;
     }
@@ -375,6 +398,7 @@ export class ActionHistory {
     this.snapshots = [];
     this.currentGroupId = null;
     this.groupDepth = 0;
+    this.revision += 1;
     this.notify();
   }
 

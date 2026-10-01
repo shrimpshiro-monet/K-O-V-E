@@ -19,10 +19,103 @@ export interface JobResult {
   readonly ok: boolean;
   readonly data?: unknown;
   readonly error?: string;
+  /**
+   * Machine-readable failure reason. "unsupported_host" means this host cannot
+   * perform the job at all (as opposed to the job failing) — tools surface it as
+   * UNSUPPORTED_HOST instead of a generic failure.
+   */
+  readonly code?: "unsupported_host";
+}
+
+/**
+ * What this host can actually do, reported to the agent via get_capabilities
+ * (`host`) so it never has to discover a missing capability by failing.
+ */
+export interface HostFeatures {
+  /** Render a single frame of a motion composition (render_motion_frame). */
+  readonly renderMotionFrame: boolean;
+  /** Render a single frame of the main timeline. Not implemented on any host yet. */
+  readonly renderTimelineFrame: boolean;
+  /** Render a multicam preview frame (preview_frame). */
+  readonly renderMulticamPreview: boolean;
+  /** Export the project to a video/audio file. */
+  readonly exportVideo: boolean;
+  /** create/restore_checkpoint, undo, redo. */
+  readonly checkpoints: boolean;
 }
 
 export interface TxnHandle {
   readonly id: string;
+}
+
+// ---- History / checkpoint contract -----------------------------------------
+// One contract, implemented by every EditingHost through HistoryLedger
+// (./checkpoints.ts) and verified by the shared suite in
+// ./host-history-contract.ts.
+
+export interface CheckpointInfo {
+  readonly id: string;
+  readonly label: string;
+  /** ISO-8601 timestamp (metadata only; not an editor time value). */
+  readonly createdAt: string;
+  /** Host revision when the checkpoint was taken. */
+  readonly revision: number;
+  /** Number of undoable steps (across all undo stacks) at the checkpoint. */
+  readonly undoDepth: number;
+}
+
+export type HistoryFailureCode =
+  | "NOTHING_TO_UNDO"
+  | "NOTHING_TO_REDO"
+  | "HUMAN_EDITS_PRESENT"
+  | "CHECKPOINT_NOT_FOUND"
+  | "CHECKPOINT_STALE"
+  | "RESTORE_INCOMPLETE"
+  | "UNDO_FAILED"
+  | "REDO_FAILED";
+
+export interface HistoryOptions {
+  /**
+   * Proceed even though the operation would also revert (undo) or re-apply
+   * (redo) work the human did. Default false.
+   */
+  readonly force?: boolean;
+}
+
+export interface HistoryOpResult {
+  readonly ok: boolean;
+  readonly code?: HistoryFailureCode;
+  readonly message: string;
+  readonly suggestedFix?: string;
+  readonly warnings: readonly string[];
+  /** Undoable steps remaining after the operation. */
+  readonly undoDepth: number;
+  readonly revision: number;
+  /** Undo groups reverted (undo/restore) or re-applied (redo). */
+  readonly steps?: number;
+  /**
+   * restore only: true when the resulting project fingerprint equals the
+   * checkpoint's. false means the undo replay left a different state
+   * (see warnings) and the caller must not assume an exact restore.
+   */
+  readonly verified?: boolean;
+}
+
+export interface HistoryControl {
+  /**
+   * Monotonic number that increases whenever editor state changed since it was
+   * last read (observed lazily: several changes between two reads count once).
+   * Safe for change detection, not a mutation counter.
+   */
+  revision(): number;
+  /** Undo the agent's most recent step. Refuses to undo human edits unless force. */
+  undo(options?: HistoryOptions): Promise<HistoryOpResult>;
+  redo(options?: HistoryOptions): Promise<HistoryOpResult>;
+  /** Mark the current state; also forces an undo-group boundary here. */
+  createCheckpoint(label?: string): CheckpointInfo;
+  /** Revert to a checkpoint. Refuses when human edits happened since, unless force. */
+  restoreCheckpoint(id: string, options?: HistoryOptions): Promise<HistoryOpResult>;
+  listCheckpoints(): readonly CheckpointInfo[];
 }
 
 export interface ProjectRef {
@@ -246,6 +339,10 @@ export interface EditingHost {
   llm?: { client: LLMClient; provider: LlmProviderName };
   /** Throws when no project is open (guard for mutating tools). */
   requireOpenProject(): void;
+  /** Agent-safe undo/redo and named checkpoints (see HistoryControl). */
+  readonly historyControl: HistoryControl;
+  /** Honest capability report (optional so minimal test hosts need not implement it). */
+  features?(): HostFeatures;
 
   /**
    * Project lifecycle + media ingest. Optional because they require a real

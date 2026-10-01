@@ -21,6 +21,7 @@ export type ToolDomain =
   | "ai"
   | "export"
   | "multicam"
+  | "history"
   | "raw"
   | "internal";
 
@@ -45,6 +46,8 @@ export interface ToolCall {
 export interface ToolError {
   readonly code: string;
   readonly message: string;
+  /** Concrete next step the caller can take to recover (new tools; older tools omit it). */
+  readonly suggestedFix?: string;
 }
 
 export interface ToolResultImage {
@@ -60,6 +63,8 @@ export interface ToolResult {
   readonly error?: ToolError;
   /** Rendered image the model can SEE (e.g. render_motion_frame). */
   readonly image?: ToolResultImage;
+  /** Non-fatal notices, e.g. use of a deprecated parameter alias. */
+  readonly warnings?: readonly string[];
 }
 
 export interface AgentMessage {
