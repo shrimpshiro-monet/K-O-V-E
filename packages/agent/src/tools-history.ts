@@ -72,7 +72,7 @@ function fromHistory(result: HistoryOpResult): ToolResult {
 
 const tool = (
   def: Omit<RegisteredTool, "domain" | "destructive" | "expensive">,
-): RegisteredTool => ({ ...def, domain: "history", destructive: false, expensive: false });
+): RegisteredTool => ({ ...def, domain: "history", destructive: false, expensive: false, strict: true });
 
 export const HISTORY_TOOLS: RegisteredTool[] = [
   tool({

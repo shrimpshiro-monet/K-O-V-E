@@ -3911,6 +3911,18 @@
           "type": "number",
           "required": false,
           "extra": ""
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "required": false,
+          "extra": "one of: general | captions | dialogue | music | effects | ambience"
         }
       ]
     },
@@ -4184,6 +4196,54 @@
           "name": "startTime",
           "type": "number",
           "required": true,
+          "extra": ""
+        },
+        {
+          "name": "duration",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "inPoint",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "outPoint",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "volume",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "speed",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "reversed",
+          "type": "boolean",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "transform",
+          "type": "object",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "fade",
+          "type": "object",
+          "required": false,
           "extra": ""
         }
       ]
@@ -17542,6 +17602,36 @@
         {
           "name": "opacity",
           "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "key",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "objectId",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "partId",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "parentId",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "parentKey",
+          "type": "string",
           "required": false,
           "extra": ""
         }

@@ -16417,7 +16417,12 @@ const TOOLS: RegisteredTool[] = [
   actionTool({ name: "set_canvas_background", domain: "project", actionType: "project/setCanvasBackground", title: "Canvas background", description: "Set background fill mode/color.", inputSchema: obj({ backgroundFillMode: str, layoutBackgroundColor: str }) }),
 
   // track
-  actionTool({ name: "add_track", domain: "track", actionType: "track/add", title: "Add track", description: "Add a track (video|audio|image|text|graphics).", inputSchema: obj({ trackType: str, position: num }, ["trackType"]) }),
+  actionTool({ name: "add_track", domain: "track", actionType: "track/add", title: "Add track", description: "Add a track (video|audio|image|text|graphics).", inputSchema: obj({
+    trackType: str,
+    position: num,
+    name: { type: "string", description: "Display name. Defaults to the track type." },
+    role: { type: "string", enum: ["general", "captions", "dialogue", "music", "effects", "ambience"] },
+  }, ["trackType"]) }),
   actionTool({ name: "duplicate_track", domain: "track", actionType: "track/duplicate", title: "Duplicate track", description: "Duplicate a timeline-backed video, image, or audio track with fresh track, clip, and transition identities. Inserts the copy after the source unless position is supplied.", inputSchema: obj({ sourceTrackId: str, position: num }, ["sourceTrackId"]) }),
   actionTool({ name: "remove_track", domain: "track", actionType: "track/remove", title: "Remove track", description: "Remove a track and its clips.", inputSchema: obj({ trackId: str }, ["trackId"]), destructive: true }),
   actionTool({ name: "rename_track", domain: "track", actionType: "track/rename", title: "Rename track", description: "Rename a track.", inputSchema: obj({ trackId: str, name: str }, ["trackId", "name"]) }),
@@ -16453,7 +16458,19 @@ const TOOLS: RegisteredTool[] = [
   actionTool({ name: "rename_media", domain: "media", actionType: "media/rename", title: "Rename media", description: "Rename a media item.", inputSchema: obj({ mediaId: str, name: str }, ["mediaId", "name"]) }),
 
   // clip
-  actionTool({ name: "add_clip", domain: "clip", actionType: "clip/add", title: "Add clip", description: "Add a media clip to a track at a time.", inputSchema: obj({ trackId: str, mediaId: str, startTime: num }, ["trackId", "mediaId", "startTime"]) }),
+  actionTool({ name: "add_clip", domain: "clip", actionType: "clip/add", title: "Add clip", description: "Add a media clip to a track at a time.", inputSchema: obj({
+    trackId: str,
+    mediaId: str,
+    startTime: { type: "number", description: "Timeline position in seconds." },
+    duration: { type: "number", description: "Clip length in seconds. Defaults to the media duration (5 for images/graphics)." },
+    inPoint: { type: "number", description: "Source in-point in seconds." },
+    outPoint: { type: "number", description: "Source out-point in seconds." },
+    volume: { type: "number", description: "Linear volume multiplier." },
+    speed: { type: "number", description: "Playback speed multiplier." },
+    reversed: bool,
+    transform: { type: "object", description: "Initial transform (position/scale/rotation/opacity/crop)." },
+    fade: { type: "object", description: "{ fadeIn, fadeOut } in seconds." },
+  }, ["trackId", "mediaId", "startTime"]) }),
   actionTool({ name: "remove_clip", domain: "clip", actionType: "clip/remove", title: "Remove clip", description: "Remove a clip.", inputSchema: obj({ clipId: str }, ["clipId"]), destructive: true }),
   actionTool({ name: "move_clip", domain: "clip", actionType: "clip/move", title: "Move clip", description: "Move a clip to a new start time / track.", inputSchema: obj({ clipId: str, startTime: num, trackId: str }, ["clipId", "startTime"]) }),
   actionTool({ name: "trim_clip", domain: "clip", actionType: "clip/trim", title: "Trim clip", description: "Set a clip's in/out points (seconds).", inputSchema: obj({ clipId: str, inPoint: num, outPoint: num }, ["clipId"]) }),
@@ -31691,6 +31708,11 @@ const TOOLS: RegisteredTool[] = [
         emissive: str,
         mapAssetId: str,
         opacity: num,
+        key: { type: "string", description: "Stable object key (aliases: objectId, partId). Defaults to the object name." },
+        objectId: { type: "string", description: "Alias of key." },
+        partId: { type: "string", description: "Alias of key." },
+        parentId: { type: "string", description: "Parent object id for hierarchical objects." },
+        parentKey: { type: "string", description: "Parent object key (alias of parentId)." },
       },
       ["compositionId", "layerId", "kind"],
     ),
@@ -32545,6 +32567,8 @@ const TOOLS: RegisteredTool[] = [
     description:
       "Escape hatch: dispatch any underlying editor action by type + params. Use get_capabilities and the action catalog for valid types.",
     inputSchema: obj({ type: str, params: { type: "object" } }, ["type"]),
+    // Flat form: top-level keys other than `type` become the action's params.
+    freeform: true,
     readOnly: false,
     destructive: true,
     expensive: false,

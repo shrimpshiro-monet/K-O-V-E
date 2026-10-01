@@ -35,6 +35,18 @@ export interface ToolDef {
   readonly destructive: boolean;
   readonly expensive: boolean;
   readonly internal?: boolean; // exclude from user-facing tool lists
+  /**
+   * Schema is enforced strictly (reject unknown keys / wrong types, lossless
+   * coercion only). Required for every tool added after the legacy snapshot —
+   * see schema-validate.ts and schema-conformance.test.ts.
+   */
+  readonly strict?: boolean;
+  /**
+   * Accepts keys beyond the declared properties by design (e.g. execute_action's
+   * flat form spreads top-level keys into action params). Unknown-key handling
+   * is skipped for this tool; types/required are still checked.
+   */
+  readonly freeform?: boolean;
 }
 
 export interface ToolCall {

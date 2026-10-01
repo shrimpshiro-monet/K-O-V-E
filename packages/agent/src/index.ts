@@ -35,3 +35,13 @@ export {
   EXPANSION_SYSTEM_PROMPT,
   buildExpansionPrompt,
 } from "./director";
+export {
+  gateToolArgs,
+  getSchemaMismatches,
+  getSchemaPolicy,
+  resetSchemaMismatches,
+  setSchemaMismatchSink,
+  setSchemaPolicy,
+  validateValue,
+} from "./schema-validate";
+export type { SchemaIssue, SchemaMismatchEntry, SchemaMode, SchemaPolicy } from "./schema-validate";

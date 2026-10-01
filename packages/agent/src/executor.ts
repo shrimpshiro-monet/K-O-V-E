@@ -2,6 +2,8 @@ import type { EditingHost } from "./host";
 import type { ToolResult } from "./types";
 import { getTool } from "./registry";
 import { resolveClipId } from "./serialize";
+import { gateToolArgs } from "./schema-validate";
+import { withWarnings } from "./multicam-units";
 
 /**
  * Resolve agent-friendly clip references (clipIndex / atSec [+ trackIndex]) to a
@@ -43,8 +45,13 @@ export async function executeTool(
     };
   }
   const resolved = resolveRefs(args ?? {}, host);
+  // Schema gate: shadow (log only) for legacy tools, enforced for `strict` tools
+  // and any tool opted in via the policy. Handlers still validate for themselves.
+  const gate = gateToolArgs(tool, resolved);
+  if (gate.rejection) return gate.rejection;
   try {
-    return await tool.handler(resolved, host);
+    const result = await tool.handler(gate.args, host);
+    return gate.warnings.length > 0 ? withWarnings(result, [...(result.warnings ?? []), ...gate.warnings]) : result;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tool execution failed";
     return { ok: false, summary: message, error: { code: "TOOL_ERROR", message } };

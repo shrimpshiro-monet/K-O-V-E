@@ -337,6 +337,38 @@
         {
           "name": "startTime",
           "type": "number"
+        },
+        {
+          "name": "duration",
+          "type": "number"
+        },
+        {
+          "name": "inPoint",
+          "type": "number"
+        },
+        {
+          "name": "outPoint",
+          "type": "number"
+        },
+        {
+          "name": "volume",
+          "type": "number"
+        },
+        {
+          "name": "speed",
+          "type": "number"
+        },
+        {
+          "name": "reversed",
+          "type": "boolean"
+        },
+        {
+          "name": "transform",
+          "type": "object"
+        },
+        {
+          "name": "fade",
+          "type": "object"
         }
       ],
       "tools": [
@@ -2478,6 +2510,14 @@
         {
           "name": "position",
           "type": "number"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "role",
+          "type": "string"
         }
       ],
       "tools": [
