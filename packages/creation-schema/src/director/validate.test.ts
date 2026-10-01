@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { EditPlan, SegmentMap } from "./index";
-import { normalizeEditPlan, summarizeSegmentMap, validateEditPlan } from "./index";
+import {
+  canonicalizePlanTransitions,
+  canonicalizeTransitionType,
+  isSupportedTransitionType,
+  normalizeEditPlan,
+  summarizeSegmentMap,
+  validateEditPlan,
+} from "./index";
 
 const plan: EditPlan = {
   segments: [
@@ -40,6 +47,78 @@ describe("director validation helpers", () => {
   it("summarizes malformed durations without throwing", () => {
     const map = { videos: [{ videoId: "video-1", duration: undefined, segments: [] }] } as unknown as SegmentMap;
     expect(summarizeSegmentMap(map)).toContain("0.0s total");
+  });
+
+
+  it("keeps every advertised transition name in sync with the renderer vocabulary", () => {
+    // The prompt tells the model exactly these names; the validator must accept
+    // each one or the model would be punished for following instructions.
+    const advertised = [
+      "crossZoom",
+      "zoomBlur",
+      "motionSmear",
+      "strobeCut",
+      "impactShake",
+      "lumaWipe",
+      "inkBleed",
+      "tileFlip",
+      "sliceSlide",
+      "lightLeak",
+      "vhsScan",
+      "paperBurn",
+      "pixelSort",
+      "filmRoll",
+    ];
+    for (const type of advertised) {
+      expect(isSupportedTransitionType(type), type).toBe(true);
+      expect(canonicalizeTransitionType(type), type).toBe(type);
+    }
+    expect(advertised).toHaveLength(14);
+  });
+
+  it("canonicalizes second-wave transition aliases instead of rejecting them", () => {
+    expect(canonicalizeTransitionType("whip-zoom")).toBe("crossZoom");
+    expect(canonicalizeTransitionType("Whip Zoom")).toBe("crossZoom");
+    expect(canonicalizeTransitionType("datamosh")).toBe("pixelSort");
+    expect(canonicalizeTransitionType("luma-dissolve")).toBe("lumaWipe");
+    expect(canonicalizeTransitionType("burn-through")).toBe("paperBurn");
+    expect(canonicalizeTransitionType("tape-wipe")).toBe("vhsScan");
+    expect(canonicalizeTransitionType("card-flip")).toBe("tileFlip");
+    expect(canonicalizeTransitionType("film-roll")).toBe("filmRoll");
+  });
+
+  it("drops hard cuts but keeps rendered second-wave transitions", () => {
+    const withTransitions: EditPlan = {
+      ...plan,
+      segments: [plan.segments[0]!, { ...plan.segments[0]!, targetPosition: 4 }],
+      transitions: [
+        { afterSegmentIndex: 0, type: "hardCut", duration: 0.2, rationale: "cut" },
+        { afterSegmentIndex: 0, type: "impactShake", duration: 0.3, rationale: "hit" },
+      ],
+    };
+    const canonical = canonicalizePlanTransitions(withTransitions);
+    expect(canonical.transitions.map((transition) => transition.type)).toEqual(["impactShake"]);
+  });
+
+  it("accepts second-wave transitions through validation", () => {
+    const map: SegmentMap = {
+      videos: [{ videoId: "video-1", duration: 12, segments: [] }],
+    };
+    const result = validateEditPlan(
+      {
+        ...plan,
+        segments: [plan.segments[0]!, { ...plan.segments[0]!, targetPosition: 4 }],
+        transitions: [
+          { afterSegmentIndex: 0, type: "zoomBlur", duration: 0.3, rationale: "whip" },
+          { afterSegmentIndex: 0, type: "not-a-transition", duration: 0.3, rationale: "nope" },
+        ],
+      },
+      map,
+    );
+    const unsupported = result.filter((issue) => issue.code === "unsupported_transition");
+    // Exactly one rejection: zoomBlur is accepted, only the junk name is flagged.
+    expect(unsupported).toHaveLength(1);
+    expect(unsupported[0]!.message).toContain("not-a-transition");
   });
 
   it("repairs non-positive transition durations", () => {

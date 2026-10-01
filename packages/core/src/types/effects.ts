@@ -634,6 +634,24 @@ export const TRANSITION_TYPES = [
   "ripple",
   "pageTurn",
   "colorSplit",
+  // Second wave: the moves hand editors reach for when a plain blend is not
+  // enough — punchy cross-zooms, radial streaks, strobing cuts, keyed wipes,
+  // organic blot/paper-burn reveals, staggered tile flips, band slides, light
+  // leaks, tape sweeps, pixel sorting and film-roll handoffs.
+  "crossZoom",
+  "zoomBlur",
+  "motionSmear",
+  "strobeCut",
+  "impactShake",
+  "lumaWipe",
+  "inkBleed",
+  "tileFlip",
+  "sliceSlide",
+  "lightLeak",
+  "vhsScan",
+  "paperBurn",
+  "pixelSort",
+  "filmRoll",
 ] as const;
 export type TransitionType = (typeof TRANSITION_TYPES)[number];
 
@@ -890,5 +908,79 @@ export interface TransitionParams {
     duration: number;
     maxOffset: number;
     angle: number;
+  };
+  crossZoom: {
+    duration: number;
+    strength: number;
+    center?: { x: number; y: number };
+  };
+  zoomBlur: {
+    duration: number;
+    streaks: number;
+    strength: number;
+  };
+  motionSmear: {
+    duration: number;
+    direction: "left" | "right" | "up" | "down";
+    distance: number;
+  };
+  strobeCut: {
+    duration: number;
+    strobes: number;
+  };
+  impactShake: {
+    duration: number;
+    intensity: number;
+    flash: number;
+  };
+  lumaWipe: {
+    duration: number;
+    softness: number;
+    invert: boolean;
+  };
+  inkBleed: {
+    duration: number;
+    lobes: number;
+    softness: number;
+    center?: { x: number; y: number };
+  };
+  tileFlip: {
+    duration: number;
+    columns: number;
+    stagger: number;
+    axis: "horizontal" | "vertical";
+  };
+  sliceSlide: {
+    duration: number;
+    slices: number;
+    direction: "left" | "right" | "up" | "down";
+    gap: number;
+  };
+  lightLeak: {
+    duration: number;
+    intensity: number;
+    warmth: number;
+    direction: "left" | "right";
+  };
+  vhsScan: {
+    duration: number;
+    intensity: number;
+    slices: number;
+  };
+  paperBurn: {
+    duration: number;
+    softness: number;
+    center?: { x: number; y: number };
+  };
+  pixelSort: {
+    duration: number;
+    amount: number;
+    threshold: number;
+    direction: "left" | "right" | "up" | "down";
+  };
+  filmRoll: {
+    duration: number;
+    direction: "up" | "down";
+    barWidth: number;
   };
 }

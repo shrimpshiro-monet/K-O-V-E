@@ -1,0 +1,25 @@
+{
+  "note": "effect types the web effects bridge handles",
+  "count": 19,
+  "types": [
+    "brightness",
+    "contrast",
+    "saturation",
+    "grayscale",
+    "sepia",
+    "invert",
+    "hue",
+    "blur",
+    "sharpen",
+    "vignette",
+    "grain",
+    "temperature",
+    "tint",
+    "tonal",
+    "shadow",
+    "glow",
+    "motion-blur",
+    "radial-blur",
+    "chromatic-aberration"
+  ]
+}

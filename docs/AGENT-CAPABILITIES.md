@@ -279,7 +279,7 @@ The agent exposes **321 tools** spanning read/observe, project, track, clip, tra
 - **set_clip_blend_opacity** — Set a clip's blend opacity (0..1).
 
 ## effect
-- **add_video_effect** — Add a video effect to a clip. Standard effectType values include brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, shadow, glow, motion-blur, radial-blur, chromatic-aberration. Set effectType to 'shader' to run a GPU shader effect from the Motion shader library (only category 'effect' shaders, e.g. the Paper Design catalog like paper-halftone-dots or paper-liquid-metal — use list_motion_shaders with category 'effect' to discover ids); for shader effects, params MUST include a valid shaderId plus optional numeric params (name/value pairs from the shader's params) and an optional numeric time. Shader effects no-op gracefully when WebGL2 is unavailable.
+- **add_video_effect** — Add a video effect to a clip. Standard effectType values include brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, shadow, glow, motion-blur, radial-blur, chromatic-aberration. Signature shader effects are named looks that are expensive to recreate by hand — vhs, scanlines, halftone, dither, posterize, duotone, gradient-map, prism, fisheye, wave-warp, edge-glow, speed-lines, glitch-blocks, light-leak, pixelate, kaleidoscope, mirror-tiles, swirl, crt-curve, echo — and take an optional 0..1 params.intensity. You may instead set effectType to 'shader' with params.shaderId for any other Motion shader (category 'effect'; use list_motion_shaders to discover ids) plus optional numeric params. Shader effects no-op gracefully when WebGL2 is unavailable.
 - **remove_video_effect** — Remove a clip's video effect.
 - **update_video_effect** — Update a video effect's params.
 - **toggle_video_effect** — Enable/disable a video effect.
@@ -310,7 +310,7 @@ The agent exposes **321 tools** spanning read/observe, project, track, clip, tra
 - **set_clip_keyframes** — Replace all keyframes on a clip.
 
 ## transition
-- **add_transition** — Add a transition between two clips. transitionType must be a renderer-supported type (crossfade, dipToBlack, dipToWhite, wipe, slide, zoom, push, circleReveal, blur, whipPan, radialWipe, pixelate, glitch, blinds, diamondReveal, spin, flip, splitReveal, flash, filmBurn, mosaic, ripple, pageTurn, colorSplit). A hard cut needs NO transition object — leave the clips adjacent.
+- **add_transition** — Add a transition between two clips. transitionType must be a renderer-supported type (crossfade, dipToBlack, dipToWhite, wipe, slide, zoom, push, circleReveal, blur, whipPan, radialWipe, pixelate, glitch, blinds, diamondReveal, spin, flip, splitReveal, flash, filmBurn, mosaic, ripple, pageTurn, colorSplit, crossZoom, zoomBlur, motionSmear, strobeCut, impactShake, lumaWipe, inkBleed, tileFlip, sliceSlide, lightLeak, vhsScan, paperBurn, pixelSort, filmRoll). A hard cut needs NO transition object — leave the clips adjacent.
 - **update_transition** — Update a transition.
 - **remove_transition** — Remove a transition.
 
@@ -446,7 +446,21 @@ The agent exposes **321 tools** spanning read/observe, project, track, clip, tra
     "mosaic",
     "ripple",
     "pageTurn",
-    "colorSplit"
+    "colorSplit",
+    "crossZoom",
+    "zoomBlur",
+    "motionSmear",
+    "strobeCut",
+    "impactShake",
+    "lumaWipe",
+    "inkBleed",
+    "tileFlip",
+    "sliceSlide",
+    "lightLeak",
+    "vhsScan",
+    "paperBurn",
+    "pixelSort",
+    "filmRoll"
   ],
   "easings": [
     "linear",

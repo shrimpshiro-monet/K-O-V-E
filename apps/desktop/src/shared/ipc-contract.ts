@@ -109,7 +109,8 @@ export const cloudFetchArgsSchema = z.object({
   ]),
   path: z.string(),
   method: z.string().optional(),
-  headers: z.record(z.string()).optional(),
+  // Headers cross an IPC/JSON boundary: keys and values are both strings.
+  headers: z.record(z.string(), z.string()).optional(),
   body: z.string().optional(),
   baseUrl: z.string().optional(),
 });
