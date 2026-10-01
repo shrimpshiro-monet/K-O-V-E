@@ -1,6 +1,6 @@
 {
   "generatedFrom": "listTools()",
-  "count": 322,
+  "count": 323,
   "tools": [
     {
       "name": "get_editor_state",
@@ -18843,6 +18843,34 @@
           "type": "number",
           "required": false,
           "extra": ""
+        }
+      ]
+    },
+    {
+      "name": "render_timeline_frame",
+      "domain": "read",
+      "title": "Render timeline frame",
+      "actionType": null,
+      "kind": "read",
+      "flags": "read-only, expensive, direct-handler",
+      "params": [
+        {
+          "name": "time",
+          "type": "number",
+          "required": true,
+          "extra": ""
+        },
+        {
+          "name": "maxDimension",
+          "type": "integer",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "format",
+          "type": "string",
+          "required": false,
+          "extra": "one of: png | jpeg"
         }
       ]
     }

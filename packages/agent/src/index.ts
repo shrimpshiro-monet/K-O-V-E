@@ -45,4 +45,4 @@ export {
   validateValue,
 } from "./schema-validate";
 export type { SchemaIssue, SchemaMismatchEntry, SchemaMode, SchemaPolicy } from "./schema-validate";
-export type { AudioSamples } from "./host";
+export type { AudioSamples, TimelineFrame, TimelineFrameRequest } from "./host";

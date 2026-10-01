@@ -19,7 +19,7 @@ Two execution paths, both live:
 - **1 type** is handled by a single method that names the one type it accepts (`transform/update`).
 - **38 types** are handler modules in `packages/core/src/actions/handlers/` that register themselves at import time.
 
-The executor consults the handler registry first, then routes by prefix. An unknown type in any domain is refused — nothing is silently accepted. Actions reach the editor through a tool with that `actionType` (61 of the 322 tools) or through the raw escape hatches `execute_action` and `batch_actions`.
+The executor consults the handler registry first, then routes by prefix. An unknown type in any domain is refused — nothing is silently accepted. Actions reach the editor through a tool with that `actionType` (61 of the 323 tools) or through the raw escape hatches `execute_action` and `batch_actions`.
 
 `reads` is what the implementation touches; `accepts` is what the tool schema lets a caller pass.
 

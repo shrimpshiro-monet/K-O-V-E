@@ -2,7 +2,7 @@
 
 # Kove Advanced Agent — Capability Reference
 
-The agent exposes **322 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
+The agent exposes **323 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
 
 ## Tools
 
@@ -33,6 +33,7 @@ The agent exposes **322 tools** spanning read/observe, project, track, clip, tra
 - **render_creation_scene_image** (read-only) — Render a persisted creation scene to a real image with the built-in deterministic CPU renderer: bakes the scene mesh, projects it through the scene camera, and returns coverage stats plus (by default) a PNG data URI. mode='raster' (default) z-buffers and Lambert-shades; mode='raytrace' casts primary rays with optional hard shadows for a final-quality preview. This is the CPU render/preview fallback (§7.12) — independent of the WebGPU/scene3d renderer — useful for headless previews and visual-regression checks.
 - **list_motion_animatable_properties** (read-only) — List the animatable properties of a motion layer (Transform always; Shape/Particle/Precomp by type; plus this layer's masks, effects, shape modifiers, and puppet pins), each with its current value at a time and every existing keyframe (id, time, value, easing, whether it has graph-editor bezier handles). Use this to discover keyframe ids before move/remove/re-ease, and to drive a graph-editor workflow.
 - **get_motion_composition** (read-only) — Full detail for one Motion Creator composition: every layer with its id, type, transform, keyframes, and type-specific fields, plus variables, markers, beat markers, camera, and lights. Use this to recover auto-generated layer ids before animating or editing.
+- **render_timeline_frame** (read-only, expensive) — Render the composited main timeline (all tracks, effects, text, transitions) at one instant and return it as an image you can look at. Use it to verify an edit visually. Different from render_motion_frame, which renders one motion composition in isolation. Check get_capabilities → host.renderTimelineFrame first: a false flag means this returns UNSUPPORTED_HOST and you should not retry.
 
 ## motion
 - **rig_humanoid_model** (expensive) — Run the desktop Blender rigging backend to create or repair a humanoid armature for a GLB/glTF model and export a rigged GLB. Use inspect_3d_model first to confirm meshes/armature/animations. Provide modelUrl directly, or resolve an existing model with compositionId+layerId(+objectId), sceneId+creationObjectId, or assetId. outputPath is optional; when omitted the desktop backend writes a temporary GLB and returns outputUrl/outputPath. overwriteExisting=true replaces an existing armature; false preserves one when present.

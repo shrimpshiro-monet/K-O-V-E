@@ -34,7 +34,7 @@ export interface JobResult {
 export interface HostFeatures {
   /** Render a single frame of a motion composition (render_motion_frame). */
   readonly renderMotionFrame: boolean;
-  /** Render a single frame of the main timeline. Not implemented on any host yet. */
+  /** Render a single composited frame of the main timeline (render_timeline_frame). Not implemented on any host yet. */
   readonly renderTimelineFrame: boolean;
   /** Render a multicam preview frame (preview_frame). */
   readonly renderMulticamPreview: boolean;
@@ -51,6 +51,25 @@ export interface AudioSamples {
   /** One array per channel, equal lengths. Channel order: L R C LFE Ls Rs (BS.775). */
   readonly channels: readonly ArrayLike<number>[];
   readonly sampleRate: number;
+}
+
+/** A request to render the main timeline at one instant, as the user would see it in the preview. */
+export interface TimelineFrameRequest {
+  /** Timeline seconds. */
+  readonly time: number;
+  /** Longest output edge in pixels (aspect ratio preserved). */
+  readonly maxDimension: number;
+  readonly format: "png" | "jpeg";
+}
+
+export interface TimelineFrame {
+  /** `data:image/...;base64,...` */
+  readonly dataUrl: string;
+  readonly mimeType: "image/png" | "image/jpeg";
+  readonly width: number;
+  readonly height: number;
+  /** Which compositor produced it (e.g. "webgpu", "canvas2d"), so callers know what fidelity to expect. */
+  readonly renderer: string;
 }
 
 export interface TxnHandle {
@@ -357,6 +376,13 @@ export interface EditingHost {
    * and report `features().analyzeAudio === false`.
    */
   loadAudioSamples?(mediaId: string, audioTrackIndex?: number): Promise<AudioSamples | null>;
+
+  /**
+   * Render one composited frame of the main timeline. Optional: hosts without a compositor omit it
+   * and report `features().renderTimelineFrame === false`. A host may also resolve to
+   * `{code:"unsupported_host"}`; it must never return a placeholder image.
+   */
+  renderTimelineFrame?(request: TimelineFrameRequest): Promise<TimelineFrame | { readonly code: "unsupported_host"; readonly error: string }>;
 
   /**
    * Project lifecycle + media ingest. Optional because they require a real

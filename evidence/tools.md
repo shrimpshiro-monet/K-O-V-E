@@ -12,12 +12,12 @@ Every tool the agent can call, with the parameters each one accepts.
 > Every figure here is asserted by that file against the running code, so a
 > rename or a dropped registration fails the suite rather than rotting here.
 
-**322 tools across 23 domains.** Kinds: `action` dispatches through the action executor, `direct` runs a handler, `read` is read-only.
+**323 tools across 23 domains.** Kinds: `action` dispatches through the action executor, `direct` runs a handler, `read` is read-only.
 
 | domain | tools |
 | --- | --- |
 | [motion](#motion) | 190 |
-| [read](#read) | 25 |
+| [read](#read) | 26 |
 | [clip](#clip) | 11 |
 | [track](#track) | 10 |
 | [graphics](#graphics) | 9 |
@@ -430,7 +430,7 @@ Every tool the agent can call, with the parameters each one accepts.
 
 ## read
 
-25 tools.
+26 tools.
 
 | tool | kind | action type | parameters |
 | --- | --- | --- | --- |
@@ -456,6 +456,7 @@ Every tool the agent can call, with the parameters each one accepts.
 | `list_tracks` | read | — | — |
 | `probe_rigging_backend` | read | — | — |
 | `render_creation_scene_image` | read | — | `sceneId`?: string<br>`width`?: number<br>`height`?: number<br>`quality`?: string<br>`mode`?: string<br>`shadows`?: boolean<br>`baseColor`?: string<br>`background`?: string<br>`timeSeconds`?: number<br>`includeHidden`?: boolean<br>`includePng`?: boolean |
+| `render_timeline_frame` | read | — | `time`: number<br>`maxDimension`?: integer<br>`format`?: string (one of: png | jpeg) |
 | `simulate_creation_cloth` | read | — | `width`?: number<br>`height`?: number<br>`columns`?: number<br>`rows`?: number<br>`pin`?: string<br>`plane`?: string<br>`steps`?: number<br>`gravity`?: number<br>`windX`?: number<br>`windY`?: number<br>`windZ`?: number<br>`iterations`?: number |
 | `solve_creation_ik` | read | — | `root`?: object<br>`target`: object<br>`upperLength`?: number<br>`lowerLength`?: number<br>`poleHint`?: object |
 | `validate_creation_state` | read | — | — |
@@ -482,6 +483,7 @@ Every tool the agent can call, with the parameters each one accepts.
 - **`list_tracks`** — List tracks
 - **`probe_rigging_backend`** — Probe rigging backend
 - **`render_creation_scene_image`** — Render creation scene image
+- **`render_timeline_frame`** — Render timeline frame
 - **`simulate_creation_cloth`** — Simulate cloth
 - **`solve_creation_ik`** — Solve two-bone IK
 - **`validate_creation_state`** — Validate creation state
