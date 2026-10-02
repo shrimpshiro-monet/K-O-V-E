@@ -167,7 +167,7 @@ function stripDataUrlPrefix(dataUrl: string): {
   return { base64: dataUrl, mimeType: "image/png" };
 }
 
-function buildToolResultContent(
+export function buildToolResultContent(
   result: ToolResult,
 ): string | LoopToolResultBlock[] {
   const text = JSON.stringify({
@@ -175,6 +175,7 @@ function buildToolResultContent(
     summary: result.summary,
     data: result.data,
     error: result.error,
+    ...(result.warnings && result.warnings.length > 0 ? { warnings: result.warnings } : {}),
   });
   if (!result.image) return text;
   const { base64, mimeType } = stripDataUrlPrefix(result.image.dataUrl);

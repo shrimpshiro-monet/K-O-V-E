@@ -1,0 +1,805 @@
+{
+  "generatedFrom": "EFFECT_SHADERS",
+  "count": 20,
+  "looks": [
+    {
+      "id": "dither",
+      "name": "Dither",
+      "category": "effect",
+      "params": [
+        {
+          "name": "levels",
+          "label": "Levels",
+          "type": "number",
+          "default": 4,
+          "min": 2,
+          "max": 16,
+          "step": 1
+        },
+        {
+          "name": "scale",
+          "label": "Scale",
+          "type": "number",
+          "default": 1,
+          "min": 1,
+          "max": 8,
+          "step": 1
+        }
+      ],
+      "glslLines": 34,
+      "aliases": [
+        "risograph",
+        "riso",
+        "8-bit",
+        "eight-bit",
+        "retro-dither",
+        "bayer"
+      ]
+    },
+    {
+      "id": "gradient-map",
+      "name": "Gradient Map",
+      "category": "effect",
+      "params": [
+        {
+          "name": "mix",
+          "label": "Mix",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ],
+      "glslLines": 20,
+      "aliases": [
+        "heatmap",
+        "heat-map",
+        "thermal",
+        "false-color",
+        "thermal-camera",
+        "luminance-map"
+      ]
+    },
+    {
+      "id": "pixelate",
+      "name": "Pixelate",
+      "category": "effect",
+      "params": [
+        {
+          "name": "size",
+          "label": "Size",
+          "type": "number",
+          "default": 8,
+          "min": 1,
+          "max": 64,
+          "step": 1
+        }
+      ],
+      "glslLines": 16,
+      "aliases": [
+        "pixelated",
+        "pixelize",
+        "pixelized",
+        "mosaic-pixel"
+      ]
+    },
+    {
+      "id": "halftone",
+      "name": "Halftone",
+      "category": "effect",
+      "params": [
+        {
+          "name": "dotSize",
+          "label": "Dot Size",
+          "type": "number",
+          "default": 8,
+          "min": 2,
+          "max": 32,
+          "step": 1
+        },
+        {
+          "name": "angle",
+          "label": "Angle",
+          "type": "number",
+          "default": 15,
+          "min": 0,
+          "max": 90,
+          "step": 1
+        }
+      ],
+      "glslLines": 26,
+      "aliases": [
+        "comic",
+        "comic-book",
+        "newsprint",
+        "dot-screen",
+        "print-halftone"
+      ]
+    },
+    {
+      "id": "vhs",
+      "name": "VHS",
+      "category": "effect",
+      "params": [
+        {
+          "name": "intensity",
+          "label": "Intensity",
+          "type": "number",
+          "default": 0.75,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "scanlines",
+          "label": "Scanlines",
+          "type": "number",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "jitter",
+          "label": "Jitter",
+          "type": "number",
+          "default": 0.45,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ],
+      "glslLines": 36,
+      "aliases": [
+        "vhs-tape",
+        "vhstape",
+        "vhs-glitch",
+        "tape",
+        "camcorder",
+        "home-video"
+      ]
+    },
+    {
+      "id": "posterize",
+      "name": "Posterize",
+      "category": "effect",
+      "params": [
+        {
+          "name": "levels",
+          "label": "Levels",
+          "type": "number",
+          "default": 5,
+          "min": 2,
+          "max": 16,
+          "step": 1
+        },
+        {
+          "name": "mix",
+          "label": "Mix",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ],
+      "glslLines": 17,
+      "aliases": [
+        "poster",
+        "posterized",
+        "flat-color",
+        "color-banding"
+      ]
+    },
+    {
+      "id": "duotone",
+      "name": "Duotone",
+      "category": "effect",
+      "params": [
+        {
+          "name": "shadowColor",
+          "label": "Shadow",
+          "type": "color",
+          "default": "#11133f",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "highlightColor",
+          "label": "Highlight",
+          "type": "color",
+          "default": "#ffca6b",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "mix",
+          "label": "Mix",
+          "type": "number",
+          "default": 0.9,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "contrast",
+          "label": "Contrast",
+          "type": "number",
+          "default": 1.15,
+          "min": 0.25,
+          "max": 2.5,
+          "step": 0.05
+        }
+      ],
+      "glslLines": 20,
+      "aliases": [
+        "two-tone",
+        "dual-tone",
+        "twotone"
+      ]
+    },
+    {
+      "id": "prism",
+      "name": "Prism Split",
+      "category": "effect",
+      "params": [
+        {
+          "name": "amount",
+          "label": "Offset",
+          "type": "number",
+          "default": 8,
+          "min": 0,
+          "max": 40,
+          "step": 0.5
+        },
+        {
+          "name": "angle",
+          "label": "Angle",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 360,
+          "step": 1
+        },
+        {
+          "name": "mix",
+          "label": "Mix",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ],
+      "glslLines": 25,
+      "aliases": [
+        "prism-split",
+        "prismsplit",
+        "rgb-split",
+        "lens-split",
+        "channel-split"
+      ]
+    },
+    {
+      "id": "fisheye",
+      "name": "Fisheye",
+      "category": "effect",
+      "params": [
+        {
+          "name": "strength",
+          "label": "Strength",
+          "type": "number",
+          "default": 0.55,
+          "min": -1,
+          "max": 1.5,
+          "step": 0.05
+        },
+        {
+          "name": "radius",
+          "label": "Radius",
+          "type": "number",
+          "default": 0.8,
+          "min": 0.2,
+          "max": 1.5,
+          "step": 0.05
+        }
+      ],
+      "glslLines": 24,
+      "aliases": [
+        "gopro",
+        "go-pro",
+        "action-cam",
+        "wide-angle",
+        "lens-warp"
+      ]
+    },
+    {
+      "id": "wave-warp",
+      "name": "Wave Warp",
+      "category": "effect",
+      "params": [
+        {
+          "name": "amplitude",
+          "label": "Amplitude",
+          "type": "number",
+          "default": 0.025,
+          "min": 0,
+          "max": 0.15,
+          "step": 0.005
+        },
+        {
+          "name": "frequency",
+          "label": "Frequency",
+          "type": "number",
+          "default": 5,
+          "min": 1,
+          "max": 20,
+          "step": 0.5
+        },
+        {
+          "name": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 1.5,
+          "min": 0,
+          "max": 8,
+          "step": 0.1
+        }
+      ],
+      "glslLines": 19,
+      "aliases": [
+        "underwater",
+        "water-warp",
+        "heat-haze",
+        "wobble",
+        "wobblewarp",
+        "liquid"
+      ]
+    },
+    {
+      "id": "scanlines",
+      "name": "Scanlines",
+      "category": "effect",
+      "params": [
+        {
+          "name": "density",
+          "label": "Density",
+          "type": "number",
+          "default": 360,
+          "min": 40,
+          "max": 1200,
+          "step": 10
+        },
+        {
+          "name": "intensity",
+          "label": "Intensity",
+          "type": "number",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 0.2,
+          "min": 0,
+          "max": 4,
+          "step": 0.05
+        }
+      ],
+      "glslLines": 19,
+      "aliases": [
+        "crt",
+        "scanline",
+        "crt-scanlines",
+        "interlace",
+        "interlaced",
+        "crt-lines",
+        "tv"
+      ]
+    },
+    {
+      "id": "edge-glow",
+      "name": "Edge Glow",
+      "category": "effect",
+      "params": [
+        {
+          "name": "strength",
+          "label": "Strength",
+          "type": "number",
+          "default": 4,
+          "min": 0,
+          "max": 12,
+          "step": 0.25
+        },
+        {
+          "name": "radius",
+          "label": "Radius",
+          "type": "number",
+          "default": 1.5,
+          "min": 0.5,
+          "max": 6,
+          "step": 0.25
+        },
+        {
+          "name": "color",
+          "label": "Glow Color",
+          "type": "color",
+          "default": "#4de8ff",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ],
+      "glslLines": 25,
+      "aliases": [
+        "neon",
+        "neon-outline",
+        "neonoutline",
+        "tron",
+        "edge-neon"
+      ]
+    },
+    {
+      "id": "speed-lines",
+      "name": "Speed Lines",
+      "category": "effect",
+      "params": [
+        {
+          "name": "amount",
+          "label": "Amount",
+          "type": "number",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "density",
+          "label": "Density",
+          "type": "number",
+          "default": 48,
+          "min": 8,
+          "max": 120,
+          "step": 1
+        },
+        {
+          "name": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 2,
+          "min": 0,
+          "max": 4,
+          "step": 0.05
+        }
+      ],
+      "glslLines": 33,
+      "aliases": [
+        "speedlines",
+        "action-lines",
+        "impact-lines",
+        "manga-lines",
+        "anime-lines"
+      ]
+    },
+    {
+      "id": "glitch-blocks",
+      "name": "Glitch Blocks",
+      "category": "effect",
+      "params": [
+        {
+          "name": "amount",
+          "label": "Amount",
+          "type": "number",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "blockSize",
+          "label": "Block Size",
+          "type": "number",
+          "default": 24,
+          "min": 4,
+          "max": 64,
+          "step": 1
+        },
+        {
+          "name": "rgbSplit",
+          "label": "RGB Split",
+          "type": "number",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 3,
+          "min": 0,
+          "max": 8,
+          "step": 0.1
+        }
+      ],
+      "glslLines": 35,
+      "aliases": [
+        "datamosh",
+        "data-mosh",
+        "glitch",
+        "block-glitch",
+        "corrupt",
+        "signal-failure"
+      ]
+    },
+    {
+      "id": "light-leak",
+      "name": "Light Leak",
+      "category": "effect",
+      "params": [
+        {
+          "name": "intensity",
+          "label": "Intensity",
+          "type": "number",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "warmth",
+          "label": "Warmth",
+          "type": "number",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 4,
+          "step": 0.05
+        }
+      ],
+      "glslLines": 27,
+      "aliases": [
+        "light-leak-transition",
+        "leak",
+        "film-burn-leak",
+        "flare",
+        "lens-flare",
+        "sun-flare",
+        "bokeh-leak"
+      ]
+    },
+    {
+      "id": "kaleidoscope",
+      "name": "Kaleidoscope",
+      "category": "effect",
+      "params": [
+        {
+          "name": "segments",
+          "label": "Segments",
+          "type": "number",
+          "default": 6,
+          "min": 2,
+          "max": 16,
+          "step": 1
+        },
+        {
+          "name": "spin",
+          "label": "Spin",
+          "type": "number",
+          "default": 0.35,
+          "min": 0,
+          "max": 2,
+          "step": 0.05
+        },
+        {
+          "name": "zoom",
+          "label": "Zoom",
+          "type": "number",
+          "default": 1,
+          "min": 0.5,
+          "max": 2,
+          "step": 0.05
+        }
+      ],
+      "glslLines": 27,
+      "aliases": [
+        "kaleido",
+        "calidoscope",
+        "kaleidoscope-tunnel",
+        "mirror-tunnel",
+        "hex-mirror"
+      ]
+    },
+    {
+      "id": "mirror-tiles",
+      "name": "Mirror Tiles",
+      "category": "effect",
+      "params": [
+        {
+          "name": "columns",
+          "label": "Columns",
+          "type": "number",
+          "default": 4,
+          "min": 2,
+          "max": 12,
+          "step": 1
+        },
+        {
+          "name": "rows",
+          "label": "Rows",
+          "type": "number",
+          "default": 3,
+          "min": 1,
+          "max": 8,
+          "step": 1
+        },
+        {
+          "name": "shift",
+          "label": "Drift",
+          "type": "number",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.05
+        }
+      ],
+      "glslLines": 25,
+      "aliases": [
+        "mirror",
+        "mirrored",
+        "mirror-grid",
+        "tile-mirror",
+        "mosaic-mirror",
+        "symmetrical"
+      ]
+    },
+    {
+      "id": "swirl",
+      "name": "Swirl",
+      "category": "effect",
+      "params": [
+        {
+          "name": "amount",
+          "label": "Twist",
+          "type": "number",
+          "default": 1.6,
+          "min": 0,
+          "max": 6,
+          "step": 0.1
+        },
+        {
+          "name": "radius",
+          "label": "Radius",
+          "type": "number",
+          "default": 0.75,
+          "min": 0.1,
+          "max": 1.2,
+          "step": 0.05
+        },
+        {
+          "name": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 1.2,
+          "min": 0,
+          "max": 4,
+          "step": 0.1
+        }
+      ],
+      "glslLines": 25,
+      "aliases": [
+        "twist",
+        "twirl",
+        "vortex",
+        "whirl",
+        "spiral",
+        "spiral-warp"
+      ]
+    },
+    {
+      "id": "crt-curve",
+      "name": "CRT Curve",
+      "category": "effect",
+      "params": [
+        {
+          "name": "curvature",
+          "label": "Curvature",
+          "type": "number",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "phosphor",
+          "label": "Phosphor",
+          "type": "number",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "flicker",
+          "label": "Flicker",
+          "type": "number",
+          "default": 0.15,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ],
+      "glslLines": 27,
+      "aliases": [
+        "crt-monitor",
+        "crt-tv",
+        "curved-screen",
+        "curved-tv",
+        "tube-tv",
+        "old-tv",
+        "cathode"
+      ]
+    },
+    {
+      "id": "echo",
+      "name": "Echo Trail",
+      "category": "effect",
+      "params": [
+        {
+          "name": "amount",
+          "label": "Amount",
+          "type": "number",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "name": "offset",
+          "label": "Distance",
+          "type": "number",
+          "default": 18,
+          "min": 0,
+          "max": 48,
+          "step": 1
+        },
+        {
+          "name": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 1.5,
+          "min": 0,
+          "max": 6,
+          "step": 0.1
+        }
+      ],
+      "glslLines": 31,
+      "aliases": [
+        "trail",
+        "trails",
+        "afterimage",
+        "after-image",
+        "ghost",
+        "ghosting",
+        "ghost-echo",
+        "echo-trail",
+        "motion-echo"
+      ]
+    }
+  ]
+}

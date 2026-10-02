@@ -11,11 +11,17 @@ export {
 	resolveDirectorVideoId,
 	EXPANSION_SYSTEM_PROMPT,
 	buildExpansionPrompt,
+	inferTargetDuration,
+	buildDensityContract,
+	formatDensityContract,
+	type DirectorDensityContract,
 } from "./director-prompt";
 export {
 	measureEditPlanStyle,
 	reviewEditPlan,
 	reviewMaterializedDraft,
+	densityTarget,
+	buildRevisionBrief,
 	type EditPlanReview,
 	type DraftSelfReview,
 	type MaterializedDraftSummary,

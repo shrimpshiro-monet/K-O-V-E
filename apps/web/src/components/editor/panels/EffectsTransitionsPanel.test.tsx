@@ -6,7 +6,11 @@ import { disposeTransitionBridge } from "../../../bridges/transition-bridge";
 import { createEmptyProject } from "../../../stores/project/project-helpers";
 import { useProjectStore } from "../../../stores/project-store";
 import { useUIStore } from "../../../stores/ui-store";
-import { EffectsPanel, TransitionsPanel } from "./EffectsTransitionsPanel";
+import {
+  EDITOR_EFFECT_PREVIEWS,
+  EffectsPanel,
+  TransitionsPanel,
+} from "./EffectsTransitionsPanel";
 
 describe("editor effect and transition catalogs", () => {
   beforeEach(() => {
@@ -64,12 +68,12 @@ describe("editor effect and transition catalogs", () => {
   it("filters the expanded transition library by production category", () => {
     render(<TransitionsPanel />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Stylized 13" }));
+    // The library grows; find the chip by shape instead of pinning its count.
+    fireEvent.click(screen.getByRole("button", { name: /^Stylized \d+$/ }));
 
-    expect(screen.getByRole("button", { name: "Stylized 13" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(
+      screen.getByRole("button", { name: /^Stylized \d+$/ }),
+    ).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Film Burn")).toBeInTheDocument();
     expect(screen.getByText("Punch Zoom")).toBeInTheDocument();
     expect(screen.queryByText("Wipe Left")).not.toBeInTheDocument();
@@ -106,9 +110,9 @@ describe("editor effect and transition catalogs", () => {
   it("filters visual effects by category without losing previews", () => {
     render(<EffectsPanel />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Stylize 10" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Stylize \d+$/ }));
 
-    expect(screen.getByRole("button", { name: "Stylize 10" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /^Stylize \d+$/ })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -116,7 +120,11 @@ describe("editor effect and transition catalogs", () => {
     expect(screen.getByText("RGB Split")).toBeInTheDocument();
     expect(screen.queryByText("Brightness")).not.toBeInTheDocument();
     expect(screen.queryByText("Golden Hour")).not.toBeInTheDocument();
-    expect(document.querySelectorAll("[data-effect-preview]")).toHaveLength(10);
+    // Every Stylize effect must keep its preview card after filtering.
+    expect(document.querySelectorAll("[data-effect-preview]")).toHaveLength(
+      EDITOR_EFFECT_PREVIEWS.filter((preview) => preview.category === "Stylize")
+        .length,
+    );
   });
 
   it("applies curated effect parameters to the selected overlay", async () => {

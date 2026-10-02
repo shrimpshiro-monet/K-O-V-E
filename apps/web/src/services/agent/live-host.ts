@@ -1,4 +1,5 @@
 import type {
+  AudioSamples,
   EditingHost,
   JobKind,
   JobResult,
@@ -30,6 +31,7 @@ import type {
   MotionRenderQueueAddError,
   MotionRenderQueueRunResult,
   MulticamHostBridge,
+  HostFeatures,
 } from "@kove-advanced/agent";
 import type { TextStyle, TextAnimationPreset } from "@kove-advanced/core/text/types";
 import type { ShapeStyle, ShapeType } from "@kove-advanced/core/graphics/types";
@@ -38,6 +40,8 @@ import { CAPABILITY_MANIFEST } from "@kove-advanced/core/capabilities/manifest";
 import type { Action } from "@kove-advanced/core/types/actions";
 import type { Project } from "@kove-advanced/core/types/project";
 import type { CapabilityManifest } from "@kove-advanced/core/capabilities/manifest";
+import { HistoryLedger, fingerprintProject } from "@kove-advanced/agent";
+import type { HistoryBackend } from "@kove-advanced/agent";
 import { useProjectStore } from "../../stores/project-store";
 import { insertTimelineOverlay } from "../../stores/project/insert-timeline-overlay";
 import { checkForRecovery } from "../auto-save";
@@ -107,6 +111,25 @@ function projectRef(project: Project): ProjectRef {
 
 export interface LiveEditorHostOptions {
   readonly jobRunner?: JobRunner;
+  /** Decodes a media item's audio. Defaults to the browser decode path (loadAudioBuffer). Injectable for tests. */
+  readonly audioSource?: (mediaId: string, audioTrackIndex: number) => Promise<AudioSamples | null>;
+}
+
+/** Browser decode: media blob -> extract/decode audio track -> samples. Source audio, pre-effects. */
+async function decodeMediaAudio(mediaId: string, audioTrackIndex: number): Promise<AudioSamples | null> {
+  const item = useProjectStore.getState().getMediaItem(mediaId);
+  if (!item?.blob) return null;
+  const { loadAudioBuffer } = await import("../../utils/load-audio-buffer");
+  const context = new AudioContext();
+  try {
+    const buffer = await loadAudioBuffer(context, item.blob, { audioTrackIndex });
+    if (!buffer) return null;
+    const channels: Float32Array[] = [];
+    for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+    return { channels, sampleRate: buffer.sampleRate };
+  } finally {
+    void context.close();
+  }
 }
 
 const RENDER_QUEUE_FORMATS: readonly MotionRenderQueueFormat[] = [
@@ -144,6 +167,36 @@ function normalizeRenderQueueScale(
  * IPC). Edits go through the same undoable action path the UI uses, so the chat
  * and the timeline stay in sync and the whole turn undoes as one history group.
  */
+/** Stable small ids for object identity, used to notice a replaced undo/redo stack array. */
+const identityIds = new WeakMap<object, number>();
+let nextIdentityId = 0;
+const identityId = (o: object): number => {
+  let id = identityIds.get(o);
+  if (id === undefined) {
+    id = ++nextIdentityId;
+    identityIds.set(o, id);
+  }
+  return id;
+};
+
+/**
+ * Host methods through which the AGENT changes the project. Wrapped so the
+ * history ledger can tell agent changes from the user's (anything that moves
+ * the undo stacks outside these calls is attributed to the user).
+ */
+const AGENT_MUTATORS = [
+  "importMediaFromUrl",
+  "createTextOverlay",
+  "createShapeOverlay",
+  "updateTextOverlay",
+  "updateShapeOverlay",
+  "createStickerOverlay",
+  "updateStickerOverlay",
+  "createSvgOverlay",
+  "updateSvgOverlay",
+  "removeOverlay",
+] as const;
+
 export class LiveEditorHost implements EditingHost {
   /**
    * Wired by chat-store before a run so nested director calls (plan_edit)
@@ -152,12 +205,112 @@ export class LiveEditorHost implements EditingHost {
   llm?: EditingHost["llm"];
   private jobRunner?: JobRunner;
   private appliedInTxn = 0;
-  readonly multicam: MulticamHostBridge = createMulticamHostBridge((timeMs) =>
-    this.runJob("exportFrame", { time: timeMs / 1_000 }),
-  );
+  // exportFrame renders MOTION compositions only (it needs a compositionId), so the
+  // multicam preview cannot be served by it. Report that explicitly rather than
+  // returning a misleading generic failure — see features().renderMulticamPreview.
+  readonly multicam: MulticamHostBridge = createMulticamHostBridge(async () => ({
+    ok: false,
+    code: "unsupported_host" as const,
+    error: "Multicam preview rendering is not implemented in this host",
+  }));
+
+  private readonly audioSource?: LiveEditorHostOptions["audioSource"];
+  private readonly ledger: HistoryLedger;
+  readonly historyControl: HistoryLedger;
 
   constructor(options: LiveEditorHostOptions = {}) {
     this.jobRunner = options.jobRunner;
+    this.audioSource = options.audioSource;
+    this.ledger = new HistoryLedger(this.historyBackend());
+    this.historyControl = this.ledger;
+    for (const name of AGENT_MUTATORS) {
+      const original = (this as unknown as Record<string, (...a: unknown[]) => Promise<unknown>>)[name]!;
+      (this as unknown as Record<string, unknown>)[name] = (...args: unknown[]) =>
+        this.trackAgentMutation(() => original.apply(this, args));
+    }
+  }
+
+  private async trackAgentMutation<T>(fn: () => Promise<T>): Promise<T> {
+    this.ledger.beforeAgentMutation();
+    try {
+      return await fn();
+    } finally {
+      this.ledger.afterAgentMutation();
+    }
+  }
+
+  /**
+   * The live store has three undo stacks (actions, overlay clips, editing
+   * templates). Position/markers cover all three; undo/redo go through the
+   * store's own undo()/redo() so engine syncing and the redo journal stay
+   * correct — a wholesale project swap would desync the Title/Graphics engines.
+   */
+  private historyBackend(): HistoryBackend {
+    const st = () => useProjectStore.getState();
+    const clipMarker = (e: { type: string; clipId: string; op?: string }) => `clip:${e.type}:${e.clipId}:${e.op ?? "create"}`;
+    const tplMarker = (e: { mode: string; description: string }) => `tpl:${e.mode}:${e.description}`;
+    return {
+      position: () => {
+        const s = st();
+        return {
+          actions: s.actionHistory.getUndoStackSize(),
+          aux: s.clipUndoStack.length + s.templateUndoStack.length,
+          detail: { clips: s.clipUndoStack.length, templates: s.templateUndoStack.length },
+        };
+      },
+      markersAt: (pos) => {
+        const s = st();
+        const d = (pos.detail ?? { clips: 0, templates: 0 }) as { clips: number; templates: number };
+        const entries = s.actionHistory.getHistoryEntries();
+        if (
+          entries.length < pos.actions ||
+          s.clipUndoStack.length < d.clips ||
+          s.templateUndoStack.length < d.templates
+        ) {
+          return undefined;
+        }
+        return [
+          pos.actions === 0 ? null : entries[pos.actions - 1]!.action,
+          d.clips === 0 ? null : clipMarker(s.clipUndoStack[d.clips - 1]!),
+          d.templates === 0 ? null : tplMarker(s.templateUndoStack[d.templates - 1]!),
+        ];
+      },
+      token: () => {
+        const s = st();
+        return [
+          s.project.id,
+          identityId(s.actionHistory),
+          s.actionHistory.getRevision(),
+          identityId(s.clipUndoStack),
+          identityId(s.clipRedoStack),
+          identityId(s.templateUndoStack),
+          identityId(s.templateRedoStack),
+        ].join(":");
+      },
+      canUndo: () => st().canUndo(),
+      canRedo: () => st().canRedo(),
+      undoStep: () => st().undo(),
+      redoStep: () => st().redo(),
+      sealGroup: () => st().actionHistory.sealGroup(),
+      // getFullProject() folds in engine-held overlay clips, like autosave does.
+      fingerprint: () => fingerprintProject(st().getFullProject()),
+    };
+  }
+
+  features(): HostFeatures {
+    const hasRunner = this.jobRunner !== undefined;
+    return {
+      renderMotionFrame: hasRunner,
+      renderTimelineFrame: false,
+      renderMulticamPreview: false,
+      exportVideo: hasRunner,
+      checkpoints: true,
+      analyzeAudio: this.audioSource !== undefined || typeof AudioContext !== "undefined",
+    };
+  }
+
+  loadAudioSamples(mediaId: string, audioTrackIndex = 0): Promise<AudioSamples | null> {
+    return (this.audioSource ?? decodeMediaAudio)(mediaId, audioTrackIndex);
   }
 
   setJobRunner(runner: JobRunner): void {
@@ -171,9 +324,14 @@ export class LiveEditorHost implements EditingHost {
 
   async applyAction(action: Action) {
     this.requireOpenProject();
-    const result = await useProjectStore.getState().executeAction(action);
-    if (result.success) this.appliedInTxn++;
-    return result;
+    this.ledger.beforeAgentMutation();
+    try {
+      const result = await useProjectStore.getState().executeAction(action);
+      if (result.success) this.appliedInTxn++;
+      return result;
+    } finally {
+      this.ledger.afterAgentMutation();
+    }
   }
 
   beginTransaction(label?: string): TxnHandle {
@@ -193,6 +351,7 @@ export class LiveEditorHost implements EditingHost {
       await useProjectStore.getState().undo();
     }
     this.appliedInTxn = 0;
+    this.ledger.afterAgentMutation("history");
   }
 
   async runJob(
@@ -222,6 +381,7 @@ export class LiveEditorHost implements EditingHost {
       ...(options.frameRate !== undefined ? { frameRate: options.frameRate } : {}),
     };
     useProjectStore.getState().createNewProject(options.name, settings);
+    this.ledger.invalidateAll();
     return projectRef(useProjectStore.getState().project);
   }
 
@@ -240,6 +400,7 @@ export class LiveEditorHost implements EditingHost {
   async openProject(id: string): Promise<ProjectRef> {
     const ok = await useProjectStore.getState().recoverFromAutoSave(id);
     if (!ok) throw new Error(`Could not open project (save id "${id}")`);
+    this.ledger.invalidateAll();
     return projectRef(useProjectStore.getState().project);
   }
 

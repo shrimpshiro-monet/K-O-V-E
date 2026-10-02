@@ -9,8 +9,20 @@ import type { ProjectState } from "../stores/project-store";
 import { useUIStore } from "../stores/ui-store";
 import { useSettingsStore } from "../stores/settings-store";
 
+// LiveEditorHost builds a HistoryLedger in its constructor, which reads
+// useProjectStore.getState() for the history token — the hook mock alone is
+// not enough or every desktop render throws before it paints.
 vi.mock("../stores/project-store", () => ({
-  useProjectStore: vi.fn(),
+  useProjectStore: Object.assign(vi.fn(), {
+    getState: () => ({
+      project: { id: "desktop-test-project" },
+      actionHistory: { getRevision: () => 0 },
+      clipUndoStack: [],
+      clipRedoStack: [],
+      templateUndoStack: [],
+      templateRedoStack: [],
+    }),
+  }),
 }));
 
 vi.mock("./editor/EditorBootstrapGate", () => ({

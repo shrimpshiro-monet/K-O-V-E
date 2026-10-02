@@ -9390,17 +9390,29 @@ describe("executeTool", () => {
       }],
     };
 
-    let innerCallCount = 0;
-    const innerResponses = [
-      { text: "", stopReason: "tool_use" as const, toolUses: [{ id: "plan-a", name: "submit_edit_plan", input: structuredClone(planA) }] },
-      { text: "", stopReason: "tool_use" as const, toolUses: [{ id: "plan-b", name: "submit_edit_plan", input: structuredClone(planB) }] },
+    // These two-splice fixtures are deliberately thin, so the density review
+    // fires one bounded revision per turn. Dispatch on the turn's prompt and
+    // echo the same plan for the revision call — the committed plan for each
+    // turn stays plan A / plan B, which is what this test exercises.
+    const planByPrompt: Array<[string, unknown]> = [
+      ["make a highlight", planA],
+      ["make it longer", planB],
     ];
-
+    let currentTurn = planByPrompt[0]!;
     host.llm = {
       provider: "openai",
       client: {
-        complete: async () => {
-          return innerResponses[innerCallCount++] ?? { text: "", stopReason: "end_turn" as const, toolUses: [] };
+        complete: async (input) => {
+          // The user's request text lives in the director system prompt, and
+          // the revision pass keeps that same system prompt plus the brief.
+          const context = `${input.system ?? ""}\n${JSON.stringify(input.messages)}`;
+          const matched = planByPrompt.find(([prompt]) => context.includes(prompt));
+          if (matched) currentTurn = matched;
+          return {
+            text: "",
+            stopReason: "tool_use" as const,
+            toolUses: [{ id: `plan-${currentTurn[0]}`, name: "submit_edit_plan", input: structuredClone(currentTurn[1]) as Record<string, unknown> }],
+          };
         },
       },
     };
@@ -9467,17 +9479,27 @@ describe("executeTool", () => {
       segments: [{ ...planA.segments[0], sourceEndTime: 6, rationale: "longer clip" }],
     };
 
-    let innerCallCount = 0;
-    const innerResponses = [
-      { text: "", stopReason: "tool_use" as const, toolUses: [{ id: "plan-a", name: "submit_edit_plan", input: structuredClone(planA) }] },
-      { text: "", stopReason: "tool_use" as const, toolUses: [{ id: "plan-b", name: "submit_edit_plan", input: structuredClone(planB) }] },
+    // Thin fixtures ⇒ one bounded density revision per turn; echo the turn's
+    // plan when the revision call arrives (see the text-teardown test above).
+    const planByPrompt: Array<[string, unknown]> = [
+      ["make a highlight", planA],
+      ["make it longer", planB],
     ];
-
+    let currentTurn = planByPrompt[0]!;
     host.llm = {
       provider: "openai",
       client: {
-        complete: async () => {
-          return innerResponses[innerCallCount++] ?? { text: "", stopReason: "end_turn" as const, toolUses: [] };
+        complete: async (input) => {
+          // The user's request text lives in the director system prompt, and
+          // the revision pass keeps that same system prompt plus the brief.
+          const context = `${input.system ?? ""}\n${JSON.stringify(input.messages)}`;
+          const matched = planByPrompt.find(([prompt]) => context.includes(prompt));
+          if (matched) currentTurn = matched;
+          return {
+            text: "",
+            stopReason: "tool_use" as const,
+            toolUses: [{ id: `plan-${currentTurn[0]}`, name: "submit_edit_plan", input: structuredClone(currentTurn[1]) as Record<string, unknown> }],
+          };
         },
       },
     };

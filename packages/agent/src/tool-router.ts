@@ -17,6 +17,12 @@ const ALWAYS_AVAILABLE = new Set([
   "save_project",
   "execute_action",
   "batch_actions",
+  // safety net: must be reachable on every turn
+  "create_checkpoint",
+  "list_checkpoints",
+  "restore_checkpoint",
+  "undo",
+  "redo",
 ]);
 
 /**

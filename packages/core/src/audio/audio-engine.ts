@@ -1,3 +1,4 @@
+import { measureLoudness as measureProgrammeLoudness } from "./loudness";
 import type { Timeline, Track, Clip, Effect } from "../types/timeline";
 import type { AudioEffectParams } from "../types/effects";
 import type { MediaItem, Project } from "../types/project";
@@ -927,30 +928,24 @@ export class AudioEngine {
     return silentRanges;
   }
 
+  /**
+   * Programme loudness of a decoded buffer per ITU-R BS.1770-4 / EBU R128 (see ./loudness).
+   * `momentary` and `shortTerm` are the MAXIMUM over the buffer. Values that cannot be measured
+   * (digital silence, shorter than one 400 ms block / 3 s) are -Infinity (`range`: 0),
+   * never a made-up number. `detail` carries the nullable, fully-described result.
+   */
   measureLoudness(buffer: AudioBuffer): LoudnessMetrics {
-    const channelData = buffer.getChannelData(0);
-    let sumSquares = 0;
-    let peak = 0;
-
-    for (let i = 0; i < channelData.length; i++) {
-      const sample = channelData[i];
-      sumSquares += sample * sample;
-      peak = Math.max(peak, Math.abs(sample));
-    }
-
-    const rms = Math.sqrt(sumSquares / channelData.length);
-    const rmsDb = 20 * Math.log10(rms || 0.0001);
-    const peakDb = 20 * Math.log10(peak || 0.0001);
-
-    // Approximate LUFS (simplified - real implementation would use K-weighting)
-    const lufs = rmsDb - 0.691; // Rough approximation
-
+    const channels: Float32Array[] = [];
+    for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+    // Layouts beyond 5.1 have no standard weighting here: measure the first six (L R C LFE Ls Rs).
+    const detail = measureProgrammeLoudness(channels.slice(0, 6), buffer.sampleRate);
     return {
-      integrated: lufs,
-      shortTerm: lufs,
-      momentary: lufs,
-      truePeak: peakDb,
-      range: 10, // Placeholder
+      integrated: detail.integratedLufs ?? Number.NEGATIVE_INFINITY,
+      shortTerm: detail.shortTermMaxLufs ?? Number.NEGATIVE_INFINITY,
+      momentary: detail.momentaryMaxLufs ?? Number.NEGATIVE_INFINITY,
+      truePeak: detail.truePeakDbtp ?? Number.NEGATIVE_INFINITY,
+      range: detail.loudnessRangeLu ?? 0,
+      detail,
     };
   }
 

@@ -1,6 +1,8 @@
 export * from "./types";
 export * from "./host";
 export { HeadlessHost } from "./headless-host";
+export { HistoryLedger, fingerprintProject } from "./checkpoints";
+export type { HistoryBackend, HistoryPosition } from "./checkpoints";
 export type { HeadlessHostOptions } from "./headless-host";
 export * from "./serialize";
 export {
@@ -33,3 +35,14 @@ export {
   EXPANSION_SYSTEM_PROMPT,
   buildExpansionPrompt,
 } from "./director";
+export {
+  gateToolArgs,
+  getSchemaMismatches,
+  getSchemaPolicy,
+  resetSchemaMismatches,
+  setSchemaMismatchSink,
+  setSchemaPolicy,
+  validateValue,
+} from "./schema-validate";
+export type { SchemaIssue, SchemaMismatchEntry, SchemaMode, SchemaPolicy } from "./schema-validate";
+export type { AudioSamples, TimelineFrame, TimelineFrameRequest } from "./host";

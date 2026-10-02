@@ -1,0 +1,2985 @@
+{
+  "generatedFrom": "action-executor.ts + actions/handlers/*",
+  "count": 113,
+  "bySwitch": 74,
+  "byGuard": 1,
+  "byHandler": 38,
+  "actions": [
+    {
+      "type": "adjustment/setAll",
+      "domain": "adjustment",
+      "impl": "handler: handlers/bulk-set.ts",
+      "reads": [
+        {
+          "name": "layers",
+          "type": "unknown[]"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "audio/addAutomation",
+      "domain": "audio",
+      "impl": "action-executor.ts:1861",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "points",
+          "type": "array"
+        }
+      ],
+      "tools": [
+        "add_audio_automation"
+      ]
+    },
+    {
+      "type": "audio/addEffect",
+      "domain": "audio",
+      "impl": "action-executor.ts:1883",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "type": "Effect"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "type": "object"
+        }
+      ],
+      "tools": [
+        "add_audio_effect"
+      ]
+    },
+    {
+      "type": "audio/removeEffect",
+      "domain": "audio",
+      "impl": "action-executor.ts:1917",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "remove_audio_effect"
+      ]
+    },
+    {
+      "type": "audio/restoreEffect",
+      "domain": "audio",
+      "impl": "action-executor.ts:1899",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "type": "Effect"
+        },
+        {
+          "name": "index",
+          "type": "number"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "audio/setFade",
+      "domain": "audio",
+      "impl": "action-executor.ts:1832",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "fadeIn",
+          "type": "number"
+        },
+        {
+          "name": "fadeOut",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "fadeIn",
+          "type": "number"
+        },
+        {
+          "name": "fadeOut",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "set_clip_fade"
+      ]
+    },
+    {
+      "type": "audio/setVolume",
+      "domain": "audio",
+      "impl": "action-executor.ts:1819",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "volume",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "volume",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "set_clip_volume"
+      ]
+    },
+    {
+      "type": "audio/toggleEffect",
+      "domain": "audio",
+      "impl": "action-executor.ts:1959",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "boolean"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "boolean"
+        }
+      ],
+      "tools": [
+        "toggle_audio_effect"
+      ]
+    },
+    {
+      "type": "audio/updateEffect",
+      "domain": "audio",
+      "impl": "action-executor.ts:1935",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        },
+        {
+          "name": "params",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        },
+        {
+          "name": "params",
+          "type": "object"
+        }
+      ],
+      "tools": [
+        "update_audio_effect"
+      ]
+    },
+    {
+      "type": "clip/add",
+      "domain": "clip",
+      "impl": "action-executor.ts:871",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "mediaId",
+          "type": "string"
+        },
+        {
+          "name": "startTime",
+          "type": "number"
+        },
+        {
+          "name": "duration",
+          "type": "number"
+        },
+        {
+          "name": "inPoint",
+          "type": "number"
+        },
+        {
+          "name": "outPoint",
+          "type": "number"
+        },
+        {
+          "name": "volume",
+          "type": "number"
+        },
+        {
+          "name": "effects",
+          "type": "unknown[]"
+        },
+        {
+          "name": "audioEffects",
+          "type": "unknown[]"
+        },
+        {
+          "name": "keyframes",
+          "type": "unknown[]"
+        },
+        {
+          "name": "transform",
+          "type": "Record<string, unknown>"
+        },
+        {
+          "name": "speed",
+          "type": "number"
+        },
+        {
+          "name": "reversed",
+          "type": "boolean"
+        },
+        {
+          "name": "audioTrackIndex",
+          "type": "number"
+        },
+        {
+          "name": "sourceClip",
+          "type": "Clip"
+        },
+        {
+          "name": "clipId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "mediaId",
+          "type": "string"
+        },
+        {
+          "name": "startTime",
+          "type": "number"
+        },
+        {
+          "name": "duration",
+          "type": "number"
+        },
+        {
+          "name": "inPoint",
+          "type": "number"
+        },
+        {
+          "name": "outPoint",
+          "type": "number"
+        },
+        {
+          "name": "volume",
+          "type": "number"
+        },
+        {
+          "name": "speed",
+          "type": "number"
+        },
+        {
+          "name": "reversed",
+          "type": "boolean"
+        },
+        {
+          "name": "transform",
+          "type": "object"
+        },
+        {
+          "name": "fade",
+          "type": "object"
+        }
+      ],
+      "tools": [
+        "add_clip"
+      ]
+    },
+    {
+      "type": "clip/closeGapBefore",
+      "domain": "clip",
+      "impl": "action-executor.ts:1314",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "close_gap"
+      ]
+    },
+    {
+      "type": "clip/merge",
+      "domain": "clip",
+      "impl": "action-executor.ts:1064",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "originalClip",
+          "type": "Clip"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "clip/move",
+      "domain": "clip",
+      "impl": "action-executor.ts:970",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "startTime",
+          "type": "number"
+        },
+        {
+          "name": "trackId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "startTime",
+          "type": "number"
+        },
+        {
+          "name": "trackId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "move_clip"
+      ]
+    },
+    {
+      "type": "clip/remove",
+      "domain": "clip",
+      "impl": "action-executor.ts:951",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "remove_clip"
+      ]
+    },
+    {
+      "type": "clip/restore",
+      "domain": "clip",
+      "impl": "action-executor.ts:960",
+      "reads": [
+        {
+          "name": "clip",
+          "type": "Clip"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "clip/rippleDelete",
+      "domain": "clip",
+      "impl": "action-executor.ts:1088",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "ripple_delete_clip"
+      ]
+    },
+    {
+      "type": "clip/rippleRestore",
+      "domain": "clip",
+      "impl": "action-executor.ts:1175",
+      "reads": [
+        {
+          "name": "clip",
+          "type": "Clip"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "clip/roll",
+      "domain": "clip",
+      "impl": "action-executor.ts:1251",
+      "reads": [
+        {
+          "name": "leftClipId",
+          "type": "string"
+        },
+        {
+          "name": "rightClipId",
+          "type": "string"
+        },
+        {
+          "name": "delta",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "leftClipId",
+          "type": "string"
+        },
+        {
+          "name": "rightClipId",
+          "type": "string"
+        },
+        {
+          "name": "delta",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "roll_edit"
+      ]
+    },
+    {
+      "type": "clip/setBlendMode",
+      "domain": "clip",
+      "impl": "action-executor.ts:1114",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "blendMode",
+          "type": "BlendMode"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "blendMode",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "set_clip_blend_mode"
+      ]
+    },
+    {
+      "type": "clip/setBlendOpacity",
+      "domain": "clip",
+      "impl": "action-executor.ts:1130",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "opacity",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "opacity",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "set_clip_blend_opacity"
+      ]
+    },
+    {
+      "type": "clip/setChromaKey",
+      "domain": "clip",
+      "impl": "handler: handlers/clip-fx.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "speed",
+          "type": "unknown"
+        },
+        {
+          "name": "keyframes",
+          "type": "unknown"
+        },
+        {
+          "name": "freezeFrames",
+          "type": "unknown"
+        },
+        {
+          "name": "pitchCorrection",
+          "type": "unknown"
+        },
+        {
+          "name": "chromaKey",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "chromaKey",
+          "type": "object"
+        }
+      ],
+      "tools": [
+        "set_clip_chroma_key"
+      ]
+    },
+    {
+      "type": "clip/setColorGrading",
+      "domain": "clip",
+      "impl": "action-executor.ts:1159",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "colorGrading",
+          "type": "ClipColorGrading"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "colorGrading",
+          "type": "object"
+        }
+      ],
+      "tools": [
+        "set_color_grading"
+      ]
+    },
+    {
+      "type": "clip/setEmphasisAnimation",
+      "domain": "clip",
+      "impl": "action-executor.ts:1143",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "emphasisAnimation",
+          "type": "EmphasisAnimation"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "clip/setPitchCorrection",
+      "domain": "clip",
+      "impl": "handler: handlers/clip-fx.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "speed",
+          "type": "unknown"
+        },
+        {
+          "name": "keyframes",
+          "type": "unknown"
+        },
+        {
+          "name": "freezeFrames",
+          "type": "unknown"
+        },
+        {
+          "name": "pitchCorrection",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "pitchCorrection",
+          "type": "boolean"
+        }
+      ],
+      "tools": [
+        "set_clip_pitch_correction"
+      ]
+    },
+    {
+      "type": "clip/setReverse",
+      "domain": "clip",
+      "impl": "handler: handlers/clip-fx.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "speed",
+          "type": "unknown"
+        },
+        {
+          "name": "keyframes",
+          "type": "unknown"
+        },
+        {
+          "name": "freezeFrames",
+          "type": "unknown"
+        },
+        {
+          "name": "pitchCorrection",
+          "type": "unknown"
+        },
+        {
+          "name": "reversed",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "reversed",
+          "type": "boolean"
+        }
+      ],
+      "tools": [
+        "set_clip_reverse"
+      ]
+    },
+    {
+      "type": "clip/setSpeed",
+      "domain": "clip",
+      "impl": "handler: handlers/clip-fx.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "speed",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "speed",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "set_clip_speed"
+      ]
+    },
+    {
+      "type": "clip/setStabilization",
+      "domain": "clip",
+      "impl": "handler: handlers/clip-fx.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "speed",
+          "type": "unknown"
+        },
+        {
+          "name": "keyframes",
+          "type": "unknown"
+        },
+        {
+          "name": "freezeFrames",
+          "type": "unknown"
+        },
+        {
+          "name": "pitchCorrection",
+          "type": "unknown"
+        },
+        {
+          "name": "stabilization",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "stabilization",
+          "type": "object"
+        }
+      ],
+      "tools": [
+        "set_clip_stabilization"
+      ]
+    },
+    {
+      "type": "clip/slide",
+      "domain": "clip",
+      "impl": "action-executor.ts:1218",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "delta",
+          "type": "number"
+        },
+        {
+          "name": "prevClipId",
+          "type": "string"
+        },
+        {
+          "name": "nextClipId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "delta",
+          "type": "number"
+        },
+        {
+          "name": "prevClipId",
+          "type": "string"
+        },
+        {
+          "name": "nextClipId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "slide_clip"
+      ]
+    },
+    {
+      "type": "clip/slip",
+      "domain": "clip",
+      "impl": "action-executor.ts:1197",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "delta",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "delta",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "slip_clip"
+      ]
+    },
+    {
+      "type": "clip/split",
+      "domain": "clip",
+      "impl": "action-executor.ts:1031",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "time",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "time",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "split_clip"
+      ]
+    },
+    {
+      "type": "clip/trim",
+      "domain": "clip",
+      "impl": "action-executor.ts:1004",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "inPoint",
+          "type": "number"
+        },
+        {
+          "name": "outPoint",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "inPoint",
+          "type": "number"
+        },
+        {
+          "name": "outPoint",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "trim_clip"
+      ]
+    },
+    {
+      "type": "clip/trimToPlayhead",
+      "domain": "clip",
+      "impl": "action-executor.ts:1281",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "playheadTime",
+          "type": "number"
+        },
+        {
+          "name": "trimStart",
+          "type": "boolean"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "playheadTime",
+          "type": "number"
+        },
+        {
+          "name": "trimStart",
+          "type": "boolean"
+        }
+      ],
+      "tools": [
+        "trim_to_playhead"
+      ]
+    },
+    {
+      "type": "creation/applyOperation",
+      "domain": "creation",
+      "impl": "handler: handlers/creation.ts",
+      "reads": [
+        {
+          "name": "operation",
+          "type": "see the implementing module"
+        },
+        {
+          "name": "state",
+          "type": "see the implementing module"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "creation/replaceState",
+      "domain": "creation",
+      "impl": "handler: handlers/creation.ts",
+      "reads": [
+        {
+          "name": "operation",
+          "type": "see the implementing module"
+        },
+        {
+          "name": "state",
+          "type": "see the implementing module"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "effect/add",
+      "domain": "effect",
+      "impl": "action-executor.ts:1394",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectType",
+          "type": "string"
+        },
+        {
+          "name": "params",
+          "type": "Record<string, unknown>"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        },
+        {
+          "name": "index",
+          "type": "number"
+        },
+        {
+          "name": "enabled",
+          "type": "boolean"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "effect/remove",
+      "domain": "effect",
+      "impl": "action-executor.ts:1429",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "remove_video_effect"
+      ]
+    },
+    {
+      "type": "effect/reorder",
+      "domain": "effect",
+      "impl": "action-executor.ts:1515",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        },
+        {
+          "name": "newIndex",
+          "type": "number"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "effect/restore",
+      "domain": "effect",
+      "impl": "action-executor.ts:1447",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "type": "Effect"
+        },
+        {
+          "name": "index",
+          "type": "number"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "effect/setOrder",
+      "domain": "effect",
+      "impl": "handler: handlers/bulk-set.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectIds",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectIds",
+          "type": "array"
+        }
+      ],
+      "tools": [
+        "set_effect_order"
+      ]
+    },
+    {
+      "type": "effect/setStack",
+      "domain": "effect",
+      "impl": "handler: handlers/bulk-set.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effects",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "effect/toggle",
+      "domain": "effect",
+      "impl": "action-executor.ts:1491",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "boolean"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "boolean"
+        }
+      ],
+      "tools": [
+        "toggle_video_effect"
+      ]
+    },
+    {
+      "type": "effect/update",
+      "domain": "effect",
+      "impl": "action-executor.ts:1467",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        },
+        {
+          "name": "params",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectId",
+          "type": "string"
+        },
+        {
+          "name": "params",
+          "type": "object"
+        }
+      ],
+      "tools": [
+        "update_video_effect"
+      ]
+    },
+    {
+      "type": "keyframe/add",
+      "domain": "keyframe",
+      "impl": "action-executor.ts:1588",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "time",
+          "type": "number"
+        },
+        {
+          "name": "property",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "property",
+          "type": "string"
+        },
+        {
+          "name": "time",
+          "type": "number"
+        },
+        {
+          "name": "value",
+          "type": "any"
+        }
+      ],
+      "tools": [
+        "add_keyframe"
+      ]
+    },
+    {
+      "type": "keyframe/remove",
+      "domain": "keyframe",
+      "impl": "action-executor.ts:1615",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "property",
+          "type": "string"
+        },
+        {
+          "name": "time",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "property",
+          "type": "string"
+        },
+        {
+          "name": "time",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "remove_keyframe"
+      ]
+    },
+    {
+      "type": "keyframe/setAll",
+      "domain": "keyframe",
+      "impl": "handler: handlers/bulk-set.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "effectIds",
+          "type": "unknown"
+        },
+        {
+          "name": "effects",
+          "type": "unknown"
+        },
+        {
+          "name": "subtitleId",
+          "type": "string"
+        },
+        {
+          "name": "subtitle",
+          "type": "Subtitle"
+        },
+        {
+          "name": "subtitles",
+          "type": "Subtitle[]"
+        },
+        {
+          "name": "layers",
+          "type": "unknown[]"
+        },
+        {
+          "name": "masks",
+          "type": "unknown[]"
+        },
+        {
+          "name": "groups",
+          "type": "unknown[]"
+        },
+        {
+          "name": "compoundClips",
+          "type": "unknown[]"
+        },
+        {
+          "name": "instances",
+          "type": "unknown[]"
+        },
+        {
+          "name": "keyframes",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "keyframes",
+          "type": "array"
+        }
+      ],
+      "tools": [
+        "set_clip_keyframes"
+      ]
+    },
+    {
+      "type": "keyframe/update",
+      "domain": "keyframe",
+      "impl": "action-executor.ts:1641",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "property",
+          "type": "string"
+        },
+        {
+          "name": "time",
+          "type": "number"
+        },
+        {
+          "name": "value",
+          "type": "unknown"
+        },
+        {
+          "name": "easing",
+          "type": "EasingType"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "marker/add",
+      "domain": "marker",
+      "impl": "action-executor.ts:812",
+      "reads": [
+        {
+          "name": "time",
+          "type": "number"
+        },
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "color",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "time",
+          "type": "number"
+        },
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "color",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "add_marker"
+      ]
+    },
+    {
+      "type": "marker/remove",
+      "domain": "marker",
+      "impl": "action-executor.ts:841",
+      "reads": [
+        {
+          "name": "markerId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "markerId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "remove_marker"
+      ]
+    },
+    {
+      "type": "marker/restore",
+      "domain": "marker",
+      "impl": "action-executor.ts:829",
+      "reads": [
+        {
+          "name": "marker",
+          "type": "Marker"
+        },
+        {
+          "name": "position",
+          "type": "number"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "marker/update",
+      "domain": "marker",
+      "impl": "action-executor.ts:849",
+      "reads": [
+        {
+          "name": "markerId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Partial<Marker>"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "markerId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "object"
+        }
+      ],
+      "tools": [
+        "update_marker"
+      ]
+    },
+    {
+      "type": "mask/setAll",
+      "domain": "mask",
+      "impl": "handler: handlers/bulk-set.ts",
+      "reads": [
+        {
+          "name": "masks",
+          "type": "unknown[]"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "media/delete",
+      "domain": "media",
+      "impl": "action-executor.ts:475",
+      "reads": [
+        {
+          "name": "mediaId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "mediaId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "delete_media"
+      ]
+    },
+    {
+      "type": "media/import",
+      "domain": "media",
+      "impl": "action-executor.ts:449",
+      "reads": [
+        {
+          "name": "file",
+          "type": "File"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "media/rename",
+      "domain": "media",
+      "impl": "action-executor.ts:483",
+      "reads": [
+        {
+          "name": "mediaId",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "mediaId",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "rename_media"
+      ]
+    },
+    {
+      "type": "media/restore",
+      "domain": "media",
+      "impl": "action-executor.ts:491",
+      "reads": [
+        {
+          "name": "mediaItem",
+          "type": "MediaItem"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "motion/createComposition",
+      "domain": "motion",
+      "impl": "handler: handlers/motion.ts",
+      "reads": [
+        {
+          "name": "composition",
+          "type": "MotionComposition"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "motion/insertInstance",
+      "domain": "motion",
+      "impl": "handler: handlers/motion.ts",
+      "reads": [
+        {
+          "name": "instance",
+          "type": "MotionCompositionInstance"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "motion/removeComposition",
+      "domain": "motion",
+      "impl": "handler: handlers/motion.ts",
+      "reads": [
+        {
+          "name": "composition",
+          "type": "MotionComposition"
+        },
+        {
+          "name": "compositionId",
+          "type": "string"
+        },
+        {
+          "name": "instance",
+          "type": "MotionCompositionInstance"
+        },
+        {
+          "name": "instanceId",
+          "type": "string"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "motion/removeInstance",
+      "domain": "motion",
+      "impl": "handler: handlers/motion.ts",
+      "reads": [
+        {
+          "name": "composition",
+          "type": "MotionComposition"
+        },
+        {
+          "name": "compositionId",
+          "type": "string"
+        },
+        {
+          "name": "instance",
+          "type": "MotionCompositionInstance"
+        },
+        {
+          "name": "instanceId",
+          "type": "string"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "motion/upsertComposition",
+      "domain": "motion",
+      "impl": "handler: handlers/motion.ts",
+      "reads": [
+        {
+          "name": "composition",
+          "type": "MotionComposition"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "multicam/applyEdit",
+      "domain": "multicam",
+      "impl": "handler: handlers/multicam.ts",
+      "reads": [
+        {
+          "name": "outputTrack",
+          "type": "Track"
+        },
+        {
+          "name": "outputTracks",
+          "type": "Track[]"
+        },
+        {
+          "name": "outputTrackPosition",
+          "type": "number"
+        },
+        {
+          "name": "sourceTrackIds",
+          "type": "string[]"
+        },
+        {
+          "name": "groups",
+          "type": "MultiCamGroup[]"
+        },
+        {
+          "name": "outputTrackIds",
+          "type": "string[]"
+        },
+        {
+          "name": "priorOutputTracks",
+          "type": "Array< { … }"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "multicam/restoreEdit",
+      "domain": "multicam",
+      "impl": "handler: handlers/multicam.ts",
+      "reads": [
+        {
+          "name": "outputTrack",
+          "type": "Track"
+        },
+        {
+          "name": "outputTracks",
+          "type": "Track[]"
+        },
+        {
+          "name": "outputTrackPosition",
+          "type": "number"
+        },
+        {
+          "name": "sourceTrackIds",
+          "type": "string[]"
+        },
+        {
+          "name": "groups",
+          "type": "MultiCamGroup[]"
+        },
+        {
+          "name": "outputTrackIds",
+          "type": "string[]"
+        },
+        {
+          "name": "priorOutputTracks",
+          "type": "Array< { … }"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "multicam/setAll",
+      "domain": "multicam",
+      "impl": "handler: handlers/bulk-set.ts",
+      "reads": [
+        {
+          "name": "groups",
+          "type": "unknown[]"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "nested/setAll",
+      "domain": "nested",
+      "impl": "handler: handlers/bulk-set.ts",
+      "reads": [
+        {
+          "name": "compoundClips",
+          "type": "unknown[]"
+        },
+        {
+          "name": "instances",
+          "type": "unknown[]"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "project/create",
+      "domain": "project",
+      "impl": "action-executor.ts:405",
+      "reads": [
+        {
+          "name": "name",
+          "type": "any"
+        },
+        {
+          "name": "settings",
+          "type": "any"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "project/registerGeneratedShader",
+      "domain": "project",
+      "impl": "action-executor.ts:411",
+      "reads": [
+        {
+          "name": "def",
+          "type": "any"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "project/removeGeneratedShader",
+      "domain": "project",
+      "impl": "action-executor.ts:426",
+      "reads": [
+        {
+          "name": "shaderId",
+          "type": "any"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "project/rename",
+      "domain": "project",
+      "impl": "action-executor.ts:383",
+      "reads": [
+        {
+          "name": "name",
+          "type": "any"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "rename_project"
+      ]
+    },
+    {
+      "type": "project/setCanvasBackground",
+      "domain": "project",
+      "impl": "action-executor.ts:396",
+      "reads": [
+        {
+          "name": "backgroundFillMode",
+          "type": "any"
+        },
+        {
+          "name": "layoutBackgroundColor",
+          "type": "any"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "backgroundFillMode",
+          "type": "string"
+        },
+        {
+          "name": "layoutBackgroundColor",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "set_canvas_background"
+      ]
+    },
+    {
+      "type": "project/updateSettings",
+      "domain": "project",
+      "impl": "action-executor.ts:388",
+      "reads": [
+        {
+          "name": "(all passed params)",
+          "type": "spread into the target"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "width",
+          "type": "number"
+        },
+        {
+          "name": "height",
+          "type": "number"
+        },
+        {
+          "name": "frameRate",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "update_project_settings"
+      ]
+    },
+    {
+      "type": "shape/create",
+      "domain": "shape",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clip",
+          "type": "OverlayItem"
+        },
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "shape/remove",
+      "domain": "shape",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "shape/update",
+      "domain": "shape",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "speed/setFreezeFrames",
+      "domain": "speed",
+      "impl": "handler: handlers/clip-fx.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "speed",
+          "type": "unknown"
+        },
+        {
+          "name": "keyframes",
+          "type": "unknown"
+        },
+        {
+          "name": "freezeFrames",
+          "type": "unknown"
+        },
+        {
+          "name": "pitchCorrection",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "speed/setKeyframes",
+      "domain": "speed",
+      "impl": "handler: handlers/clip-fx.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "speed",
+          "type": "unknown"
+        },
+        {
+          "name": "keyframes",
+          "type": "unknown"
+        },
+        {
+          "name": "freezeFrames",
+          "type": "unknown"
+        },
+        {
+          "name": "pitchCorrection",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "speed/setRampData",
+      "domain": "speed",
+      "impl": "handler: handlers/clip-fx.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "keyframes",
+          "type": "unknown"
+        },
+        {
+          "name": "freezeFrames",
+          "type": "unknown"
+        },
+        {
+          "name": "pitchCorrection",
+          "type": "unknown"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "keyframes",
+          "type": "array"
+        },
+        {
+          "name": "freezeFrames",
+          "type": "array"
+        },
+        {
+          "name": "pitchCorrection",
+          "type": "boolean"
+        }
+      ],
+      "tools": [
+        "set_speed_ramp"
+      ]
+    },
+    {
+      "type": "sticker/create",
+      "domain": "sticker",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clip",
+          "type": "OverlayItem"
+        },
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "sticker/remove",
+      "domain": "sticker",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "sticker/update",
+      "domain": "sticker",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "subtitle/add",
+      "domain": "subtitle",
+      "impl": "action-executor.ts:1994",
+      "reads": [
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "startTime",
+          "type": "number"
+        },
+        {
+          "name": "endTime",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "startTime",
+          "type": "number"
+        },
+        {
+          "name": "endTime",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "add_subtitle"
+      ]
+    },
+    {
+      "type": "subtitle/import",
+      "domain": "subtitle",
+      "impl": "action-executor.ts:2064",
+      "reads": [
+        {
+          "name": "srtContent",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "srtContent",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "import_srt"
+      ]
+    },
+    {
+      "type": "subtitle/remove",
+      "domain": "subtitle",
+      "impl": "action-executor.ts:2011",
+      "reads": [
+        {
+          "name": "subtitleId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "subtitleId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "remove_subtitle"
+      ]
+    },
+    {
+      "type": "subtitle/replace",
+      "domain": "subtitle",
+      "impl": "handler: handlers/bulk-set.ts",
+      "reads": [
+        {
+          "name": "subtitleId",
+          "type": "string"
+        },
+        {
+          "name": "subtitle",
+          "type": "Subtitle"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "subtitle/restore",
+      "domain": "subtitle",
+      "impl": "action-executor.ts:2019",
+      "reads": [
+        {
+          "name": "subtitle",
+          "type": "Subtitle"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "subtitle/restoreAll",
+      "domain": "subtitle",
+      "impl": "action-executor.ts:2025",
+      "reads": [
+        {
+          "name": "subtitles",
+          "type": "Subtitle[]"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "subtitle/setAll",
+      "domain": "subtitle",
+      "impl": "handler: handlers/bulk-set.ts",
+      "reads": [
+        {
+          "name": "subtitles",
+          "type": "Subtitle[]"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "subtitle/setStyle",
+      "domain": "subtitle",
+      "impl": "action-executor.ts:2055",
+      "reads": [
+        {
+          "name": "style",
+          "type": "SubtitleStyle"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "style",
+          "type": "object"
+        }
+      ],
+      "tools": [
+        "set_subtitle_style"
+      ]
+    },
+    {
+      "type": "subtitle/update",
+      "domain": "subtitle",
+      "impl": "action-executor.ts:2031",
+      "reads": [
+        {
+          "name": "subtitleId",
+          "type": "string"
+        },
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "startTime",
+          "type": "number"
+        },
+        {
+          "name": "endTime",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "subtitleId",
+          "type": "string"
+        },
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "startTime",
+          "type": "number"
+        },
+        {
+          "name": "endTime",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "update_subtitle"
+      ]
+    },
+    {
+      "type": "svg/create",
+      "domain": "svg",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clip",
+          "type": "OverlayItem"
+        },
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "svg/remove",
+      "domain": "svg",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "svg/update",
+      "domain": "svg",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "text/create",
+      "domain": "text",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clip",
+          "type": "OverlayItem"
+        },
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "text/remove",
+      "domain": "text",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "text/update",
+      "domain": "text",
+      "impl": "handler: handlers/overlay.ts",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "updates",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "track/add",
+      "domain": "track",
+      "impl": "action-executor.ts:515",
+      "reads": [
+        {
+          "name": "trackType",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "type": "number"
+        },
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "type": "\"standard\""
+        },
+        {
+          "name": "role",
+          "type": "Track[\"role\"]"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "trackType",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "type": "number"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "role",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "add_track"
+      ]
+    },
+    {
+      "type": "track/consolidate",
+      "domain": "track",
+      "impl": "action-executor.ts:745",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "trackId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "consolidate_track"
+      ]
+    },
+    {
+      "type": "track/duplicate",
+      "domain": "track",
+      "impl": "action-executor.ts:571",
+      "reads": [
+        {
+          "name": "sourceTrackId",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "type": "number"
+        },
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "itemIdMap",
+          "type": "Record<string, string>"
+        },
+        {
+          "name": "transitionIdMap",
+          "type": "Record<string, string>"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "sourceTrackId",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "duplicate_track"
+      ]
+    },
+    {
+      "type": "track/hide",
+      "domain": "track",
+      "impl": "action-executor.ts:714",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "hidden",
+          "type": "boolean"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "hidden",
+          "type": "boolean"
+        }
+      ],
+      "tools": [
+        "hide_track"
+      ]
+    },
+    {
+      "type": "track/lock",
+      "domain": "track",
+      "impl": "action-executor.ts:706",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "locked",
+          "type": "boolean"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "locked",
+          "type": "boolean"
+        }
+      ],
+      "tools": [
+        "lock_track"
+      ]
+    },
+    {
+      "type": "track/mute",
+      "domain": "track",
+      "impl": "action-executor.ts:730",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "muted",
+          "type": "boolean"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "muted",
+          "type": "boolean"
+        }
+      ],
+      "tools": [
+        "mute_track"
+      ]
+    },
+    {
+      "type": "track/remove",
+      "domain": "track",
+      "impl": "action-executor.ts:665",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "trackId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "remove_track"
+      ]
+    },
+    {
+      "type": "track/rename",
+      "domain": "track",
+      "impl": "action-executor.ts:722",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "rename_track"
+      ]
+    },
+    {
+      "type": "track/reorder",
+      "domain": "track",
+      "impl": "action-executor.ts:691",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "newPosition",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "newPosition",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "reorder_track"
+      ]
+    },
+    {
+      "type": "track/restore",
+      "domain": "track",
+      "impl": "action-executor.ts:674",
+      "reads": [
+        {
+          "name": "track",
+          "type": "Track"
+        },
+        {
+          "name": "position",
+          "type": "number"
+        },
+        {
+          "name": "items",
+          "type": "TrackOwnedItems"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "track/restorePositions",
+      "domain": "track",
+      "impl": "action-executor.ts:775",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "track/solo",
+      "domain": "track",
+      "impl": "action-executor.ts:738",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "solo",
+          "type": "boolean"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "solo",
+          "type": "boolean"
+        }
+      ],
+      "tools": [
+        "solo_track"
+      ]
+    },
+    {
+      "type": "transform/update",
+      "domain": "transform",
+      "impl": "action-executor.ts:applyTransformAction (type-guarded)",
+      "reads": [
+        {
+          "name": "clipId",
+          "type": "see types/actions.ts"
+        },
+        {
+          "name": "transform",
+          "type": "see types/actions.ts"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipId",
+          "type": "string"
+        },
+        {
+          "name": "transform",
+          "type": "object"
+        }
+      ],
+      "tools": [
+        "set_clip_transform"
+      ]
+    },
+    {
+      "type": "transition/add",
+      "domain": "transition",
+      "impl": "action-executor.ts:1688",
+      "reads": [
+        {
+          "name": "clipAId",
+          "type": "string"
+        },
+        {
+          "name": "clipBId",
+          "type": "string"
+        },
+        {
+          "name": "transitionType",
+          "type": "TransitionType"
+        },
+        {
+          "name": "duration",
+          "type": "number"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "clipAId",
+          "type": "string"
+        },
+        {
+          "name": "clipBId",
+          "type": "string"
+        },
+        {
+          "name": "transitionType",
+          "type": "string"
+        },
+        {
+          "name": "duration",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "add_transition"
+      ]
+    },
+    {
+      "type": "transition/remove",
+      "domain": "transition",
+      "impl": "action-executor.ts:1751",
+      "reads": [
+        {
+          "name": "transitionId",
+          "type": "string"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "transitionId",
+          "type": "string"
+        }
+      ],
+      "tools": [
+        "remove_transition"
+      ]
+    },
+    {
+      "type": "transition/restore",
+      "domain": "transition",
+      "impl": "action-executor.ts:1762",
+      "reads": [
+        {
+          "name": "transition",
+          "type": "Transition"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "transition/restoreTrack",
+      "domain": "transition",
+      "impl": "action-executor.ts:1738",
+      "reads": [
+        {
+          "name": "trackId",
+          "type": "string"
+        },
+        {
+          "name": "transitions",
+          "type": "Transition[]"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "transition/set",
+      "domain": "transition",
+      "impl": "action-executor.ts:1716",
+      "reads": [
+        {
+          "name": "transition",
+          "type": "Transition"
+        }
+      ],
+      "accepts": [],
+      "tools": []
+    },
+    {
+      "type": "transition/update",
+      "domain": "transition",
+      "impl": "action-executor.ts:1781",
+      "reads": [
+        {
+          "name": "transitionId",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "TransitionType"
+        },
+        {
+          "name": "duration",
+          "type": "number"
+        },
+        {
+          "name": "params",
+          "type": "Record<string, unknown>"
+        }
+      ],
+      "accepts": [
+        {
+          "name": "transitionId",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "duration",
+          "type": "number"
+        }
+      ],
+      "tools": [
+        "update_transition"
+      ]
+    }
+  ]
+}

@@ -1,10 +1,19 @@
 import type { Action } from "@kove-advanced/core/types/actions";
+import { HISTORY_TOOLS } from "./tools-history";
+import { AUDIO_ANALYSIS_TOOLS } from "./tools-audio-analysis";
+import { RENDER_TOOLS } from "./tools-render";
+import {
+  resolveMs,
+  resolveRange,
+  withSecondFields,
+  withWarnings,
+} from "./multicam-units";
 import { extractSegments as runFrameWorkerPipeline } from "@kove-advanced/frame-worker";
 import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
-import { reviewEditPlan } from "./director/plan-review";
-import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES } from "@kove-advanced/creation-schema";
+import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
+import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
 import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
@@ -16,6 +25,7 @@ import {
 import type { DirectorPlanCommit } from "@kove-advanced/core/types/project";
 import type {
   CaptionStyleTemplate,
+  EditDensityProfile,
   EditPlan,
   EditPlanLayout,
   MotionMoveId,
@@ -457,6 +467,21 @@ function fail(message: string, code = "ERROR", data?: unknown): ToolResult {
   return data !== undefined
     ? { ok: false, summary: message, error: { code, message }, data }
     : { ok: false, summary: message, error: { code, message } };
+}
+
+/** Explicit "this host cannot do that" — never a placeholder result. */
+function unsupportedHost(tool: string): ToolResult {
+  const message = `${tool} is not available on this host.`;
+  return {
+    ok: false,
+    summary: message,
+    error: {
+      code: "UNSUPPORTED_HOST",
+      message,
+      suggestedFix:
+        "Do not retry. Check get_capabilities → host for supported rendering features, or use render_motion_frame for motion compositions.",
+    },
+  };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -2204,7 +2229,7 @@ async function materializeEditPlan(
   segmentMap: SegmentMap,
   host: EditingHost,
   owned: PlanOwnedEntities = newPlanOwned(),
-): Promise<{ clipIds: string[]; textIds: string[]; effectCount: number; transitionCount: number; audioCount: number; audioClipIds: string[]; motionCompositionIds: string[]; motionInstanceIds: string[] }> {
+): Promise<{ clipIds: string[]; textIds: string[]; effectCount: number; transitionCount: number; audioCount: number; audioClipIds: string[]; cameraMoveCount: number; keyframedClipIds: string[]; motionCompositionIds: string[]; motionInstanceIds: string[] }> {
   let videoTrack = host.getProject().timeline.tracks.find((track) => track.type === "video");
   if (!videoTrack) {
     const trackResult = await host.applyAction({
@@ -2220,6 +2245,11 @@ async function materializeEditPlan(
 
   const videoIds = new Set(segmentMap.videos.map((video) => video.videoId));
   const clipIds: string[] = [];
+  // Clip ids that carry plan-authored transform keyframes. Tracked so the
+  // result can report camera motion honestly (and so a future teardown can
+  // clear keyframes it owns).
+  const ownedKeyframeClipIds: string[] = [];
+  let cameraMoveCount = 0;
   const videoTracks = [videoTrack];
   // Plan-relative placement shared with validation: whatever is already on
   // the timeline does not shift this plan's layout (replace-plan commits
@@ -2307,6 +2337,37 @@ async function materializeEditPlan(
       });
       if (!rampResult.success) throw new Error(rampResult.error?.message ?? "Could not apply planned speed ramp");
     }
+    // Camera moves compile to transform keyframes. Without them every shot is
+    // static and the edit reads as a slideshow no matter how many effects are
+    // stacked on it, which is exactly the gap this vocabulary closes.
+    const cameraKeyframes = compileCameraMoves(segment.cameraMoves, duration);
+    if (cameraKeyframes.length > 0) {
+      const keyframeResult = await host.applyAction({
+        type: "keyframe/setAll",
+        id: genId(),
+        timestamp: Date.now(),
+        params: {
+          clipId: created,
+          keyframes: cameraKeyframes.map((keyframe, index) => ({
+            id: `${created}-move-${index}`,
+            time: keyframe.time,
+            property: keyframe.property,
+            value: keyframe.value,
+            easing: keyframe.easing,
+          })),
+        },
+      });
+      // A camera move is decoration relative to the rest of the plan: if the
+      // host cannot keyframe this clip, log and keep the shot.
+      if (!keyframeResult.success) {
+        console.warn(
+          `[plan_edit] camera moves skipped for clip ${created}: ${keyframeResult.error?.message ?? "keyframe/setAll failed"}`,
+        );
+      } else {
+        cameraMoveCount += segment.cameraMoves?.length ?? 0;
+        ownedKeyframeClipIds.push(created);
+      }
+    }
   }
 
   let effectCount = 0;
@@ -2327,19 +2388,34 @@ async function materializeEditPlan(
     const clipId = effect.targetSegmentIndex === undefined ? undefined : clipIds[effect.targetSegmentIndex];
     if (!clipId) continue;
     const isColorGrade = isColorGradeType(effect.type);
+    // Signature effects (vhs, halftone, prism, …) are named shader looks: the
+    // plan says WHAT it wants, the materializer resolves the shaderId and the
+    // parameter defaults. A plan never has to know the `shader` plumbing, and
+    // an unknown shaderId can never be committed.
+    const signature = isColorGrade ? undefined : resolveSignatureEffect(effect.type);
     // If the director omitted params, synthesize a sensible default from
     // intensity so the effect is actually VISIBLE. Video-effects-engine
     // defaults every numeric param to 0, so {type:"brightness"} becomes
     // brightness(1.0) (no change) unless we fill the param in for it.
+    const timingParams = {
+      ...(effect.startOffset !== undefined ? { startOffset: Math.max(0, effect.startOffset) } : {}),
+      ...(effect.duration !== undefined ? { duration: Math.max(0.01, effect.duration) } : {}),
+      ...(effect.easing !== undefined ? { easing: effect.easing } : {}),
+    };
     const resolvedEffectParams = isColorGrade
       ? effect.params
-      : {
-          ...synthesizeEffectParams(effect.type, effect.params, effect.intensity),
-          ...(effect.intensity !== undefined ? { intensity: Math.max(0, Math.min(1, effect.intensity)) } : {}),
-          ...(effect.startOffset !== undefined ? { startOffset: Math.max(0, effect.startOffset) } : {}),
-          ...(effect.duration !== undefined ? { duration: Math.max(0.01, effect.duration) } : {}),
-          ...(effect.easing !== undefined ? { easing: effect.easing } : {}),
-        };
+      : signature
+        ? {
+            shaderId: signature.shaderId,
+            ...buildSignatureEffectParams(signature, effect.intensity, effect.params),
+            ...timingParams,
+          }
+        : {
+            ...synthesizeEffectParams(effect.type, effect.params, effect.intensity),
+            ...(effect.intensity !== undefined ? { intensity: Math.max(0, Math.min(1, effect.intensity)) } : {}),
+            ...timingParams,
+          };
+    const actionEffectType = signature ? "shader" : effect.type;
     const result = await host.applyAction({
       type: isColorGrade ? "clip/setColorGrading" : "effect/add",
       id: genId(),
@@ -2348,7 +2424,7 @@ async function materializeEditPlan(
         ? { clipId, colorGrading: resolvedEffectParams }
         : {
           clipId,
-          effectType: effect.type,
+          effectType: actionEffectType,
           params: resolvedEffectParams,
         },
     });
@@ -2524,6 +2600,8 @@ async function materializeEditPlan(
     transitionCount,
     audioCount,
     audioClipIds: [...owned.audioClipIds],
+    cameraMoveCount,
+    keyframedClipIds: ownedKeyframeClipIds,
     ...motion,
   };
 }
@@ -2620,6 +2698,47 @@ function resolveLayoutTransform(
   };
 }
 
+/**
+ * Density is reported alongside the style score so callers (agent loop, UI,
+ * evals) can see *why* a plan is considered thin instead of a bare number.
+ * `revisionApplied` is included so a caller can tell "this is the best the
+ * bounded revision could do" from "no revision was needed".
+ */
+function densityPayload(
+  review: EditPlanReview,
+  revisionApplied?: boolean,
+): {
+  score: number;
+  summary: string;
+  escalation: EditDensityProfile["escalation"];
+  shotsPerMinute: number;
+  effectHitsPerMinute: number;
+  cameraMoveCount: number;
+  textsPerMinute: number;
+  sfxHits: number;
+  onBeatCutRatio: number | null;
+  deficiencies: readonly { code: string; severity: string; directive: string }[];
+  revisionApplied?: boolean;
+} {
+  return {
+    score: Math.round(review.density.score * 1000) / 1000,
+    summary: review.density.summary,
+    escalation: review.density.profile.escalation,
+    shotsPerMinute: Math.round(review.density.profile.shotsPerMinute * 100) / 100,
+    effectHitsPerMinute: Math.round(review.density.profile.effectHitsPerMinute * 100) / 100,
+    cameraMoveCount: review.density.profile.cameraMoveCount,
+    textsPerMinute: Math.round(review.density.profile.textsPerMinute * 100) / 100,
+    sfxHits: review.density.profile.sfxHits,
+    onBeatCutRatio: review.density.profile.onBeatCutRatio,
+    deficiencies: review.density.deficiencies.map((deficiency) => ({
+      code: deficiency.code,
+      severity: deficiency.severity,
+      directive: deficiency.directive,
+    })),
+    ...(revisionApplied !== undefined ? { revisionApplied } : {}),
+  };
+}
+
 function resolveTextStyle<T extends { readonly templateOverride?: Partial<CaptionStyleTemplate> }>(
   template: CaptionStyleTemplate | undefined,
   element: T & {
@@ -2672,6 +2791,12 @@ function normalizeDirectorPlanInput(value: unknown): EditPlan {
           : [],
         effectSpecs: Array.isArray(segment.effectSpecs)
           ? segment.effectSpecs.filter((effect): effect is Record<string, unknown> => Boolean(effect && typeof effect === "object"))
+          : undefined,
+        // Camera moves keep their raw shape: `normalizeEditPlan` coerces the
+        // numbers and validation reports unknown move ids with the supported
+        // list, so a typo gets repaired instead of silently dropped.
+        cameraMoves: Array.isArray(segment.cameraMoves)
+          ? segment.cameraMoves.filter((move): move is Record<string, unknown> => Boolean(move && typeof move === "object"))
           : undefined,
         speedRamp: speedRamp ? {
           keyframes: Array.isArray(speedRamp.keyframes)
@@ -11493,8 +11618,12 @@ const TOOLS: RegisteredTool[] = [
   readTool("get_clip", "Get clip", "Full detail for one clip by id.", obj({ clipId: str }, ["clipId"]), (a, h) =>
     getClipDetail(h.getProject(), a.clipId as string),
   ),
-  readTool("get_capabilities", "Capabilities", "Valid enums + parameter ranges.", obj({}), (_a, h) =>
-    h.capabilities(),
+  readTool(
+    "get_capabilities",
+    "Capabilities",
+    "Valid enums + parameter ranges, plus `host`: what this host can actually do (renderMotionFrame, renderTimelineFrame, renderMulticamPreview, exportVideo, checkpoints). Check `host` before relying on a rendering tool; a false flag means the tool will return UNSUPPORTED_HOST.",
+    obj({}),
+    (_a, h) => ({ ...h.capabilities(), host: h.features?.() ?? null }),
   ),
   readTool(
     "get_creation_capabilities",
@@ -16290,7 +16419,12 @@ const TOOLS: RegisteredTool[] = [
   actionTool({ name: "set_canvas_background", domain: "project", actionType: "project/setCanvasBackground", title: "Canvas background", description: "Set background fill mode/color.", inputSchema: obj({ backgroundFillMode: str, layoutBackgroundColor: str }) }),
 
   // track
-  actionTool({ name: "add_track", domain: "track", actionType: "track/add", title: "Add track", description: "Add a track (video|audio|image|text|graphics).", inputSchema: obj({ trackType: str, position: num }, ["trackType"]) }),
+  actionTool({ name: "add_track", domain: "track", actionType: "track/add", title: "Add track", description: "Add a track (video|audio|image|text|graphics).", inputSchema: obj({
+    trackType: str,
+    position: num,
+    name: { type: "string", description: "Display name. Defaults to the track type." },
+    role: { type: "string", enum: ["general", "captions", "dialogue", "music", "effects", "ambience"] },
+  }, ["trackType"]) }),
   actionTool({ name: "duplicate_track", domain: "track", actionType: "track/duplicate", title: "Duplicate track", description: "Duplicate a timeline-backed video, image, or audio track with fresh track, clip, and transition identities. Inserts the copy after the source unless position is supplied.", inputSchema: obj({ sourceTrackId: str, position: num }, ["sourceTrackId"]) }),
   actionTool({ name: "remove_track", domain: "track", actionType: "track/remove", title: "Remove track", description: "Remove a track and its clips.", inputSchema: obj({ trackId: str }, ["trackId"]), destructive: true }),
   actionTool({ name: "rename_track", domain: "track", actionType: "track/rename", title: "Rename track", description: "Rename a track.", inputSchema: obj({ trackId: str, name: str }, ["trackId", "name"]) }),
@@ -16326,7 +16460,19 @@ const TOOLS: RegisteredTool[] = [
   actionTool({ name: "rename_media", domain: "media", actionType: "media/rename", title: "Rename media", description: "Rename a media item.", inputSchema: obj({ mediaId: str, name: str }, ["mediaId", "name"]) }),
 
   // clip
-  actionTool({ name: "add_clip", domain: "clip", actionType: "clip/add", title: "Add clip", description: "Add a media clip to a track at a time.", inputSchema: obj({ trackId: str, mediaId: str, startTime: num }, ["trackId", "mediaId", "startTime"]) }),
+  actionTool({ name: "add_clip", domain: "clip", actionType: "clip/add", title: "Add clip", description: "Add a media clip to a track at a time.", inputSchema: obj({
+    trackId: str,
+    mediaId: str,
+    startTime: { type: "number", description: "Timeline position in seconds." },
+    duration: { type: "number", description: "Clip length in seconds. Defaults to the media duration (5 for images/graphics)." },
+    inPoint: { type: "number", description: "Source in-point in seconds." },
+    outPoint: { type: "number", description: "Source out-point in seconds." },
+    volume: { type: "number", description: "Linear volume multiplier." },
+    speed: { type: "number", description: "Playback speed multiplier." },
+    reversed: bool,
+    transform: { type: "object", description: "Initial transform (position/scale/rotation/opacity/crop)." },
+    fade: { type: "object", description: "{ fadeIn, fadeOut } in seconds." },
+  }, ["trackId", "mediaId", "startTime"]) }),
   actionTool({ name: "remove_clip", domain: "clip", actionType: "clip/remove", title: "Remove clip", description: "Remove a clip.", inputSchema: obj({ clipId: str }, ["clipId"]), destructive: true }),
   actionTool({ name: "move_clip", domain: "clip", actionType: "clip/move", title: "Move clip", description: "Move a clip to a new start time / track.", inputSchema: obj({ clipId: str, startTime: num, trackId: str }, ["clipId", "startTime"]) }),
   actionTool({ name: "trim_clip", domain: "clip", actionType: "clip/trim", title: "Trim clip", description: "Set a clip's in/out points (seconds).", inputSchema: obj({ clipId: str, inPoint: num, outPoint: num }, ["clipId"]) }),
@@ -16355,7 +16501,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "effect",
     title: "Add effect",
     description:
-      "Add a video effect to a clip. Standard effectType values include brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, shadow, glow, motion-blur, radial-blur, chromatic-aberration. Set effectType to 'shader' to run a GPU shader effect from the Motion shader library (only category 'effect' shaders, e.g. the Paper Design catalog like paper-halftone-dots or paper-liquid-metal — use list_motion_shaders with category 'effect' to discover ids); for shader effects, params MUST include a valid shaderId plus optional numeric params (name/value pairs from the shader's params) and an optional numeric time. Shader effects no-op gracefully when WebGL2 is unavailable.",
+      `Add a video effect to a clip. Standard effectType values include brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, shadow, glow, motion-blur, radial-blur, chromatic-aberration. Signature shader effects are named looks that are expensive to recreate by hand — ${SIGNATURE_EFFECT_NAMES.join(", ")} — and take an optional 0..1 params.intensity. You may instead set effectType to 'shader' with params.shaderId for any other Motion shader (category 'effect'; use list_motion_shaders to discover ids) plus optional numeric params. Shader effects no-op gracefully when WebGL2 is unavailable.`,
     inputSchema: obj(
       { clipId: str, effectType: str, params: { type: "object" } },
       ["clipId", "effectType"],
@@ -16369,15 +16515,51 @@ const TOOLS: RegisteredTool[] = [
       if (!effectType) return fail("effectType is required", "INVALID_PARAMS");
       if (!isSupportedEffectType(effectType)) {
         return fail(
-          `Unsupported effect type "${effectType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_CLIP_EFFECT_TYPES.join(", ")} (or a colorGrade alias for clip color grading).`,
+          `Unsupported effect type "${effectType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_CLIP_EFFECT_TYPES.join(", ")} (or a colorGrade alias for clip color grading). Signature shader effects: ${SUPPORTED_EFFECT_TYPES.filter((name) => !(SUPPORTED_CLIP_EFFECT_TYPES as readonly string[]).includes(name)).join(", ")}.`,
           "UNSUPPORTED_EFFECT",
-          { supportedEffects: [...SUPPORTED_CLIP_EFFECT_TYPES] },
+          { supportedEffects: [...SUPPORTED_EFFECT_TYPES] },
         );
       }
-      const params =
+      const baseParams =
         typeof args.params === "object" && args.params !== null
           ? (args.params as Record<string, unknown>)
           : {};
+      // A named signature effect ("vhs", "halftone", "prism", …) is sugar for
+      // the shader type plus a shaderId and param defaults: resolve it here so
+      // the stored layer is a normal shader effect the inspector understands.
+      const signature = resolveSignatureEffect(effectType);
+      if (signature) {
+        const intensity =
+          typeof baseParams.intensity === "number" ? baseParams.intensity : undefined;
+        const action: Action = {
+          type: "effect/add",
+          id: genId(),
+          timestamp: Date.now(),
+          params: {
+            clipId: args.clipId,
+            effectType: "shader",
+            params: {
+              shaderId: signature.shaderId,
+              ...buildSignatureEffectParams(signature, intensity, baseParams),
+              ...(typeof baseParams.startOffset === "number" ? { startOffset: baseParams.startOffset } : {}),
+              ...(typeof baseParams.duration === "number" ? { duration: baseParams.duration } : {}),
+            },
+          },
+        };
+        const signatureResult = await host.applyAction(action);
+        if (signatureResult.success) {
+          return ok(`add_video_effect applied (${signature.name} → shader ${signature.shaderId})`, {
+            actionId: signatureResult.actionId,
+            effectType: "shader",
+            shaderId: signature.shaderId,
+          });
+        }
+        return fail(
+          signatureResult.error?.message ?? "add_video_effect failed",
+          signatureResult.error?.code ?? "ACTION_FAILED",
+        );
+      }
+      const params = baseParams;
       if (effectType === "shader") {
         const shaderId = optionalString(params.shaderId);
         if (!shaderId) {
@@ -16443,18 +16625,28 @@ const TOOLS: RegisteredTool[] = [
     domain: "transition",
     actionType: "transition/add",
     title: "Add transition",
-    description: "Add a transition between two clips. transitionType must be a renderer-supported type (crossfade, dipToBlack, dipToWhite, wipe, slide, zoom, push, circleReveal, blur, whipPan, radialWipe, pixelate, glitch, blinds, diamondReveal, spin, flip, splitReveal, flash, filmBurn, mosaic, ripple, pageTurn, colorSplit). A hard cut needs NO transition object — leave the clips adjacent.",
+    description: `Add a transition between two clips. transitionType must be a renderer-supported type (${SUPPORTED_TRANSITION_TYPES.join(", ")}). A hard cut needs NO transition object — leave the clips adjacent.`,
     inputSchema: obj({ clipAId: str, clipBId: str, transitionType: str, duration: num }, ["clipAId", "clipBId", "transitionType", "duration"]),
     readOnly: false,
     destructive: false,
     expensive: false,
     handler: async (args, host) => {
       host.requireOpenProject();
-      const transitionType = optionalString(args.transitionType);
-      if (!transitionType) return fail("transitionType is required", "INVALID_PARAMS");
+      const requestedType = optionalString(args.transitionType);
+      if (!requestedType) return fail("transitionType is required", "INVALID_PARAMS");
+      // Canonicalize before validating: the director prompt and the docs both
+      // promise that aliases ("whip-zoom", "datamosh") resolve to a real type.
+      // A hard cut canonicalizes to null — that is a cut, not a transition.
+      const transitionType = canonicalizeTransitionType(requestedType);
+      if (transitionType === null) {
+        return fail(
+          `"${requestedType}" is a hard cut — leave the clips adjacent instead of adding a transition.`,
+          "INVALID_PARAMS",
+        );
+      }
       if (!isSupportedTransitionType(transitionType)) {
         return fail(
-          `Unsupported transition "${transitionType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_TRANSITION_TYPES.join(", ")}. For a hard cut, add no transition.`,
+          `Unsupported transition "${requestedType}" — the renderer would silently ignore it. Supported: ${SUPPORTED_TRANSITION_TYPES.join(", ")}. For a hard cut, add no transition.`,
           "UNSUPPORTED_TRANSITION",
           { supportedTransitions: [...SUPPORTED_TRANSITION_TYPES] },
         );
@@ -16463,7 +16655,7 @@ const TOOLS: RegisteredTool[] = [
         type: "transition/add",
         id: genId(),
         timestamp: Date.now(),
-        params: args,
+        params: { ...args, transitionType },
       };
       const result = await host.applyAction(action);
       if (result.success) return ok("add_transition applied", { actionId: result.actionId });
@@ -31518,6 +31710,11 @@ const TOOLS: RegisteredTool[] = [
         emissive: str,
         mapAssetId: str,
         opacity: num,
+        key: { type: "string", description: "Stable object key (aliases: objectId, partId). Defaults to the object name." },
+        objectId: { type: "string", description: "Alias of key." },
+        partId: { type: "string", description: "Alias of key." },
+        parentId: { type: "string", description: "Parent object id for hierarchical objects." },
+        parentKey: { type: "string", description: "Parent object key (alias of parentId)." },
       },
       ["compositionId", "layerId", "kind"],
     ),
@@ -32372,6 +32569,8 @@ const TOOLS: RegisteredTool[] = [
     description:
       "Escape hatch: dispatch any underlying editor action by type + params. Use get_capabilities and the action catalog for valid types.",
     inputSchema: obj({ type: str, params: { type: "object" } }, ["type"]),
+    // Flat form: top-level keys other than `type` become the action's params.
+    freeform: true,
     readOnly: false,
     destructive: true,
     expensive: false,
@@ -32704,23 +32903,29 @@ const TOOLS: RegisteredTool[] = [
     domain: "multicam",
     title: "Get multicam activity map",
     description:
-      "Read the reusable .orma speech activity map for an optional millisecond range. Large maps are deterministically sampled to at most 2,000 points.",
-    inputSchema: obj({ groupId: str, startMs: num, endMs: num }),
+      "Read the reusable .orma speech activity map for an optional range in SECONDS (startTime/endTime). Large maps are deterministically sampled to at most 2,000 points. Output keeps its *Ms fields and adds second-based siblings (e.g. windowMs → windowDuration). startMs/endMs are deprecated millisecond aliases.",
+    inputSchema: obj({
+      groupId: str,
+      startTime: { type: "number", minimum: 0, description: "Range start in seconds." },
+      endTime: { type: "number", minimum: 0, description: "Range end in seconds (> startTime)." },
+      startMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of startTime." },
+      endMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of endTime." },
+    }),
     readOnly: true,
     destructive: false,
     expensive: false,
     handler: async (args, host) => {
       if (!host.multicam) return fail("Multicam tools are unavailable in this host", "UNSUPPORTED");
-      const startMs = optionalNumber(args.startMs);
-      const endMs = optionalNumber(args.endMs);
-      if ((startMs !== undefined && startMs < 0) || (endMs !== undefined && endMs < 0) ||
-          (startMs !== undefined && endMs !== undefined && endMs <= startMs)) {
-        return fail("Activity range must satisfy 0 <= startMs < endMs", "INVALID_PARAMS");
-      }
-      return ok("Loaded multicam activity map", await host.multicam.getActivityMap(
-        optionalString(args.groupId),
-        { startMs, endMs },
-      ));
+      const range = resolveRange(args, "Activity");
+      if (range.error) return range.error;
+      const { startMs, endMs } = range;
+      return withWarnings(
+        ok("Loaded multicam activity map", withSecondFields(await host.multicam.getActivityMap(
+          optionalString(args.groupId),
+          { startMs, endMs },
+        ))),
+        range.warnings,
+      );
     },
   },
   {
@@ -32728,23 +32933,29 @@ const TOOLS: RegisteredTool[] = [
     domain: "multicam",
     title: "Get multicam transcript",
     description:
-      "Read optional per-participant local Whisper transcript segments from the separate .orma artifact.",
-    inputSchema: obj({ groupId: str, startMs: num, endMs: num }),
+      "Read optional per-participant local Whisper transcript segments from the separate .orma artifact, for an optional range in SECONDS (startTime/endTime). Each segment keeps startMs/endMs and adds startTime/endTime in seconds. startMs/endMs inputs are deprecated millisecond aliases.",
+    inputSchema: obj({
+      groupId: str,
+      startTime: { type: "number", minimum: 0, description: "Range start in seconds." },
+      endTime: { type: "number", minimum: 0, description: "Range end in seconds (> startTime)." },
+      startMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of startTime." },
+      endMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of endTime." },
+    }),
     readOnly: true,
     destructive: false,
     expensive: false,
     handler: async (args, host) => {
       if (!host.multicam) return fail("Multicam tools are unavailable in this host", "UNSUPPORTED");
-      const startMs = optionalNumber(args.startMs);
-      const endMs = optionalNumber(args.endMs);
-      if ((startMs !== undefined && startMs < 0) || (endMs !== undefined && endMs < 0) ||
-          (startMs !== undefined && endMs !== undefined && endMs <= startMs)) {
-        return fail("Transcript range must satisfy 0 <= startMs < endMs", "INVALID_PARAMS");
-      }
-      return ok("Loaded multicam transcript", await host.multicam.getTranscript(
-        optionalString(args.groupId),
-        { startMs, endMs },
-      ));
+      const range = resolveRange(args, "Transcript");
+      if (range.error) return range.error;
+      const { startMs, endMs } = range;
+      return withWarnings(
+        ok("Loaded multicam transcript", withSecondFields(await host.multicam.getTranscript(
+          optionalString(args.groupId),
+          { startMs, endMs },
+        ))),
+        range.warnings,
+      );
     },
   },
   {
@@ -32752,16 +32963,20 @@ const TOOLS: RegisteredTool[] = [
     domain: "multicam",
     title: "Set multicam edit policy",
     description:
-      "Re-plan the automatic multicam edit from cached analysis. All values are schema-validated and manifest shot constraints remain hard bounds.",
+      "Re-plan the automatic multicam edit from cached analysis. Durations are in SECONDS (commitDuration, layoutEnterDuration, layoutExitDuration, minLayoutLifeDuration); the commitMs/layoutEnterMs/layoutExitMs/minLayoutLifeMs milliseconds names are deprecated aliases. All values are schema-validated and manifest shot constraints remain hard bounds.",
     inputSchema: obj({
       groupId: str,
       strategy: { type: "string", enum: ["hold", "winner", "priority", "wide", "composite", "progressive"] },
       escalateTo: { type: "string", enum: ["winner", "priority", "wide", "composite", "progressive"] },
       priorityParticipantIds: { type: "array", items: str, maxItems: 16 },
-      commitMs: { type: "number", minimum: 0, maximum: 5_000 },
-      layoutEnterMs: { type: "number", minimum: 0, maximum: 5_000 },
-      layoutExitMs: { type: "number", minimum: 0, maximum: 10_000 },
-      minLayoutLifeMs: { type: "number", minimum: 100, maximum: 30_000 },
+      commitDuration: { type: "number", minimum: 0, maximum: 5, description: "Seconds a new speaker must hold before a cut commits." },
+      layoutEnterDuration: { type: "number", minimum: 0, maximum: 5, description: "Seconds of sustained activity before entering a multi-panel layout." },
+      layoutExitDuration: { type: "number", minimum: 0, maximum: 10, description: "Seconds of inactivity before leaving a multi-panel layout." },
+      minLayoutLifeDuration: { type: "number", minimum: 0.1, maximum: 30, description: "Minimum seconds a layout stays on screen." },
+      commitMs: { type: "number", minimum: 0, maximum: 5_000, description: "DEPRECATED milliseconds alias of commitDuration." },
+      layoutEnterMs: { type: "number", minimum: 0, maximum: 5_000, description: "DEPRECATED milliseconds alias of layoutEnterDuration." },
+      layoutExitMs: { type: "number", minimum: 0, maximum: 10_000, description: "DEPRECATED milliseconds alias of layoutExitDuration." },
+      minLayoutLifeMs: { type: "number", minimum: 100, maximum: 30_000, description: "DEPRECATED milliseconds alias of minLayoutLifeDuration." },
       maxLayoutChangesPerMinute: { type: "number", minimum: 1, maximum: 60 },
     }, ["groupId"]),
     readOnly: false,
@@ -32781,14 +32996,24 @@ const TOOLS: RegisteredTool[] = [
       if (escalateTo && !(escalations as readonly string[]).includes(escalateTo)) {
         return fail("escalateTo is invalid", "INVALID_PARAMS");
       }
+      const warnings: string[] = [];
+      let unitError: ToolResult | undefined;
       const bounded = (
-        key: string,
+        spec: { sec: string; ms: string },
         minimum: number,
         maximum: number,
       ): number | undefined => {
-        const value = optionalNumber(args[key]);
+        const resolved = resolveMs(args, spec);
+        warnings.push(...resolved.warnings);
+        if (resolved.error) {
+          unitError = resolved.error;
+          return undefined;
+        }
+        const value = resolved.ms;
         if (value === undefined) return undefined;
-        if (value < minimum || value > maximum) throw new Error(`${key} must be between ${minimum} and ${maximum}`);
+        if (value < minimum || value > maximum) {
+          throw new Error(`${spec.sec} must be between ${minimum / 1000} and ${maximum / 1000} seconds`);
+        }
         return value;
       };
       try {
@@ -32801,17 +33026,26 @@ const TOOLS: RegisteredTool[] = [
           }
           updates.priorityParticipantIds = args.priorityParticipantIds;
         }
-        for (const [key, minimum, maximum] of [
-          ["commitMs", 0, 5_000],
-          ["layoutEnterMs", 0, 5_000],
-          ["layoutExitMs", 0, 10_000],
-          ["minLayoutLifeMs", 100, 30_000],
-          ["maxLayoutChangesPerMinute", 1, 60],
+        for (const [spec, minimum, maximum] of [
+          [{ sec: "commitDuration", ms: "commitMs" }, 0, 5_000],
+          [{ sec: "layoutEnterDuration", ms: "layoutEnterMs" }, 0, 5_000],
+          [{ sec: "layoutExitDuration", ms: "layoutExitMs" }, 0, 10_000],
+          [{ sec: "minLayoutLifeDuration", ms: "minLayoutLifeMs" }, 100, 30_000],
         ] as const) {
-          const value = bounded(key, minimum, maximum);
-          if (value !== undefined) updates[key] = value;
+          const value = bounded(spec, minimum, maximum);
+          if (unitError) return unitError;
+          // The bridge/policy contract stays in milliseconds.
+          if (value !== undefined) updates[spec.ms] = value;
         }
-        return ok("Updated multicam edit policy", await host.multicam.setEditPolicy(groupId, updates));
+        const perMinute = optionalNumber(args.maxLayoutChangesPerMinute);
+        if (perMinute !== undefined) {
+          if (perMinute < 1 || perMinute > 60) throw new Error("maxLayoutChangesPerMinute must be between 1 and 60");
+          updates.maxLayoutChangesPerMinute = perMinute;
+        }
+        return withWarnings(
+          ok("Updated multicam edit policy", withSecondFields(await host.multicam.setEditPolicy(groupId, updates))),
+          warnings,
+        );
       } catch (error) {
         return fail(error instanceof Error ? error.message : "Invalid edit policy", "INVALID_PARAMS");
       }
@@ -32821,47 +33055,59 @@ const TOOLS: RegisteredTool[] = [
     name: "annotate_segment",
     domain: "multicam",
     title: "Annotate multicam segment",
-    description: "Attach a concise planning note to a bounded multicam time range without modifying cached analysis.",
-    inputSchema: obj({ groupId: str, startMs: num, endMs: num, note: str }, ["groupId", "startMs", "endMs", "note"]),
+    description: "Attach a concise planning note to a bounded multicam time range (startTime/endTime in SECONDS) without modifying cached analysis. startMs/endMs are deprecated millisecond aliases.",
+    inputSchema: obj({
+      groupId: str,
+      startTime: { type: "number", minimum: 0, description: "Range start in seconds." },
+      endTime: { type: "number", minimum: 0, description: "Range end in seconds (> startTime)." },
+      startMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of startTime." },
+      endMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of endTime." },
+      note: str,
+    }, ["groupId", "note"]),
     readOnly: false,
     destructive: false,
     expensive: false,
     handler: async (args, host) => {
       if (!host.multicam) return fail("Multicam tools are unavailable in this host", "UNSUPPORTED");
       const groupId = optionalString(args.groupId);
-      const startMs = optionalNumber(args.startMs);
-      const endMs = optionalNumber(args.endMs);
+      const range = resolveRange(args, "Annotation", { required: true });
+      if (range.error) return range.error;
+      const { startMs, endMs } = range;
       const note = optionalString(args.note);
-      if (!groupId || startMs === undefined || endMs === undefined || startMs < 0 || endMs <= startMs || !note || note.length > 500) {
-        return fail("groupId, a valid millisecond range, and a note of at most 500 characters are required", "INVALID_PARAMS");
+      if (!groupId || startMs === undefined || endMs === undefined || !note || note.length > 500) {
+        return fail("groupId and a note of at most 500 characters are required", "INVALID_PARAMS");
       }
-      return ok("Annotated multicam segment", await host.multicam.annotateSegment({ groupId, startMs, endMs, note }));
+      return withWarnings(
+        ok("Annotated multicam segment", withSecondFields(await host.multicam.annotateSegment({ groupId, startMs, endMs, note }))),
+        range.warnings,
+      );
     },
   },
   {
     name: "get_edit_summary",
     domain: "multicam",
     title: "Get multicam edit summary",
-    description: "Summarize shots, layouts, pending cut review, annotations, and top deterministic social candidates.",
+    description: "Summarize shots, layouts, pending cut review, annotations, and top deterministic social candidates. *Ms fields in the output are accompanied by second-based siblings (e.g. minShotMs → minShotDuration).",
     inputSchema: obj({ groupId: str }),
     readOnly: true,
     destructive: false,
     expensive: false,
     handler: async (args, host) => {
       if (!host.multicam) return fail("Multicam tools are unavailable in this host", "UNSUPPORTED");
-      return ok("Loaded multicam edit summary", await host.multicam.getEditSummary(optionalString(args.groupId)));
+      return ok("Loaded multicam edit summary", withSecondFields(await host.multicam.getEditSummary(optionalString(args.groupId))));
     },
   },
   {
     name: "override_cut",
     domain: "multicam",
     title: "Override multicam cut",
-    description: "Accept, reject, nudge by at most 2 seconds, or assign a valid manifest camera to one generated cut.",
+    description: "Accept, reject, nudge by at most 2 seconds (delta, in SECONDS), or assign a valid manifest camera to one generated cut. deltaMs is a deprecated milliseconds alias of delta.",
     inputSchema: obj({
       groupId: str,
       switchId: str,
       operation: { type: "string", enum: ["accept", "reject", "nudge", "set-camera"] },
-      deltaMs: { type: "number", minimum: -2_000, maximum: 2_000 },
+      delta: { type: "number", minimum: -2, maximum: 2, description: "Nudge amount in seconds (negative = earlier)." },
+      deltaMs: { type: "number", minimum: -2_000, maximum: 2_000, description: "DEPRECATED milliseconds alias of delta." },
       cameraId: str,
     }, ["groupId", "switchId", "operation"]),
     readOnly: false,
@@ -32872,45 +33118,65 @@ const TOOLS: RegisteredTool[] = [
       const groupId = optionalString(args.groupId);
       const switchId = optionalString(args.switchId);
       const operation = optionalString(args.operation);
-      const deltaMs = optionalNumber(args.deltaMs);
+      const delta = resolveMs(args, { sec: "delta", ms: "deltaMs" });
+      if (delta.error) return delta.error;
+      const deltaMs = delta.ms;
       const cameraId = optionalString(args.cameraId);
       if (!groupId || !switchId || !operation || !["accept", "reject", "nudge", "set-camera"].includes(operation)) {
         return fail("groupId, switchId, and a valid operation are required", "INVALID_PARAMS");
       }
       if (operation === "nudge" && (deltaMs === undefined || Math.abs(deltaMs) > 2_000)) {
-        return fail("nudge requires deltaMs between -2000 and 2000", "INVALID_PARAMS");
+        return {
+          ok: false,
+          summary: "nudge requires delta between -2 and 2 seconds",
+          error: {
+            code: "INVALID_PARAMS",
+            message: "nudge requires delta between -2 and 2 seconds",
+            suggestedFix: "Pass delta in SECONDS, e.g. delta: -0.25 moves the cut 250 ms earlier.",
+          },
+        };
       }
       if (operation === "set-camera" && !cameraId) {
         return fail("set-camera requires cameraId", "INVALID_PARAMS");
       }
-      return ok("Applied multicam cut override", await host.multicam.overrideCut({
-        groupId,
-        switchId,
-        operation: operation as "accept" | "reject" | "nudge" | "set-camera",
-        deltaMs,
-        cameraId,
-      }));
+      return withWarnings(
+        ok("Applied multicam cut override", withSecondFields(await host.multicam.overrideCut({
+          groupId,
+          switchId,
+          operation: operation as "accept" | "reject" | "nudge" | "set-camera",
+          deltaMs,
+          cameraId,
+        }))),
+        delta.warnings,
+      );
     },
   },
   {
     name: "preview_frame",
     domain: "multicam",
     title: "Preview multicam frame",
-    description: "Render a frame at a bounded millisecond time for visual inspection of the current multicam edit.",
-    inputSchema: obj({ groupId: str, timeMs: { type: "number", minimum: 0 } }, ["groupId", "timeMs"]),
+    description: "Render a frame at a bounded time (time, in SECONDS; timeMs is a deprecated milliseconds alias) for visual inspection of the current multicam edit. Only works when get_capabilities → host.renderMulticamPreview is true; otherwise returns UNSUPPORTED_HOST (do not retry).",
+    inputSchema: obj({
+      groupId: str,
+      time: { type: "number", minimum: 0, description: "Time in seconds." },
+      timeMs: { type: "number", minimum: 0, description: "DEPRECATED milliseconds alias of time." },
+    }, ["groupId"]),
     readOnly: true,
     destructive: false,
     expensive: true,
     handler: async (args, host) => {
-      if (!host.multicam) return fail("Multicam tools are unavailable in this host", "UNSUPPORTED");
+      if (!host.multicam || host.features?.().renderMulticamPreview === false) return unsupportedHost("preview_frame");
       const groupId = optionalString(args.groupId);
-      const timeMs = optionalNumber(args.timeMs);
+      const resolvedTime = resolveMs(args, { sec: "time", ms: "timeMs" });
+      if (resolvedTime.error) return resolvedTime.error;
+      const timeMs = resolvedTime.ms;
       if (!groupId || timeMs === undefined || timeMs < 0) {
-        return fail("groupId and non-negative timeMs are required", "INVALID_PARAMS");
+        return fail("groupId and a non-negative time (seconds) are required", "INVALID_PARAMS");
       }
       const result = await host.multicam.previewFrame(groupId, timeMs);
+      if (result.code === "unsupported_host") return unsupportedHost("preview_frame");
       return result.ok
-        ? ok("Rendered multicam preview frame", result.data)
+        ? withWarnings(ok("Rendered multicam preview frame", result.data), resolvedTime.warnings)
         : fail(result.error ?? "Preview frame failed", "PREVIEW_FAILED");
     },
   },
@@ -33545,17 +33811,23 @@ const TOOLS: RegisteredTool[] = [
         }
       }
 
-      // ---- Style review (bounded to one revision attempt) ----
-      let planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis);
+      // ---- Style + density review (bounded to one revision attempt) ----
+      // The brief combines both gates: a plan can match the genre palette and
+      // still be eight splices, and the revision pass is the one chance to fix
+      // that before it reaches the timeline.
+      let planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis, resolvedMap);
       let revisionApplied = false;
       if (planReview.needsRevision) {
         try {
           const revisionResponse = await requestPlan(
-            `${directorPrompt}\n\n## Internal plan review\nThe first draft scored ${planReview.score.toFixed(2)} against the style target. Revise it once before execution. Address these deviations: ${planReview.deviations.join("; ") || "bring the measurable style profile closer to target"}.`,
+            `${directorPrompt}\n\n## Internal plan review — revise once before execution\n${planReview.revisionBrief}`,
             [
               {
                 role: "user",
-                content: `Revise this EditPlan to address the internal review, then call submit_edit_plan with the complete corrected plan. Do not explain the revision.\n\n${JSON.stringify(finalPlan)}`,
+                content:
+                  `Revise this EditPlan to address the internal review, then call submit_edit_plan with the complete corrected plan. ` +
+                  `Keep every choice that already works; add the missing density rather than replacing the edit. Do not explain the revision.\n\n` +
+                  JSON.stringify(finalPlan),
               },
             ],
           );
@@ -33566,7 +33838,7 @@ const TOOLS: RegisteredTool[] = [
             if (revisedBlocking.length === 0) {
               finalPlan = revised.plan;
               finalPlanIssues = revised.issues;
-              planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis);
+              planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis, resolvedMap);
               revisionApplied = true;
             }
           }
@@ -33633,6 +33905,10 @@ const TOOLS: RegisteredTool[] = [
               effectCount: 0,
               transitionCount: storedState.transitionIds.length,
               audioCount: storedState.audioClipIds.length,
+              cameraMoveCount: finalPlan.segments.reduce(
+                (sum, segment) => sum + (segment.cameraMoves?.length ?? 0),
+                0,
+              ),
               motionCompositionIds: [],
               motionInstanceIds: [],
               validationWarnings: finalPlanIssues.filter(
@@ -33643,6 +33919,7 @@ const TOOLS: RegisteredTool[] = [
                 deviations: planReview.deviations,
                 revisionApplied: false,
               },
+              density: densityPayload(planReview),
               quality: {
                 status: "unavailable" as const,
                 reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
@@ -33696,11 +33973,11 @@ const TOOLS: RegisteredTool[] = [
       };
 
       const summary =
-        `plan_edit applied as revision ${nextRevision}: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s)` +
+        `plan_edit applied as revision ${nextRevision}: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s), ${materialized.cameraMoveCount} camera move(s)` +
         (previousCommit
           ? `, replacing revision ${previousCommit.revision} (${cleanup.removed} prior artifact(s) removed)`
           : "") +
-        `. Style check: ${planReview.score.toFixed(2)}.`;
+        `. Style check: ${planReview.score.toFixed(2)} · density: ${planReview.density.score.toFixed(2)} (${planReview.density.summary}).`;
 
       const data = {
         editPlan: finalPlan,
@@ -33720,6 +33997,7 @@ const TOOLS: RegisteredTool[] = [
           deviations: planReview.deviations,
           revisionApplied,
         },
+        density: densityPayload(planReview, revisionApplied),
         // Honest reporting: there is no working timeline frame sampler yet, so
         // no visual quality review was performed. NEVER report a synthetic score.
         quality: {
@@ -33758,7 +34036,9 @@ const TOOLS: RegisteredTool[] = [
 ];
 
 // ---- Registry --------------------------------------------------------------
-const REGISTRY = new Map<string, RegisteredTool>(TOOLS.map((t) => [t.name, t]));
+const REGISTRY = new Map<string, RegisteredTool>(
+  [...TOOLS, ...HISTORY_TOOLS, ...AUDIO_ANALYSIS_TOOLS, ...RENDER_TOOLS].map((t) => [t.name, t]),
+);
 
 export function getTool(name: string): RegisteredTool | undefined {
   return REGISTRY.get(name);
