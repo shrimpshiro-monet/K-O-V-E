@@ -50,6 +50,7 @@ coverage/
 .docs/
 docs/*
 !docs/android-port/
+!docs/AGENT-*.md
 .worktrees/
 # Project-specific
 /public/projects/
