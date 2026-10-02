@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { getTool, toOpenAITools } from "./registry";
 import { DEFAULT_AGENT_TOOL_LIMIT, selectToolsForPrompt } from "./tool-router";
 
+/** PR #3: undo/redo/checkpoints are a per-turn safety net, never conditional. */
+const HISTORY_SAFETY_NET = [
+  "create_checkpoint",
+  "list_checkpoints",
+  "restore_checkpoint",
+  "undo",
+  "redo",
+] as const;
+
 describe("agent tool router", () => {
   it("keeps ordinary timeline editing under provider tool limits", () => {
     const names = selectToolsForPrompt("Trim the first clip, add captions, and fade the audio");
@@ -41,5 +50,32 @@ describe("agent tool router", () => {
       priorToolNames: ["animate_layer"],
     });
     expect(names).toContain("animate_layer");
+  });
+
+  it("keeps the history and checkpoint safety net reachable on every turn", () => {
+    const ordinary = selectToolsForPrompt(
+      "Trim the first clip, add captions, and fade the audio",
+    );
+    const motion = selectToolsForPrompt(
+      "Create a motion composition with animated text layers, masks, and keyframes",
+    );
+    for (const name of HISTORY_SAFETY_NET) {
+      expect(ordinary).toContain(name);
+      expect(motion).toContain(name);
+    }
+  });
+
+  it("does not spend the capped budget on motion tools for a non-motion prompt", () => {
+    // Cloudflare is capped at 25 slots; motion must not take them by default.
+    const names = selectToolsForPrompt(
+      "Trim the first clip, add captions, and fade the audio",
+      { maxTools: 25 },
+    );
+    expect(names.length).toBeLessThanOrEqual(25);
+    expect(names).not.toContain("list_motion_compositions");
+    expect(names).not.toContain("create_motion_composition");
+    for (const name of HISTORY_SAFETY_NET) expect(names).toContain(name);
+    // Editing tools still earn slots once motion stops squatting on them.
+    expect(names).toContain("trim_clip");
   });
 });

@@ -382,6 +382,40 @@ describe("plan_edit integrity", () => {
     expect(getDirectorPlanState(h.project).revision).toBe(1);
   });
 
+  it("bounds repair and density revision when the plan has an unknown media id", async () => {
+    // The prepare-time media gate and the density review are separate bounded
+    // paths; together they must still be exactly one repair + one revision.
+    const withMedia = (sourceVideoId: string): Record<string, unknown> =>
+      validPlan({
+        audioDecisions: [
+          { type: "music", sourceVideoId, startTime: 0, duration: 8, volume: 0.7, rationale: "bed" },
+        ],
+      });
+
+    const h = harness([
+      planResponse(withMedia("media_not_in_library")),
+      planResponse(withMedia("audio-1")),
+      // The density revision replaces the plan, so it must carry the media too.
+      planResponse(withMedia("audio-1")),
+    ]);
+    const result = await executeTool("plan_edit", { prompt: "make a 8s tiktok edit" }, h.host);
+
+    expect(result.ok, result.error?.message ?? "plan_edit failed").toBe(true);
+    expect(h.llm.calls).toBe(3); // plan + one media repair + one density revision
+    // The director prompt carries both rewrites: density contract + media catalog.
+    expect(h.llm.systems[0]).toContain("## Available media library");
+    expect(h.llm.systems[0]).toContain("## Edit density contract (MANDATORY for this request)");
+    expect(h.llm.systems[1]).toContain("[unknown_media]");
+    expect(h.llm.systems[2]).toContain("Density score");
+    expect(getDirectorPlanState(h.project).revision).toBe(1);
+
+    const musicClips = h.project.timeline.tracks
+      .filter((track) => track.type === "audio")
+      .flatMap((track) => track.clips);
+    expect(musicClips).toHaveLength(1);
+    expect(musicClips[0]?.mediaId).toBe("audio-1");
+  });
+
   it("rejects a text position outside the normalized 0-1 range", async () => {
     const bad = validPlan({
       textElements: [

@@ -176,4 +176,26 @@ describe("director prompt", () => {
       buildDirectorPrompt(segmentMap, "make a montage", undefined, undefined, []),
     ).not.toContain("## Available media library");
   });
+
+  it("carries the density contract and the media catalog in the same prompt", () => {
+    // The two prompt rewrites landed on different branches; both must survive.
+    const prompt = buildDirectorPrompt(
+      segmentMap,
+      "make a 30s tiktok edit",
+      PRE_BAKED_GENRES[0],
+      undefined,
+      [{ id: "media_mus1", name: "bed.mp3", type: "audio", duration: 30 }],
+    );
+
+    expect(prompt).toContain("## Edit density contract (MANDATORY for this request)");
+    expect(prompt).toContain("## Signature effects (custom looks — deliberate, never wallpaper)");
+    expect(prompt).toContain("## Available media library");
+    expect(prompt).toContain("cameraMoves");
+    // audioDecisions must point at the inlined catalog, not the list_media tool
+    // the nested plan_edit call cannot reach.
+    expect(prompt).toContain(
+      '"sourceVideoId": "<media id from the Available media library block>"',
+    );
+    expect(prompt).not.toContain('"sourceVideoId": "<media id from list_media>"');
+  });
 });
