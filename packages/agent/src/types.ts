@@ -21,6 +21,7 @@ export type ToolDomain =
   | "ai"
   | "export"
   | "multicam"
+  | "history"
   | "raw"
   | "internal";
 
@@ -34,6 +35,18 @@ export interface ToolDef {
   readonly destructive: boolean;
   readonly expensive: boolean;
   readonly internal?: boolean; // exclude from user-facing tool lists
+  /**
+   * Schema is enforced strictly (reject unknown keys / wrong types, lossless
+   * coercion only). Required for every tool added after the legacy snapshot —
+   * see schema-validate.ts and schema-conformance.test.ts.
+   */
+  readonly strict?: boolean;
+  /**
+   * Accepts keys beyond the declared properties by design (e.g. execute_action's
+   * flat form spreads top-level keys into action params). Unknown-key handling
+   * is skipped for this tool; types/required are still checked.
+   */
+  readonly freeform?: boolean;
 }
 
 export interface ToolCall {
@@ -45,6 +58,8 @@ export interface ToolCall {
 export interface ToolError {
   readonly code: string;
   readonly message: string;
+  /** Concrete next step the caller can take to recover (new tools; older tools omit it). */
+  readonly suggestedFix?: string;
 }
 
 export interface ToolResultImage {
@@ -60,6 +75,8 @@ export interface ToolResult {
   readonly error?: ToolError;
   /** Rendered image the model can SEE (e.g. render_motion_frame). */
   readonly image?: ToolResultImage;
+  /** Non-fatal notices, e.g. use of a deprecated parameter alias. */
+  readonly warnings?: readonly string[];
 }
 
 export interface AgentMessage {

@@ -1,6 +1,6 @@
 {
   "generatedFrom": "listTools()",
-  "count": 316,
+  "count": 323,
   "tools": [
     {
       "name": "get_editor_state",
@@ -3911,6 +3911,18 @@
           "type": "number",
           "required": false,
           "extra": ""
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "required": false,
+          "extra": "one of: general | captions | dialogue | music | effects | ambience"
         }
       ]
     },
@@ -4184,6 +4196,54 @@
           "name": "startTime",
           "type": "number",
           "required": true,
+          "extra": ""
+        },
+        {
+          "name": "duration",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "inPoint",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "outPoint",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "volume",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "speed",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "reversed",
+          "type": "boolean",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "transform",
+          "type": "object",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "fade",
+          "type": "object",
+          "required": false,
           "extra": ""
         }
       ]
@@ -17544,6 +17604,36 @@
           "type": "number",
           "required": false,
           "extra": ""
+        },
+        {
+          "name": "key",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "objectId",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "partId",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "parentId",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "parentKey",
+          "type": "string",
+          "required": false,
+          "extra": ""
         }
       ]
     },
@@ -18148,6 +18238,18 @@
           "extra": ""
         },
         {
+          "name": "startTime",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "endTime",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
           "name": "startMs",
           "type": "number",
           "required": false,
@@ -18172,6 +18274,18 @@
         {
           "name": "groupId",
           "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "startTime",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "endTime",
+          "type": "number",
           "required": false,
           "extra": ""
         },
@@ -18222,6 +18336,30 @@
           "extra": ""
         },
         {
+          "name": "commitDuration",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "layoutEnterDuration",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "layoutExitDuration",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "minLayoutLifeDuration",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
           "name": "commitMs",
           "type": "number",
           "required": false,
@@ -18268,15 +18406,27 @@
           "extra": ""
         },
         {
+          "name": "startTime",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "endTime",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
           "name": "startMs",
           "type": "number",
-          "required": true,
+          "required": false,
           "extra": ""
         },
         {
           "name": "endMs",
           "type": "number",
-          "required": true,
+          "required": false,
           "extra": ""
         },
         {
@@ -18330,6 +18480,12 @@
           "extra": "one of: accept | reject | nudge | set-camera"
         },
         {
+          "name": "delta",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
           "name": "deltaMs",
           "type": "number",
           "required": false,
@@ -18358,9 +18514,15 @@
           "extra": ""
         },
         {
+          "name": "time",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
           "name": "timeMs",
           "type": "number",
-          "required": true,
+          "required": false,
           "extra": ""
         }
       ]
@@ -18576,6 +18738,139 @@
           "type": "string",
           "required": false,
           "extra": ""
+        }
+      ]
+    },
+    {
+      "name": "create_checkpoint",
+      "domain": "history",
+      "title": "Create checkpoint",
+      "actionType": null,
+      "kind": "direct",
+      "flags": "direct-handler",
+      "params": [
+        {
+          "name": "label",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        }
+      ]
+    },
+    {
+      "name": "list_checkpoints",
+      "domain": "history",
+      "title": "List checkpoints",
+      "actionType": null,
+      "kind": "read",
+      "flags": "read-only, direct-handler",
+      "params": []
+    },
+    {
+      "name": "restore_checkpoint",
+      "domain": "history",
+      "title": "Restore checkpoint",
+      "actionType": null,
+      "kind": "direct",
+      "flags": "direct-handler",
+      "params": [
+        {
+          "name": "checkpointId",
+          "type": "string",
+          "required": true,
+          "extra": ""
+        }
+      ]
+    },
+    {
+      "name": "undo",
+      "domain": "history",
+      "title": "Undo agent step",
+      "actionType": null,
+      "kind": "direct",
+      "flags": "direct-handler",
+      "params": []
+    },
+    {
+      "name": "redo",
+      "domain": "history",
+      "title": "Redo agent step",
+      "actionType": null,
+      "kind": "direct",
+      "flags": "direct-handler",
+      "params": []
+    },
+    {
+      "name": "measure_loudness",
+      "domain": "audio",
+      "title": "Measure loudness",
+      "actionType": null,
+      "kind": "read",
+      "flags": "read-only, expensive, direct-handler",
+      "params": [
+        {
+          "name": "clipId",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "mediaId",
+          "type": "string",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "startTime",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "endTime",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "audioTrackIndex",
+          "type": "integer",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "targetLufs",
+          "type": "number",
+          "required": false,
+          "extra": ""
+        }
+      ]
+    },
+    {
+      "name": "render_timeline_frame",
+      "domain": "read",
+      "title": "Render timeline frame",
+      "actionType": null,
+      "kind": "read",
+      "flags": "read-only, expensive, direct-handler",
+      "params": [
+        {
+          "name": "time",
+          "type": "number",
+          "required": true,
+          "extra": ""
+        },
+        {
+          "name": "maxDimension",
+          "type": "integer",
+          "required": false,
+          "extra": ""
+        },
+        {
+          "name": "format",
+          "type": "string",
+          "required": false,
+          "extra": "one of: png | jpeg"
         }
       ]
     }

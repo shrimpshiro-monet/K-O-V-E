@@ -8,7 +8,7 @@ three surfaces:
   Cline) to the running desktop app.
 - **Headless runner** — edit a stored project from a server/CLI with no app open.
 
-All three drive the same [capability set](./AGENT-CAPABILITIES.md) (72 tools +
+All three drive the same [capability set](./AGENT-CAPABILITIES.md) (every registered tool, plus the
 `execute_action`/`batch_actions` escape hatches), so an agent can do anything a
 professional editor can: import media, build the timeline, trim, crop,
 transform, color-grade, add text/shapes, keyframe, manage transitions, and more.

@@ -12,22 +12,23 @@ Every tool the agent can call, with the parameters each one accepts.
 > Every figure here is asserted by that file against the running code, so a
 > rename or a dropped registration fails the suite rather than rotting here.
 
-**316 tools across 22 domains.** Kinds: `action` dispatches through the action executor, `direct` runs a handler, `read` is read-only.
+**323 tools across 23 domains.** Kinds: `action` dispatches through the action executor, `direct` runs a handler, `read` is read-only.
 
 | domain | tools |
 | --- | --- |
 | [motion](#motion) | 190 |
-| [read](#read) | 25 |
+| [read](#read) | 26 |
 | [clip](#clip) | 11 |
 | [track](#track) | 10 |
 | [graphics](#graphics) | 9 |
+| [audio](#audio) | 8 |
 | [multicam](#multicam) | 8 |
 | [project](#project) | 7 |
-| [audio](#audio) | 7 |
 | [export](#export) | 7 |
 | [speed](#speed) | 6 |
 | [effect](#effect) | 5 |
 | [subtitle](#subtitle) | 5 |
+| [history](#history) | 5 |
 | [ai](#ai) | 4 |
 | [media](#media) | 3 |
 | [transform](#transform) | 3 |
@@ -81,7 +82,7 @@ Every tool the agent can call, with the parameters each one accepts.
 | `add_motion_text_animator` | direct | — | `compositionId`: string<br>`layerId`: string<br>`presetId`?: string<br>`name`?: string<br>`enabled`?: boolean<br>`selector`?: object<br>`timing`?: object<br>`properties`?: object |
 | `add_motion_text_shader_animator` | direct | — | `compositionId`: string<br>`layerId`: string<br>`shaderId`: string<br>`params`?: object<br>`stagger`?: number<br>`duration`?: number |
 | `add_motion_ui_component` | direct | — | `compositionId`: string<br>`componentType`: string<br>`props`?: object |
-| `add_scene_object` | direct | — | `compositionId`: string<br>`layerId`: string<br>`kind`: string<br>`name`?: string<br>`x`?: number<br>`y`?: number<br>`z`?: number<br>`rotationX`?: number<br>`rotationY`?: number<br>`rotationZ`?: number<br>`scaleX`?: number<br>`scaleY`?: number<br>`scaleZ`?: number<br>`size`?: number<br>`depth`?: number<br>`aspect`?: number<br>`cornerRadius`?: number<br>`modelUrl`?: string<br>`animationClipName`?: string<br>`animationClipIndex`?: number<br>`animationTimeOffset`?: number<br>`animationPlaybackRate`?: number<br>`animationLoop`?: boolean<br>`text`?: string<br>`extrude`?: number<br>`panelTexts`?: array<br>`lidAngle`?: number<br>`color`?: string<br>`metalness`?: number<br>`roughness`?: number<br>`materialKind`?: string<br>`emissive`?: string<br>`mapAssetId`?: string<br>`opacity`?: number |
+| `add_scene_object` | direct | — | `compositionId`: string<br>`layerId`: string<br>`kind`: string<br>`name`?: string<br>`x`?: number<br>`y`?: number<br>`z`?: number<br>`rotationX`?: number<br>`rotationY`?: number<br>`rotationZ`?: number<br>`scaleX`?: number<br>`scaleY`?: number<br>`scaleZ`?: number<br>`size`?: number<br>`depth`?: number<br>`aspect`?: number<br>`cornerRadius`?: number<br>`modelUrl`?: string<br>`animationClipName`?: string<br>`animationClipIndex`?: number<br>`animationTimeOffset`?: number<br>`animationPlaybackRate`?: number<br>`animationLoop`?: boolean<br>`text`?: string<br>`extrude`?: number<br>`panelTexts`?: array<br>`lidAngle`?: number<br>`color`?: string<br>`metalness`?: number<br>`roughness`?: number<br>`materialKind`?: string<br>`emissive`?: string<br>`mapAssetId`?: string<br>`opacity`?: number<br>`key`?: string<br>`objectId`?: string<br>`partId`?: string<br>`parentId`?: string<br>`parentKey`?: string |
 | `align_motion_layers` | direct | — | `compositionId`: string<br>`layerIds`: array<br>`alignment`: string<br>`relativeTo`?: string |
 | `animate_creation_camera` | direct | — | `sceneId`?: string<br>`cameraId`?: string<br>`clipId`?: string<br>`name`?: string<br>`duration`?: number<br>`mode`?: string<br>`orbit`?: boolean<br>`startTime`?: number<br>`endTime`?: number<br>`easing`?: string<br>`samples`?: number<br>`sampleCount`?: number<br>`orbitTarget`?: object<br>`targetX`?: number<br>`targetY`?: number<br>`targetZ`?: number<br>`endTarget`?: object<br>`endTargetX`?: number<br>`endTargetY`?: number<br>`endTargetZ`?: number<br>`startAngle`?: number<br>`startAngleDeg`?: number<br>`endAngle`?: number<br>`endAngleDeg`?: number<br>`orbitDegrees`?: number<br>`radius`?: number<br>`radiusStart`?: number<br>`startRadius`?: number<br>`radiusEnd`?: number<br>`endRadius`?: number<br>`height`?: number<br>`heightStart`?: number<br>`startHeight`?: number<br>`heightEnd`?: number<br>`endHeight`?: number<br>`startPosition`?: object<br>`startPosX`?: number<br>`startPosY`?: number<br>`startPosZ`?: number<br>`endPosition`?: object<br>`endPosX`?: number<br>`endPosY`?: number<br>`endPosZ`?: number<br>`fovStart`?: number<br>`startFov`?: number<br>`fovEnd`?: number<br>`endFov`?: number<br>`fovTo`?: number<br>`focusDistanceStart`?: number<br>`startFocusDistance`?: number<br>`focusDistanceEnd`?: number<br>`endFocusDistance`?: number<br>`focusDistanceTo`?: number<br>`position`?: array<br>`target`?: array<br>`fov`?: array<br>`focusDistance`?: array |
 | `animate_creation_exploded_view` | direct | — | `sceneId`?: string<br>`objectIds`?: array<br>`objects`?: array<br>`partIds`?: array<br>`parts`?: array<br>`tags`?: array<br>`includeTags`?: array<br>`excludeTags`?: array<br>`clipId`?: string<br>`name`?: string<br>`axis`?: string<br>`mode`?: string<br>`distance`?: number<br>`amount`?: number<br>`spacing`?: number<br>`startTime`?: number<br>`endTime`?: number<br>`duration`?: number<br>`explodeDuration`?: number<br>`clipDuration`?: number<br>`totalDuration`?: number<br>`stagger`?: number<br>`holdTime`?: number<br>`returnDuration`?: number<br>`returnToAssembled`?: boolean<br>`reassemble`?: boolean<br>`return`?: boolean<br>`origin`?: object<br>`originX`?: number<br>`originY`?: number<br>`originZ`?: number<br>`easing`?: string<br>`returnEasing`?: string<br>`nodeName`?: string |
@@ -429,7 +430,7 @@ Every tool the agent can call, with the parameters each one accepts.
 
 ## read
 
-25 tools.
+26 tools.
 
 | tool | kind | action type | parameters |
 | --- | --- | --- | --- |
@@ -455,6 +456,7 @@ Every tool the agent can call, with the parameters each one accepts.
 | `list_tracks` | read | — | — |
 | `probe_rigging_backend` | read | — | — |
 | `render_creation_scene_image` | read | — | `sceneId`?: string<br>`width`?: number<br>`height`?: number<br>`quality`?: string<br>`mode`?: string<br>`shadows`?: boolean<br>`baseColor`?: string<br>`background`?: string<br>`timeSeconds`?: number<br>`includeHidden`?: boolean<br>`includePng`?: boolean |
+| `render_timeline_frame` | read | — | `time`: number<br>`maxDimension`?: integer<br>`format`?: string (one of: png | jpeg) |
 | `simulate_creation_cloth` | read | — | `width`?: number<br>`height`?: number<br>`columns`?: number<br>`rows`?: number<br>`pin`?: string<br>`plane`?: string<br>`steps`?: number<br>`gravity`?: number<br>`windX`?: number<br>`windY`?: number<br>`windZ`?: number<br>`iterations`?: number |
 | `solve_creation_ik` | read | — | `root`?: object<br>`target`: object<br>`upperLength`?: number<br>`lowerLength`?: number<br>`poleHint`?: object |
 | `validate_creation_state` | read | — | — |
@@ -481,6 +483,7 @@ Every tool the agent can call, with the parameters each one accepts.
 - **`list_tracks`** — List tracks
 - **`probe_rigging_backend`** — Probe rigging backend
 - **`render_creation_scene_image`** — Render creation scene image
+- **`render_timeline_frame`** — Render timeline frame
 - **`simulate_creation_cloth`** — Simulate cloth
 - **`solve_creation_ik`** — Solve two-bone IK
 - **`validate_creation_state`** — Validate creation state
@@ -491,7 +494,7 @@ Every tool the agent can call, with the parameters each one accepts.
 
 | tool | kind | action type | parameters |
 | --- | --- | --- | --- |
-| `add_clip` | action | `clip/add` | `trackId`: string<br>`mediaId`: string<br>`startTime`: number |
+| `add_clip` | action | `clip/add` | `trackId`: string<br>`mediaId`: string<br>`startTime`: number<br>`duration`?: number<br>`inPoint`?: number<br>`outPoint`?: number<br>`volume`?: number<br>`speed`?: number<br>`reversed`?: boolean<br>`transform`?: object<br>`fade`?: object |
 | `close_gap` | action | `clip/closeGapBefore` | `clipId`: string |
 | `move_clip` | action | `clip/move` | `clipId`: string<br>`startTime`: number<br>`trackId`?: string |
 | `remove_clip` | action | `clip/remove` | `clipId`: string |
@@ -521,7 +524,7 @@ Every tool the agent can call, with the parameters each one accepts.
 
 | tool | kind | action type | parameters |
 | --- | --- | --- | --- |
-| `add_track` | action | `track/add` | `trackType`: string<br>`position`?: number |
+| `add_track` | action | `track/add` | `trackType`: string<br>`position`?: number<br>`name`?: string<br>`role`?: string (one of: general | captions | dialogue | music | effects | ambience) |
 | `consolidate_track` | action | `track/consolidate` | `trackId`: string |
 | `duplicate_track` | action | `track/duplicate` | `sourceTrackId`: string<br>`position`?: number |
 | `hide_track` | action | `track/hide` | `trackId`: string<br>`hidden`: boolean |
@@ -569,20 +572,44 @@ Every tool the agent can call, with the parameters each one accepts.
 - **`update_sticker_clip`** — Update sticker
 - **`update_svg_clip`** — Update SVG
 
+## audio
+
+8 tools.
+
+| tool | kind | action type | parameters |
+| --- | --- | --- | --- |
+| `add_audio_automation` | action | `audio/addAutomation` | `clipId`: string<br>`points`: array |
+| `add_audio_effect` | action | `audio/addEffect` | `clipId`: string<br>`effect`: object |
+| `measure_loudness` | read | — | `clipId`?: string<br>`mediaId`?: string<br>`startTime`?: number<br>`endTime`?: number<br>`audioTrackIndex`?: integer<br>`targetLufs`?: number |
+| `remove_audio_effect` | action | `audio/removeEffect` | `clipId`: string<br>`effectId`: string |
+| `set_clip_fade` | action | `audio/setFade` | `clipId`: string<br>`fadeIn`?: number<br>`fadeOut`?: number |
+| `set_clip_volume` | action | `audio/setVolume` | `clipId`: string<br>`volume`: number |
+| `toggle_audio_effect` | action | `audio/toggleEffect` | `clipId`: string<br>`effectId`: string<br>`enabled`: boolean |
+| `update_audio_effect` | action | `audio/updateEffect` | `clipId`: string<br>`effectId`: string<br>`params`: object |
+
+- **`add_audio_automation`** — Audio automation
+- **`add_audio_effect`** — Add audio effect
+- **`measure_loudness`** — Measure loudness
+- **`remove_audio_effect`** — Remove audio effect
+- **`set_clip_fade`** — Set fade
+- **`set_clip_volume`** — Set volume
+- **`toggle_audio_effect`** — Toggle audio effect
+- **`update_audio_effect`** — Update audio effect
+
 ## multicam
 
 8 tools.
 
 | tool | kind | action type | parameters |
 | --- | --- | --- | --- |
-| `annotate_segment` | direct | — | `groupId`: string<br>`startMs`: number<br>`endMs`: number<br>`note`: string |
-| `get_activity_map` | read | — | `groupId`?: string<br>`startMs`?: number<br>`endMs`?: number |
+| `annotate_segment` | direct | — | `groupId`: string<br>`startTime`?: number<br>`endTime`?: number<br>`startMs`?: number<br>`endMs`?: number<br>`note`: string |
+| `get_activity_map` | read | — | `groupId`?: string<br>`startTime`?: number<br>`endTime`?: number<br>`startMs`?: number<br>`endMs`?: number |
 | `get_edit_summary` | read | — | `groupId`?: string |
 | `get_project_manifest` | read | — | `groupId`?: string |
-| `get_transcript` | read | — | `groupId`?: string<br>`startMs`?: number<br>`endMs`?: number |
-| `override_cut` | direct | — | `groupId`: string<br>`switchId`: string<br>`operation`: string (one of: accept | reject | nudge | set-camera)<br>`deltaMs`?: number<br>`cameraId`?: string |
-| `preview_frame` | read | — | `groupId`: string<br>`timeMs`: number |
-| `set_edit_policy` | direct | — | `groupId`: string<br>`strategy`?: string (one of: hold | winner | priority | wide | composite | progressive)<br>`escalateTo`?: string (one of: winner | priority | wide | composite | progressive)<br>`priorityParticipantIds`?: array<br>`commitMs`?: number<br>`layoutEnterMs`?: number<br>`layoutExitMs`?: number<br>`minLayoutLifeMs`?: number<br>`maxLayoutChangesPerMinute`?: number |
+| `get_transcript` | read | — | `groupId`?: string<br>`startTime`?: number<br>`endTime`?: number<br>`startMs`?: number<br>`endMs`?: number |
+| `override_cut` | direct | — | `groupId`: string<br>`switchId`: string<br>`operation`: string (one of: accept | reject | nudge | set-camera)<br>`delta`?: number<br>`deltaMs`?: number<br>`cameraId`?: string |
+| `preview_frame` | read | — | `groupId`: string<br>`time`?: number<br>`timeMs`?: number |
+| `set_edit_policy` | direct | — | `groupId`: string<br>`strategy`?: string (one of: hold | winner | priority | wide | composite | progressive)<br>`escalateTo`?: string (one of: winner | priority | wide | composite | progressive)<br>`priorityParticipantIds`?: array<br>`commitDuration`?: number<br>`layoutEnterDuration`?: number<br>`layoutExitDuration`?: number<br>`minLayoutLifeDuration`?: number<br>`commitMs`?: number<br>`layoutEnterMs`?: number<br>`layoutExitMs`?: number<br>`minLayoutLifeMs`?: number<br>`maxLayoutChangesPerMinute`?: number |
 
 - **`annotate_segment`** — Annotate multicam segment
 - **`get_activity_map`** — Get multicam activity map
@@ -614,28 +641,6 @@ Every tool the agent can call, with the parameters each one accepts.
 - **`save_project`** — Save project
 - **`set_canvas_background`** — Canvas background
 - **`update_project_settings`** — Update settings
-
-## audio
-
-7 tools.
-
-| tool | kind | action type | parameters |
-| --- | --- | --- | --- |
-| `add_audio_automation` | action | `audio/addAutomation` | `clipId`: string<br>`points`: array |
-| `add_audio_effect` | action | `audio/addEffect` | `clipId`: string<br>`effect`: object |
-| `remove_audio_effect` | action | `audio/removeEffect` | `clipId`: string<br>`effectId`: string |
-| `set_clip_fade` | action | `audio/setFade` | `clipId`: string<br>`fadeIn`?: number<br>`fadeOut`?: number |
-| `set_clip_volume` | action | `audio/setVolume` | `clipId`: string<br>`volume`: number |
-| `toggle_audio_effect` | action | `audio/toggleEffect` | `clipId`: string<br>`effectId`: string<br>`enabled`: boolean |
-| `update_audio_effect` | action | `audio/updateEffect` | `clipId`: string<br>`effectId`: string<br>`params`: object |
-
-- **`add_audio_automation`** — Audio automation
-- **`add_audio_effect`** — Add audio effect
-- **`remove_audio_effect`** — Remove audio effect
-- **`set_clip_fade`** — Set fade
-- **`set_clip_volume`** — Set volume
-- **`toggle_audio_effect`** — Toggle audio effect
-- **`update_audio_effect`** — Update audio effect
 
 ## export
 
@@ -714,6 +719,24 @@ Every tool the agent can call, with the parameters each one accepts.
 - **`remove_subtitle`** — Remove subtitle
 - **`set_subtitle_style`** — Subtitle style
 - **`update_subtitle`** — Update subtitle
+
+## history
+
+5 tools.
+
+| tool | kind | action type | parameters |
+| --- | --- | --- | --- |
+| `create_checkpoint` | direct | — | `label`?: string |
+| `list_checkpoints` | read | — | — |
+| `redo` | direct | — | — |
+| `restore_checkpoint` | direct | — | `checkpointId`: string |
+| `undo` | direct | — | — |
+
+- **`create_checkpoint`** — Create checkpoint
+- **`list_checkpoints`** — List checkpoints
+- **`redo`** — Redo agent step
+- **`restore_checkpoint`** — Restore checkpoint
+- **`undo`** — Undo agent step
 
 ## ai
 

@@ -18,7 +18,8 @@
   "scripts": {
     "test": "vitest",
     "test:run": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen:docs": "KOVE_WRITE_DOCS=1 vitest run src/gen-docs.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.4.5",

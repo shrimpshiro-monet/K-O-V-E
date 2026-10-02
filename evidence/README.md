@@ -14,7 +14,7 @@ Per-item documentation of what this editor can do, each item backed by the code 
 
 | file | contents | count |
 | --- | --- | --- |
-| [tools.md](tools.md) | every callable tool, its kind, action type and parameters | 316 |
+| [tools.md](tools.md) | every callable tool, its kind, action type and parameters | 323 |
 | [actions.md](actions.md) | every action type, its implementation and properties | 113 |
 | [transitions.md](transitions.md) | transitions with defaults, labels and aliases | 38 |
 | [clip-effects.md](clip-effects.md) | clip filters with full parameter ranges | 14 |

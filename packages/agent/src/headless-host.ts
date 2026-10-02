@@ -4,11 +4,15 @@ import { CAPABILITY_MANIFEST } from "@kove-advanced/core/capabilities/manifest";
 import type { CapabilityManifest } from "@kove-advanced/core/capabilities/manifest";
 import type { Action, ActionResult } from "@kove-advanced/core/types/actions";
 import type { Project } from "@kove-advanced/core/types/project";
-import type { EditingHost, JobKind, JobResult, JobRunner, OverlayRef, TextOverlayOptions, TxnHandle } from "./host";
+import { HistoryLedger, fingerprintProject } from "./checkpoints";
+import type { HistoryBackend } from "./checkpoints";
+import type { AudioSamples, EditingHost, HostFeatures, JobKind, JobResult, JobRunner, OverlayRef, TextOverlayOptions, TxnHandle } from "./host";
 
 export interface HeadlessHostOptions {
   readonly history?: ActionHistory;
   readonly jobRunner?: JobRunner;
+  /** Supplies decoded audio for analysis tools (measure_loudness). Without it they report UNSUPPORTED_HOST. */
+  readonly audioSource?: (mediaId: string, audioTrackIndex: number) => Promise<AudioSamples | null>;
 }
 
 /**
@@ -21,14 +25,54 @@ export class HeadlessHost implements EditingHost {
   private readonly executor: ActionExecutor;
   private readonly history: ActionHistory;
   private readonly jobRunner?: JobRunner;
+  private readonly audioSource?: HeadlessHostOptions["audioSource"];
   private txnCounter = 0;
   private readonly txnSnapshots = new Map<string, Project>();
+  private readonly ledger: HistoryLedger;
+  readonly historyControl: HistoryLedger;
 
   constructor(project: Project | null, options: HeadlessHostOptions = {}) {
     this.project = project;
     this.history = options.history ?? new ActionHistory();
     this.executor = new ActionExecutor(this.history);
     this.jobRunner = options.jobRunner;
+    this.audioSource = options.audioSource;
+    this.ledger = new HistoryLedger(this.historyBackend());
+    this.historyControl = this.ledger;
+  }
+
+  features(): HostFeatures {
+    const hasRunner = this.jobRunner !== undefined;
+    return {
+      renderMotionFrame: hasRunner,
+      renderTimelineFrame: false,
+      renderMulticamPreview: false,
+      exportVideo: hasRunner,
+      checkpoints: true,
+      analyzeAudio: this.audioSource !== undefined,
+    };
+  }
+
+  loadAudioSamples(mediaId: string, audioTrackIndex = 0): Promise<AudioSamples | null> {
+    return this.audioSource ? this.audioSource(mediaId, audioTrackIndex) : Promise.resolve(null);
+  }
+
+  private historyBackend(): HistoryBackend {
+    return {
+      position: () => ({ actions: this.history.getUndoStackSize(), aux: 0 }),
+      markersAt: (pos) => {
+        const entries = this.history.getHistoryEntries();
+        if (entries.length < pos.actions) return undefined;
+        return [pos.actions === 0 ? null : entries[pos.actions - 1]!.action, null];
+      },
+      token: () => `${this.history.getRevision()}:${this.history.getUndoStackSize()}:${this.history.getRedoStackSize()}`,
+      canUndo: () => this.history.canUndo(),
+      canRedo: () => this.history.canRedo(),
+      undoStep: () => this.executor.undo(this.getProject()),
+      redoStep: () => this.executor.redo(this.getProject()),
+      sealGroup: () => this.history.sealGroup(),
+      fingerprint: () => fingerprintProject(this.project),
+    };
   }
 
   getProject(): Project {
@@ -38,7 +82,12 @@ export class HeadlessHost implements EditingHost {
 
   async applyAction(action: Action): Promise<ActionResult> {
     this.requireOpenProject();
-    return this.executor.execute(action, this.project as Project);
+    this.ledger.beforeAgentMutation();
+    try {
+      return await this.executor.execute(action, this.project as Project);
+    } finally {
+      this.ledger.afterAgentMutation();
+    }
   }
 
   beginTransaction(label?: string): TxnHandle {
@@ -66,6 +115,7 @@ export class HeadlessHost implements EditingHost {
       // to redo.
       this.project = snapshot;
       this.history.clear();
+      this.ledger.invalidateAll();
     }
   }
 
@@ -96,6 +146,7 @@ export class HeadlessHost implements EditingHost {
   setProject(project: Project | null): void {
     this.project = project;
     this.history.clear();
+    this.ledger.invalidateAll();
   }
 
   async createTextOverlay(options: TextOverlayOptions): Promise<OverlayRef> {

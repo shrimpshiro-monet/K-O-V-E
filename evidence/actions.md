@@ -19,7 +19,7 @@ Two execution paths, both live:
 - **1 type** is handled by a single method that names the one type it accepts (`transform/update`).
 - **38 types** are handler modules in `packages/core/src/actions/handlers/` that register themselves at import time.
 
-The executor consults the handler registry first, then routes by prefix. An unknown type in any domain is refused — nothing is silently accepted. Actions reach the editor through a tool with that `actionType` (61 of the 316 tools) or through the raw escape hatches `execute_action` and `batch_actions`.
+The executor consults the handler registry first, then routes by prefix. An unknown type in any domain is refused — nothing is silently accepted. Actions reach the editor through a tool with that `actionType` (61 of the 323 tools) or through the raw escape hatches `execute_action` and `batch_actions`.
 
 `reads` is what the implementation touches; `accepts` is what the tool schema lets a caller pass.
 
@@ -46,7 +46,7 @@ The executor consults the handler registry first, then routes by prefix. An unkn
 
 | action | implemented in | reads | tool parameters | tools |
 | --- | --- | --- | --- | --- |
-| `clip/add` | action-executor.ts:871 | `trackId`: string<br>`mediaId`: string<br>`startTime`: number<br>`duration`: number<br>`inPoint`: number<br>`outPoint`: number<br>`volume`: number<br>`effects`: unknown[]<br>`audioEffects`: unknown[]<br>`keyframes`: unknown[]<br>`transform`: Record<string, unknown><br>`speed`: number<br>`reversed`: boolean<br>`audioTrackIndex`: number<br>`sourceClip`: Clip<br>`clipId`: string | `trackId`: string<br>`mediaId`: string<br>`startTime`: number | `add_clip` |
+| `clip/add` | action-executor.ts:871 | `trackId`: string<br>`mediaId`: string<br>`startTime`: number<br>`duration`: number<br>`inPoint`: number<br>`outPoint`: number<br>`volume`: number<br>`effects`: unknown[]<br>`audioEffects`: unknown[]<br>`keyframes`: unknown[]<br>`transform`: Record<string, unknown><br>`speed`: number<br>`reversed`: boolean<br>`audioTrackIndex`: number<br>`sourceClip`: Clip<br>`clipId`: string | `trackId`: string<br>`mediaId`: string<br>`startTime`: number<br>`duration`: number<br>`inPoint`: number<br>`outPoint`: number<br>`volume`: number<br>`speed`: number<br>`reversed`: boolean<br>`transform`: object<br>`fade`: object | `add_clip` |
 | `clip/closeGapBefore` | action-executor.ts:1314 | `clipId`: string | `clipId`: string | `close_gap` |
 | `clip/merge` | action-executor.ts:1064 | `clipId`: string<br>`originalClip`: Clip | — | *raw only* |
 | `clip/move` | action-executor.ts:970 | `clipId`: string<br>`startTime`: number<br>`trackId`: string | `clipId`: string<br>`startTime`: number<br>`trackId`: string | `move_clip` |
@@ -216,7 +216,7 @@ The executor consults the handler registry first, then routes by prefix. An unkn
 
 | action | implemented in | reads | tool parameters | tools |
 | --- | --- | --- | --- | --- |
-| `track/add` | action-executor.ts:515 | `trackType`: string<br>`position`: number<br>`trackId`: string<br>`mode`: "standard"<br>`role`: Track["role"]<br>`name`: string | `trackType`: string<br>`position`: number | `add_track` |
+| `track/add` | action-executor.ts:515 | `trackType`: string<br>`position`: number<br>`trackId`: string<br>`mode`: "standard"<br>`role`: Track["role"]<br>`name`: string | `trackType`: string<br>`position`: number<br>`name`: string<br>`role`: string | `add_track` |
 | `track/consolidate` | action-executor.ts:745 | `trackId`: string | `trackId`: string | `consolidate_track` |
 | `track/duplicate` | action-executor.ts:571 | `sourceTrackId`: string<br>`position`: number<br>`trackId`: string<br>`itemIdMap`: Record<string, string><br>`transitionIdMap`: Record<string, string> | `sourceTrackId`: string<br>`position`: number | `duplicate_track` |
 | `track/hide` | action-executor.ts:714 | `trackId`: string<br>`hidden`: boolean | `trackId`: string<br>`hidden`: boolean | `hide_track` |
