@@ -95,6 +95,9 @@ export default defineConfig({
       "Cross-Origin-Opener-Policy": "same-origin",
       "Cross-Origin-Embedder-Policy": "require-corp",
     },
+    // Local sandboxed preview environments reach the dev server through a
+    // proxy host; enable only when explicitly requested.
+    allowedHosts: process.env.KOVE_DEV_ALLOW_ALL_HOSTS ? true : undefined,
     proxy: (() => {
       // Read the API token directly from .dev.vars
       const devVarsPath = path.resolve(__dirname, "../../.dev.vars");
