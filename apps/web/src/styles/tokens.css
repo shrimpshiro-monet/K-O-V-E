@@ -6,6 +6,10 @@
    component consumes them through CSS custom properties or the
    Tailwind mappings in tailwind.config.js.
 
+   PALETTE: "Blood Roses in Space" — pure space-black bed,
+   rose-red primary, deep blood-red secondaries, ivory petals
+   with red-stained tips as the highlight metal.
+
    NOTE ON LEGACY TOKENS: the pre-redesign app consumed flat
    variables (--bg, --fg, --accent, --c-video …). Those names
    are kept and re-pointed at the Monet palette below so the
@@ -103,147 +107,159 @@
   --glass-blur-raised: blur(32px) saturate(200%);
   --glass-blur-modal: blur(48px) saturate(200%);
 
+  /* Petal-white highlight edge on glass (top light-catch) */
+  --petal-edge: rgba(255, 240, 244, 0.06);
+  --petal-edge-2: rgba(255, 240, 244, 0.08);
+  --petal-edge-3: rgba(255, 240, 244, 0.1);
+
   /* Ambient backdrop defaults (dark) */
-  --ambient-floral-opacity: 0.18;
-  --ambient-floral-filter: blur(40px) saturate(1.15);
+  --ambient-floral-opacity: 0.2;
+  --ambient-floral-filter: blur(40px) saturate(1.2);
 }
 
 /* ============================================================
-   DARK (default) — "Night Garden"
+   DARK (default) — "Space Bed · Blood Roses"
    ============================================================ */
 :root,
 [data-theme="dark"],
 .dark {
   color-scheme: dark;
 
-  /* Surfaces — layered elevation */
-  --surface-0: #070908;
-  --surface-1: rgba(18, 22, 20, 0.72);
-  --surface-2: rgba(26, 31, 29, 0.8);
-  --surface-3: rgba(34, 40, 37, 0.88);
-  --surface-solid: #101413;
-  --surface-sunken: #050706;
-  --surface-raised: #1a1f1d;
-  --surface-overlay: rgba(5, 7, 6, 0.72);
+  /* Surfaces — layered elevation on pure space black */
+  --surface-0: #050308;
+  --surface-1: rgba(13, 9, 16, 0.72);
+  --surface-2: rgba(20, 14, 22, 0.8);
+  --surface-3: rgba(28, 20, 28, 0.88);
+  --surface-solid: #0b0810;
+  --surface-sunken: #060409;
+  --surface-raised: #14101a;
+  --surface-overlay: rgba(6, 4, 9, 0.72);
 
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.18);
-  --border-glow: rgba(167, 243, 208, 0.35);
+  /* Borders — hairline, petal-white on black */
+  --border-subtle: rgba(255, 240, 244, 0.07);
+  --border-default: rgba(255, 240, 244, 0.11);
+  --border-strong: rgba(255, 240, 244, 0.19);
+  --border-glow: rgba(255, 77, 109, 0.35);
 
-  /* Text */
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.64);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
-  --text-disabled: rgba(255, 255, 255, 0.24);
+  /* Text — warm petal whites, never clinical */
+  --text-primary: rgba(250, 245, 246, 0.96);
+  --text-secondary: rgba(245, 236, 238, 0.66);
+  --text-tertiary: rgba(240, 230, 233, 0.42);
+  --text-disabled: rgba(235, 225, 228, 0.24);
 
-  /* Accent — mint bloom */
-  --accent-primary: #6ee7b7;
-  --accent-primary-dim: #34d399;
-  --accent-primary-glow: rgba(110, 231, 183, 0.24);
-  --accent-on: #070908;
+  /* Accent — rose red (blooms on space black) */
+  --accent-primary: #ff4d6d;
+  --accent-primary-dim: #e11d48;
+  --accent-primary-glow: rgba(255, 77, 109, 0.24);
+  --accent-on: #0b0508; /* dark ink on bright rose fills */
+  --accent-gradient: linear-gradient(135deg, #ff7a90, #ff2d55);
 
-  /* Floral secondaries */
-  --bloom-rose: #fb7185;
+  /* Floral secondaries — rose, blood, petal + functional hues */
+  --bloom-rose: #ff4d6d;
+  --bloom-blood: #b3123a;
+  --bloom-petal: #fdf3f5;
   --bloom-amber: #fbbf24;
   --bloom-lilac: #a78bfa;
   --bloom-teal: #2dd4bf;
-  --bloom-peach: #fb923c;
+  --bloom-peach: #ff7a5c;
   --bloom-sage: #86efac;
-  --bloom-sky: #60a5fa;
+  --bloom-sky: #818cf8;
 
-  --bloom-rose-soft: rgba(251, 113, 133, 0.14);
+  --bloom-rose-soft: rgba(255, 77, 109, 0.14);
+  --bloom-blood-soft: rgba(179, 18, 58, 0.2);
+  --bloom-petal-soft: rgba(253, 243, 245, 0.12);
   --bloom-amber-soft: rgba(251, 191, 36, 0.14);
   --bloom-lilac-soft: rgba(167, 139, 250, 0.14);
   --bloom-teal-soft: rgba(45, 212, 191, 0.14);
-  --bloom-peach-soft: rgba(251, 146, 60, 0.14);
+  --bloom-peach-soft: rgba(255, 122, 92, 0.14);
   --bloom-sage-soft: rgba(134, 239, 172, 0.14);
-  --bloom-sky-soft: rgba(96, 165, 250, 0.14);
+  --bloom-sky-soft: rgba(129, 140, 248, 0.14);
 
-  --bloom-rose-line: rgba(251, 113, 133, 0.3);
+  --bloom-rose-line: rgba(255, 77, 109, 0.3);
+  --bloom-blood-line: rgba(179, 18, 58, 0.4);
+  --bloom-petal-line: rgba(253, 243, 245, 0.28);
   --bloom-amber-line: rgba(251, 191, 36, 0.3);
   --bloom-lilac-line: rgba(167, 139, 250, 0.3);
   --bloom-teal-line: rgba(45, 212, 191, 0.3);
-  --bloom-peach-line: rgba(251, 146, 60, 0.3);
+  --bloom-peach-line: rgba(255, 122, 92, 0.3);
   --bloom-sage-line: rgba(134, 239, 172, 0.3);
-  --bloom-sky-line: rgba(96, 165, 250, 0.3);
+  --bloom-sky-line: rgba(129, 140, 248, 0.3);
 
   /* Semantic */
   --success: #4ade80;
   --warning: #fbbf24;
-  --danger: #f87171;
-  --info: #60a5fa;
+  --danger: #ff6b6b;
+  --info: #818cf8;
 
-  /* Elevation */
-  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 1px 0 rgba(0, 0, 0, 0.5), 0 8px 32px -8px rgba(0, 0, 0, 0.48);
-  --shadow-lg: 0 24px 64px -16px rgba(0, 0, 0, 0.72);
-  --shadow-canvas: 0 24px 64px -16px rgba(0, 0, 0, 0.6);
-  --shadow-glass: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 32px -8px rgba(0, 0, 0, 0.48);
-  --shadow-raised: inset 0 1px 0 0 rgba(255, 255, 255, 0.07), 0 16px 48px -12px rgba(0, 0, 0, 0.64);
-  --shadow-modal: inset 0 1px 0 0 rgba(255, 255, 255, 0.09), 0 32px 80px -16px rgba(0, 0, 0, 0.72);
+  /* Elevation — deep, faintly plum-tinted blacks */
+  --shadow-sm: 0 1px 0 rgba(4, 0, 4, 0.4), 0 1px 2px rgba(4, 0, 4, 0.3);
+  --shadow-md: 0 1px 0 rgba(4, 0, 4, 0.5), 0 8px 32px -8px rgba(4, 0, 4, 0.5);
+  --shadow-lg: 0 24px 64px -16px rgba(4, 0, 4, 0.75);
+  --shadow-canvas: 0 24px 64px -16px rgba(4, 0, 4, 0.62);
+  --shadow-glass: inset 0 1px 0 0 var(--petal-edge), 0 8px 32px -8px rgba(4, 0, 4, 0.5);
+  --shadow-raised: inset 0 1px 0 0 var(--petal-edge-2), 0 16px 48px -12px rgba(4, 0, 4, 0.66);
+  --shadow-modal: inset 0 1px 0 0 var(--petal-edge-3), 0 32px 80px -16px rgba(4, 0, 4, 0.75);
 
-  /* Mesh gradient (Layer 1 of the backdrop) */
-  --ambient-base: #0a0c0b;
-  --ambient-wash-1: rgba(167, 139, 250, 0.16); /* plum   */
-  --ambient-wash-2: rgba(251, 113, 133, 0.13); /* rose   */
-  --ambient-wash-3: rgba(251, 191, 36, 0.1);   /* amber  */
-  --ambient-wash-4: rgba(45, 212, 191, 0.12);  /* teal   */
-  --ambient-vignette: rgba(0, 0, 0, 0.55);
-  --ambient-grain-opacity: 0.035;
+  /* Mesh gradient (Layer 1 of the backdrop): blood maroon, rose, nebula */
+  --ambient-base: #050308;
+  --ambient-wash-1: rgba(140, 15, 46, 0.22); /* blood maroon */
+  --ambient-wash-2: rgba(255, 77, 109, 0.13); /* rose        */
+  --ambient-wash-3: rgba(124, 58, 237, 0.12); /* nebula violet */
+  --ambient-wash-4: rgba(81, 91, 201, 0.1);   /* deep space indigo */
+  --ambient-vignette: rgba(6, 2, 6, 0.62);
+  --ambient-grain-opacity: 0.04;
 
   /* ---- legacy surface aliases (consumed everywhere) ---- */
   --bg: var(--surface-0);
   --bg-1: var(--surface-solid);
   --bg-2: var(--surface-raised);
-  --bg-3: #222825;
-  --bg-elev: #262d2a;
+  --bg-3: #1c1724;
+  --bg-elev: #221b2a;
   --border: var(--border-default);
   --border-strong: var(--border-strong-flat, var(--border-strong));
   --fg: var(--text-primary);
   --fg-2: var(--text-secondary);
   --fg-3: var(--text-tertiary);
-  --fg-muted: rgba(255, 255, 255, 0.52);
-  --hover: rgba(255, 255, 255, 0.05);
-  --selected: rgba(110, 231, 183, 0.14);
-  --stage-bg: #0a0d0c;
-  --screen-bg: #050706;
-  --tl-bg: #0c0f0e;
-  --track-bg: #090c0b;
+  --fg-muted: rgba(240, 230, 233, 0.5);
+  --hover: rgba(253, 240, 244, 0.06);
+  --selected: rgba(255, 77, 109, 0.14);
+  --stage-bg: #080509;
+  --screen-bg: #040205;
+  --tl-bg: #0a070d;
+  --track-bg: #070509;
   --waveform: rgba(45, 212, 191, 0.6);
 
   --accent: var(--accent-primary);
   --accent-strong: var(--accent-primary-dim);
-  --accent-soft: rgba(110, 231, 183, 0.14);
+  --accent-soft: rgba(255, 77, 109, 0.14);
   --accent-fg: var(--accent-on);
   --accent-glow: var(--accent-primary-glow);
 
-  /* clip palette → floral coding */
+  /* clip palette → rose-garden coding */
   --c-video: var(--bloom-rose);
   --c-text: var(--bloom-amber);
   --c-audio: var(--bloom-teal);
   --c-music: #5eead4;
 
   /* legacy shadcn HSL primitives (Radix skins) */
-  --background: 156 10% 4%;
-  --foreground: 0 0% 96%;
-  --card: 156 9% 7%;
-  --card-foreground: 0 0% 96%;
-  --popover: 156 9% 9%;
-  --popover-foreground: 0 0% 96%;
-  --primary: 160 77% 67%;
-  --primary-foreground: 156 10% 4%;
-  --secondary: 156 8% 13%;
-  --secondary-foreground: 0 0% 96%;
-  --muted: 156 8% 12%;
-  --muted-foreground: 156 6% 64%;
-  --accent-hsl: 156 8% 15%;
-  --accent-foreground: 0 0% 96%;
-  --destructive: 0 90% 71%;
-  --destructive-foreground: 0 0% 8%;
-  --input: 156 8% 16%;
-  --ring: 160 77% 67%;
+  --background: 262 20% 3%;
+  --foreground: 340 20% 96%;
+  --card: 264 18% 5%;
+  --card-foreground: 340 20% 96%;
+  --popover: 265 18% 7%;
+  --popover-foreground: 340 20% 96%;
+  --primary: 347 100% 65%;
+  --primary-foreground: 340 33% 4%;
+  --secondary: 264 14% 10%;
+  --secondary-foreground: 340 14% 92%;
+  --muted: 264 12% 9%;
+  --muted-foreground: 340 12% 66%;
+  --accent-hsl: 264 14% 12%;
+  --accent-foreground: 340 14% 92%;
+  --destructive: 0 100% 71%;
+  --destructive-foreground: 345 40% 6%;
+  --input: 264 12% 14%;
+  --ring: 347 100% 65%;
   --radius: var(--radius-md);
 
   /* density */
@@ -252,104 +268,115 @@
 }
 
 /* ============================================================
-   LIGHT — "Sunlit Studio"
+   LIGHT — "White Petals" (ivory paper, red-stained edges)
    ============================================================ */
 [data-theme="light"] {
   color-scheme: light;
 
-  --surface-0: #f7f5f2;
-  --surface-1: rgba(255, 253, 250, 0.68);
-  --surface-2: rgba(255, 253, 250, 0.78);
-  --surface-3: rgba(255, 253, 250, 0.88);
-  --surface-solid: #fdfcfa;
-  --surface-sunken: #efece7;
+  --surface-0: #faf5f3;
+  --surface-1: rgba(255, 252, 251, 0.68);
+  --surface-2: rgba(255, 252, 251, 0.78);
+  --surface-3: rgba(255, 252, 251, 0.88);
+  --surface-solid: #fffcfb;
+  --surface-sunken: #f3e9e9;
   --surface-raised: #ffffff;
-  --surface-overlay: rgba(247, 245, 242, 0.72);
+  --surface-overlay: rgba(250, 245, 243, 0.72);
 
-  --border-subtle: rgba(20, 24, 22, 0.08);
-  --border-default: rgba(20, 24, 22, 0.12);
-  --border-strong: rgba(20, 24, 22, 0.2);
-  --border-glow: rgba(16, 185, 129, 0.45);
+  --border-subtle: rgba(70, 16, 30, 0.08);
+  --border-default: rgba(70, 16, 30, 0.13);
+  --border-strong: rgba(70, 16, 30, 0.22);
+  --border-glow: rgba(190, 18, 60, 0.45);
 
-  --text-primary: rgba(16, 20, 18, 0.92);
-  --text-secondary: rgba(16, 20, 18, 0.62);
-  --text-tertiary: rgba(16, 20, 18, 0.4);
-  --text-disabled: rgba(16, 20, 18, 0.24);
+  --text-primary: rgba(40, 12, 20, 0.94);
+  --text-secondary: rgba(48, 18, 26, 0.66);
+  --text-tertiary: rgba(58, 24, 32, 0.46);
+  --text-disabled: rgba(58, 24, 32, 0.26);
 
-  --accent-primary: #059669;
-  --accent-primary-dim: #047857;
-  --accent-primary-glow: rgba(16, 185, 129, 0.22);
+  --accent-primary: #be123c;
+  --accent-primary-dim: #9f1239;
+  --accent-primary-glow: rgba(190, 18, 60, 0.2);
   --accent-on: #ffffff;
+  --accent-gradient: linear-gradient(135deg, #e11d48, #801230);
 
   --bloom-rose: #e11d48;
+  --bloom-blood: #801230;
+  --bloom-petal: #ffffff;
   --bloom-amber: #d97706;
   --bloom-lilac: #7c3aed;
   --bloom-teal: #0d9488;
   --bloom-peach: #ea580c;
   --bloom-sage: #16a34a;
-  --bloom-sky: #2563eb;
+  --bloom-sky: #4f46e5;
 
   --bloom-rose-soft: rgba(225, 29, 72, 0.1);
+  --bloom-blood-soft: rgba(128, 18, 48, 0.1);
+  --bloom-petal-soft: rgba(255, 255, 255, 0.65);
   --bloom-amber-soft: rgba(217, 119, 6, 0.1);
   --bloom-lilac-soft: rgba(124, 58, 237, 0.1);
   --bloom-teal-soft: rgba(13, 148, 136, 0.1);
   --bloom-peach-soft: rgba(234, 88, 12, 0.1);
   --bloom-sage-soft: rgba(22, 163, 74, 0.1);
-  --bloom-sky-soft: rgba(37, 99, 235, 0.1);
+  --bloom-sky-soft: rgba(79, 70, 229, 0.1);
 
   --bloom-rose-line: rgba(225, 29, 72, 0.25);
+  --bloom-blood-line: rgba(128, 18, 48, 0.25);
+  --bloom-petal-line: rgba(190, 120, 140, 0.35);
   --bloom-amber-line: rgba(217, 119, 6, 0.25);
   --bloom-lilac-line: rgba(124, 58, 237, 0.25);
   --bloom-teal-line: rgba(13, 148, 136, 0.25);
   --bloom-peach-line: rgba(234, 88, 12, 0.25);
   --bloom-sage-line: rgba(22, 163, 74, 0.25);
-  --bloom-sky-line: rgba(37, 99, 235, 0.25);
+  --bloom-sky-line: rgba(79, 70, 229, 0.25);
 
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
-  --info: #2563eb;
+  --info: #4f46e5;
 
-  --shadow-sm: 0 1px 2px rgba(66, 52, 38, 0.06);
-  --shadow-md: 0 8px 28px -8px rgba(66, 52, 38, 0.16);
-  --shadow-lg: 0 24px 60px -16px rgba(66, 52, 38, 0.2);
-  --shadow-canvas: 0 20px 48px -16px rgba(112, 88, 60, 0.24);
-  --shadow-glass: inset 0 1px 0 0 rgba(255, 255, 255, 0.55), 0 8px 32px -8px rgba(66, 52, 38, 0.16);
-  --shadow-raised: inset 0 1px 0 0 rgba(255, 255, 255, 0.6), 0 16px 48px -12px rgba(66, 52, 38, 0.22);
-  --shadow-modal: inset 0 1px 0 0 rgba(255, 255, 255, 0.65), 0 32px 80px -16px rgba(66, 52, 38, 0.28);
+  --shadow-sm: 0 1px 2px rgba(96, 30, 45, 0.06);
+  --shadow-md: 0 8px 28px -8px rgba(96, 30, 45, 0.16);
+  --shadow-lg: 0 24px 60px -16px rgba(96, 30, 45, 0.2);
+  --shadow-canvas: 0 20px 48px -16px rgba(150, 70, 90, 0.24);
+  --shadow-glass: inset 0 1px 0 0 rgba(255, 255, 255, 0.65), 0 8px 32px -8px rgba(96, 30, 45, 0.16);
+  --shadow-raised: inset 0 1px 0 0 rgba(255, 255, 255, 0.7), 0 16px 48px -12px rgba(96, 30, 45, 0.22);
+  --shadow-modal: inset 0 1px 0 0 rgba(255, 255, 255, 0.75), 0 32px 80px -16px rgba(96, 30, 45, 0.28);
 
-  --ambient-base: #faf8f5;
-  --ambient-wash-1: rgba(196, 181, 253, 0.35); /* pale lilac */
-  --ambient-wash-2: rgba(254, 205, 211, 0.45); /* blush      */
-  --ambient-wash-3: rgba(253, 230, 138, 0.4);  /* peach      */
-  --ambient-wash-4: rgba(186, 230, 209, 0.42); /* sage       */
-  --ambient-vignette: rgba(120, 96, 70, 0.14);
+  --ambient-base: #faf6f4;
+  --ambient-wash-1: rgba(254, 205, 211, 0.5); /* blush      */
+  --ambient-wash-2: rgba(251, 113, 133, 0.25); /* soft rose  */
+  --ambient-wash-3: rgba(255, 251, 250, 0.85); /* petal white */
+  --ambient-wash-4: rgba(233, 213, 255, 0.4);  /* pale lilac */
+  --ambient-vignette: rgba(150, 70, 90, 0.12);
   --ambient-grain-opacity: 0.03;
 
-  --ambient-floral-opacity: 0.22;
-  --ambient-floral-filter: blur(48px) saturate(0.9) brightness(1.1);
+  --ambient-floral-opacity: 0.24;
+  --ambient-floral-filter: blur(46px) saturate(0.92) brightness(1.06);
+
+  --petal-edge: rgba(255, 255, 255, 0.55);
+  --petal-edge-2: rgba(255, 255, 255, 0.6);
+  --petal-edge-3: rgba(255, 255, 255, 0.65);
 
   --bg: var(--surface-0);
   --bg-1: var(--surface-solid);
-  --bg-2: #f1eee9;
-  --bg-3: #e8e4de;
+  --bg-2: #f6ecec;
+  --bg-3: #eedfdf;
   --bg-elev: #ffffff;
   --border: var(--border-default);
   --fg: var(--text-primary);
   --fg-2: var(--text-secondary);
   --fg-3: var(--text-tertiary);
-  --fg-muted: rgba(16, 20, 18, 0.5);
-  --hover: rgba(20, 24, 22, 0.045);
-  --selected: rgba(5, 150, 105, 0.1);
-  --stage-bg: #f2efe9;
+  --fg-muted: rgba(84, 40, 52, 0.55);
+  --hover: rgba(120, 30, 50, 0.05);
+  --selected: rgba(190, 18, 60, 0.1);
+  --stage-bg: #f7eeeb;
   --screen-bg: #ffffff;
-  --tl-bg: #f6f4f0;
-  --track-bg: #edeae4;
+  --tl-bg: #f9f3f1;
+  --track-bg: #f2e6e6;
   --waveform: rgba(13, 148, 136, 0.55);
 
   --accent: var(--accent-primary);
   --accent-strong: var(--accent-primary-dim);
-  --accent-soft: rgba(16, 185, 129, 0.12);
+  --accent-soft: rgba(190, 18, 60, 0.1);
   --accent-fg: var(--accent-on);
   --accent-glow: var(--accent-primary-glow);
 
@@ -358,24 +385,24 @@
   --c-audio: var(--bloom-teal);
   --c-music: #14b8a6;
 
-  --background: 36 27% 96%;
-  --foreground: 150 11% 7%;
-  --card: 45 33% 98%;
-  --card-foreground: 150 11% 7%;
-  --popover: 45 33% 98%;
-  --popover-foreground: 150 11% 7%;
-  --primary: 160 84% 39%;
+  --background: 350 33% 97%;
+  --foreground: 340 54% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 340 54% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 340 54% 10%;
+  --primary: 346 82% 41%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 36 18% 91%;
-  --secondary-foreground: 150 11% 10%;
-  --muted: 36 18% 91%;
-  --muted-foreground: 150 5% 42%;
-  --accent-hsl: 36 18% 91%;
-  --accent-foreground: 150 11% 10%;
+  --secondary: 350 24% 92%;
+  --secondary-foreground: 340 40% 14%;
+  --muted: 350 24% 92%;
+  --muted-foreground: 340 12% 42%;
+  --accent-hsl: 350 24% 91%;
+  --accent-foreground: 340 40% 14%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --input: 36 12% 84%;
-  --ring: 160 84% 39%;
+  --input: 350 16% 84%;
+  --ring: 346 82% 41%;
 
   --d-text: 12.5px;
   --d-text-sm: 11px;
@@ -411,26 +438,26 @@
   :root,
   [data-theme="dark"],
   .dark {
-    --surface-1: rgba(18, 22, 20, 0.94);
-    --surface-2: rgba(26, 31, 29, 0.96);
-    --surface-3: rgba(34, 40, 37, 0.98);
-    --border-subtle: rgba(255, 255, 255, 0.12);
-    --border-default: rgba(255, 255, 255, 0.2);
-    --border-strong: rgba(255, 255, 255, 0.3);
-    --text-secondary: rgba(255, 255, 255, 0.78);
-    --text-tertiary: rgba(255, 255, 255, 0.58);
+    --surface-1: rgba(13, 9, 16, 0.94);
+    --surface-2: rgba(20, 14, 22, 0.96);
+    --surface-3: rgba(28, 20, 28, 0.98);
+    --border-subtle: rgba(255, 240, 244, 0.14);
+    --border-default: rgba(255, 240, 244, 0.24);
+    --border-strong: rgba(255, 240, 244, 0.36);
+    --text-secondary: rgba(245, 236, 238, 0.8);
+    --text-tertiary: rgba(240, 230, 233, 0.6);
     --ambient-floral-opacity: 0.08;
   }
 
   [data-theme="light"] {
-    --surface-1: rgba(255, 253, 250, 0.94);
-    --surface-2: rgba(255, 253, 250, 0.96);
-    --surface-3: rgba(255, 253, 250, 0.98);
-    --border-subtle: rgba(20, 24, 22, 0.16);
-    --border-default: rgba(20, 24, 22, 0.24);
-    --border-strong: rgba(20, 24, 22, 0.36);
-    --text-secondary: rgba(16, 20, 18, 0.76);
-    --text-tertiary: rgba(16, 20, 18, 0.56);
+    --surface-1: rgba(255, 252, 251, 0.94);
+    --surface-2: rgba(255, 252, 251, 0.96);
+    --surface-3: rgba(255, 252, 251, 0.98);
+    --border-subtle: rgba(70, 16, 30, 0.16);
+    --border-default: rgba(70, 16, 30, 0.26);
+    --border-strong: rgba(70, 16, 30, 0.38);
+    --text-secondary: rgba(48, 18, 26, 0.8);
+    --text-tertiary: rgba(58, 24, 32, 0.6);
     --ambient-floral-opacity: 0.08;
   }
 }

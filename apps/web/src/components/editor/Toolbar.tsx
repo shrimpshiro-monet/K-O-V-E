@@ -639,10 +639,9 @@ export const Toolbar: React.FC = () => {
             <button
               type="button"
               onClick={() => handleExport("mp4")}
-              className="rounded-l-[10px] rounded-r-none bg-accent px-[18px] py-[9px] text-[13px] font-semibold text-accent-fg hover:shadow-[0_0_24px_var(--accent-primary-glow)] transition-shadow duration-fast"
+              className="rounded-l-[10px] rounded-r-none px-[18px] py-[9px] text-[13px] font-semibold text-accent-fg hover:shadow-[0_0_24px_var(--accent-primary-glow)] transition-shadow duration-fast"
               style={{
-                background:
-                  "linear-gradient(135deg, var(--accent-primary), var(--bloom-teal))",
+                background: "var(--accent-gradient)",
               }}
             >
               Export
@@ -662,7 +661,7 @@ export const Toolbar: React.FC = () => {
                     height="11"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#fff"
+                    stroke="var(--accent-fg)"
                     strokeWidth="2.4"
                     aria-hidden
                   >
@@ -670,9 +669,9 @@ export const Toolbar: React.FC = () => {
                   </svg>
                 ),
                 className:
-                  "rounded-l-none rounded-r-[10px] border-l border-white/25",
+                  "rounded-l-none rounded-r-[10px] border-l border-black/15",
                 style: {
-                  background: "var(--bloom-teal)",
+                  background: "var(--accent)",
                   width: "auto",
                   height: "auto",
                   padding: "9px 8px",

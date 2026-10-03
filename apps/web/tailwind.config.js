@@ -37,6 +37,8 @@ export default {
         // Floral secondaries — clip/asset category coding, accents.
         bloom: {
           rose: "var(--bloom-rose)",
+          blood: "var(--bloom-blood)",
+          petal: "var(--bloom-petal)",
           amber: "var(--bloom-amber)",
           lilac: "var(--bloom-lilac)",
           teal: "var(--bloom-teal)",
