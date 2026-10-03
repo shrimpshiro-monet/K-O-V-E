@@ -23,13 +23,13 @@ const THEME_CONFIG: Record<
 > = {
   success: {
     light: {
-      bg: "bg-bg-1",
+      bg: "glass-raised rounded-lg",
       border: "border-emerald-200",
       icon: "text-emerald-600",
       progress: "bg-emerald-500",
     },
     dark: {
-      bg: "bg-zinc-900/95",
+      bg: "glass-raised rounded-lg",
       border: "border-emerald-500/30",
       icon: "text-emerald-400",
       progress: "bg-emerald-500",
@@ -37,13 +37,13 @@ const THEME_CONFIG: Record<
   },
   error: {
     light: {
-      bg: "bg-bg-1",
+      bg: "glass-raised rounded-lg",
       border: "border-red-200",
       icon: "text-red-600",
       progress: "bg-red-500",
     },
     dark: {
-      bg: "bg-zinc-900/95",
+      bg: "glass-raised rounded-lg",
       border: "border-red-500/30",
       icon: "text-red-400",
       progress: "bg-red-500",
@@ -51,13 +51,13 @@ const THEME_CONFIG: Record<
   },
   warning: {
     light: {
-      bg: "bg-bg-1",
+      bg: "glass-raised rounded-lg",
       border: "border-amber-200",
       icon: "text-amber-600",
       progress: "bg-amber-500",
     },
     dark: {
-      bg: "bg-zinc-900/95",
+      bg: "glass-raised rounded-lg",
       border: "border-amber-500/30",
       icon: "text-amber-400",
       progress: "bg-amber-500",
@@ -65,13 +65,13 @@ const THEME_CONFIG: Record<
   },
   info: {
     light: {
-      bg: "bg-bg-1",
+      bg: "glass-raised rounded-lg",
       border: "border-blue-200",
       icon: "text-blue-600",
       progress: "bg-blue-500",
     },
     dark: {
-      bg: "bg-zinc-900/95",
+      bg: "glass-raised rounded-lg",
       border: "border-blue-500/30",
       icon: "text-blue-400",
       progress: "bg-blue-500",

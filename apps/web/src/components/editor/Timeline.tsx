@@ -45,6 +45,7 @@ import {
 } from "@kove-advanced/ui";
 import { useProjectStore } from "../../stores/project-store";
 import { useTimelineStore, ZOOM_PRESETS } from "../../stores/timeline-store";
+import { PetalsHint } from "../backdrop/AmbientBackdrop";
 import { useUIStore } from "../../stores/ui-store";
 import { toast } from "../../stores/notification-store";
 import { useEngineStore } from "../../stores/engine-store";
@@ -945,8 +946,10 @@ export const Timeline: React.FC = () => {
       onClick={onClick}
       disabled={disabled}
       data-tip-bottom={title}
-      className={`relative grid place-items-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-        active ? "text-accent" : "text-fg-muted hover:text-fg-2"
+      className={`relative grid place-items-center rounded-[7px] px-1 py-1 transition-colors duration-fast disabled:opacity-40 disabled:cursor-not-allowed ${
+        active
+          ? "bg-selected text-accent"
+          : "text-fg-muted hover:bg-hover hover:text-fg-2"
       }`}
     >
       {children}
@@ -957,10 +960,10 @@ export const Timeline: React.FC = () => {
   return (
     <div
       data-tour="timeline"
-      className="h-full bg-tl-bg flex flex-col min-h-0 relative overflow-hidden"
+      className="h-full bg-transparent flex flex-col min-h-0 relative overflow-hidden"
     >
-      {/* ── Timeline toolbar (mock: 48px line-icon tools + emerald zoom slider) ── */}
-      <div className="flex items-center h-12 px-4 gap-4 bg-bg-1 border-b border-border shrink-0 relative z-50">
+      {/* ── Timeline toolbar (glass chrome; bed + ruler stay opaque) ── */}
+      <div className="flex items-center h-12 px-4 gap-4 border-b border-line shrink-0 relative z-50">
         <TLTool onClick={undo} disabled={!canUndo()} title="Undo (⌘Z)">
           <Undo2 size={16} aria-hidden />
         </TLTool>
@@ -1728,6 +1731,31 @@ export const Timeline: React.FC = () => {
           scrollX={scrollX}
           headerOffset={170}
         />
+
+        {tracks.length === 0 && (
+          <div
+            aria-hidden={false}
+            className="pointer-events-none absolute inset-x-0 top-12 bottom-0 z-30 flex items-center justify-center p-4"
+          >
+            <div className="pointer-events-auto relative flex max-w-[320px] flex-col items-center gap-1.5 overflow-hidden rounded-2xl glass-raised px-6 py-5 text-center">
+              <PetalsHint opacity={0.12} className="rounded-2xl" />
+              <span className="relative type-title-md text-fg">
+                Your timeline is empty
+              </span>
+              <span className="relative type-caption text-fg-muted">
+                Drag media from the Assets panel to begin.
+              </span>
+              <button
+                type="button"
+                onClick={() => addTrack("video", undefined, { mode: "standard" })}
+                className="relative mt-2.5 flex h-8 items-center gap-1.5 rounded-lg border border-dashed border-[var(--border-strong)] px-3 text-[12px] font-medium text-fg-2 transition-colors duration-fast hover:border-accent hover:text-accent"
+              >
+                <Plus size={14} aria-hidden />
+                Add your first track
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
