@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { LiquidGlassSurface } from "./ui/LiquidGlassSurface";
 
 export type WorkspaceMode = "video" | "motion";
 
@@ -24,10 +25,11 @@ export function WorkspaceModeTabs({
   accessibleLabels?: Partial<Record<WorkspaceMode, string>>;
 }): JSX.Element {
   return (
+    <LiquidGlassSurface preset="pill" className={className}>
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className={`inline-flex items-center gap-0 rounded-full bg-[var(--surface-sunken)] p-[3px] border border-line ${className}`}
+      className="inline-flex items-center gap-0 rounded-full px-[3px] py-[2px]"
     >
       {MODES.map((mode) => {
         const isActive = activeMode === mode.id;
@@ -41,7 +43,7 @@ export function WorkspaceModeTabs({
             onClick={() => onSelectMode(mode.id)}
             className={`rounded-full px-4 py-[6px] text-[13px] transition-colors duration-fast ${
               isActive
-                ? "glass-raised text-accent font-semibold border-[var(--border-glow)]"
+                ? "bg-selected text-accent font-semibold"
                 : "bg-transparent text-fg-3 font-medium hover:text-fg-2"
             }`}
           >
@@ -50,5 +52,6 @@ export function WorkspaceModeTabs({
         );
       })}
     </div>
+    </LiquidGlassSurface>
   );
 }

@@ -99,6 +99,7 @@ import { snapCanvasPosition } from "./preview/canvas-snapping";
 import { captureNativeVideoFrame } from "./preview/video-frame";
 import { ProcessingOverlay } from "./ProcessingOverlay";
 import { editingFrameDurationMs } from "./editing-frame-rate";
+import { LiquidGlassSurface } from "../ui/LiquidGlassSurface";
 import {
   getPersonSegmentationEngine,
   getBackgroundRemovalEngine,
@@ -8113,6 +8114,11 @@ export const Preview: React.FC = () => {
             onClick={handleSkipBack}
             className="w-8 h-8 grid place-items-center rounded-md text-fg-2 hover:bg-hover hover:text-fg transition-colors"
           />
+          <LiquidGlassSurface
+            preset="chip"
+            cornerRadius={999}
+            disabled={Boolean(playbackLockedReason)}
+          >
           <IconButton
             label={playbackLockedReason ?? (isPlaying ? "Pause" : "Play")}
             icon={
@@ -8130,12 +8136,13 @@ export const Preview: React.FC = () => {
               togglePlayback();
             }}
             isDisabled={Boolean(playbackLockedReason)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
               playbackLockedReason
                 ? "bg-bg-2 text-fg-muted cursor-not-allowed"
-                : "bg-bg-2 text-fg hover:bg-bg-3"
+                : "text-accent hover:text-fg"
             }`}
           />
+          </LiquidGlassSurface>
           <IconButton
             label="Skip forward 5s"
             icon={<SkipForward size={18} />}

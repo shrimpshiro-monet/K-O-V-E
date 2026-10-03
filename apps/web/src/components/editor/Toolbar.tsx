@@ -38,6 +38,7 @@ import {
   type WorkspaceMode,
 } from "../WorkspaceModeTabs";
 import { Icon } from "@/icons/Icon";
+import { LiquidGlassSurface } from "../ui/LiquidGlassSurface";
 import { toast } from "../../stores/notification-store";
 import { useAnalytics, AnalyticsEvents } from "../../hooks/useAnalytics";
 import {
@@ -563,8 +564,9 @@ export const Toolbar: React.FC = () => {
       </div>
 
       {/* ─── Right: global actions + export ───────────────────── */}
-      <div className="flex items-center justify-end gap-1.5 shrink-0">
-        <div className="flex items-center gap-0.5 rounded-lg px-0.5 py-0.5 bg-bg-2/60 border border-line mr-1.5">
+      <div className="flex items-center justify-end gap-2 shrink-0">
+        <LiquidGlassSurface preset="island" cornerRadius={12} className="mr-0.5">
+        <div className="flex items-center gap-0.5 px-1.5 py-0.5">
           <button
             type="button"
             aria-label="Undo"
@@ -605,12 +607,14 @@ export const Toolbar: React.FC = () => {
             <Settings size={14} aria-hidden />
           </button>
         </div>
+        </LiquidGlassSurface>
         {/* Export */}
+        <LiquidGlassSurface preset="pill">
         {exportState.isExporting ? (
           <button
             type="button"
             onClick={handleCancelExport}
-            className="flex items-center gap-1.5 rounded-[8px] bg-bg-3 px-[18px] py-[9px] text-[13px] font-semibold text-fg-2"
+            className="flex items-center gap-1.5 px-[18px] py-[9px] text-[13px] font-semibold text-fg-2 hover:bg-hover rounded-full transition-colors duration-fast"
           >
             <Icon name="square.and.arrow.up" size={13} ariaHidden />
             {`${Math.round(exportState.progress)}%`}
@@ -620,7 +624,8 @@ export const Toolbar: React.FC = () => {
           <button
             type="button"
             onClick={resetError}
-            className="flex max-w-[180px] items-center gap-1.5 truncate rounded-[8px] bg-destructive px-[18px] py-[9px] text-[13px] font-semibold text-destructive-foreground"
+            className="flex max-w-[180px] items-center gap-1.5 truncate rounded-full px-[18px] py-[9px] text-[13px] font-semibold text-destructive-foreground"
+            style={{ background: "color-mix(in srgb, var(--danger) 72%, transparent)" }}
           >
             <span className="truncate">{exportState.error}</span>
             <Icon name="xmark" size={11} ariaHidden />
@@ -629,19 +634,20 @@ export const Toolbar: React.FC = () => {
           <button
             type="button"
             disabled
-            className="flex items-center gap-1.5 rounded-[8px] bg-bg-3 px-[18px] py-[9px] text-[13px] font-semibold text-fg-2"
+            className="flex items-center gap-1.5 px-[18px] py-[9px] text-[13px] font-semibold text-fg-2 rounded-full"
           >
             <Icon name="checkmark" size={13} ariaHidden />
             Saved!
           </button>
         ) : (
-          <div className="flex items-stretch">
+          <div className="flex items-stretch w-full">
             <button
               type="button"
               onClick={() => handleExport("mp4")}
-              className="rounded-l-[10px] rounded-r-none px-[18px] py-[9px] text-[13px] font-semibold text-accent-fg hover:shadow-[0_0_24px_var(--accent-primary-glow)] transition-shadow duration-fast"
+              className="flex-1 rounded-none pl-[18px] pr-2 py-[9px] text-[13px] font-semibold text-white transition-[filter] duration-fast hover:brightness-115"
               style={{
-                background: "var(--accent-gradient)",
+                background:
+                  "linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 34%, transparent), color-mix(in srgb, var(--bloom-blood) 50%, transparent))",
               }}
             >
               Export
@@ -661,7 +667,7 @@ export const Toolbar: React.FC = () => {
                     height="11"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="var(--accent-fg)"
+                    stroke="#fff"
                     strokeWidth="2.4"
                     aria-hidden
                   >
@@ -669,13 +675,13 @@ export const Toolbar: React.FC = () => {
                   </svg>
                 ),
                 className:
-                  "rounded-l-none rounded-r-[10px] border-l border-black/15",
+                  "rounded-none border-l border-white/25",
                 style: {
-                  background: "var(--accent)",
+                  background: "color-mix(in srgb, var(--accent-primary) 46%, transparent)",
                   width: "auto",
                   height: "auto",
-                  padding: "9px 8px",
-                  borderRadius: "0 10px 10px 0",
+                  padding: "9px 10px",
+                  borderRadius: "0",
                 },
               }}
               menuWidth={288}
@@ -744,6 +750,7 @@ export const Toolbar: React.FC = () => {
             </DropdownMenu>
           </div>
         )}
+        </LiquidGlassSurface>
       </div>
 
       {/* ─── Auxiliary popups & dialogs ───────────────────────── */}

@@ -46,6 +46,7 @@ import {
 import { useProjectStore } from "../../stores/project-store";
 import { useTimelineStore, ZOOM_PRESETS } from "../../stores/timeline-store";
 import { PetalsHint } from "../backdrop/AmbientBackdrop";
+import { LiquidGlassSurface } from "../ui/LiquidGlassSurface";
 import { useUIStore } from "../../stores/ui-store";
 import { toast } from "../../stores/notification-store";
 import { useEngineStore } from "../../stores/engine-store";
@@ -1745,14 +1746,16 @@ export const Timeline: React.FC = () => {
               <span className="relative type-caption text-fg-muted">
                 Drag media from the Assets panel to begin.
               </span>
-              <button
-                type="button"
-                onClick={() => addTrack("video", undefined, { mode: "standard" })}
-                className="relative mt-2.5 flex h-8 items-center gap-1.5 rounded-lg border border-dashed border-[var(--border-strong)] px-3 text-[12px] font-medium text-fg-2 transition-colors duration-fast hover:border-accent hover:text-accent"
-              >
-                <Plus size={14} aria-hidden />
-                Add your first track
-              </button>
+              <LiquidGlassSurface preset="button" className="relative mt-2.5">
+                <button
+                  type="button"
+                  onClick={() => addTrack("video", undefined, { mode: "standard" })}
+                  className="flex h-8 items-center gap-1.5 px-3 text-[12px] font-medium text-fg-2 transition-colors duration-fast hover:text-accent"
+                >
+                  <Plus size={14} aria-hidden />
+                  Add your first track
+                </button>
+              </LiquidGlassSurface>
             </div>
           </div>
         )}

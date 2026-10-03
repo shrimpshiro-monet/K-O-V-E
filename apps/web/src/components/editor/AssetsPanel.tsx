@@ -18,6 +18,7 @@ import type { MediaItem } from "@kove-advanced/core";
 import { AspectRatioMatchDialog } from "./dialogs/AspectRatioMatchDialog";
 import { AIGenTab } from "./AIGenTab";
 import { PetalsHint } from "../backdrop/AmbientBackdrop";
+import { LiquidGlassSurface } from "../ui/LiquidGlassSurface";
 import { RecipesTab } from "./panels/RecipesTab";
 import { TemplatesTab } from "./panels/TemplatesTab";
 import {
@@ -27,7 +28,6 @@ import {
 import { useTtsAudioStore } from "../../stores/tts-store";
 import { toast } from "../../stores/notification-store";
 import { saveFileHandle, saveDirectoryHandle } from "../../services/media-storage";
-import { ToolcraftButton as Button } from "@kove-advanced/ui";
 import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
 import { ToolcraftSelectableCard as SelectableCard } from "@kove-advanced/ui";
 import { ToolcraftText as Text } from "@kove-advanced/ui";
@@ -681,12 +681,15 @@ const EmptyState: React.FC<{ onImport: () => void }> = ({ onImport }) => (
         <Text type="supporting" color="secondary" display="block" className="mb-5 text-xs text-fg-3">
           Drag files here, or import from your device.
         </Text>
-        <Button
-          label="Import Media"
-          variant="ghost"
-          onClick={onImport}
-          className="px-4 py-2 bg-accent-soft hover:bg-bg-3 border border-accent/40 text-accent text-xs font-semibold rounded-lg transition-all hover:border-accent"
-        />
+        <LiquidGlassSurface preset="button">
+          <button
+            type="button"
+            onClick={onImport}
+            className="px-4 py-2 text-accent text-xs font-semibold transition-colors duration-fast hover:brightness-125"
+          >
+            Import Media
+          </button>
+        </LiquidGlassSurface>
       </div>
     </div>
     <Text type="supporting" color="secondary" display="block" className="mt-3 text-[11px] text-fg-muted">
@@ -1084,11 +1087,12 @@ export const AssetsPanel: React.FC = () => {
             <div className="px-4 pt-[18px] shrink-0">
               <div className="font-bold text-[18px] text-fg mb-[14px]">Media</div>
               <div className="flex gap-2 mb-[18px]">
+                <LiquidGlassSurface preset="button" className="min-w-0 flex-1">
                 <button
                   type="button"
                   aria-label="Import media"
                   onClick={triggerFileInput}
-                  className="flex-1 flex items-center justify-center gap-[7px] bg-bg border border-border rounded-[9px] p-[10px] font-medium text-[13px] text-fg-2"
+                  className="w-full flex items-center justify-center gap-[7px] rounded-[9px] p-[10px] font-medium text-[13px] text-fg-2 transition-colors duration-fast hover:text-fg"
                 >
                   <svg
                     width="15"
@@ -1105,6 +1109,7 @@ export const AssetsPanel: React.FC = () => {
                   </svg>
                   Import
                 </button>
+                </LiquidGlassSurface>
                 <button
                   type="button"
                   aria-label="Record"

@@ -5,6 +5,7 @@ import {
   ToolcraftTooltip as Tooltip,
 } from "@kove-advanced/ui";
 import { Icon } from "@/icons/Icon";
+import { LiquidGlassSurface } from "../ui/LiquidGlassSurface";
 import {
   House,
   Sun,
@@ -55,16 +56,17 @@ const RailButton: React.FC<RailButtonProps> = ({
   const reducedMotion = usePrefersReducedMotion();
   return (
     <Tooltip content={label} placement="end">
+      <LiquidGlassSurface preset="chip" cornerRadius={12} disabled={disabled}>
       <button
         type="button"
         aria-label={label}
         aria-pressed={active}
         disabled={disabled}
         onClick={onClick}
-        className={`relative grid h-10 w-10 place-items-center rounded-[10px] transition-colors duration-fast ${
+        className={`relative grid h-9 w-9 place-items-center rounded-[10px] transition-colors duration-fast ${
           active
             ? "text-accent"
-            : "text-fg-muted hover:bg-hover hover:text-fg"
+            : "text-fg-muted hover:text-fg"
         } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
       >
         {active &&
@@ -94,6 +96,7 @@ const RailButton: React.FC<RailButtonProps> = ({
         />
         <span className="relative">{icon}</span>
       </button>
+      </LiquidGlassSurface>
     </Tooltip>
   );
 };
@@ -147,30 +150,34 @@ export const EditorActionRail: React.FC = () => {
     >
       {/* ── Command palette trigger ───────────────────────────── */}
       <Tooltip content="Search & commands  ⌘K" placement="end">
-        <button
-          type="button"
-          aria-label="Search tools, effects, or ask AI (⌘K)"
-          onClick={() => openModal("search")}
-          className="grid h-9 w-9 place-items-center rounded-[10px] border border-line bg-bg-2/70 text-fg-muted transition-colors duration-fast hover:border-accent hover:text-accent"
-        >
-          <span className="flex items-center gap-0.5 text-[10px] font-semibold">
-            <Command size={11} aria-hidden />K
-          </span>
-        </button>
+        <LiquidGlassSurface preset="chip" cornerRadius={12}>
+          <button
+            type="button"
+            aria-label="Search tools, effects, or ask AI (⌘K)"
+            onClick={() => openModal("search")}
+            className="grid h-9 w-9 place-items-center text-fg-2 transition-colors duration-fast hover:text-accent"
+          >
+            <span className="flex items-center gap-0.5 text-[10px] font-semibold">
+              <Command size={11} aria-hidden />K
+            </span>
+          </button>
+        </LiquidGlassSurface>
       </Tooltip>
 
       <RailDivider />
 
       {/* ── Group A — Navigation ──────────────────────────────── */}
       <Tooltip content="Back to home" placement="end">
-        <button
-          type="button"
-          aria-label="Back to home"
-          onClick={() => navigate("welcome")}
-          className="grid h-10 w-10 place-items-center rounded-[10px] text-fg-muted transition-colors duration-fast hover:bg-hover hover:text-fg"
-        >
-          <House size={16} aria-hidden />
-        </button>
+        <LiquidGlassSurface preset="chip" cornerRadius={12}>
+          <button
+            type="button"
+            aria-label="Back to home"
+            onClick={() => navigate("welcome")}
+            className="grid h-9 w-9 place-items-center text-fg-muted transition-colors duration-fast hover:text-fg"
+          >
+            <House size={16} aria-hidden />
+          </button>
+        </LiquidGlassSurface>
       </Tooltip>
       <RailButton
         label="Search tools, effects, or ask AI"
