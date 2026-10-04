@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Project } from "@kove-advanced/core/types/project";
 import { listRegisteredActionTypes } from "@kove-advanced/core/actions/registry";
-import type { EditingHost, OverlayRef, TextOverlayOptions, UpdateTextOverlayOptions } from "./host";
+import type { EditingHost, OverlayRef, UpdateTextOverlayOptions } from "./host";
 import { HeadlessHost } from "./headless-host";
 import { executeTool } from "./executor";
 

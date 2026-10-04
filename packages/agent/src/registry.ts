@@ -1,4 +1,5 @@
 import type { Action } from "@kove-advanced/core/types/actions";
+import { summarizeMeasureReport } from "@kove-advanced/core/qc/measure-export";
 import { HISTORY_TOOLS } from "./tools-history";
 import { AUDIO_ANALYSIS_TOOLS } from "./tools-audio-analysis";
 import { RENDER_TOOLS } from "./tools-render";
@@ -34002,6 +34003,49 @@ const TOOLS: RegisteredTool[] = [
     "exportAudio",
     obj({ format: str }),
   ),
+  {
+    name: "measure_export",
+    domain: "export",
+    title: "Measure exported file (QC)",
+    description:
+      "Run ffmpeg/ffprobe QC on an exported media FILE (path): integrated loudness + true peak (EBU R128), black-frame / silence / freeze detection, and container-duration drift vs expectedDurationSec. Returns parsed measurements plus verdicts against long-form targets (integrated −16 LUFS ±1 LU, true peak ≤ −1 dBTP). Read-only. Requires ffmpeg/ffprobe on the host; returns UNSUPPORTED_HOST where they are missing (do not retry).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { ...str, description: "Path of the exported file to measure." },
+        expectedDurationSec: {
+          ...num,
+          minimum: 0,
+          description:
+            "Expected timeline duration in seconds; used to detect container-duration drift.",
+        },
+      },
+      required: ["path"],
+      additionalProperties: false,
+    },
+    readOnly: true,
+    destructive: false,
+    expensive: false,
+    strict: true,
+    handler: async (args, host) => {
+      const path = optionalString(args.path);
+      if (!path) return fail("path is required", "INVALID_PARAMS");
+      if (typeof host.measureExportFile !== "function") {
+        return unsupportedHost("measure_export");
+      }
+      const expectedDurationSec = optionalNumber(args.expectedDurationSec);
+      try {
+        const result = await host.measureExportFile({ path, expectedDurationSec });
+        if (!("loudness" in result)) return unsupportedHost("measure_export");
+        return ok(summarizeMeasureReport(result), result);
+      } catch (error) {
+        return fail(
+          `measure_export failed: ${error instanceof Error ? error.message : String(error)}`,
+          "MEASURE_FAILED",
+        );
+      }
+    },
+  },
 ];
 
 // ---- Registry --------------------------------------------------------------

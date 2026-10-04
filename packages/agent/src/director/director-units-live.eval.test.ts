@@ -97,7 +97,6 @@ describe.skipIf(!live)("director emits grade params in renderer units (live LLM)
     async (_i, prompt) => {
       const env = live as LiveEnv;
       const host = new HeadlessHost(makeProjectWithClip());
-      host.llm = { client: env.client, provider: env.provider };
       const tools = env.provider === "anthropic" ? toAnthropicTools() : toOpenAITools();
       const messages: LoopMessage[] = [{ role: "user", content: prompt }];
 
@@ -107,9 +106,12 @@ describe.skipIf(!live)("director emits grade params in renderer units (live LLM)
         tools,
         messages,
         limits: { maxSteps: 10 },
-        confirmGate: () => ({ approved: true }),
+        confirmGate: () => "approve",
       });
-      expect(result.error, JSON.stringify(result.error)).toBeUndefined();
+      expect(
+        result.stoppedReason,
+        `turn stopped with: ${result.stoppedReason}`,
+      ).not.toBe("error");
 
       const effects = collectedEffects(host.getProject());
       const graded = effects.filter((e) =>
