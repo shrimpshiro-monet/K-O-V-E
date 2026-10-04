@@ -1494,26 +1494,36 @@ export class VideoEffectsEngine {
     midtones: number,
     highlights: number,
   ): void {
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i] / 255;
-      const g = data[i + 1] / 255;
-      const b = data[i + 2] / 255;
-      const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    // The per-pixel adjustment depends only on luma, so precompute a 256-entry
+    // LUT once per call instead of evaluating three smoothsteps per pixel.
+    // Measured at 1920x1080: the per-pixel version cost ~60 ms/frame; see
+    // tonal-perf.probe.test.ts.
+    const lut = new Float32Array(256);
+    for (let i = 0; i < 256; i++) {
+      const luma = i / 255;
       const shadowWeight = 1 - this.smoothstep(0, 0.33, luma);
       const highlightWeight = this.smoothstep(0.66, 1, luma);
       const midtoneWeight = Math.max(0, 1 - shadowWeight - highlightWeight);
-      const adjustment =
-        shadows * shadowWeight * 0.3 +
-        midtones * midtoneWeight * 0.3 +
-        highlights * highlightWeight * 0.3;
-
-      data[i] = Math.round(Math.max(0, Math.min(255, (r + adjustment) * 255)));
-      data[i + 1] = Math.round(
-        Math.max(0, Math.min(255, (g + adjustment) * 255)),
+      // Stored pre-scaled to 0..255 output levels.
+      lut[i] =
+        (shadows * shadowWeight * 0.3 +
+          midtones * midtoneWeight * 0.3 +
+          highlights * highlightWeight * 0.3) *
+        255;
+    }
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const lumaIndex = Math.min(
+        255,
+        Math.max(0, Math.round(0.299 * r + 0.587 * g + 0.114 * b)),
       );
-      data[i + 2] = Math.round(
-        Math.max(0, Math.min(255, (b + adjustment) * 255)),
-      );
+      const adjustment = lut[lumaIndex];
+      // Uint8ClampedArray clamps on assignment.
+      data[i] = Math.round(r + adjustment);
+      data[i + 1] = Math.round(g + adjustment);
+      data[i + 2] = Math.round(b + adjustment);
     }
   }
 
