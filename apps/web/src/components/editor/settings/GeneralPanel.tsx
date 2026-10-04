@@ -8,6 +8,8 @@ import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { ToolcraftTextInputControl as TextInput } from "@kove-advanced/ui";
 import { useSettingsStore, SERVICE_REGISTRY, type TtsProvider, type LlmProvider, type AggregatorProvider } from "../../../stores/settings-store";
 import { useProjectStore } from "../../../stores/project-store";
+import { useThemeStore } from "../../../stores/theme-store";
+import { useAmbientBackdropStore } from "../../../stores/backdrop-store";
 import { EDITING_FRAME_RATE_OPTIONS } from "../editing-frame-rate";
 
 const ASPECT_PRESETS: Array<{ label: string; width: number; height: number }> = [
@@ -51,6 +53,10 @@ export const GeneralPanel: React.FC = () => {
     setLlmModel,
     setDefaultAggregator,
   } = useSettingsStore();
+
+  const themeMode = useThemeStore((s) => s.mode);
+  const ambientMode = useAmbientBackdropStore((s) => s.mode);
+  const setAmbientMode = useAmbientBackdropStore((s) => s.setMode);
 
   const projectWidth = useProjectStore((s) => s.project.settings.width);
   const projectHeight = useProjectStore((s) => s.project.settings.height);
@@ -105,6 +111,93 @@ export const GeneralPanel: React.FC = () => {
   );
   return (
     <div className="space-y-6 pb-4">
+      {/* Appearance — theme + Monet ambient backdrop */}
+      <div className="space-y-4">
+        <div>
+          <Text type="body" color="primary" className="text-sm font-medium">
+            Appearance
+          </Text>
+          <Text type="supporting" color="secondary" className="mt-0.5 text-xs">
+            Theme and the floral atmosphere behind the workspace. “Off”
+            renders flat surfaces with zero image cost — keep it on Subtle if
+            you are judging color.
+          </Text>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background-tertiary px-3 py-2.5">
+          <div>
+            <Text type="label" color="primary" className="text-xs font-semibold">
+              Theme
+            </Text>
+            <Text type="supporting" color="secondary" className="text-[10px]">
+              Dark, Light, or follow your system.
+            </Text>
+          </div>
+          <div
+            role="radiogroup"
+            aria-label="Theme"
+            className="flex items-center gap-0.5 rounded-[9px] bg-bg-3 p-[3px]"
+          >
+            {(["dark", "light", "auto"] as const).map((mode) => {
+              const isActive = themeMode === mode;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  role="radio"
+                  aria-checked={isActive}
+                  onClick={() => useThemeStore.getState().setMode(mode)}
+                  className={`rounded-[7px] px-3 py-1 text-[11px] capitalize transition-colors duration-fast ${
+                    isActive
+                      ? "bg-bg-1 font-semibold text-fg shadow-sm"
+                      : "font-medium text-fg-muted hover:text-fg-2"
+                  }`}
+                >
+                  {mode === "auto" ? "System" : mode}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background-tertiary px-3 py-2.5">
+          <div>
+            <Text type="label" color="primary" className="text-xs font-semibold">
+              Ambient Backdrop
+            </Text>
+            <Text type="supporting" color="secondary" className="text-[10px]">
+              Vivid is the full garden; Subtle keeps the florals in the
+              negative space only.
+            </Text>
+          </div>
+          <div
+            role="radiogroup"
+            aria-label="Ambient backdrop intensity"
+            className="flex items-center gap-0.5 rounded-[9px] bg-bg-3 p-[3px]"
+          >
+            {(["vivid", "subtle", "off"] as const).map((mode) => {
+              const isActive = ambientMode === mode;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  role="radio"
+                  aria-checked={isActive}
+                  onClick={() => setAmbientMode(mode)}
+                  className={`rounded-[7px] px-3 py-1 text-[11px] capitalize transition-colors duration-fast ${
+                    isActive
+                      ? "bg-bg-1 font-semibold text-fg shadow-sm"
+                      : "font-medium text-fg-muted hover:text-fg-2"
+                  }`}
+                >
+                  {mode}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* Project Composition */}
       <div className="space-y-4">
         <div>

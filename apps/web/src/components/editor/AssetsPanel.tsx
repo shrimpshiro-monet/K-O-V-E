@@ -17,6 +17,7 @@ import { useTimelineStore } from "../../stores/timeline-store";
 import type { MediaItem } from "@kove-advanced/core";
 import { AspectRatioMatchDialog } from "./dialogs/AspectRatioMatchDialog";
 import { AIGenTab } from "./AIGenTab";
+import { PetalsHint } from "../backdrop/AmbientBackdrop";
 import { RecipesTab } from "./panels/RecipesTab";
 import { TemplatesTab } from "./panels/TemplatesTab";
 import {
@@ -199,6 +200,57 @@ const TAB_ICONS: Record<AssetsTab, React.ElementType> = {
   ai: Sparkles,
   recipes: Wand2,
   templates: LayoutTemplate,
+};
+
+/**
+ * Bloom color coding for the category pills — text/soft-fill/line triplets
+ * all resolve to tokens (see styles/tokens.css). Kept as full literal class
+ * strings so Tailwind's scanner can see them.
+ */
+const TAB_BLOOM: Record<
+  AssetsTab,
+  { text: string; fill: string; line: string }
+> = {
+  media: {
+    text: "text-[var(--bloom-rose)]",
+    fill: "bg-[var(--bloom-rose-soft)]",
+    line: "border-[var(--bloom-rose-line)]",
+  },
+  text: {
+    text: "text-[var(--bloom-amber)]",
+    fill: "bg-[var(--bloom-amber-soft)]",
+    line: "border-[var(--bloom-amber-line)]",
+  },
+  graphics: {
+    text: "text-[var(--bloom-sage)]",
+    fill: "bg-[var(--bloom-sage-soft)]",
+    line: "border-[var(--bloom-sage-line)]",
+  },
+  effects: {
+    text: "text-[var(--bloom-lilac)]",
+    fill: "bg-[var(--bloom-lilac-soft)]",
+    line: "border-[var(--bloom-lilac-line)]",
+  },
+  transitions: {
+    text: "text-[var(--bloom-peach)]",
+    fill: "bg-[var(--bloom-peach-soft)]",
+    line: "border-[var(--bloom-peach-line)]",
+  },
+  ai: {
+    text: "text-[var(--bloom-sky)]",
+    fill: "bg-[var(--bloom-sky-soft)]",
+    line: "border-[var(--bloom-sky-line)]",
+  },
+  recipes: {
+    text: "text-[var(--bloom-teal)]",
+    fill: "bg-[var(--bloom-teal-soft)]",
+    line: "border-[var(--bloom-teal-line)]",
+  },
+  templates: {
+    text: "text-[var(--bloom-lilac)]",
+    fill: "bg-[var(--bloom-lilac-soft)]",
+    line: "border-[var(--bloom-lilac-line)]",
+  },
 };
 
 const PanelIconButton: React.FC<{
@@ -615,22 +667,31 @@ const MediaThumbnail: React.FC<{
 };
 
 const EmptyState: React.FC<{ onImport: () => void }> = ({ onImport }) => (
-  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-    <div className="w-16 h-16 rounded-2xl bg-bg-2 border border-border flex items-center justify-center mb-4 shadow-inner">
-      <Upload size={24} className="text-fg-muted" />
+  <div className="flex-1 flex flex-col items-center justify-center p-6 text-center min-h-0">
+    {/* Hero empty state: the one zone where the florals get to shine. */}
+    <div className="relative w-full max-w-[300px] rounded-2xl border-2 border-dashed border-[var(--border-default)] p-8 transition-colors duration-base hover:border-accent">
+      <PetalsHint opacity={0.14} className="rounded-2xl" />
+      <div className="relative flex flex-col items-center">
+        <div className="w-14 h-14 rounded-2xl bg-bg-2 border border-border flex items-center justify-center mb-3.5 shadow-inner">
+          <Upload size={22} className="text-accent" />
+        </div>
+        <Text type="body" color="secondary" weight="bold" display="block" className="mb-1.5 type-title-md text-fg">
+          Bring your story in
+        </Text>
+        <Text type="supporting" color="secondary" display="block" className="mb-5 text-xs text-fg-3">
+          Drag files here, or import from your device.
+        </Text>
+        <Button
+          label="Import Media"
+          variant="ghost"
+          onClick={onImport}
+          className="px-4 py-2 bg-accent-soft hover:bg-bg-3 border border-accent/40 text-accent text-xs font-semibold rounded-lg transition-all hover:border-accent"
+        />
+      </div>
     </div>
-    <Text type="body" color="secondary" weight="bold" display="block" className="mb-2 text-sm text-fg">
-      No media imported
+    <Text type="supporting" color="secondary" display="block" className="mt-3 text-[11px] text-fg-muted">
+      Record screen · Browse stock · Generate with AI
     </Text>
-    <Text type="supporting" color="secondary" display="block" className="mb-6 text-xs text-fg-3">
-      Drag files here or click to import
-    </Text>
-    <Button
-      label="Import Media"
-      variant="ghost"
-      onClick={onImport}
-      className="px-4 py-2 bg-bg-2 hover:bg-bg-3 border border-border text-fg-2 text-xs font-medium rounded-lg transition-all hover:border-accent/50"
-    />
   </div>
 );
 
@@ -1513,19 +1574,19 @@ export const AssetsPanel: React.FC = () => {
         );
       case "ai":
         return (
-          <div className="flex min-h-0 flex-1 flex-col border-t border-border/70 bg-background-secondary content-area-fix">
+          <div className="flex min-h-0 flex-1 flex-col content-area-fix">
             <AIGenTab />
           </div>
         );
       case "recipes":
         return (
-          <div className="flex min-h-0 flex-1 flex-col border-t border-border/70 bg-background-secondary content-area-fix">
+          <div className="flex min-h-0 flex-1 flex-col content-area-fix">
             <RecipesTab />
           </div>
         );
       case "templates":
         return (
-          <div className="flex min-h-0 flex-1 flex-col border-t border-border/70 bg-background-secondary content-area-fix">
+          <div className="flex min-h-0 flex-1 flex-col content-area-fix">
             <TemplatesTab />
           </div>
         );
@@ -1537,38 +1598,49 @@ export const AssetsPanel: React.FC = () => {
   return (
     <div
       data-tour="assets"
-      className="w-full h-full bg-bg-1 overflow-hidden flex flex-row relative"
+      className="w-full h-full bg-transparent overflow-hidden flex flex-col relative"
     >
-      {/* ── Vertical tool rail (icon + label, left) ───────────── */}
-      <div className="flex flex-col items-center gap-1 px-0 py-[14px] border-r border-border bg-bg-1 overflow-y-auto scrollbar-none shrink-0 w-[92px]">
+      {/* ── Category pills (horizontal, bloom-tinted) ──────────
+          Replaces the old 92px vertical sub-rail — reclaims the
+          horizontal space for the asset grid. ────────────────── */}
+      <div
+        role="group"
+        aria-label="Asset categories"
+        className="rail-scroll flex shrink-0 items-center gap-1.5 overflow-x-auto px-3 pt-2.5 pb-2 border-b border-line"
+        style={{
+          maskImage:
+            "linear-gradient(to right, transparent 0, black 10px, black calc(100% - 10px), transparent 100%)",
+          WebkitMaskImage:
+            "linear-gradient(to right, transparent 0, black 10px, black calc(100% - 10px), transparent 100%)",
+        }}
+      >
         {ASSETS_TABS.map((tab) => {
           const Icon = TAB_ICONS[tab.value];
           const isActive = activeTab === tab.value;
+          const bloom = TAB_BLOOM[tab.value];
           return (
             <button
               key={tab.value}
               type="button"
               aria-label={tab.label}
               aria-pressed={isActive}
-              title={tab.label}
+              title={tab.description}
               onClick={() => setActiveTab(tab.value)}
-              className={`group flex h-16 w-[68px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] px-1 py-2 text-[10px] leading-tight tracking-tight transition-colors ${
+              className={`flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[12px] transition-colors duration-fast ${
                 isActive
-                  ? "bg-selected text-accent font-semibold"
-                  : "text-fg-muted font-medium"
+                  ? `${bloom.text} ${bloom.fill} ${bloom.line} font-semibold`
+                  : "border-transparent text-fg-muted font-medium hover:bg-bg-2/70 hover:text-fg"
               }`}
             >
-              <Icon size={20} strokeWidth={isActive ? 1.8 : 1.7} />
-              <span className="block max-w-full text-center leading-[11px]">
-                {tab.label}
-              </span>
+              <Icon size={14} strokeWidth={isActive ? 2 : 1.7} />
+              <span className="whitespace-nowrap">{tab.label}</span>
             </button>
           );
         })}
       </div>
 
       {/* ── Body: section content fills the remaining space ──── */}
-      <div className="flex-1 flex flex-col min-w-0 h-full bg-bg-1 relative">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-transparent relative">
         {isImporting && (
           <LoadingIndicator message={importProgress || "Importing media..."} />
         )}

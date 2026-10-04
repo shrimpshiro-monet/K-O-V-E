@@ -9,8 +9,64 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ── v2 editor tokens (cinematic, emerald)
-        //   These read raw oklch via CSS variables. Opacity modifiers
+        // ── Monet design tokens (tokens.css) ──────────────────────
+        // Surfaces. --surface-1/2/3 are translucent glass values and are
+        // only for glass wrappers; solid content surfaces must use
+        // surface-solid / surface-sunken per the legibility rule.
+        surface: {
+          0: "var(--surface-0)",
+          1: "var(--surface-1)",
+          2: "var(--surface-2)",
+          3: "var(--surface-3)",
+          solid: "var(--surface-solid)",
+          sunken: "var(--surface-sunken)",
+          raised: "var(--surface-raised)",
+        },
+        line: {
+          subtle: "var(--border-subtle)",
+          DEFAULT: "var(--border-default)",
+          strong: "var(--border-strong)",
+          glow: "var(--border-glow)",
+        },
+        text: {
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+          tertiary: "var(--text-tertiary)",
+          disabled: "var(--text-disabled)",
+        },
+        // Floral secondaries — clip/asset category coding, accents.
+        bloom: {
+          rose: "var(--bloom-rose)",
+          blood: "var(--bloom-blood)",
+          petal: "var(--bloom-petal)",
+          amber: "var(--bloom-amber)",
+          lilac: "var(--bloom-lilac)",
+          teal: "var(--bloom-teal)",
+          peach: "var(--bloom-peach)",
+          sage: "var(--bloom-sage)",
+          sky: "var(--bloom-sky)",
+        },
+        semantic: {
+          success: "var(--success)",
+          warning: "var(--warning)",
+          danger: "var(--danger)",
+          info: "var(--info)",
+        },
+        accent: {
+          DEFAULT: "var(--accent)",
+          strong: "var(--accent-strong)",
+          soft: "var(--accent-soft)",
+          fg: "var(--accent-fg)",
+          // shadcn primitives (Select/DropdownMenu/ContextMenu/Button) hover
+          // with `bg-accent text-accent-foreground`; without this mapping the
+          // text color resolved to nothing and disappeared on the emerald
+          // hover background. Maps to the on-accent text token.
+          foreground: "var(--accent-fg)",
+          glow: "var(--accent-glow)",
+        },
+
+        // ── v2 editor tokens (now re-pointed at Monet palette) ──
+        //   These read raw values via CSS variables. Opacity modifiers
         //   are not supported on these — use the *-soft / *-glow
         //   companion tokens (or arbitrary values) when you need a tint.
         bg: {
@@ -33,18 +89,6 @@ export default {
         "tl-bg": "var(--tl-bg)",
         "track-bg": "var(--track-bg)",
         waveform: "var(--waveform)",
-        accent: {
-          DEFAULT: "var(--accent)",
-          strong: "var(--accent-strong)",
-          soft: "var(--accent-soft)",
-          fg: "var(--accent-fg)",
-          // shadcn primitives (Select/DropdownMenu/ContextMenu/Button) hover
-          // with `bg-accent text-accent-foreground`; without this mapping the
-          // text color resolved to nothing and disappeared on the emerald
-          // hover background. Maps to the on-accent text token.
-          foreground: "var(--accent-fg)",
-          glow: "var(--accent-glow)",
-        },
         clip: {
           video: "var(--c-video)",
           text: "var(--c-text)",
@@ -94,36 +138,47 @@ export default {
         },
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        text: {
-          primary: "var(--fg)",
-          secondary: "var(--fg-2)",
-          muted: "var(--fg-3)",
-        },
         status: {
-          success: "var(--accent)",
-          warning: "#eab308",
-          error: "#ef4444",
-          info: "#3b82f6",
+          success: "var(--success)",
+          warning: "var(--warning)",
+          error: "var(--danger)",
+          info: "var(--info)",
         },
       },
       fontFamily: {
-        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
-        mono: ["Geist Mono", "monospace"],
+        sans: ["var(--font-ui)"],
+        mono: ["var(--font-mono)"],
       },
       boxShadow: {
         sm: "var(--shadow-sm)",
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
+        glass: "var(--shadow-glass)",
+        raised: "var(--shadow-raised)",
+        modal: "var(--shadow-modal)",
+        canvas: "var(--shadow-canvas)",
         glow: "0 2px 8px var(--accent-glow)",
         "glow-lg": "0 4px 14px var(--accent-glow)",
         panel: "var(--shadow-md)",
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-        xl: "0.75rem",
-        "2xl": "1rem",
+        xs: "var(--radius-xs)",
+        sm: "var(--radius-sm)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
+        "2xl": "var(--radius-2xl)",
+        full: "var(--radius-full)",
+      },
+      transitionDuration: {
+        instant: "var(--duration-instant)",
+        fast: "var(--duration-fast)",
+        base: "var(--duration-base)",
+        slow: "var(--duration-slow)",
+      },
+      transitionTimingFunction: {
+        "ease-out-soft": "var(--easing-out)",
+        "ease-inout-soft": "var(--easing-inout)",
       },
       spacing: {
         topbar: "var(--topbar-h)",

@@ -4,9 +4,16 @@ import {
   Settings,
   MoreHorizontal,
   Video,
+  Undo2,
+  Redo2,
+  Sun,
+  Moon,
+  MonitorSmartphone,
 } from "@/icons/lucide-compat";
 import { useProjectStore } from "../../stores/project-store";
 import { useUIStore } from "../../stores/ui-store";
+import { useThemeStore } from "../../stores/theme-store";
+import { useSettingsStore } from "../../stores/settings-store";
 import { useRouter } from "../../hooks/use-router";
 import {
   getExportEngine,
@@ -54,8 +61,43 @@ type ExportType =
   | "1080p-60"
   | "project";
 
+/** Minimal petal/bloom glyph — the Monet mark. */
+const BloomMark: React.FC<{ size?: number }> = ({ size = 24 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden
+    style={{ filter: "drop-shadow(0 0 6px var(--accent-primary-glow))" }}
+  >
+    {[0, 72, 144, 216, 288].map((deg) => (
+      <ellipse
+        key={deg}
+        cx="12"
+        cy="7.4"
+        rx="3.1"
+        ry="4.6"
+        fill="var(--accent-primary)"
+        fillOpacity={0.85}
+        transform={`rotate(${deg} 12 12)`}
+      />
+    ))}
+    <circle cx="12" cy="12" r="2" fill="var(--bloom-amber)" />
+  </svg>
+);
+
 export const Toolbar: React.FC = () => {
-  const { project, renameProject } = useProjectStore();
+  const {
+    project,
+    renameProject,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useProjectStore();
+  const { mode: themeMode, toggleTheme } = useThemeStore();
+  const { openSettings } = useSettingsStore();
   const {
     selectedItems,
     setExportState: setGlobalExportState,
@@ -70,8 +112,12 @@ export const Toolbar: React.FC = () => {
   const { importMedia } = useProjectStore();
   const { track } = useAnalytics();
 
-  // Local editable project name (committed onBlur / Enter)
+  // Local editable project name (committed onBlur / Enter). The save-state
+  // dot mirrors the commit: amber pulse while saving, green when saved,
+  // red on error. Auto-save itself is owned by the project store untouched.
   const [projectNameDraft, setProjectNameDraft] = useState(project.name);
+  const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   useEffect(() => {
     setProjectNameDraft(project.name);
   }, [project.name]);
@@ -79,11 +125,53 @@ export const Toolbar: React.FC = () => {
   const commitProjectName = useCallback(() => {
     const next = projectNameDraft.trim();
     if (next && next !== project.name) {
-      void renameProject(next);
+      setSaveState("saving");
+      void renameProject(next).then((result) => {
+        if (result.success) {
+          setSaveState("saved");
+          setLastSavedAt(Date.now());
+        } else {
+          setSaveState("error");
+        }
+      });
     } else {
       setProjectNameDraft(project.name);
     }
   }, [projectNameDraft, project.name, renameProject]);
+
+  const themeLabel =
+    themeMode === "auto"
+      ? "System"
+      : themeMode.charAt(0).toUpperCase() + themeMode.slice(1);
+  const nextThemeLabel =
+    themeMode === "light" ? "Dark" : themeMode === "dark" ? "System" : "Light";
+  const themeIcon =
+    themeMode === "light" ? (
+      <Sun size={15} aria-hidden />
+    ) : themeMode === "dark" ? (
+      <Moon size={15} aria-hidden />
+    ) : (
+      <MonitorSmartphone size={15} aria-hidden />
+    );
+  const themeActionLabel = `Theme: ${themeLabel}. Switch to ${nextThemeLabel}`;
+
+  const frameRate = project.settings.frameRate ?? 30;
+  const durationSec = project.timeline?.duration ?? 0;
+  const durationTc = [
+    Math.floor(durationSec / 3600),
+    Math.floor(durationSec / 60) % 60,
+    Math.floor(durationSec) % 60,
+  ]
+    .map((part) => String(part).padStart(2, "0"))
+    .join(":");
+  const lastSavedLabel =
+    saveState === "saved" && lastSavedAt
+      ? `Saved ${new Date(lastSavedAt).toLocaleTimeString()}`
+      : saveState === "saving"
+        ? "Saving…"
+        : saveState === "error"
+          ? "Last save failed — click to retry"
+          : "Up to date";
 
   const handleWorkspaceModeSelect = useCallback(
     (mode: WorkspaceMode) => {
@@ -415,38 +503,108 @@ export const Toolbar: React.FC = () => {
   ];
 
   return (
-    <header className="h-[60px] flex items-center gap-[18px] px-[18px] bg-bg-1 border-b border-border shrink-0 z-30 relative">
-      {/* ─── Left: mode switch ────────────────────────────────── */}
+    <header className="glass-panel h-[56px] flex items-center gap-3 px-3 rounded-2xl shrink-0 z-30 relative">
+      {/* ─── Left: brand + mode switch ────────────────────────── */}
+      <button
+        type="button"
+        aria-label="Monet — app menu"
+        title="Monet Editor"
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg hover:bg-hover transition-colors duration-fast"
+        onClick={() => openSettings?.()}
+      >
+        <BloomMark size={22} />
+      </button>
+      <span className="hidden xl:block shrink-0 text-[15px] font-semibold tracking-tight text-fg-2 select-none">
+        Monet
+      </span>
+
       <WorkspaceModeTabs
         activeMode="video"
         onSelectMode={handleWorkspaceModeSelect}
-        className="shrink-0"
+        className="shrink-0 ml-2"
       />
 
-      {/* ─── Center: project name ─────────────────────────────── */}
-      <div className="flex flex-1 min-w-0 items-center justify-center gap-1.5">
-        <ToolcraftTextInputControl
-          label="Project name"
-          isLabelHidden
-          value={projectNameDraft}
-          onChange={setProjectNameDraft}
-          onBlur={commitProjectName}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              (e.currentTarget as HTMLElement).blur();
-            } else if (e.key === "Escape") {
-              setProjectNameDraft(project.name);
-              (e.currentTarget as HTMLElement).blur();
-            }
-          }}
-          width={Math.min(Math.max(projectNameDraft.length, 6) * 8 + 40, 220)}
-          className="max-w-[220px] bg-transparent border-0 text-center font-medium text-[14px] tracking-tight text-fg-2 px-2 py-0.5 rounded-md min-w-[60px] focus:bg-bg-2 focus:outline-none"
-        />
-        <ProjectSwitcher />
+      {/* ─── Center: project name + meta ──────────────────────── */}
+      <div className="flex flex-1 min-w-0 flex-col items-center justify-center gap-0 relative">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span
+            title={lastSavedLabel}
+            aria-label={`Save status: ${lastSavedLabel}`}
+            className={`h-[7px] w-[7px] shrink-0 rounded-full transition-colors ${
+              saveState === "saving"
+                ? "bg-status-warning animate-pulse"
+                : saveState === "error"
+                  ? "bg-status-error"
+                  : "bg-status-success"
+            }`}
+          />
+          <ToolcraftTextInputControl
+            label="Project name"
+            isLabelHidden
+            value={projectNameDraft}
+            onChange={setProjectNameDraft}
+            onBlur={commitProjectName}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.currentTarget as HTMLElement).blur();
+              } else if (e.key === "Escape") {
+                setProjectNameDraft(project.name);
+                (e.currentTarget as HTMLElement).blur();
+              }
+            }}
+            width={Math.min(Math.max(projectNameDraft.length, 6) * 8 + 40, 220)}
+            className="max-w-[220px] bg-transparent border-0 text-center font-medium text-[14px] tracking-tight text-fg px-2 py-0.5 rounded-md min-w-[60px] hover:bg-hover focus:bg-bg-2 focus:outline-none transition-colors"
+          />
+          <ProjectSwitcher />
+        </div>
+        <span className="type-caption text-fg-muted pointer-events-none select-none tabular">
+          {project.settings.width}×{project.settings.height} · {frameRate}fps · {durationTc}
+        </span>
       </div>
 
-      {/* ─── Right: export only ───────────────────────────────── */}
-      <div className="flex items-center justify-end shrink-0">
+      {/* ─── Right: global actions + export ───────────────────── */}
+      <div className="flex items-center justify-end gap-1.5 shrink-0">
+        <div className="flex items-center gap-0.5 rounded-lg px-0.5 py-0.5 bg-bg-2/60 border border-line mr-1.5">
+          <button
+            type="button"
+            aria-label="Undo"
+            title="Undo (⌘Z)"
+            disabled={!canUndo()}
+            onClick={() => void undo()}
+            className="grid h-7 w-7 place-items-center rounded-md text-fg-2 transition-colors duration-fast hover:bg-hover hover:text-fg disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Undo2 size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            aria-label="Redo"
+            title="Redo (⇧⌘Z)"
+            disabled={!canRedo()}
+            onClick={() => void redo()}
+            className="grid h-7 w-7 place-items-center rounded-md text-fg-2 transition-colors duration-fast hover:bg-hover hover:text-fg disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Redo2 size={14} aria-hidden />
+          </button>
+          <span className="mx-1 h-4 w-px bg-line" aria-hidden />
+          <button
+            type="button"
+            aria-label={themeActionLabel}
+            title={themeActionLabel}
+            onClick={toggleTheme}
+            className="grid h-7 w-7 place-items-center rounded-md text-fg-2 transition-colors duration-fast hover:bg-hover hover:text-fg"
+          >
+            {themeIcon}
+          </button>
+          <button
+            type="button"
+            aria-label="Settings"
+            title="Settings"
+            onClick={() => openSettings?.()}
+            className="grid h-7 w-7 place-items-center rounded-md text-fg-2 transition-colors duration-fast hover:bg-hover hover:text-fg"
+          >
+            <Settings size={14} aria-hidden />
+          </button>
+        </div>
         {/* Export */}
         {exportState.isExporting ? (
           <button
@@ -481,7 +639,10 @@ export const Toolbar: React.FC = () => {
             <button
               type="button"
               onClick={() => handleExport("mp4")}
-              className="rounded-l-[8px] rounded-r-none bg-accent px-[18px] py-[9px] text-[13px] font-semibold text-white"
+              className="rounded-l-[10px] rounded-r-none px-[18px] py-[9px] text-[13px] font-semibold text-accent-fg hover:shadow-[0_0_24px_var(--accent-primary-glow)] transition-shadow duration-fast"
+              style={{
+                background: "var(--accent-gradient)",
+              }}
             >
               Export
             </button>
@@ -500,7 +661,7 @@ export const Toolbar: React.FC = () => {
                     height="11"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#fff"
+                    stroke="var(--accent-fg)"
                     strokeWidth="2.4"
                     aria-hidden
                   >
@@ -508,13 +669,13 @@ export const Toolbar: React.FC = () => {
                   </svg>
                 ),
                 className:
-                  "rounded-l-none rounded-r-[8px] border-l border-white/25",
+                  "rounded-l-none rounded-r-[10px] border-l border-black/15",
                 style: {
                   background: "var(--accent)",
                   width: "auto",
                   height: "auto",
                   padding: "9px 8px",
-                  borderRadius: "0 8px 8px 0",
+                  borderRadius: "0 10px 10px 0",
                 },
               }}
               menuWidth={288}
