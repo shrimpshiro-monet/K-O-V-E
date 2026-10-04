@@ -6,12 +6,15 @@ export type FilterEffectType =
   | "blur"
   | "sharpen"
   | "vignette"
-  | "grain";
+  | "grain"
+  | "tonal";
 
 export interface FilterEffectParams {
   brightness: { value: number };
   contrast: { value: number };
   saturation: { value: number };
+  /** Three-band lift, each −1..1 (see applyTonal). Negative shadows crush blacks. */
+  tonal: { shadows: number; midtones: number; highlights: number };
   hue: { rotation: number };
   blur: { radius: number; type: "gaussian" | "box" | "motion"; angle?: number };
   sharpen: { amount: number; radius: number; threshold: number };
@@ -61,7 +64,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "saturation", params: { value: 0 } },
       { type: "contrast", params: { value: 1.4 } },
-      { type: "brightness", params: { value: -0.05 } },
+      { type: "brightness", params: { value: -5 } },
       {
         type: "vignette",
         params: { amount: 0.4, midpoint: 0.4, roundness: 0.5, feather: 0.6 },
@@ -80,7 +83,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "contrast", params: { value: 1.2 } },
       { type: "saturation", params: { value: 1.15 } },
-      { type: "brightness", params: { value: 0.05 } },
+      { type: "brightness", params: { value: 5 } },
       { type: "sharpen", params: { amount: 0.3, radius: 1, threshold: 10 } },
     ],
   },
@@ -92,7 +95,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "saturation", params: { value: 0.85 } },
       { type: "contrast", params: { value: 0.9 } },
-      { type: "brightness", params: { value: 0.05 } },
+      { type: "brightness", params: { value: 5 } },
       {
         type: "grain",
         params: { amount: 0.2, size: 2, roughness: 0.6, colored: true },
@@ -136,7 +139,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "saturation", params: { value: 0.3 } },
       { type: "contrast", params: { value: 1.05 } },
-      { type: "brightness", params: { value: 0.1 } },
+      { type: "brightness", params: { value: 10 } },
     ],
   },
   {
@@ -145,7 +148,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     category: "mood",
     description: "Soft, ethereal atmosphere",
     effects: [
-      { type: "brightness", params: { value: 0.1 } },
+      { type: "brightness", params: { value: 10 } },
       { type: "saturation", params: { value: 0.85 } },
       { type: "blur", params: { radius: 1, type: "gaussian" } },
       { type: "contrast", params: { value: 0.9 } },
@@ -157,7 +160,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     category: "mood",
     description: "Dark, atmospheric feel",
     effects: [
-      { type: "brightness", params: { value: -0.15 } },
+      { type: "brightness", params: { value: -15 } },
       { type: "contrast", params: { value: 1.25 } },
       { type: "saturation", params: { value: 0.75 } },
       {
@@ -172,7 +175,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     category: "mood",
     description: "Warm sunset lighting",
     effects: [
-      { type: "brightness", params: { value: 0.1 } },
+      { type: "brightness", params: { value: 10 } },
       { type: "saturation", params: { value: 1.2 } },
       { type: "contrast", params: { value: 1.05 } },
     ],
@@ -184,7 +187,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     description: "Cool, icy atmosphere",
     effects: [
       { type: "saturation", params: { value: 0.9 } },
-      { type: "brightness", params: { value: 0.05 } },
+      { type: "brightness", params: { value: 5 } },
       { type: "contrast", params: { value: 1.1 } },
     ],
   },
@@ -196,7 +199,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "saturation", params: { value: 1.4 } },
       { type: "contrast", params: { value: 1.15 } },
-      { type: "brightness", params: { value: 0.05 } },
+      { type: "brightness", params: { value: 5 } },
     ],
   },
   {
@@ -207,7 +210,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "saturation", params: { value: 0.6 } },
       { type: "contrast", params: { value: 0.95 } },
-      { type: "brightness", params: { value: 0.05 } },
+      { type: "brightness", params: { value: 5 } },
     ],
   },
   {
@@ -228,7 +231,19 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "saturation", params: { value: 0 } },
       { type: "contrast", params: { value: 1.5 } },
-      { type: "brightness", params: { value: -0.05 } },
+      { type: "brightness", params: { value: -5 } },
+    ],
+  },
+  {
+    id: "color-bw-crushed",
+    name: "B&W Crushed",
+    category: "color",
+    description: "Hard monochrome crush — deep blacks for isolated-subject looks",
+    effects: [
+      { type: "saturation", params: { value: 0 } },
+      { type: "contrast", params: { value: 2.2 } },
+      { type: "tonal", params: { shadows: -1, midtones: -1, highlights: -0.4 } },
+      { type: "brightness", params: { value: -8 } },
     ],
   },
   {
@@ -262,7 +277,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     category: "stylized",
     description: "Romantic soft focus effect",
     effects: [
-      { type: "brightness", params: { value: 0.15 } },
+      { type: "brightness", params: { value: 15 } },
       { type: "blur", params: { radius: 1.5, type: "gaussian" } },
       { type: "contrast", params: { value: 0.85 } },
       { type: "saturation", params: { value: 0.9 } },
@@ -286,7 +301,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     category: "cinematic",
     description: "Cool moonlit night look",
     effects: [
-      { type: "brightness", params: { value: -0.18 } },
+      { type: "brightness", params: { value: -18 } },
       { type: "contrast", params: { value: 1.2 } },
       { type: "saturation", params: { value: 0.7 } },
       { type: "hue", params: { rotation: 210 } },
@@ -301,7 +316,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "contrast", params: { value: 0.82 } },
       { type: "saturation", params: { value: 0.8 } },
-      { type: "brightness", params: { value: 0.08 } },
+      { type: "brightness", params: { value: 8 } },
       { type: "grain", params: { amount: 0.12, size: 1.4, roughness: 0.5, colored: false } },
       { type: "vignette", params: { amount: 0.2, midpoint: 0.5, roundness: 0.5, feather: 0.8 } },
     ],
@@ -327,7 +342,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "hue", params: { rotation: 20 } },
       { type: "saturation", params: { value: 1.2 } },
-      { type: "brightness", params: { value: 0.06 } },
+      { type: "brightness", params: { value: 6 } },
       { type: "contrast", params: { value: 1.08 } },
       { type: "vignette", params: { amount: 0.2, midpoint: 0.55, roundness: 0.6, feather: 0.85 } },
     ],
@@ -340,7 +355,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "hue", params: { rotation: 200 } },
       { type: "saturation", params: { value: 0.78 } },
-      { type: "brightness", params: { value: 0.1 } },
+      { type: "brightness", params: { value: 10 } },
       { type: "contrast", params: { value: 1.1 } },
     ],
   },
@@ -352,7 +367,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "contrast", params: { value: 1.3 } },
       { type: "saturation", params: { value: 0.85 } },
-      { type: "brightness", params: { value: -0.06 } },
+      { type: "brightness", params: { value: -6 } },
       { type: "vignette", params: { amount: 0.5, midpoint: 0.4, roundness: 0.5, feather: 0.6 } },
     ],
   },
@@ -375,7 +390,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     effects: [
       { type: "contrast", params: { value: 0.82 } },
       { type: "saturation", params: { value: 0.82 } },
-      { type: "brightness", params: { value: 0.14 } },
+      { type: "brightness", params: { value: 14 } },
     ],
   },
   {
@@ -385,7 +400,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
     description: "Hazy, glowing dream look",
     effects: [
       { type: "blur", params: { radius: 2.5, type: "gaussian" } },
-      { type: "brightness", params: { value: 0.18 } },
+      { type: "brightness", params: { value: 18 } },
       { type: "saturation", params: { value: 1.15 } },
       { type: "contrast", params: { value: 0.9 } },
     ],
@@ -410,7 +425,7 @@ export const FILTER_PRESETS: FilterPreset[] = [
       { type: "hue", params: { rotation: 95 } },
       { type: "saturation", params: { value: 1.1 } },
       { type: "contrast", params: { value: 1.2 } },
-      { type: "brightness", params: { value: -0.05 } },
+      { type: "brightness", params: { value: -5 } },
     ],
   },
 ];

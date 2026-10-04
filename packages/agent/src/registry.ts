@@ -2193,8 +2193,11 @@ type IntensityMapping =
 
 const EFFECT_INTENSITY_PARAM: Readonly<Record<string, IntensityMapping>> = {
   brightness: { single: "value", scale: 100 },
-  contrast: { single: "value", scale: 100 },
-  saturation: { single: "value", scale: 100 },
+  // contrast/saturation are CSS MULTIPLIERS (contrast(1) = identity), not
+  // percent offsets: scale 100 emitted contrast(50)/saturate(50) — a blown
+  // frame. Intensity now maps to 1..2 on the multiplier scale.
+  contrast: { multi: (i) => ({ value: 1 + i }) },
+  saturation: { multi: (i) => ({ value: 1 + i }) },
   hue: { single: "rotation", scale: 180 },
   blur: { single: "radius", scale: 10 },
   sharpen: { single: "amount", scale: 100 },
@@ -2223,6 +2226,9 @@ function synthesizeEffectParams(
   if ("multi" in mapping) return mapping.multi(intensity);
   return { [mapping.single]: intensity * mapping.scale };
 }
+
+/** Test-only handle onto effect parameter synthesis. */
+export const _synthesizeEffectParamsForTest = synthesizeEffectParams;
 
 async function materializeEditPlan(
   plan: EditPlan,
