@@ -7,7 +7,6 @@ from typing import Any
 
 from kove_engine.types import AudioResult, FrameDescription, VideoSegmentMap
 
-
 ANALYSIS_VERSION = "1.1.0"
 STYLE_PROFILE_VERSION = "1.0.0"
 
@@ -40,10 +39,8 @@ def _style_profile(
     cut_on_beat_ratio: float | None = None
     if bpm_values and video.segments[1:]:
         beat_period = 60.0 / (sum(bpm_values) / len(bpm_values))
-        aligned = sum(
-            min((boundary.start_time % beat_period), beat_period - (boundary.start_time % beat_period)) <= 0.15
-            for boundary in video.segments[1:]
-        )
+        offsets = [boundary.start_time % beat_period for boundary in video.segments[1:]]
+        aligned = sum(min(offset, beat_period - offset) <= 0.15 for offset in offsets)
         cut_on_beat_ratio = aligned / len(video.segments[1:])
 
     return {
@@ -52,20 +49,44 @@ def _style_profile(
         "cutsPerMinute": _round(cut_count / (video.duration / 60)) if video.duration > 0 else 0.0,
         "medianShotDuration": _round(median(durations)) if durations else 0.0,
         "cutOnBeatRatio": _round(cut_on_beat_ratio) if cut_on_beat_ratio is not None else None,
-        "effectDensity": _round(len(effect_candidates) / (video.duration / 60)) if video.duration > 0 else 0.0,
-        "transitionDensity": _round(len(transition_candidates) / (video.duration / 60)) if video.duration > 0 else 0.0,
-        "textOverlayDensity": _round(len(overlay_candidates) / (video.duration / 60)) if video.duration > 0 else 0.0,
+        "effectDensity": _round(len(effect_candidates) / (video.duration / 60))
+        if video.duration > 0
+        else 0.0,
+        "transitionDensity": _round(len(transition_candidates) / (video.duration / 60))
+        if video.duration > 0
+        else 0.0,
+        "textOverlayDensity": _round(len(overlay_candidates) / (video.duration / 60))
+        if video.duration > 0
+        else 0.0,
         "shotTypeDistribution": {
             name: _round(count / max(1, len(observations)))
             for name, count in shot_types.items()
         },
         "cutStyle": "mixed" if transition_candidates else "hard" if cut_count else "unknown",
-        "effectPalette": sorted({candidate.get("type", "") for candidate in effect_candidates if candidate.get("type")}),
-        "transitionPalette": sorted({candidate.get("type", "") for candidate in transition_candidates if candidate.get("type")}),
+        "effectPalette": sorted(
+            {
+                candidate.get("type", "")
+                for candidate in effect_candidates
+                if candidate.get("type")
+            }
+        ),
+        "transitionPalette": sorted(
+            {
+                candidate.get("type", "")
+                for candidate in transition_candidates
+                if candidate.get("type")
+            }
+        ),
         "detectedBpm": _round(sum(bpm_values) / len(bpm_values), 1) if bpm_values else None,
-        "dialogueRatio": _round(mean(1.0 if item["hasDialogue"] else 0.0 for item in observations)) if observations else 0.0,
-        "musicRatio": _round(mean(1.0 if result.has_music else 0.0 for result in audio)) if audio else 0.0,
-        "confidence": _round(mean(item["confidence"] for item in observations)) if observations else 0.0,
+        "dialogueRatio": _round(mean(1.0 if item["hasDialogue"] else 0.0 for item in observations))
+        if observations
+        else 0.0,
+        "musicRatio": _round(mean(1.0 if result.has_music else 0.0 for result in audio))
+        if audio
+        else 0.0,
+        "confidence": _round(mean(item["confidence"] for item in observations))
+        if observations
+        else 0.0,
     }
 
 
@@ -147,7 +168,9 @@ def analyze_reference_edit(
         "summary": {
             "pacing": pacing,
             "cutCount": cut_count,
-            "cutsPerMinute": _round(cut_count / (video.duration / 60)) if video.duration > 0 else 0.0,
+            "cutsPerMinute": _round(cut_count / (video.duration / 60))
+            if video.duration > 0
+            else 0.0,
             "dominantSceneTypes": [name for name, _ in scene_types.most_common()],
             "dominantMotionLevels": [name for name, _ in motion_levels.most_common()],
             "dialogueLed": dialogue_ratio >= 0.35,
@@ -165,15 +188,23 @@ def analyze_reference_edit(
             "textOverlays": [],
             "colorTreatment": {
                 "status": "requires_visual_vision",
-                "evidence": "Local pass records scene and motion evidence; AI vision may identify grading and overlays.",
+                "evidence": (
+                    "Local pass records scene and motion evidence; "
+                    "AI vision may identify grading and overlays."
+                ),
             },
         },
         "audio": {
             "dialogueRatio": _round(dialogue_ratio),
-            "musicRatio": _round(mean(1.0 if result.has_music else 0.0 for result in audio)) if audio else 0.0,
-            "silenceRatio": _round(mean(1.0 if result.is_silence else 0.0 for result in audio)) if audio else 0.0,
+            "musicRatio": _round(mean(1.0 if result.has_music else 0.0 for result in audio))
+            if audio
+            else 0.0,
+            "silenceRatio": _round(mean(1.0 if result.is_silence else 0.0 for result in audio))
+            if audio
+            else 0.0,
             "detectedBpm": _round(mean([result.bpm for result in audio if result.bpm]), 1)
-            if any(result.bpm for result in audio) else None,
+            if any(result.bpm for result in audio)
+            else None,
         },
         "timeline": cues,
         "observations": observations,
@@ -181,7 +212,9 @@ def analyze_reference_edit(
     if forensics:
         report["forensics"] = forensics
         transitions = forensics.get("transitions", [])
-        report["editPattern"]["transitionEvidence"] = transitions or report["editPattern"]["transitionEvidence"]
+        report["editPattern"]["transitionEvidence"] = (
+            transitions or report["editPattern"]["transitionEvidence"]
+        )
         report["editPattern"]["textOverlays"] = forensics.get("overlayCandidates", [])
         report["editPattern"]["effects"] = forensics.get("effectCandidates", [])
         report["editPattern"]["colorTreatment"] = forensics.get("visualTreatment", {})

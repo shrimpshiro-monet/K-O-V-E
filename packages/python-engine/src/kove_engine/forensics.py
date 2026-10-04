@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import subprocess
-from pathlib import Path
 from typing import Any
 
 import cv2
@@ -148,7 +147,9 @@ def analyze_sampled_sequence(
                 "confidence": _round(min(0.7, mean_flow / 12.0)),
                 "evidence": {
                     "meanOpticalFlow": _round(mean_flow),
-                    "dominantDirection": _round(float(np.degrees(np.angle(np.mean(np.exp(1j * np.radians(flow_angle))))))),
+                    "dominantDirection": _round(
+                        float(np.degrees(np.angle(np.mean(np.exp(1j * np.radians(flow_angle))))))
+                    ),
                 },
                 "requiresVision": True,
             })
@@ -193,10 +194,14 @@ def analyze_sampled_sequence(
         "effectCandidates": effect_candidates,
         "visualTreatment": {
             "brightness": _round(float(np.mean(brightness))) if brightness else None,
-            "contrast": _round(float(np.mean([item[1]["contrast"] for item in samples]))) if samples else None,
+            "contrast": _round(float(np.mean([item[1]["contrast"] for item in samples])))
+            if samples
+            else None,
             "saturation": _round(float(np.mean(saturation))) if saturation else None,
             "warmth": _round(float(np.mean(warmth))) if warmth else None,
-            "consistency": _round(1.0 - min(1.0, float(np.std(brightness)) * 2)) if brightness else None,
+            "consistency": _round(1.0 - min(1.0, float(np.std(brightness)) * 2))
+            if brightness
+            else None,
             "description": _describe_color_treatment(brightness, saturation, warmth),
         },
         "motionEvidence": {
@@ -218,7 +223,17 @@ def _describe_color_treatment(
     mean_brightness = float(np.mean(brightness))
     mean_saturation = float(np.mean(saturation))
     mean_warmth = float(np.mean(warmth))
-    exposure = "low-key" if mean_brightness < 0.3 else "high-key" if mean_brightness > 0.7 else "balanced-exposure"
+    if mean_brightness < 0.3:
+        exposure = "low-key"
+    elif mean_brightness > 0.7:
+        exposure = "high-key"
+    else:
+        exposure = "balanced-exposure"
     color = "warm" if mean_warmth > 0.08 else "cool" if mean_warmth < -0.08 else "neutral"
-    intensity = "saturated" if mean_saturation > 0.55 else "muted" if mean_saturation < 0.22 else "natural"
+    if mean_saturation > 0.55:
+        intensity = "saturated"
+    elif mean_saturation < 0.22:
+        intensity = "muted"
+    else:
+        intensity = "natural"
     return f"{exposure}, {color}, {intensity}"

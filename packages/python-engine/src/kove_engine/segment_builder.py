@@ -81,7 +81,9 @@ class SegmentBuilder:
             else "action-peak" if motion_peak >= 0.55
             else "unknown"
         )
-        subject_ids = [f"face-{index}" for index in range(max((f.face_count for f in group), default=0))]
+        subject_ids = [
+            f"face-{index}" for index in range(max((f.face_count for f in group), default=0))
+        ]
         subject_continuity_score = face_presence_ratio if subject_ids else 0.0
 
         return VideoSegment(

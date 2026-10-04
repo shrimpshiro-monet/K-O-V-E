@@ -135,8 +135,8 @@ def _run_analysis(orchestrator: Orchestrator, video_paths: list[str]) -> dict:
 async def analyze_frames(req: VisionRequest):
     """Accept base64 frames (same as Cloudflare Worker), run local analysis."""
     import base64
-    import tempfile
     import shutil
+    import tempfile
     from pathlib import Path
 
     job_id = uuid.uuid4().hex[:8]
@@ -164,11 +164,12 @@ async def analyze_frames(req: VisionRequest):
             frame_path.write_bytes(frame_bytes)
             frame_paths.append((frame.timestamp, str(frame_path)))
 
-        from kove_engine.analyzers.motion_analyzer import MotionAnalyzer
         from kove_engine.analyzers.face_analyzer import FaceAnalyzer
+        from kove_engine.analyzers.motion_analyzer import MotionAnalyzer
         from kove_engine.analyzers.visual_analyzer import VisualAnalyzer
         from kove_engine.classifier import Classifier
-        from kove_engine.types import FrameData as EngineFrameData, AudioResult
+        from kove_engine.types import AudioResult
+        from kove_engine.types import FrameData as EngineFrameData
 
         motion_analyzer = MotionAnalyzer()
         face_analyzer = FaceAnalyzer()

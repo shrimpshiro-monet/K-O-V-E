@@ -12,14 +12,13 @@ from kove_engine.analyzers.motion_analyzer import MotionAnalyzer
 from kove_engine.analyzers.scene_detector import SceneDetector
 from kove_engine.analyzers.visual_analyzer import VisualAnalyzer
 from kove_engine.classifier import Classifier
-from kove_engine.segment_builder import SegmentBuilder
-from kove_engine.reference_analysis import analyze_reference_edit
 from kove_engine.forensics import analyze_sampled_sequence
+from kove_engine.reference_analysis import analyze_reference_edit
+from kove_engine.segment_builder import SegmentBuilder
 from kove_engine.types import (
     FrameData,
     FrameDescription,
     SegmentMap,
-    VideoSegmentMap,
 )
 
 logger = logging.getLogger(__name__)
@@ -64,7 +63,9 @@ class Orchestrator:
         self._emit("extracting_frames", "Extracting frames...")
         frame_paths = self.frame_sampler.sample(video_path, scene_cuts)
         logger.info("Extracted %d frames", len(frame_paths))
-        self._emit("extracting_frames", f"Extracted {len(frame_paths)} frames", total=len(frame_paths))
+        self._emit(
+            "extracting_frames", f"Extracted {len(frame_paths)} frames", total=len(frame_paths)
+        )
 
         duration = self._get_duration(video_path)
 
