@@ -1,0 +1,289 @@
+/* ============================================================
+   Monet Editor — Glassmorphism utilities + Ambient Backdrop
+   ------------------------------------------------------------
+   Three sanctioned glass recipes (panel / raised / modal).
+   All other components must reuse these instead of inventing
+   ad-hoc blur styles. Fallbacks:
+     - @supports not (backdrop-filter) → opaque --surface-solid
+     - [data-backdrop="off"]           → opaque, zero blur cost
+   ============================================================ */
+
+/* ---------- glass recipes ---------- */
+.glass-panel {
+  background: var(--surface-1);
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-raised {
+  background: var(--surface-2);
+  backdrop-filter: var(--glass-blur-raised);
+  -webkit-backdrop-filter: var(--glass-blur-raised);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-raised);
+}
+
+.glass-modal {
+  background: var(--surface-3);
+  backdrop-filter: var(--glass-blur-modal);
+  -webkit-backdrop-filter: var(--glass-blur-modal);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-modal);
+}
+
+/* No backdrop-filter support → substitute opaque surfaces. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-panel,
+  .glass-raised,
+  .glass-modal {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--surface-solid);
+  }
+}
+
+/* Backdrop "Off" disables glass blur entirely (max performance).
+   Panels keep the hairline border so structure survives. */
+[data-backdrop="off"] .glass-panel,
+[data-backdrop="off"] .glass-raised,
+[data-backdrop="off"] .glass-modal {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--surface-solid);
+}
+
+[data-backdrop="off"] .glass-panel {
+  border-color: var(--border-subtle);
+}
+
+/* Subtle mode keeps the aesthetic but flattens translucency so
+   contrast never rides on the atmosphere. */
+[data-backdrop="subtle"] .glass-panel {
+  background: color-mix(in srgb, var(--surface-solid) 84%, transparent);
+}
+
+[data-backdrop="subtle"] .glass-raised {
+  background: color-mix(in srgb, var(--surface-solid) 90%, transparent);
+}
+
+[data-backdrop="subtle"] .glass-modal {
+  background: color-mix(in srgb, var(--surface-solid) 94%, transparent);
+}
+
+/* ---------- ambient backdrop ---------- */
+.ambient-root {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  content-visibility: auto;
+  contain: paint;
+}
+
+.ambient-layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+/* Layer 1 — mesh gradient wash (transform-animated, 80s loop) */
+.ambient-mesh {
+  background-color: var(--ambient-base);
+  background-image:
+    radial-gradient(42rem 42rem at 8% 12%, var(--ambient-wash-1), transparent 62%),
+    radial-gradient(52rem 52rem at 96% 8%, var(--ambient-wash-2), transparent 60%),
+    radial-gradient(46rem 46rem at 90% 92%, var(--ambient-wash-3), transparent 62%),
+    radial-gradient(44rem 44rem at 4% 88%, var(--ambient-wash-4), transparent 60%);
+  transform: scale(1.12);
+  animation: ambient-drift 80s ease-in-out infinite alternate;
+}
+
+@keyframes ambient-drift {
+  0% {
+    transform: scale(1.12) translate3d(-1.2%, -0.8%, 0) rotate(0.001deg);
+  }
+  50% {
+    transform: scale(1.16) translate3d(1.4%, 0.6%, 0) rotate(0.001deg);
+  }
+  100% {
+    transform: scale(1.12) translate3d(-0.6%, 1.4%, 0) rotate(0.001deg);
+  }
+}
+
+/* Layer 2 — blurred floral imagery, masked toward viewport edges */
+.ambient-floral {
+  background-image: var(--ambient-floral-url);
+  background-size: cover;
+  background-position: center;
+  filter: var(--ambient-floral-filter);
+  opacity: var(--ambient-floral-opacity);
+  -webkit-mask-image: radial-gradient(135% 135% at 50% 50%, transparent 34%, black 82%);
+  mask-image: radial-gradient(135% 135% at 50% 50%, transparent 34%, black 82%);
+  transform: scale(1.08);
+  animation: ambient-floral-breathe 90s ease-in-out infinite alternate;
+}
+
+@keyframes ambient-floral-breathe {
+  0% {
+    transform: scale(1.08) translate3d(0.8%, 0, 0);
+  }
+  100% {
+    transform: scale(1.14) translate3d(-0.8%, 0.6%, 0);
+  }
+}
+
+[data-backdrop="vivid"] .ambient-floral {
+  opacity: calc(var(--ambient-floral-opacity) * 1.7);
+}
+
+[data-backdrop="off"] .ambient-root {
+  display: none;
+}
+
+/* With the backdrop off, the mesh still paints the base wash so the
+   app never sits on a transparent document. */
+[data-backdrop="off"] .ambient-mesh {
+  background-image: none;
+  animation: none;
+}
+
+/* Layer 3 — grain + vignette */
+.ambient-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  opacity: var(--ambient-grain-opacity);
+  mix-blend-mode: overlay;
+  will-change: auto;
+}
+
+.ambient-vignette {
+  background: radial-gradient(120% 120% at 50% 50%, transparent 62%, var(--ambient-vignette) 100%);
+}
+
+/* ---------- typography utilities ---------- */
+.type-display {
+  font-size: var(--text-display);
+  line-height: var(--leading-display);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
+}
+
+.type-title-lg {
+  font-size: var(--text-title-lg);
+  line-height: var(--leading-title-lg);
+  font-weight: var(--weight-title-lg);
+  letter-spacing: var(--tracking-title-lg);
+}
+
+.type-title-md {
+  font-size: var(--text-title-md);
+  line-height: var(--leading-title-md);
+  font-weight: var(--weight-title-md);
+  letter-spacing: var(--tracking-title-md);
+}
+
+.type-label {
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+}
+
+.type-caption {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  font-weight: var(--weight-caption);
+  letter-spacing: var(--tracking-caption);
+}
+
+.type-micro {
+  font-size: var(--text-micro);
+  line-height: var(--leading-micro);
+  font-weight: var(--weight-micro);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+}
+
+.type-mono-sm {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  line-height: var(--leading-mono-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.type-mono-lg {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-lg);
+  line-height: var(--leading-mono-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- shimmer skeleton ---------- */
+@keyframes monet-shimmer {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+
+.monet-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+
+.monet-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    color-mix(in srgb, var(--text-primary) 7%, transparent) 48%,
+    transparent 66%
+  );
+  background-size: 220% 100%;
+  animation: monet-shimmer 1.4s var(--easing-inout) infinite;
+  pointer-events: none;
+}
+
+/* ---------- focus-visible rings (never removed app-wide) ---------- */
+:where(button, a[href], input, select, textarea, [role="button"], [role="tab"], [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ambient-mesh,
+  .ambient-floral,
+  .monet-shimmer::after {
+    animation: none !important;
+  }
+
+  .monet-ease *,
+  .monet-ease {
+    transition-duration: var(--duration-instant) !important;
+    animation-duration: var(--duration-instant) !important;
+  }
+}
+
+/* Hide scrollbars on horizontal pill rails */
+.rail-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.rail-scroll::-webkit-scrollbar {
+  display: none;
+}

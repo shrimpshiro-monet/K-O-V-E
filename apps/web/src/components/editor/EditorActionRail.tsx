@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
+import { motion } from "framer-motion";
 import {
   ToolcraftDropdownMenu as DropdownMenu,
-  ToolcraftIconButton as IconButton,
   ToolcraftTooltip as Tooltip,
 } from "@kove-advanced/ui";
 import { Icon } from "@/icons/Icon";
@@ -18,10 +18,11 @@ import {
   FileCode,
   Command,
 } from "@/icons/lucide-compat";
-import { useProjectStore } from "../../stores/project-store";
 import { useUIStore } from "../../stores/ui-store";
+import { useProjectStore } from "../../stores/project-store";
 import { useThemeStore } from "../../stores/theme-store";
 import { useSettingsStore } from "../../stores/settings-store";
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import { useRouter } from "../../hooks/use-router";
 import {
   startTour,
@@ -30,25 +31,79 @@ import {
   MOGRAPH_TOUR_KEY,
 } from "./tour";
 
-const RailButton: React.FC<{
+interface RailButtonProps {
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   onClick: () => void;
   active?: boolean;
-}> = ({ label, icon, onClick, active = false }) => (
-  <Tooltip content={label} placement="end">
-    <IconButton
-      label={label}
-      icon={<Icon name={icon} size={16} ariaHidden />}
-      size="sm"
-      variant={active ? "secondary" : "ghost"}
-      onClick={onClick}
-    />
-  </Tooltip>
+  disabled?: boolean;
+}
+
+/**
+ * 56px icon rail — grouped tools with a sliding accent indicator.
+ * Undo/Redo no longer live here (they moved to the top bar as global
+ * actions). The indicator uses a shared layoutId so it glides between
+ * items; reduced-motion users get an instant jump instead.
+ */
+const RailButton: React.FC<RailButtonProps> = ({
+  label,
+  icon,
+  onClick,
+  active = false,
+  disabled = false,
+}) => {
+  const reducedMotion = usePrefersReducedMotion();
+  return (
+    <Tooltip content={label} placement="end">
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={active}
+        disabled={disabled}
+        onClick={onClick}
+        className={`relative grid h-10 w-10 place-items-center rounded-[10px] transition-colors duration-fast ${
+          active
+            ? "text-accent"
+            : "text-fg-muted hover:bg-hover hover:text-fg"
+        } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+      >
+        {active &&
+          (reducedMotion ? (
+            <span
+              aria-hidden
+              className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-accent"
+              style={{ boxShadow: "0 0 8px var(--accent-primary-glow)" }}
+            />
+          ) : (
+            <motion.span
+              layoutId="rail-active-indicator"
+              transition={{ type: "spring", stiffness: 400, damping: 32 }}
+              className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-accent"
+              style={{ boxShadow: "0 0 8px var(--accent-primary-glow)" }}
+            />
+          ))}
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute inset-0 rounded-[10px] transition-opacity duration-base ${
+            active ? "opacity-100" : "opacity-0"
+          }`}
+          style={{
+            background:
+              "radial-gradient(60% 60% at 50% 50%, var(--accent-soft), transparent 70%)",
+          }}
+        />
+        <span className="relative">{icon}</span>
+      </button>
+    </Tooltip>
+  );
+};
+
+const RailDivider: React.FC = () => (
+  <div className="my-1.5 h-px w-6 bg-line" aria-hidden />
 );
 
 export const EditorActionRail: React.FC = () => {
-  const { undo, redo, createMotionComposition } = useProjectStore();
+  const { createMotionComposition } = useProjectStore();
   const {
     openModal,
     toggleKeyframeEditor,
@@ -88,90 +143,97 @@ export const EditorActionRail: React.FC = () => {
     <nav
       data-tour="toolbar"
       aria-label="Editor tools"
-      className="flex w-12 shrink-0 flex-col items-center gap-1 border-r border-border bg-bg-1 py-3"
+      className="glass-panel flex w-14 shrink-0 flex-col items-center gap-1 rounded-2xl py-3"
     >
-      <Tooltip content="Back to home" placement="end">
-        <IconButton
-          label="Back to home"
-          icon={<House size={16} aria-hidden />}
-          size="sm"
-          variant="ghost"
-          onClick={() => navigate("welcome")}
-        />
+      {/* ── Command palette trigger ───────────────────────────── */}
+      <Tooltip content="Search & commands  ⌘K" placement="end">
+        <button
+          type="button"
+          aria-label="Search tools, effects, or ask AI (⌘K)"
+          onClick={() => openModal("search")}
+          className="grid h-9 w-9 place-items-center rounded-[10px] border border-line bg-bg-2/70 text-fg-muted transition-colors duration-fast hover:border-accent hover:text-accent"
+        >
+          <span className="flex items-center gap-0.5 text-[10px] font-semibold">
+            <Command size={11} aria-hidden />K
+          </span>
+        </button>
       </Tooltip>
 
-      <div className="my-1.5 h-px w-6 bg-border" />
+      <RailDivider />
 
+      {/* ── Group A — Navigation ──────────────────────────────── */}
+      <Tooltip content="Back to home" placement="end">
+        <button
+          type="button"
+          aria-label="Back to home"
+          onClick={() => navigate("welcome")}
+          className="grid h-10 w-10 place-items-center rounded-[10px] text-fg-muted transition-colors duration-fast hover:bg-hover hover:text-fg"
+        >
+          <House size={16} aria-hidden />
+        </button>
+      </Tooltip>
       <RailButton
         label="Search tools, effects, or ask AI"
-        icon="magnifyingglass"
+        icon={<Icon name="magnifyingglass" size={16} ariaHidden />}
         onClick={() => openModal("search")}
       />
-      <RailButton
-        label="Undo"
-        icon="arrow.uturn.backward"
-        onClick={() => void undo()}
-      />
-      <RailButton
-        label="Redo"
-        icon="arrow.uturn.forward"
-        onClick={() => void redo()}
-      />
 
-      <div className="my-1.5 h-px w-6 bg-border" />
+      <RailDivider />
 
+      {/* ── Group B — Workspace ───────────────────────────────── */}
       <RailButton
         label="Create Motion Scene"
-        icon="cube"
+        icon={<Icon name="cube" size={16} ariaHidden />}
         onClick={() => void handleCreateMotionScene()}
       />
       <RailButton
         label="Action history"
-        icon="clock"
+        icon={<Icon name="clock" size={16} ariaHidden />}
         onClick={() => openModal("history")}
         active={activeModal === "history"}
       />
       <RailButton
-        label="Keyframe editor"
-        icon="diamond"
-        onClick={toggleKeyframeEditor}
-        active={keyframeEditorOpen}
-      />
-      <RailButton
         label="Audio mixer"
-        icon="music.note"
+        icon={<Icon name="music.note" size={16} ariaHidden />}
         onClick={() => togglePanel("audioMixer")}
         active={Boolean(panels.audioMixer?.visible)}
       />
       <RailButton
         label="AI Editor chat"
-        icon="bubble.left.and.text.bubble.right"
+        icon={<Icon name="bubble.left.and.text.bubble.right" size={16} ariaHidden />}
         onClick={() => togglePanel("agentChat")}
         active={Boolean(panels.agentChat?.visible)}
       />
+
+      <RailDivider />
+
+      {/* ── Group C — Advanced ────────────────────────────────── */}
+      <RailButton
+        label="Keyframe editor"
+        icon={<Icon name="diamond" size={16} ariaHidden />}
+        onClick={toggleKeyframeEditor}
+        active={keyframeEditorOpen}
+      />
       <RailButton
         label="Project JSON / Comments"
-        icon="curlybraces"
+        icon={<Icon name="curlybraces" size={16} ariaHidden />}
         onClick={() => openModal("scriptView")}
       />
 
       <div className="flex-1" />
 
-      <Tooltip content={themeActionLabel} placement="end">
-        <IconButton
-          label={themeActionLabel}
-          icon={themeIcon}
-          size="sm"
-          variant="secondary"
-          onClick={toggleTheme}
-        />
-      </Tooltip>
+      {/* ── Bottom-pinned utilities ───────────────────────────── */}
+      <RailButton
+        label={themeActionLabel}
+        icon={themeIcon}
+        onClick={toggleTheme}
+      />
 
       <DropdownMenu
         placement="end"
         button={{
           label: "More editor actions",
-          icon: <Icon name="star" size={16} ariaHidden />,
+          icon: <Settings size={16} aria-hidden />,
           size: "sm",
           variant: "ghost",
           isIconOnly: true,
@@ -221,11 +283,6 @@ export const EditorActionRail: React.FC = () => {
           {
             label: "Project JSON",
             icon: <FileCode size={14} aria-hidden />,
-            isDisabled: true,
-          },
-          {
-            label: "Cmd+K to search",
-            icon: <Command size={14} aria-hidden />,
             isDisabled: true,
           },
         ]}

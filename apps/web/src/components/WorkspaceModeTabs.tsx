@@ -27,7 +27,7 @@ export function WorkspaceModeTabs({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className={`inline-flex items-center gap-0 rounded-[9px] bg-bg-3 p-[3px] ${className}`}
+      className={`inline-flex items-center gap-0 rounded-full bg-[var(--surface-sunken)] p-[3px] border border-line ${className}`}
     >
       {MODES.map((mode) => {
         const isActive = activeMode === mode.id;
@@ -39,9 +39,9 @@ export function WorkspaceModeTabs({
             aria-label={accessibleLabels?.[mode.id]}
             aria-selected={isActive}
             onClick={() => onSelectMode(mode.id)}
-            className={`rounded-[7px] px-4 py-[7px] text-[13px] transition-colors ${
+            className={`rounded-full px-4 py-[6px] text-[13px] transition-colors duration-fast ${
               isActive
-                ? "bg-bg-1 text-fg font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.12)]"
+                ? "glass-raised text-accent font-semibold border-[var(--border-glow)]"
                 : "bg-transparent text-fg-3 font-medium hover:text-fg-2"
             }`}
           >

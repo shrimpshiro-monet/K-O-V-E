@@ -5,6 +5,10 @@ import "@astryxdesign/core/reset.css";
 import "@astryxdesign/core/astryx.css";
 import "@astryxdesign/theme-neutral/theme.css";
 import "./index.css";
+// Monet design system — imported after index.css so its (unlayered)
+// custom-property definitions supersede the legacy token block.
+import "./styles/tokens.css";
+import "./styles/glass.css";
 import { AstryxProvider } from "./components/astryx/AstryxProvider";
 import { registerServiceWorker } from "./services/service-worker";
 import { initCustomFonts } from "./components/editor/inspector/font-options";

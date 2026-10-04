@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { ToolcraftText as Text } from "@kove-advanced/ui";
+import { ChevronLeft, ChevronRight } from "@/icons/lucide-compat";
 
 import { Toolbar } from "./Toolbar";
 import { EditorActionRail } from "./EditorActionRail";
@@ -11,11 +12,13 @@ import { KeyframeEditorPanel } from "./KeyframeEditorPanel";
 import { AudioMixer } from "../audio-mixer";
 import { KeyboardShortcutsOverlay } from "./KeyboardShortcutsOverlay";
 import { PanelErrorBoundary } from "../ErrorBoundary";
+import { AmbientBackdrop } from "../backdrop/AmbientBackdrop";
 import { SpotlightTour, MoGraphTour } from "./tour";
 import { useProjectStore } from "../../stores/project-store";
 import { useUIStore } from "../../stores/ui-store";
 import { useEngineStore } from "../../stores/engine-store";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
+import { useDockLayout } from "../../hooks/useDockLayout";
 import {
   initializePlaybackBridge,
   disposePlaybackBridge,
@@ -316,12 +319,37 @@ export const EditorInterface: React.FC = () => {
   );
 
   // ── Layout state (resizable columns and timeline band) ──────────
+  // Monet shell: sizes + dock collapse state persist to localStorage via
+  // useDockLayout. The values are presentation-only and never touch the
+  // project document.
   const rootRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<ResizeTarget | null>(null);
-  const [mediaWidth, setMediaWidth] = useState(DEFAULT_MEDIA_W);
-  const [inspectorWidth, setInspectorWidth] = useState(DEFAULT_INSPECTOR_W);
-  const [chatWidth, setChatWidth] = useState(DEFAULT_CHAT_W);
-  const [timelineVh, setTimelineVh] = useState(DEFAULT_TIMELINE_VH);
+  const {
+    layout,
+    setMediaWidth,
+    setInspectorWidth,
+    setChatWidth,
+    setTimelineVh,
+    toggleLeftCollapsed,
+    toggleRightCollapsed,
+  } = useDockLayout({
+    mediaWidth: DEFAULT_MEDIA_W,
+    inspectorWidth: DEFAULT_INSPECTOR_W,
+    chatWidth: DEFAULT_CHAT_W,
+    timelineVh: DEFAULT_TIMELINE_VH,
+    leftCollapsed: false,
+    rightCollapsed: false,
+  });
+  const mediaWidth = clamp(layout.mediaWidth, MIN_MEDIA_W, MAX_MEDIA_W);
+  const inspectorWidth = clamp(
+    layout.inspectorWidth,
+    MIN_INSPECTOR_W,
+    MAX_INSPECTOR_W,
+  );
+  const chatWidth = clamp(layout.chatWidth, MIN_CHAT_W, MAX_CHAT_W);
+  const timelineVh = clamp(layout.timelineVh, MIN_TIMELINE_VH, MAX_TIMELINE_VH);
+  const leftCollapsed = layout.leftCollapsed;
+  const rightCollapsed = layout.rightCollapsed;
 
   const chatVisible = panels.agentChat?.visible ?? false;
 
@@ -412,7 +440,7 @@ export const EditorInterface: React.FC = () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, []);
+  }, [setChatWidth, setInspectorWidth, setMediaWidth, setTimelineVh]);
 
   // Reflect resized panel sizes back into CSS variables so child styles
   // (timeline header padding, etc.) can react.
@@ -442,41 +470,63 @@ export const EditorInterface: React.FC = () => {
   }
 
   // ── Render ───────────────────────────────────────────────────────
+  // Monet shell: a Figma-style floating workspace. The <AmbientBackdrop />
+  // is fixed behind everything; 8px of padding lets the floral atmosphere
+  // read as a thin glowing frame around the app. Glass is reserved for
+  // chrome (docks, toolbars); the canvas and timeline bed stay opaque so
+  // the user never judges color through translucency.
   // Grid template uses inline CSS for the resizable columns. The CSS
   // variables `--media-w`, `--inspector-w`, `--tl-height` are kept in
   // sync via the effect above so other components can use them too.
   const effectiveTimelineVh = timelineMaximized
     ? COMPACT_TIMELINE_VH
     : timelineVh;
-  const gridStyle: React.CSSProperties = chatVisible
+  const mediaCol = leftCollapsed ? "0px" : `${mediaWidth}px`;
+  const inspectorCol = rightCollapsed ? "0px" : `${inspectorWidth}px`;
+  const chatCol = rightCollapsed ? "0px" : `${chatWidth}px`;
+  const showChatColumn = chatVisible && !rightCollapsed;
+  const gridStyle: React.CSSProperties = showChatColumn
     ? {
-        gridTemplateColumns: `${mediaWidth}px ${RESIZE_HANDLE}px 1fr ${RESIZE_HANDLE}px ${inspectorWidth}px ${RESIZE_HANDLE}px ${chatWidth}px`,
+        gridTemplateColumns: `${mediaCol} ${RESIZE_HANDLE}px 1fr ${RESIZE_HANDLE}px ${inspectorCol} ${RESIZE_HANDLE}px ${chatCol}`,
         gridTemplateRows: `1fr ${RESIZE_HANDLE}px ${effectiveTimelineVh}vh`,
         gridTemplateAreas:
           "'media mh stage ih inspector ch chat' 'th th th th th th th' 'timeline timeline timeline timeline timeline timeline timeline'",
       }
     : {
-        gridTemplateColumns: `${mediaWidth}px ${RESIZE_HANDLE}px 1fr ${RESIZE_HANDLE}px ${inspectorWidth}px`,
+        gridTemplateColumns: `${mediaCol} ${RESIZE_HANDLE}px 1fr ${RESIZE_HANDLE}px ${inspectorCol}`,
         gridTemplateRows: `1fr ${RESIZE_HANDLE}px ${effectiveTimelineVh}vh`,
         gridTemplateAreas:
           "'media mh stage ih inspector' 'th th th th th' 'timeline timeline timeline timeline timeline'",
       };
 
+  // Shared resize-gutter treatment: hairline that blooms accent on
+  // hover/drag, double-click resets to default, chevron collapses the dock.
+  const gutterClass =
+    "relative grid place-items-center group/h transition-colors";
+  const gutterBarClass =
+    "rounded-full bg-transparent group-hover/h:bg-accent transition-[background-color] duration-fast pointer-events-none";
+  const collapseTabClass =
+    "absolute z-30 grid h-8 w-[14px] place-items-center rounded-[5px] glass-raised !border-line text-fg-3 hover:text-accent transition-colors duration-fast";
+  const handleResizeStart = (target: ResizeTarget, collapsed: boolean) =>
+    collapsed ? undefined : beginResize(target);
+
   return (
     <div
       ref={rootRef}
-      className="w-full h-full bg-bg text-fg overflow-hidden font-sans select-none relative z-20 flex flex-col"
+      className="w-full h-full bg-transparent text-fg overflow-hidden font-sans select-none relative z-20 flex flex-col gap-2 p-2"
     >
+      <AmbientBackdrop />
+
       <Toolbar />
 
-      <div className="flex-1 min-h-0 flex">
+      <div className="flex-1 min-h-0 flex relative z-10 gap-2">
         <EditorActionRail />
         <div
-          className="flex-1 min-h-0 grid gap-0 bg-bg p-2.5"
+          className="flex-1 min-h-0 grid gap-0 bg-transparent"
           style={gridStyle}
         >
         <div
-          className="bg-bg-1 min-w-0 min-h-0 overflow-hidden rounded-xl border border-border shadow-sm"
+          className="glass-panel min-w-0 min-h-0 overflow-hidden rounded-2xl"
           style={{ gridArea: "media" }}
         >
           <PanelErrorBoundary name="Media">
@@ -485,15 +535,30 @@ export const EditorInterface: React.FC = () => {
         </div>
 
         <div
-          className="grid place-items-center cursor-col-resize group/h"
+          className={`${gutterClass} ${
+            leftCollapsed
+              ? "cursor-default"
+              : "cursor-col-resize"
+          }`}
           style={{ gridArea: "mh" }}
-          onMouseDown={beginResize("media")}
+          onMouseDown={handleResizeStart("media", leftCollapsed)}
+          onDoubleClick={() => setMediaWidth(DEFAULT_MEDIA_W)}
         >
-          <span className="h-10 w-1 rounded-full bg-transparent group-hover/h:bg-accent/40 transition-colors" />
+          <span className={`${leftCollapsed ? "h-16" : "h-10"} w-px ${gutterBarClass}`} />
+          <button
+            type="button"
+            aria-label={
+              leftCollapsed ? "Expand Assets dock" : "Collapse Assets dock"
+            }
+            onClick={toggleLeftCollapsed}
+            className={collapseTabClass}
+          >
+            {leftCollapsed ? <ChevronRight size={12} aria-hidden /> : <ChevronLeft size={12} aria-hidden />}
+          </button>
         </div>
 
         <div
-          className="bg-stage-bg min-w-0 min-h-0 overflow-hidden rounded-xl border border-border shadow-sm"
+          className="bg-stage-bg min-w-0 min-h-0 overflow-hidden rounded-2xl border border-line shadow-canvas"
           style={{ gridArea: "stage" }}
         >
           <PanelErrorBoundary name="Stage">
@@ -502,15 +567,30 @@ export const EditorInterface: React.FC = () => {
         </div>
 
         <div
-          className="grid place-items-center cursor-col-resize group/h"
+          className={`${gutterClass} ${
+            rightCollapsed
+              ? "cursor-default"
+              : "cursor-col-resize"
+          }`}
           style={{ gridArea: "ih" }}
-          onMouseDown={beginResize("inspector")}
+          onMouseDown={handleResizeStart("inspector", rightCollapsed)}
+          onDoubleClick={() => setInspectorWidth(DEFAULT_INSPECTOR_W)}
         >
-          <span className="h-10 w-1 rounded-full bg-transparent group-hover/h:bg-accent/40 transition-colors" />
+          <span className={`${rightCollapsed ? "h-16" : "h-10"} w-px ${gutterBarClass}`} />
+          <button
+            type="button"
+            aria-label={
+              rightCollapsed ? "Expand Inspector dock" : "Collapse Inspector dock"
+            }
+            onClick={toggleRightCollapsed}
+            className={collapseTabClass}
+          >
+            {rightCollapsed ? <ChevronLeft size={12} aria-hidden /> : <ChevronRight size={12} aria-hidden />}
+          </button>
         </div>
 
         <div
-          className="bg-bg-1 min-w-0 min-h-0 overflow-hidden rounded-xl border border-border shadow-sm"
+          className="glass-panel min-w-0 min-h-0 overflow-hidden rounded-2xl"
           style={{ gridArea: "inspector" }}
         >
           <PanelErrorBoundary name="Inspector">
@@ -518,18 +598,19 @@ export const EditorInterface: React.FC = () => {
           </PanelErrorBoundary>
         </div>
 
-        {chatVisible && (
+        {chatVisible && !rightCollapsed && (
           <>
             <div
-              className="grid place-items-center cursor-col-resize group/h"
+              className={`${gutterClass} cursor-col-resize`}
               style={{ gridArea: "ch" }}
               onMouseDown={beginResize("chat")}
+              onDoubleClick={() => setChatWidth(DEFAULT_CHAT_W)}
             >
-              <span className="h-10 w-1 rounded-full bg-transparent group-hover/h:bg-accent/40 transition-colors" />
+              <span className={`h-10 w-px ${gutterBarClass}`} />
             </div>
 
             <div
-              className="bg-bg-1 min-w-0 min-h-0 overflow-hidden rounded-xl border border-border shadow-sm"
+              className="glass-panel min-w-0 min-h-0 overflow-hidden rounded-2xl"
               style={{ gridArea: "chat" }}
             >
               <PanelErrorBoundary name="AI Editor">
@@ -550,15 +631,16 @@ export const EditorInterface: React.FC = () => {
         )}
 
         <div
-          className="grid place-items-center cursor-row-resize group/h"
+          className={`${gutterClass} cursor-row-resize`}
           style={{ gridArea: "th" }}
           onMouseDown={beginResize("timeline")}
+          onDoubleClick={() => setTimelineVh(DEFAULT_TIMELINE_VH)}
         >
-          <span className="w-10 h-1 rounded-full bg-transparent group-hover/h:bg-accent/40 transition-colors" />
+          <span className={`w-10 h-px ${gutterBarClass}`} />
         </div>
 
         <div
-          className="bg-tl-bg min-w-0 min-h-0 overflow-hidden flex flex-col rounded-xl border border-border shadow-sm"
+          className="glass-panel min-w-0 min-h-0 overflow-hidden flex flex-col rounded-2xl"
           style={{ gridArea: "timeline" }}
         >
           {panels.audioMixer?.visible && (

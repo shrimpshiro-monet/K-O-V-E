@@ -97,6 +97,9 @@ export default defineConfig({
       // without a CORP header still load; cross-origin isolation is retained.
       "Cross-Origin-Embedder-Policy": "credentialless",
     },
+    // Local sandboxed preview environments reach the dev server through a
+    // proxy host; enable only when explicitly requested.
+    allowedHosts: process.env.KOVE_DEV_ALLOW_ALL_HOSTS ? true : undefined,
     proxy: (() => {
       // Read both Cloudflare token/account pairs directly from .dev.vars.
       // The Vite plugin maps CLOUDFLARE_* -> VITE_CLOUDFLARE_* generically, so
