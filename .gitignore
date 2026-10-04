@@ -7,6 +7,9 @@ agent-reach-venv/
 __pycache__/
 *.pyc
 .coverage
+.venv/
+.pytest_cache/
+.ruff_cache/
 
 # Build outputs
 dist/
@@ -86,6 +89,12 @@ CLAUDE.md
 *-PLAN-*.md
 .playwright-mcp/
 .wrangler/
+
+# Local-only artifacts — never commit. The eval corpus is intentionally absent
+# from checkouts (see EDITING-SURFACE.md); only baseline reports live here.
+evaluation-files/
+session-*.md
+tree.md
 
 
 mobile-mockup/
