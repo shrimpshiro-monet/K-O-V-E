@@ -20,6 +20,13 @@ import {
   resolveDensityTarget,
   reviewRenderedDraft,
 } from "@kove-advanced/creation-schema";
+import type { PlannedEffectSpec, PlannedSegment } from "@kove-advanced/creation-schema";
+import {
+  estimateEffectCost,
+  reviewEffectCost,
+  type EffectCostEntry,
+  type EffectCostReview,
+} from "@kove-advanced/core/video/effect-cost-budget";
 
 export interface EditPlanReview extends StyleProfileComparison {
   readonly profile: StyleProfile;
@@ -32,6 +39,12 @@ export interface EditPlanReview extends StyleProfileComparison {
    * says "someone actually edited this". Both gate the revision pass.
    */
   readonly density: EditDensityReview;
+  /**
+   * Upper-bound CPU cost of the plan's effects (audit table, sandbox
+   * numbers). Flags plans whose effects would add more CPU work than the
+   * budget allows — matters for long-form edits until the GPU path lands.
+   */
+  readonly effectCost: EffectCostReview;
   /** Human/LLM-readable list of density problems, ordered by severity. */
   readonly revisionBrief: string;
 }
@@ -134,14 +147,93 @@ export function reviewEditPlan(
   // still be eight splices. Both scores must clear their bar before execution.
   const needsRevision = comparison.score < 0.6 || density.score < 0.6;
 
+  const effectCost = reviewEffectCost(
+    estimateEffectCost(collectPlanEffectEntries(plan), PLAN_REVIEW_FPS),
+    planTimelineDurationSec(plan),
+    { fps: PLAN_REVIEW_FPS },
+  );
+
+  const baseBrief = buildRevisionBrief(comparison.score, comparison.deviations, density);
+  const revisionBrief =
+    effectCost.warnings.length > 0
+      ? `${baseBrief}\n\nEffect-cost review (upper-bound sandbox estimates): ${effectCost.warnings.join(" ")}`
+      : baseBrief;
+
   return {
     ...comparison,
     profile,
     target,
     density,
+    effectCost,
     needsRevision,
-    revisionBrief: buildRevisionBrief(comparison.score, comparison.deviations, density),
+    revisionBrief,
   };
+}
+
+/**
+ * fps used to turn effect durations into frame counts for the cost budget.
+ * Plans don't carry fps; 30 is the long-form default the export path uses.
+ */
+export const PLAN_REVIEW_FPS = 30;
+
+function segmentDurationSec(segment: PlannedSegment): number {
+  const source = Math.max(0, segment.sourceEndTime - segment.sourceStartTime);
+  const speed =
+    typeof segment.speed === "number" && Number.isFinite(segment.speed) && segment.speed > 0
+      ? segment.speed
+      : 1;
+  return source / speed;
+}
+
+/** Planned timeline length: the sum of segment durations. */
+export function planTimelineDurationSec(plan: EditPlan): number {
+  return plan.segments.reduce((sum, segment) => sum + segmentDurationSec(segment), 0);
+}
+
+/** How long a spec's effect is actually active inside its host window. */
+function specActiveSeconds(
+  spec: Pick<PlannedEffectSpec, "startOffset" | "duration">,
+  hostSeconds: number,
+): number {
+  const offset =
+    typeof spec.startOffset === "number" && Number.isFinite(spec.startOffset)
+      ? Math.max(0, spec.startOffset)
+      : 0;
+  const remaining = Math.max(0, hostSeconds - offset);
+  const duration =
+    typeof spec.duration === "number" && Number.isFinite(spec.duration) && spec.duration > 0
+      ? Math.min(spec.duration, remaining)
+      : remaining;
+  return Math.max(0, duration);
+}
+
+/**
+ * Flattens every effect a plan will put on the timeline into cost entries:
+ * segment-scoped names (full segment), segment effect specs (their window),
+ * and top-level plan effects (target segment window or whole timeline).
+ */
+export function collectPlanEffectEntries(plan: EditPlan): readonly EffectCostEntry[] {
+  const timelineSec = planTimelineDurationSec(plan);
+  const entries: EffectCostEntry[] = [];
+
+  for (const segment of plan.segments) {
+    const segSec = segmentDurationSec(segment);
+    for (const type of segment.effects) entries.push({ type, durationSec: segSec });
+    for (const spec of segment.effectSpecs ?? []) {
+      entries.push({ type: spec.type, durationSec: specActiveSeconds(spec, segSec) });
+    }
+  }
+
+  for (const effect of plan.effects) {
+    const target =
+      typeof effect.targetSegmentIndex === "number"
+        ? plan.segments[effect.targetSegmentIndex]
+        : undefined;
+    const hostSec = target ? segmentDurationSec(target) : timelineSec;
+    entries.push({ type: effect.type, durationSec: specActiveSeconds(effect, hostSec) });
+  }
+
+  return entries;
 }
 
 /**

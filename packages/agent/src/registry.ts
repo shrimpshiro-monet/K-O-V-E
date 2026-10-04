@@ -2711,6 +2711,30 @@ function resolveLayoutTransform(
  * `revisionApplied` is included so a caller can tell "this is the best the
  * bounded revision could do" from "no revision was needed".
  */
+/**
+ * Compact effect-cost summary for plan responses: upper-bound sandbox
+ * estimates, used to rank effects and flag over-budget plans (never to
+ * promise an export time).
+ */
+function effectCostPayload(review: EditPlanReview): {
+  overBudget: boolean;
+  estimatedCpuMinutes: number;
+  budgetMinutes: number;
+  realtimeRatio: number;
+  unmeasuredShaderTypes: readonly string[];
+  warnings: readonly string[];
+} {
+  const cost = review.effectCost;
+  return {
+    overBudget: cost.overBudget,
+    estimatedCpuMinutes: Number((cost.estimatedCpuMs / 60000).toFixed(2)),
+    budgetMinutes: Number((cost.budgetMs / 60000).toFixed(2)),
+    realtimeRatio: Number(cost.realtimeRatio.toFixed(3)),
+    unmeasuredShaderTypes: cost.unmeasuredTypes,
+    warnings: cost.warnings,
+  };
+}
+
 function densityPayload(
   review: EditPlanReview,
   revisionApplied?: boolean,
@@ -33888,6 +33912,7 @@ const TOOLS: RegisteredTool[] = [
                 score: planReview.score,
                 deviations: planReview.deviations,
                 revisionApplied: false,
+                effectCost: effectCostPayload(planReview),
               },
               density: densityPayload(planReview),
               quality: {
@@ -33966,6 +33991,7 @@ const TOOLS: RegisteredTool[] = [
           score: planReview.score,
           deviations: planReview.deviations,
           revisionApplied,
+          effectCost: effectCostPayload(planReview),
         },
         density: densityPayload(planReview, revisionApplied),
         // Honest reporting: there is no working timeline frame sampler yet, so
