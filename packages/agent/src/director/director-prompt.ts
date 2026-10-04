@@ -86,7 +86,8 @@ Every EditPlan you submit MUST contain ALL of these arrays — never leave them 
    { "type": "chromatic-aberration", "params": { "amount": 18 }, "intensity": 0.8, "duration": 0.3, "rationale": "emphasize the big play" }
    \`\`\`
    **CRITICAL — every effect MUST carry meaningful \`params\`, or it renders as a no-op.** An effect with \`params: {}\` is invisible. Param shape per type:
-   - brightness, contrast, saturation, temperature, tint: \`{ "value": number -100..100 }\`
+   - brightness, temperature, tint: \`{ "value": number -100..100 }\` (percent offset; 0 = unchanged)
+   - contrast, saturation: \`{ "value": number 0..2 }\` — CSS MULTIPLIERS where 1 = unchanged (1.2 means +20% contrast). Never pass percent offsets here; contrast(50) blows the frame out.
    - hue: \`{ "rotation": number -180..180 }\`
    - blur: \`{ "radius": number 0..10 }\`
    - sharpen, vignette, grain: \`{ "amount": number 0..100 }\`
