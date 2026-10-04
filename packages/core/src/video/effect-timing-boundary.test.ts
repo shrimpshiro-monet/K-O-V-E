@@ -3,18 +3,20 @@ import type { Effect } from "../types/timeline";
 import type { Action } from "../types/actions";
 import type { Project } from "../types/project";
 import { ActionExecutor } from "../actions/action-executor";
-import { VideoEffectsEngine } from "./video-effects-engine";
+import {
+  VideoEffectsEngine,
+  isEffectActiveAtTime,
+} from "./video-effects-engine";
 import { getMotionShaderEffectDefs } from "../motion/shaders";
 
 /**
- * Pins the current (broken) behaviour reported in the Serene_Athens export
- * review: `effectSpecs.duration` / `startOffset` from director plans are
- * forwarded into `Effect.params` by plan_edit, but nothing downstream
- * consumes them — a clip effect always renders for the whole clip.
+ * Pins the effect-timing contract on the clip-effect path.
  *
- * These tests document the boundary exactly as it is today so the fix
- * (honouring duration/startOffset on the clip-effect render path) has to
- * update them deliberately.
+ * History: `effectSpecs.duration` / `startOffset` from director plans were
+ * forwarded into `Effect.params` by plan_edit but ignored by the renderer —
+ * a "0.3s speed-lines hit" rendered for the whole clip (see the Serene_Athens
+ * export review). The render path now honors them: applyEffects accepts the
+ * clip-local playhead time and isEffectActiveAtTime gates each effect.
  */
 
 interface EngineInternals {
@@ -43,7 +45,7 @@ function makeProjectWithClip(): Project {
     mediaId: "m1",
     trackId: "t1",
     startTime: 0,
-    duration: 3, // a 3s clip, as in the requested render check
+    duration: 3, // a 3s clip, as in the original repro
     inPoint: 0,
     outPoint: 3,
     effects: [],
@@ -87,8 +89,12 @@ function makeProjectWithClip(): Project {
   } as unknown as Project;
 }
 
-describe("clip-effect timing boundary (duration/startOffset are dead params)", () => {
-  it("effect/add stores duration/startOffset only inside params — the Effect has no timing fields", async () => {
+function effect(params: Record<string, unknown>): Effect {
+  return { id: "fx", type: "shader", params, enabled: true };
+}
+
+describe("effect timing: storage and renderer plumbing", () => {
+  it("effect/add stores duration/startOffset only inside params — the Effect still has no timing fields", async () => {
     const project = makeProjectWithClip();
     const executor = new ActionExecutor();
     const result = await executor.execute(
@@ -108,33 +114,35 @@ describe("clip-effect timing boundary (duration/startOffset are dead params)", (
     expect(result.success).toBe(true);
 
     const stored = project.timeline.tracks[0].clips[0].effects[0];
-    // The timeline Effect shape is { id, type, params, enabled } — there is
-    // nowhere to express a 0.3s window on a 3s clip.
     expect(Object.keys(stored).sort()).toEqual(
       ["enabled", "id", "params", "type"].sort(),
     );
     expect(stored.params).toEqual({ shaderId: "speed-lines", ...TIMING_PARAMS });
   });
 
-  it("the shader resolver drops duration/startOffset/easing/intensity — only shader params survive", () => {
+  it("applyEffects accepts the clip-local playhead time (time-gating signature)", () => {
+    // (image, effects, timeSec?) — timeSec is optional, so legacy callers
+    // without a clock keep the always-active behavior.
+    expect(VideoEffectsEngine.prototype.applyEffects.length).toBe(3);
+    const privateProto = VideoEffectsEngine.prototype as unknown as Record<
+      string,
+      (...args: unknown[]) => unknown
+    >;
+    expect(privateProto.renderEffectsOntoFxCanvas.length).toBe(3);
+  });
+
+  it("the shader resolver still drops timing from GPU params — gating happens upstream", () => {
     const engine = new VideoEffectsEngine({ width: 8, height: 8, useGPU: false });
-    const resolved = internals(engine).resolveShaderEffect({
-      id: "fx-speed",
-      type: "shader",
-      params: { shaderId: "speed-lines", ...TIMING_PARAMS },
-      enabled: true,
-    });
+    const resolved = internals(engine).resolveShaderEffect(
+      effect({ shaderId: "speed-lines", ...TIMING_PARAMS }),
+    );
     expect(resolved).not.toBeNull();
     expect(resolved?.def.id).toBe("speed-lines");
-    // Exactly the shader's declared uniforms — nothing else reaches the GPU.
     expect(Object.keys(resolved?.params ?? {}).sort()).toEqual([
       "amount",
       "density",
       "speed",
     ]);
-    expect("duration" in (resolved?.params ?? {})).toBe(false);
-    expect("startOffset" in (resolved?.params ?? {})).toBe(false);
-    expect(resolved?.time).toBe(0);
   });
 
   it("the speed-lines shader def declares no duration parameter", () => {
@@ -147,7 +155,7 @@ describe("clip-effect timing boundary (duration/startOffset are dead params)", (
     ]);
   });
 
-  it("the CSS-filter path is equally timing-blind: identical filter string with or without duration", () => {
+  it("the CSS filter string itself is timing-blind — the gate decides application", () => {
     const engine = new VideoEffectsEngine({ width: 8, height: 8, useGPU: false });
     const withTiming: Effect = {
       id: "fx-bw",
@@ -164,17 +172,48 @@ describe("clip-effect timing boundary (duration/startOffset are dead params)", (
     const a = internals(engine).buildCSSFilter(withTiming);
     const b = internals(engine).buildCSSFilter(withoutTiming);
     expect(a).not.toBeNull();
-    expect(a).toBe(b); // duration changes nothing on this path either
+    expect(a).toBe(b);
+  });
+});
+
+describe("isEffectActiveAtTime — the hit window", () => {
+  const hit = effect({ shaderId: "speed-lines", startOffset: 0.5, duration: 0.3 });
+  const untimed = effect({ shaderId: "speed-lines", amount: 0.6 });
+
+  it("a 0.3s hit starting at 0.5s is only active in [0.5, 0.8)", () => {
+    expect(isEffectActiveAtTime(hit, 0.49)).toBe(false);
+    expect(isEffectActiveAtTime(hit, 0.5)).toBe(true);
+    expect(isEffectActiveAtTime(hit, 0.65)).toBe(true);
+    expect(isEffectActiveAtTime(hit, 0.79)).toBe(true);
+    expect(isEffectActiveAtTime(hit, 0.8)).toBe(false);
+    expect(isEffectActiveAtTime(hit, 4.5)).toBe(false);
   });
 
-  it("applyEffects takes no playhead time — the render function cannot gate effects by time", () => {
-    // Function arity is the structural proof: (image, effects) only.
-    expect(VideoEffectsEngine.prototype.applyEffects.length).toBe(2);
-    const privateProto = VideoEffectsEngine.prototype as unknown as Record<
-      string,
-      (...args: unknown[]) => unknown
-    >;
-    // renderEffectsOntoFxCanvas(image, effects) — same arity, no time input.
-    expect(privateProto.renderEffectsOntoFxCanvas.length).toBe(2);
+  it("a hit at clip start (startOffset 0) closes at its duration", () => {
+    const atStart = effect({ shaderId: "speed-lines", duration: 0.3 });
+    expect(isEffectActiveAtTime(atStart, 0)).toBe(true);
+    expect(isEffectActiveAtTime(atStart, 0.29)).toBe(true);
+    expect(isEffectActiveAtTime(atStart, 0.31)).toBe(false);
+  });
+
+  it("untimed effects stay active for the whole clip and when no clock exists", () => {
+    expect(isEffectActiveAtTime(untimed, 0)).toBe(true);
+    expect(isEffectActiveAtTime(untimed, 4.5)).toBe(true);
+    expect(isEffectActiveAtTime(untimed, undefined)).toBe(true);
+    expect(isEffectActiveAtTime(hit, undefined)).toBe(true); // legacy callers
+  });
+
+  it("fails open on malformed windows — bad timing never erases an effect", () => {
+    expect(isEffectActiveAtTime(effect({ duration: 0 }), 1)).toBe(true);
+    expect(isEffectActiveAtTime(effect({ duration: -2 }), 1)).toBe(true);
+    expect(
+      isEffectActiveAtTime(effect({ startOffset: Number.NaN, duration: 0.3 }), 0.1),
+    ).toBe(true);
+  });
+
+  it("negative startOffset clamps to 0", () => {
+    const neg = effect({ startOffset: -1, duration: 0.3 });
+    expect(isEffectActiveAtTime(neg, 0)).toBe(true);
+    expect(isEffectActiveAtTime(neg, 0.31)).toBe(false);
   });
 });

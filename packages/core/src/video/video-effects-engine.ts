@@ -15,6 +15,33 @@ interface ResolvedShaderEffect {
   readonly time: number;
 }
 
+/**
+ * Time-gating window for a clip effect, read from the timing params that
+ * plan_edit forwards (`startOffset`/`duration`, clip-local seconds). An
+ * effect with no timing params is active for the whole clip. A malformed
+ * window (negative/zero duration) fails OPEN — an effect must never vanish
+ * because of bad timing data.
+ */
+export function isEffectActiveAtTime(
+  effect: Effect,
+  timeSec: number | undefined,
+): boolean {
+  if (timeSec === undefined || !Number.isFinite(timeSec)) return true;
+  const params = effect.params as Record<string, unknown>;
+  const rawStart = params.startOffset;
+  const rawDuration = params.duration;
+  const startOffset =
+    typeof rawStart === "number" && Number.isFinite(rawStart)
+      ? Math.max(0, rawStart)
+      : 0;
+  const duration =
+    typeof rawDuration === "number" && Number.isFinite(rawDuration)
+      ? rawDuration
+      : Number.POSITIVE_INFINITY;
+  if (duration <= 0) return true;
+  return timeSec >= startOffset && timeSec < startOffset + duration;
+}
+
 function readShaderTime(params: Record<string, unknown>): number {
   const raw = params.time;
   return typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
@@ -631,6 +658,7 @@ export class VideoEffectsEngine {
   async applyEffects(
     image: ImageBitmap,
     effects: Effect[],
+    timeSec?: number,
   ): Promise<FilterResult> {
     const startTime = performance.now();
     const enabledEffects = effects.filter((e) => e.enabled);
@@ -644,7 +672,7 @@ export class VideoEffectsEngine {
 
     // Use CPU processing (Canvas2D filters) - reliable and fast for most effects
     // WebGPU effects pipeline has rendering issues, using CPU for now
-    const result = await this.applyEffectsCPU(image, enabledEffects);
+    const result = await this.applyEffectsCPU(image, enabledEffects, timeSec);
     return {
       image: result,
       processingTime: performance.now() - startTime,
@@ -1169,6 +1197,7 @@ export class VideoEffectsEngine {
   private async renderEffectsOntoFxCanvas(
     image: ImageBitmap,
     effects: Effect[],
+    timeSec?: number,
   ): Promise<OffscreenCanvas> {
     const width = image.width;
     const height = image.height;
@@ -1189,6 +1218,10 @@ export class VideoEffectsEngine {
     };
 
     for (const effect of effects) {
+      // Time-gated hits: an effect carrying startOffset/duration only renders
+      // inside its window (clip-local seconds). Untimed effects are always on.
+      if (!isEffectActiveAtTime(effect, timeSec)) continue;
+
       const cssFilter = this.buildCSSFilter(effect);
       if (cssFilter) {
         pendingCssFilters.push(cssFilter);
@@ -1197,7 +1230,22 @@ export class VideoEffectsEngine {
 
       flushCssFilters();
       if (VideoEffectsEngine.isShaderEffect(effect)) {
-        const resolved = this.resolveShaderEffect(effect);
+        // Animate shader looks from their hit start, not from clip start, so
+        // a 0.3s speed-lines hit doesn't read as the 4th second of one.
+        let shaderEffect = effect;
+        if (timeSec !== undefined && Number.isFinite(timeSec)) {
+          const params = effect.params as Record<string, unknown>;
+          const startOffset =
+            typeof params.startOffset === "number" &&
+            Number.isFinite(params.startOffset)
+              ? Math.max(0, params.startOffset)
+              : 0;
+          shaderEffect = {
+            ...effect,
+            params: { ...params, time: Math.max(0, timeSec - startOffset) },
+          };
+        }
+        const resolved = this.resolveShaderEffect(shaderEffect);
         if (resolved) {
           this.applyShaderEffect(ctx, ctx.canvas, resolved, width, height);
         }
@@ -1235,20 +1283,22 @@ export class VideoEffectsEngine {
   private async applyEffectsCPU(
     image: ImageBitmap,
     effects: Effect[],
+    timeSec?: number,
   ): Promise<ImageBitmap> {
-    const canvas = await this.renderEffectsOntoFxCanvas(image, effects);
+    const canvas = await this.renderEffectsOntoFxCanvas(image, effects, timeSec);
     return createImageBitmap(canvas);
   }
 
   async applyEffectsToCanvas(
     image: ImageBitmap,
     effects: Effect[],
+    timeSec?: number,
   ): Promise<OffscreenCanvas | null> {
     const enabledEffects = effects.filter((e) => e.enabled);
     if (enabledEffects.length === 0) {
       return null;
     }
-    return this.renderEffectsOntoFxCanvas(image, enabledEffects);
+    return this.renderEffectsOntoFxCanvas(image, enabledEffects, timeSec);
   }
 
   private async applyEffectPixelLevel(

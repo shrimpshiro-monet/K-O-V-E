@@ -800,6 +800,7 @@ export class VideoEngine {
                   clip.colorGrading,
                   width,
                   height,
+                  time - clip.startTime,
                 );
                 await this.drawClipFrameToContext(
                   ctx,
@@ -997,6 +998,7 @@ export class VideoEngine {
               clip.colorGrading,
               width,
               height,
+              time - clip.startTime,
             );
 
             const vidstabEng = getVidstabEngine();
@@ -2363,6 +2365,7 @@ export class VideoEngine {
         clipA.colorGrading,
         width,
         height,
+        time - clipA.startTime,
       );
       processedB =
         clipB && mediaB
@@ -2374,6 +2377,7 @@ export class VideoEngine {
               clipB.colorGrading,
               width,
               height,
+              time - clipB.startTime,
             )
           : bitmapB;
 
@@ -2449,6 +2453,7 @@ export class VideoEngine {
     colorGrading: ClipColorGrading | undefined,
     width: number,
     height: number,
+    timeSec?: number,
   ): Promise<ImageBitmap> {
     let processed = await this.applyClipEffects(
       clipId,
@@ -2457,6 +2462,7 @@ export class VideoEngine {
       effects,
       width,
       height,
+      timeSec,
     );
     processed = await this.applyClipColorGrading(
       clipId,
@@ -2476,6 +2482,7 @@ export class VideoEngine {
     effects: Effect[],
     width: number,
     height: number,
+    timeSec?: number,
   ): Promise<ImageBitmap> {
     const enabledEffects = effects.filter((effect) => effect.enabled);
     if (enabledEffects.length === 0) {
@@ -2484,7 +2491,11 @@ export class VideoEngine {
 
     try {
       const effectsEngine = await this.ensureEffectsEngine(width, height);
-      const result = await effectsEngine.applyEffects(image, enabledEffects);
+      const result = await effectsEngine.applyEffects(
+        image,
+        enabledEffects,
+        timeSec,
+      );
       return this.adoptProcessedBitmap(image, sourceImage, result.image);
     } catch (error) {
       console.warn(
@@ -2503,7 +2514,11 @@ export class VideoEngine {
         let retryEngine: VideoEffectsEngine | null = null;
         try {
           retryEngine = await this.ensureEffectsEngine(width, height);
-          const result = await retryEngine.applyEffects(image, enabledEffects);
+          const result = await retryEngine.applyEffects(
+            image,
+            enabledEffects,
+            timeSec,
+          );
           return this.adoptProcessedBitmap(image, sourceImage, result.image);
         } catch (retryError) {
           retryEngine?.dispose();

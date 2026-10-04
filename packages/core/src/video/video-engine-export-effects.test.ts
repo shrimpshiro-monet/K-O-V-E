@@ -304,9 +304,11 @@ describe("VideoEngine export frame effects", () => {
     const result = await engine.renderFrame(project, 1, 640, 360);
 
     expect(result.image).toBe(finalBitmap);
+    // Third arg is the clip-local playhead time (frame 1, clip starts at 0):
+    // this is what makes startOffset/duration gating work on export.
     expect(mocks.effectsApply).toHaveBeenNthCalledWith(1, sourceBitmap, [
       clipEffect,
-    ]);
+    ], 1);
     expect(mocks.applyColorWheels).toHaveBeenCalledWith(
       effectsBitmap,
       colorWheels,
