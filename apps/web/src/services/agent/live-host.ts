@@ -32,6 +32,8 @@ import type {
   MotionRenderQueueRunResult,
   MulticamHostBridge,
   HostFeatures,
+  TimelineFrame,
+  TimelineFrameRequest,
 } from "@kove-advanced/agent";
 import type { TextStyle, TextAnimationPreset } from "@kove-advanced/core/text/types";
 import type { ShapeStyle, ShapeType } from "@kove-advanced/core/graphics/types";
@@ -301,7 +303,7 @@ export class LiveEditorHost implements EditingHost {
     const hasRunner = this.jobRunner !== undefined;
     return {
       renderMotionFrame: hasRunner,
-      renderTimelineFrame: false,
+      renderTimelineFrame: true,
       renderMulticamPreview: false,
       exportVideo: hasRunner,
       checkpoints: true,
@@ -311,6 +313,44 @@ export class LiveEditorHost implements EditingHost {
 
   loadAudioSamples(mediaId: string, audioTrackIndex = 0): Promise<AudioSamples | null> {
     return (this.audioSource ?? decodeMediaAudio)(mediaId, audioTrackIndex);
+  }
+
+  /**
+   * Render one composited timeline frame through the app's RenderBridge
+   * (VideoEngine → ImageBitmap → scaled PNG/JPEG data URL). Same pipeline
+   * the preview uses, so the agent sees what the user sees.
+   *
+   * Compositor unavailability (engine store not initialized, no frame at the
+   * requested time) resolves to UNSUPPORTED_HOST per the host contract;
+   * encode failures throw, because that is a host bug, not a capability gap.
+   */
+  async renderTimelineFrame(
+    request: TimelineFrameRequest,
+  ): Promise<
+    TimelineFrame | { readonly code: "unsupported_host"; readonly error: string }
+  > {
+    let frame: Awaited<ReturnType<import("../../bridges/render-bridge").RenderBridge["renderFrame"]>>;
+    try {
+      const { getRenderBridge } = await import("../../bridges/render-bridge");
+      const bridge = getRenderBridge();
+      await bridge.initialize();
+      frame = await bridge.renderFrame(request.time);
+    } catch (error) {
+      return {
+        code: "unsupported_host",
+        error: `Timeline compositor unavailable: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      };
+    }
+    if (!frame) {
+      return {
+        code: "unsupported_host",
+        error: `The compositor produced no frame at ${request.time}s.`,
+      };
+    }
+    const { encodeRenderedFrame } = await import("./timeline-frame");
+    return encodeRenderedFrame(frame, request, "web/canvas2d");
   }
 
   setJobRunner(runner: JobRunner): void {
