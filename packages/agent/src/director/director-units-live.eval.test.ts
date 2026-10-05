@@ -2,80 +2,29 @@ import { describe, expect, it } from "vitest";
 import type { Project } from "@kove-advanced/core/types/project";
 import { HeadlessHost } from "../headless-host";
 import { runTurn } from "../loop";
-import {
-  AnthropicClient,
-  OpenAIClient,
-  withRetry,
-  type LLMClient,
-  type LLMSend,
-  type LoopMessage,
-} from "../llm";
-import { toAnthropicTools, toOpenAITools } from "../registry";
+import type { LoopMessage } from "../llm";
+import { toOpenAITools } from "../registry";
+import { makeWorkersAIClient, loadWorkersAIConfig } from "../eval/baseline";
 import { makeProjectWithClip } from "../test-fixtures";
 
 /**
- * LIVE EVAL (requires real LLM credentials; auto-skips without them).
+ * LIVE EVAL (requires Cloudflare Workers AI credentials; auto-skips without).
  *
  * Verifies the director-prompt unit fix behaviorally: after the prompt was
  * corrected (contrast/saturation documented as 0..2 CSS multipliers,
  * brightness/temperature/tint as −100..100 percent), the model must actually
  * EMIT values in those windows. The compile-time suite can't prove that.
  *
- * Configure one of:
- *   ANTHROPIC_API_KEY [+ ANTHROPIC_BASE_URL, ANTHROPIC_MODEL]
- *   OPENAI_API_KEY    [+ OPENAI_BASE_URL, OPENAI_MODEL]
- * Run: pnpm exec vitest run src/director/director-units-live.eval.test.ts
+ * Credentials resolve exactly like the baseline harness (eval/baseline.ts):
+ *   KOVE_EVAL_CLOUDFLARE_API_TOKEN / KOVE_EVAL_CLOUDFLARE_ACCOUNT_ID
+ *     (eval-scoped second key — does not disturb the web app's credentials)
+ *   → CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID env
+ *   → the repo's .dev.vars
+ * Optional KOVE_EVAL_CLOUDFLARE_AI_MODEL / CLOUDFLARE_AI_MODEL overrides the
+ * default Workers AI model. Token and account id must match (else 403).
+ *
+ * Run: pnpm --filter @kove-advanced/agent exec vitest run src/director/director-units-live.eval.test.ts
  */
-
-interface LiveEnv {
-  client: LLMClient;
-  provider: "anthropic" | "openai";
-}
-
-function fetchSend(url: string, headers: Record<string, string>): LLMSend {
-  return async (body: unknown) => {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json", ...headers },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      throw new Error(`LLM HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    }
-    return (await res.json()) as Record<string, unknown>;
-  };
-}
-
-function clientFromEnv(): LiveEnv | null {
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (anthropicKey) {
-    const base = process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com/v1/messages";
-    return {
-      provider: "anthropic",
-      client: new AnthropicClient({
-        model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5",
-        send: withRetry(
-          fetchSend(base, {
-            "x-api-key": anthropicKey,
-            "anthropic-version": "2023-06-01",
-          }),
-        ),
-      }),
-    };
-  }
-  const openaiKey = process.env.OPENAI_API_KEY;
-  if (openaiKey) {
-    const base = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1/chat/completions";
-    return {
-      provider: "openai",
-      client: new OpenAIClient({
-        model: process.env.OPENAI_MODEL ?? "gpt-4o",
-        send: withRetry(fetchSend(base, { authorization: `Bearer ${openaiKey}` })),
-      }),
-    };
-  }
-  return null;
-}
 
 const PROMPTS = [
   "Give this footage a high-contrast black & white look — punchy, crushed blacks.",
@@ -89,20 +38,21 @@ function collectedEffects(project: Project): Array<{ type: string; params: Recor
   );
 }
 
-const live = clientFromEnv();
+const config = loadWorkersAIConfig();
 
-describe.skipIf(!live)("director emits grade params in renderer units (live LLM)", () => {
+describe.skipIf(!config)("director emits grade params in renderer units (live Workers AI)", () => {
   it.each(PROMPTS.map((p, i) => [i, p] as const))(
     "prompt %# emits contrast/saturation in 0..2 and brightness in ±100",
     async (_i, prompt) => {
-      const env = live as LiveEnv;
+      const cfg = config as NonNullable<typeof config>;
       const host = new HeadlessHost(makeProjectWithClip());
-      const tools = env.provider === "anthropic" ? toAnthropicTools() : toOpenAITools();
+      const client = makeWorkersAIClient(cfg);
+      const tools = toOpenAITools();
       const messages: LoopMessage[] = [{ role: "user", content: prompt }];
 
       const result = await runTurn({
         host,
-        llm: env.client,
+        llm: client,
         tools,
         messages,
         limits: { maxSteps: 10 },
