@@ -3,6 +3,7 @@ import type { Project } from "@kove-advanced/core/types/project";
 import { HeadlessHost } from "../headless-host";
 import { runTurn } from "../loop";
 import type { LoopMessage } from "../llm";
+import type { AgentEvent } from "../types";
 import { toOpenAITools } from "../registry";
 import { makeWorkersAIClient, loadWorkersAIConfig } from "../eval/baseline";
 import { makeProjectWithClip } from "../test-fixtures";
@@ -40,15 +41,31 @@ function collectedEffects(project: Project): Array<{ type: string; params: Recor
 
 const config = loadWorkersAIConfig();
 
+/**
+ * Workers AI's free tier resets daily (10k neurons). Hitting it is an
+ * environment limit, not a regression in the prompt fix under test — skip
+ * rather than report a red suite. 403/401 (bad creds) still fail loudly.
+ */
+function quotaExhausted(message: string): boolean {
+  return (
+    message.includes("429") ||
+    message.includes("daily free allocation") ||
+    message.includes("neurons") ||
+    message.includes("rate limit")
+  );
+}
+
 describe.skipIf(!config)("director emits grade params in renderer units (live Workers AI)", () => {
-  it.each(PROMPTS.map((p, i) => [i, p] as const))(
-    "prompt %# emits contrast/saturation in 0..2 and brightness in ±100",
-    async (_i, prompt) => {
+  // Plain `it` (not `it.each`) so the test context — and ctx.skip() for the
+  // quota case — is available; vitest 1.6 doesn't pass context to each-callbacks.
+  PROMPTS.forEach((prompt, index) => {
+    it(`prompt ${index} emits contrast/saturation in 0..2 and brightness in ±100`, async (ctx) => {
       const cfg = config as NonNullable<typeof config>;
       const host = new HeadlessHost(makeProjectWithClip());
       const client = makeWorkersAIClient(cfg);
       const tools = toOpenAITools();
       const messages: LoopMessage[] = [{ role: "user", content: prompt }];
+      const errors: string[] = [];
 
       const result = await runTurn({
         host,
@@ -57,11 +74,21 @@ describe.skipIf(!config)("director emits grade params in renderer units (live Wo
         messages,
         limits: { maxSteps: 10 },
         confirmGate: () => "approve",
+        onEvent: (event: AgentEvent) => {
+          if (event.type === "error") errors.push(event.error.message);
+        },
       });
-      expect(
-        result.stoppedReason,
-        `turn stopped with: ${result.stoppedReason}`,
-      ).not.toBe("error");
+      if (result.stoppedReason === "error") {
+        const message = errors.join("\n");
+        if (quotaExhausted(message)) {
+          ctx.skip();
+          return;
+        }
+        expect(
+          result.stoppedReason,
+          `turn stopped with: ${result.stoppedReason}: ${message}`,
+        ).not.toBe("error");
+      }
 
       const effects = collectedEffects(host.getProject());
       const graded = effects.filter((e) =>
@@ -81,7 +108,6 @@ describe.skipIf(!config)("director emits grade params in renderer units (live Wo
           expect(value, `${effect.type} must be percent −100..100, got ${value}`).toBeLessThanOrEqual(100);
         }
       }
-    },
-    180_000,
-  );
+    }, 180_000);
+  });
 });

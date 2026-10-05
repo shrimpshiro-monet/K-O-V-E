@@ -22,6 +22,7 @@ export default [
         ...globals.es2021,
         ...globals.node,
         NodeJS: "readonly",
+        CanvasImageSource: "readonly",
         CanvasTextAlign: "readonly",
         CanvasTextBaseline: "readonly",
         ImageBitmap: "readonly",

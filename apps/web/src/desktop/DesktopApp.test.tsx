@@ -13,6 +13,13 @@ vi.mock("../stores/project-store", () => ({
   useProjectStore: vi.fn(),
 }));
 
+// The live agent host reaches into the real project store's history stacks at
+// construction; this suite only exercises the desktop shell, so stub the
+// singleton instead of standing up store internals.
+vi.mock("../services/agent/host-singleton", () => ({
+  getLiveEditorHost: vi.fn(() => ({ setJobRunner: vi.fn() })),
+}));
+
 vi.mock("./editor/EditorBootstrapGate", () => ({
   EditorBootstrapGate: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
