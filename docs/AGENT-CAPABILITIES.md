@@ -2,7 +2,7 @@
 
 # Kove Advanced Agent — Capability Reference
 
-The agent exposes **324 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
+The agent exposes **327 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
 
 ## Tools
 
@@ -366,6 +366,9 @@ The agent exposes **324 tools** spanning read/observe, project, track, clip, tra
 - **expand_prompt_result** (read-only) — Structured output for prompt expansion. Do not call directly.
 - **expand_prompt** (read-only) — Expand a vague or incomplete user prompt into a rich director's brief. Analyzes the prompt for missing information (tone, platform, content direction, length, style) and either auto-fills from context or returns targeted clarifying questions.
 - **plan_edit** (expensive) — Given the user's prompt, have the director produce a structured EditPlan and commit it as ONE timeline revision. mode=replace_plan (the default) replaces any previously committed plan's output — calling this again never stacks a second plan on top. Pass baseRevision (from the last plan_edit result) to reject stale commits, and idempotencyKey to make retried turns no-ops. Pass the source segmentMap and optional referenceAnalysis from extract_segments to reproduce a marked reference video's style on the user's own footage.
+- **detect_faces** (read-only, expensive) — Sample a video clip or media item and detect faces with the local face model, then associate detections into stable tracks across frames (IoU tracking with EMA smoothing and occlusion gaps). Returns per-track summaries: pixel-space average box, first/last time in source milliseconds, frames detected, average confidence, a primary-face score, and which track is primary. Read-only — nothing is written to the project. Boxes refer to the analyzed frame's pixel space, not the project canvas. Check get_capabilities → host.analyzeFaces first.
+- **rotoscope_subject** (read-only, expensive) — Segment the main subject across sampled frames and reduce each matte to a simplified, normalized contour path. Returns the keyframe plan: how many keyframes the tracked matte needs, when they fall (source ms), per-keyframe coverage/centroid/point count, and the union bounding box. Frames where segmentation finds no subject are reported, not estimated. Read-only proposal — call apply_subject_matte to write the matte. Check get_capabilities → host.analyzeSubjectMatte first.
+- **apply_subject_matte** (destructive, expensive) — Analyze the subject and write the tracked matte onto a clip as normalized mask keyframes (creating a mask, or extending maskId), in ONE undo step. Optional separation preset also re-composites the subject: cutout/transparent (subject only), blur-background, color-background, image-background, with feather, edge-shift, invert and opacity. Keyframe times are written on the timeline clock, so clip speed/reverse are accounted for. Destructive — requires confirmation. Check get_capabilities → host.applySubjectMatte first.
 
 ## history
 - **create_checkpoint** — Mark the current project state so you can return to it with restore_checkpoint. Cheap (stores no copy of the project). Create one before any risky or multi-step change, then verify the result and restore if it is worse. Returns {checkpoint:{id,label,createdAt,revision,undoDepth}}.

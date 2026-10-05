@@ -45,6 +45,121 @@ export interface HostFeatures {
   readonly checkpoints: boolean;
   /** Decode a media item's audio to samples (measure_loudness). */
   readonly analyzeAudio: boolean;
+  /** Sample video frames and run face detection/tracking (detect_faces). */
+  readonly analyzeFaces: boolean;
+  /** Segment subjects and extract matte contours (rotoscope_subject). */
+  readonly analyzeSubjectMatte: boolean;
+  /** Write a tracked matte + separation settings onto a clip (apply_subject_matte). */
+  readonly applySubjectMatte: boolean;
+}
+
+/** Which part of a media item's source to analyze. Times are source seconds. */
+export interface VisionSamplingRequest {
+  /** Media item to analyze. Tools resolve clipId to a media item first. */
+  readonly mediaId: string;
+  /** Source seconds to start at. Default 0. */
+  readonly startTime?: number;
+  /** Source seconds to end at. Defaults to the media duration. */
+  readonly endTime?: number;
+  /** Preferred spacing between samples. Default 500 ms. */
+  readonly intervalMs?: number;
+  /** Hard cap on sampled frames. Default 60. */
+  readonly maxFrames?: number;
+}
+
+export interface FaceTrackSummary {
+  readonly id: string;
+  readonly firstTimeMs: number;
+  readonly lastTimeMs: number;
+  readonly framesDetected: number;
+  readonly averageConfidence: number;
+  readonly averageBox: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
+  readonly score: number;
+}
+
+export interface FaceAnalysisResult {
+  readonly width: number;
+  readonly height: number;
+  readonly sampledFrames: number;
+  readonly sampledTimesMs: readonly number[];
+  readonly tracks: readonly FaceTrackSummary[];
+  readonly primaryTrackId: string | null;
+  readonly warnings: readonly string[];
+}
+
+export interface SubjectMatteRequest extends VisionSamplingRequest {
+  /** Matte threshold 0..1. Default 0.5. */
+  readonly threshold?: number;
+  /** Contour simplification tolerance in normalized units. Default 0.008. */
+  readonly simplifyTolerance?: number;
+  /** Cap on emitted keyframes. Default 60. */
+  readonly maxKeyframes?: number;
+  /** Frames below this subject coverage are treated as "no subject". Default 0.004. */
+  readonly minCoverage?: number;
+}
+
+export interface SubjectMatteKeyframeSummary {
+  readonly timeMs: number;
+  readonly coverage: number;
+  readonly pointCount: number;
+  readonly centroid: { readonly x: number; readonly y: number };
+}
+
+export interface SubjectMatteResult {
+  readonly width: number;
+  readonly height: number;
+  readonly sampledFrames: number;
+  readonly missedFrames: number;
+  readonly keyframeCount: number;
+  /** Capped preview of the plan; use keyframeCount for the true total. */
+  readonly keyframes: readonly SubjectMatteKeyframeSummary[];
+  readonly averageCoverage: number;
+  readonly boundingBox: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
+  readonly warnings: readonly string[];
+}
+
+/** Separation settings accepted by `apply_subject_matte`. */
+export interface SubjectSeparationRequest {
+  readonly preset:
+    | "cutout"
+    | "transparent"
+    | "blur-background"
+    | "color-background"
+    | "image-background";
+  readonly blurAmount?: number;
+  readonly backgroundColor?: string;
+  readonly backgroundImageUrl?: string;
+  /** Matte threshold override, 0..1. */
+  readonly threshold?: number;
+  /** Soft edge width, 0..1. */
+  readonly feather?: number;
+  /** Grow (+) / shrink (−) the subject silhouette, −0.5..0.5. */
+  readonly edgeShift?: number;
+  readonly invert?: boolean;
+  readonly opacity?: number;
+}
+
+export interface ApplySubjectMatteRequest extends SubjectMatteRequest {
+  /** Clip the matte is attached to. */
+  readonly clipId: string;
+  /** Reuse an existing mask id; omitted creates a new mask. */
+  readonly maskId?: string;
+  /** Feathering in pixels written onto the mask. Default 4. */
+  readonly featherPx?: number;
+  /** Mask expansion in pixels (positive grows the mask). Default 0. */
+  readonly expansionPx?: number;
+  readonly invertMask?: boolean;
+  /** Optionally also switch how the subject is composited. */
+  readonly separation?: SubjectSeparationRequest;
+}
+
+export interface ApplySubjectMatteResult {
+  readonly maskId: string;
+  readonly keyframeCount: number;
+  readonly firstTimeSeconds: number | null;
+  readonly lastTimeSeconds: number | null;
+  readonly separationApplied: boolean;
+  readonly warnings: readonly string[];
 }
 
 /** Decoded audio handed to analysis tools. Source audio: before any clip effect, fader or mix. */
@@ -384,6 +499,36 @@ export interface EditingHost {
    * `{code:"unsupported_host"}`; it must never return a placeholder image.
    */
   renderTimelineFrame?(request: TimelineFrameRequest): Promise<TimelineFrame | { readonly code: "unsupported_host"; readonly error: string }>;
+
+  /**
+   * Sample a media item's frames and detect/track faces. Optional: hosts
+   * without a video decoder omit it and report `features().analyzeFaces ===
+   * false`. Boxes are in the analyzed frame's pixel space; times are
+   * milliseconds on the source clock.
+   */
+  analyzeFaces?(request: VisionSamplingRequest): Promise<
+    FaceAnalysisResult | { readonly code: "unsupported_host"; readonly error: string }
+  >;
+
+  /**
+   * Segment the subject across sampled frames and reduce each matte to
+   * normalized contours. Optional: hosts without segmentation omit it and
+   * report `features().analyzeSubjectMatte === false`. This is the read-only
+   * proposal path — nothing is written to the project.
+   */
+  analyzeSubjectMatte?(request: SubjectMatteRequest): Promise<
+    SubjectMatteResult | { readonly code: "unsupported_host"; readonly error: string }
+  >;
+
+  /**
+   * Analyze the subject and write the tracked matte onto a clip's mask
+   * (creating or updating `mask/setAll`), optionally applying a separation
+   * preset. Destructive: callers must have confirmation. Optional: hosts that
+   * cannot write masks report `features().applySubjectMatte === false`.
+   */
+  applySubjectMatte?(request: ApplySubjectMatteRequest): Promise<
+    ApplySubjectMatteResult | { readonly code: "unsupported_host"; readonly error: string }
+  >;
 
   /**
    * Run ffmpeg/ffprobe QC on an exported file: loudness + true peak (EBU

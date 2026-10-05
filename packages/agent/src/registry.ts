@@ -2,6 +2,7 @@ import type { Action } from "@kove-advanced/core/types/actions";
 import { summarizeMeasureReport } from "@kove-advanced/core/qc/measure-export";
 import { HISTORY_TOOLS } from "./tools-history";
 import { AUDIO_ANALYSIS_TOOLS } from "./tools-audio-analysis";
+import { VISION_TOOLS } from "./tools-vision";
 import { RENDER_TOOLS } from "./tools-render";
 import {
   resolveMs,
@@ -34076,7 +34077,7 @@ const TOOLS: RegisteredTool[] = [
 
 // ---- Registry --------------------------------------------------------------
 const REGISTRY = new Map<string, RegisteredTool>(
-  [...TOOLS, ...HISTORY_TOOLS, ...AUDIO_ANALYSIS_TOOLS, ...RENDER_TOOLS].map((t) => [t.name, t]),
+  [...TOOLS, ...HISTORY_TOOLS, ...AUDIO_ANALYSIS_TOOLS, ...RENDER_TOOLS, ...VISION_TOOLS].map((t) => [t.name, t]),
 );
 
 export function getTool(name: string): RegisteredTool | undefined {

@@ -63,6 +63,11 @@ export class HeadlessHost implements EditingHost {
       exportVideo: hasRunner,
       checkpoints: true,
       analyzeAudio: this.audioSource !== undefined,
+      // Vision analysis needs a video decoder + MediaPipe, which only the
+      // browser host has. Headless tools fail clearly with UNSUPPORTED_HOST.
+      analyzeFaces: false,
+      analyzeSubjectMatte: false,
+      applySubjectMatte: false,
     };
   }
 
