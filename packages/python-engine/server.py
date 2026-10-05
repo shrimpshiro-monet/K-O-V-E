@@ -1,22 +1,32 @@
-"""KOVE Analysis Engine — HTTP server wrapping the Python orchestrator."""
+"""KOVE Analysis Engine — HTTP server wrapping the Python orchestrator.
+
+Job model (v2): POST endpoints create a SQLite-persisted job and return
+``{jobId}`` immediately; work runs in a FastAPI BackgroundTask; clients poll
+``GET /jobs/{id}`` until the status is terminal. The previous SSE progress
+endpoint and await-to-completion responses were removed together with the
+dead AnalysisProgressCard frontend consumer.
+"""
 
 from __future__ import annotations
 
 import asyncio
-import json
+import os
 import uuid
-from collections import defaultdict
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import BackgroundTasks, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sse_starlette.sse import EventSourceResponse
 
+from kove_engine.job_store import JobStore
 from kove_engine.orchestrator import Orchestrator
 
-# In-memory job store
-jobs: dict[str, dict] = defaultdict(lambda: {"status": "pending", "progress": [], "result": None})
+# Single file next to the server; override with KOVE_JOBS_DB for tests/relocation.
+JOBS_DB_PATH = os.environ.get(
+    "KOVE_JOBS_DB", str(Path(__file__).resolve().parent / "jobs.db")
+)
+job_store = JobStore(JOBS_DB_PATH)
 
 
 class AnalyzeRequest(BaseModel):
@@ -46,10 +56,11 @@ class VisionRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await job_store.init()
     yield
 
 
-app = FastAPI(title="KOVE Analysis Engine", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="KOVE Analysis Engine", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -62,43 +73,37 @@ app.add_middleware(
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "engine": "python", "version": "0.1.0"}
+    return {"status": "ok", "engine": "python", "version": "0.2.0"}
+
+
+def _new_job_id() -> str:
+    return uuid.uuid4().hex[:8]
 
 
 @app.post("/analyze")
-async def analyze(req: AnalyzeRequest):
-    job_id = uuid.uuid4().hex[:8]
-    jobs[job_id]["status"] = "running"
+async def analyze(req: AnalyzeRequest, background_tasks: BackgroundTasks):
+    """Start a video-path analysis job; returns immediately with {jobId}."""
+    job_id = _new_job_id()
+    await job_store.create(job_id, req.model_dump())
+    background_tasks.add_task(_run_analysis_job, job_id, req)
+    return {"jobId": job_id, "status": "pending"}
 
-    orchestrator = Orchestrator(
-        baseline_fps=req.baseline_fps,
-        burst_fps=req.burst_fps,
-        scene_threshold=req.scene_threshold,
-    )
 
-    progress_events: list[dict] = []
-
-    def on_progress(event: dict) -> None:
-        progress_events.append(event)
-        jobs[job_id]["progress"].append(event)
-
-    orchestrator.on_progress = on_progress
-
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, _run_analysis, orchestrator, req.video_paths)
-
-    jobs[job_id]["status"] = "completed"
-    jobs[job_id]["result"] = result
-
-    return {
-        "jobId": job_id,
-        "status": "completed",
-        "segmentMap": result["segmentMap"],
-        "referenceAnalysis": result["referenceAnalysis"],
-        "processingTimeMs": result.get("processingTimeMs", 0),
-        "frameCount": result.get("frameCount", 0),
-        "segmentCount": result.get("segmentCount", 0),
-    }
+async def _run_analysis_job(job_id: str, req: AnalyzeRequest) -> None:
+    await job_store.set_status(job_id, "running")
+    try:
+        orchestrator = Orchestrator(
+            baseline_fps=req.baseline_fps,
+            burst_fps=req.burst_fps,
+            scene_threshold=req.scene_threshold,
+        )
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, _run_analysis, orchestrator, req.video_paths
+        )
+        await job_store.set_status(job_id, "completed", result)
+    except Exception as exc:  # noqa: BLE001 — job must always reach a terminal state
+        await job_store.set_status(job_id, "failed", {"error": str(exc)})
 
 
 def _run_analysis(orchestrator: Orchestrator, video_paths: list[str]) -> dict:
@@ -132,15 +137,44 @@ def _run_analysis(orchestrator: Orchestrator, video_paths: list[str]) -> dict:
 
 
 @app.post("/analyze-frames")
-async def analyze_frames(req: VisionRequest):
-    """Accept base64 frames (same as Cloudflare Worker), run local analysis."""
-    import base64
-    import tempfile
-    import shutil
-    from pathlib import Path
+async def analyze_frames(req: VisionRequest, background_tasks: BackgroundTasks):
+    """Accept base64 frames (same as Cloudflare Worker), run local analysis.
 
-    job_id = uuid.uuid4().hex[:8]
-    jobs[job_id]["status"] = "running"
+    Returns {jobId} immediately; poll GET /jobs/{jobId}. Every call first
+    sweeps jobs older than the TTL (sweep-on-request; no background scheduler).
+    """
+    await job_store.sweep_expired()
+
+    job_id = _new_job_id()
+    payload = {
+        "videoId": req.videoId,
+        "totalDuration": req.totalDuration,
+        "frameCount": sum(len(batch.frames) for batch in req.frames),
+    }
+    await job_store.create(job_id, payload)
+    background_tasks.add_task(_run_frame_analysis_job, job_id, req)
+    return {"jobId": job_id, "status": "pending"}
+
+
+async def _run_frame_analysis_job(job_id: str, req: VisionRequest) -> None:
+    await job_store.set_status(job_id, "running")
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, _run_frame_analysis, req)
+        await job_store.set_status(job_id, "completed", result)
+    except (ValueError, OSError) as exc:
+        await job_store.set_status(
+            job_id, "failed", {"error": f"Frame analysis failed: {exc}"}
+        )
+    except Exception as exc:  # noqa: BLE001 — job must always reach a terminal state
+        await job_store.set_status(job_id, "failed", {"error": str(exc)})
+
+
+def _run_frame_analysis(req: VisionRequest) -> dict:
+    import base64
+    import shutil
+    import tempfile
+    from pathlib import Path
 
     all_frames = []
     for batch in req.frames:
@@ -148,12 +182,7 @@ async def analyze_frames(req: VisionRequest):
     all_frames.sort(key=lambda f: f.timestamp)
 
     if not all_frames:
-        jobs[job_id]["status"] = "completed"
-        return {
-            "batches": [{"batchIndex": 0, "descriptions": []}],
-            "totalFrames": 0,
-            "processingTimeMs": 0,
-        }
+        return {"batches": [{"batchIndex": 0, "descriptions": []}], "totalFrames": 0, "processingTimeMs": 0}
 
     tmpdir = tempfile.mkdtemp(prefix="kove_")
     try:
@@ -164,11 +193,12 @@ async def analyze_frames(req: VisionRequest):
             frame_path.write_bytes(frame_bytes)
             frame_paths.append((frame.timestamp, str(frame_path)))
 
-        from kove_engine.analyzers.motion_analyzer import MotionAnalyzer
         from kove_engine.analyzers.face_analyzer import FaceAnalyzer
+        from kove_engine.analyzers.motion_analyzer import MotionAnalyzer
         from kove_engine.analyzers.visual_analyzer import VisualAnalyzer
         from kove_engine.classifier import Classifier
-        from kove_engine.types import FrameData as EngineFrameData, AudioResult
+        from kove_engine.types import AudioResult
+        from kove_engine.types import FrameData as EngineFrameData
 
         motion_analyzer = MotionAnalyzer()
         face_analyzer = FaceAnalyzer()
@@ -178,14 +208,7 @@ async def analyze_frames(req: VisionRequest):
         descriptions = []
         prev_path = None
 
-        for i, (timestamp, image_path) in enumerate(frame_paths):
-            jobs[job_id]["progress"].append({
-                "stage": "analyzing_frame",
-                "message": f"Analyzing frame {i+1}/{len(frame_paths)}",
-                "current": i + 1,
-                "total": len(frame_paths),
-            })
-
+        for timestamp, image_path in frame_paths:
             frame_data = EngineFrameData(
                 timestamp=timestamp,
                 image_path=image_path,
@@ -214,50 +237,22 @@ async def analyze_frames(req: VisionRequest):
 
             prev_path = image_path
 
-        jobs[job_id]["status"] = "completed"
         return {
             "batches": [{"batchIndex": 0, "descriptions": descriptions}],
             "totalFrames": len(descriptions),
             "processingTimeMs": 0,
         }
-    except (ValueError, OSError) as exc:
-        jobs[job_id]["status"] = "failed"
-        jobs[job_id]["result"] = {"error": f"Frame analysis failed: {exc}"}
-        return {
-            "batches": [{"batchIndex": 0, "descriptions": []}],
-            "totalFrames": 0,
-            "processingTimeMs": 0,
-            "error": str(exc),
-        }
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-@app.get("/progress/{job_id}")
-async def progress(job_id: str):
-    if job_id not in jobs:
-        return {"error": "job not found"}
-
-    async def event_generator():
-        last_idx = 0
-        while True:
-            job = jobs[job_id]
-            progress_list = job["progress"]
-
-            while last_idx < len(progress_list):
-                event = progress_list[last_idx]
-                yield {"event": "progress", "data": json.dumps(event)}
-                last_idx += 1
-
-            if job["status"] == "completed":
-                result = job["result"]
-                if result:
-                    yield {"event": "done", "data": json.dumps(result)}
-                break
-
-            await asyncio.sleep(0.1)
-
-    return EventSourceResponse(event_generator())
+@app.get("/jobs/{job_id}")
+async def get_job(job_id: str):
+    """Poll target: {status, result|null}. Terminal statuses: completed/failed."""
+    job = await job_store.get(job_id)
+    if job is None:
+        return {"status": "unknown", "error": "job not found"}
+    return {"status": job["status"], "result": job["result"]}
 
 
 if __name__ == "__main__":

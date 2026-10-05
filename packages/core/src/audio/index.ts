@@ -17,3 +17,4 @@ export * from "./sound-generator";
 export * from "./beat-detection-engine";
 export * from "./highlight-analyzer";
 export * from "./loudness";
+export * from "./silence-removal";
