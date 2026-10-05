@@ -117,7 +117,8 @@ The brain of the AI system. Contains every tool the agent can call.
 ```
 packages/core/src/
 ├── actions/         # Action system: dispatch, undo/redo, serialization, validation
-├── ai/              # Auto-reframe, background removal, person segmentation
+├── ai/              # Auto-reframe, background removal, person segmentation,
+│                    # face detection/tracking, subject rotoscope, separation
 ├── animation/       # Easing, keyframes, GSAP, composition rendering
 ├── audio/           # Playback, effects, beat detection, FFT, noise reduction, automation
 ├── capabilities/    # Machine-readable capability manifest
