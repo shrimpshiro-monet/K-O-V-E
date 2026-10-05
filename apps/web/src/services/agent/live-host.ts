@@ -34,6 +34,12 @@ import type {
   HostFeatures,
   TimelineFrame,
   TimelineFrameRequest,
+  VisionSamplingRequest,
+  FaceAnalysisResult,
+  SubjectMatteRequest,
+  SubjectMatteResult,
+  ApplySubjectMatteRequest,
+  ApplySubjectMatteResult,
 } from "@kove-advanced/agent";
 import type { TextStyle, TextAnimationPreset } from "@kove-advanced/core/text/types";
 import type { ShapeStyle, ShapeType } from "@kove-advanced/core/graphics/types";
@@ -301,6 +307,8 @@ export class LiveEditorHost implements EditingHost {
 
   features(): HostFeatures {
     const hasRunner = this.jobRunner !== undefined;
+    // Face detection and segmentation need a DOM video decoder + MediaPipe.
+    const hasVision = typeof document !== "undefined" && typeof createImageBitmap === "function";
     return {
       renderMotionFrame: hasRunner,
       renderTimelineFrame: true,
@@ -308,7 +316,179 @@ export class LiveEditorHost implements EditingHost {
       exportVideo: hasRunner,
       checkpoints: true,
       analyzeAudio: this.audioSource !== undefined || typeof AudioContext !== "undefined",
+      analyzeFaces: hasVision,
+      analyzeSubjectMatte: hasVision,
+      applySubjectMatte: hasVision,
     };
+  }
+
+  /** Resolves a media item's decodable source. Mirrors the audio path. */
+  private visionSource(mediaId: string): { blob: Blob; durationSeconds: number } | { error: string } {
+    const media = this.getProject().mediaLibrary.items.find((item) => item.id === mediaId);
+    if (!media) return { error: `Media not found: ${mediaId}` };
+    const blob = (media.blob ?? null) as Blob | null;
+    if (!blob) {
+      return {
+        error: `Media "${media.name}" has no local bytes (reconnect or re-import it before analysis).`,
+      };
+    }
+    const duration = (media.metadata as { duration?: number } | undefined)?.duration ?? 0;
+    return { blob, durationSeconds: duration > 0 ? duration : 0 };
+  }
+
+  async analyzeFaces(
+    request: VisionSamplingRequest,
+  ): Promise<FaceAnalysisResult | { readonly code: "unsupported_host"; readonly error: string }> {
+    const source = this.visionSource(request.mediaId);
+    if ("error" in source) return { code: "unsupported_host", error: source.error };
+    const { analyzeFacesInMedia } = await import("./vision-analysis");
+    return analyzeFacesInMedia({
+      blob: source.blob,
+      durationSeconds: this.effectiveDuration(source.durationSeconds, request),
+      request,
+    });
+  }
+
+  async analyzeSubjectMatte(
+    request: SubjectMatteRequest,
+  ): Promise<SubjectMatteResult | { readonly code: "unsupported_host"; readonly error: string }> {
+    const source = this.visionSource(request.mediaId);
+    if ("error" in source) return { code: "unsupported_host", error: source.error };
+    const { analyzeSubjectMatte } = await import("./vision-analysis");
+    const analysis = await analyzeSubjectMatte({
+      blob: source.blob,
+      durationSeconds: this.effectiveDuration(source.durationSeconds, request),
+      streamId: `agent-matte:${request.mediaId}`,
+      request,
+    });
+    return analysis.result;
+  }
+
+  async applySubjectMatte(
+    request: ApplySubjectMatteRequest,
+  ): Promise<ApplySubjectMatteResult | { readonly code: "unsupported_host"; readonly error: string }> {
+    const source = this.visionSource(request.mediaId);
+    if ("error" in source) return { code: "unsupported_host", error: source.error };
+    const clip = this.getProject()
+      .timeline.tracks.flatMap((track) => track.clips)
+      .find((entry) => entry.id === request.clipId);
+    if (!clip) return { code: "unsupported_host", error: `Clip not found: ${request.clipId}` };
+
+    const { analyzeSubjectMatte, writeMatteToMasks } = await import("./vision-analysis");
+    const analysis = await analyzeSubjectMatte({
+      blob: source.blob,
+      durationSeconds: this.effectiveDuration(source.durationSeconds, request),
+      streamId: `agent-matte:${request.mediaId}`,
+      request,
+    });
+    if (analysis.plan.keyframes.length === 0) {
+      return {
+        maskId: request.maskId ?? "",
+        keyframeCount: 0,
+        firstTimeSeconds: null,
+        lastTimeSeconds: null,
+        separationApplied: false,
+        warnings: [...analysis.result.warnings],
+      };
+    }
+
+    const createId = (): string => crypto.randomUUID();
+    const written = writeMatteToMasks({
+      masks: this.getProject().masks ?? [],
+      clipId: request.clipId,
+      ...(request.maskId ? { maskId: request.maskId } : {}),
+      plan: analysis.plan,
+      timeMapping: {
+        startTime: clip.startTime,
+        inPoint: clip.inPoint ?? 0,
+        speed: Math.max(0.001, clip.speed ?? 1),
+        ...(clip.outPoint !== undefined ? { outPoint: clip.outPoint } : {}),
+        ...(clip.reversed ? { reversed: true } : {}),
+      },
+      ...(request.featherPx !== undefined ? { featherPx: request.featherPx } : {}),
+      ...(request.expansionPx !== undefined ? { expansionPx: request.expansionPx } : {}),
+      ...(request.invertMask !== undefined ? { invertMask: request.invertMask } : {}),
+      createId,
+    });
+
+    // One undoable action for the whole matte, then keep the live MaskEngine
+    // in sync so the inspector shows it immediately.
+    const actionResult = await this.applyAction({
+      type: "mask/setAll",
+      id: createId(),
+      timestamp: Date.now(),
+      params: { masks: written.masks },
+    } as Action);
+    if (!actionResult.success) {
+      return {
+        maskId: written.maskId,
+        keyframeCount: 0,
+        firstTimeSeconds: null,
+        lastTimeSeconds: null,
+        separationApplied: false,
+        warnings: [`Mask could not be saved: ${actionResult.error ?? "unknown error"}`],
+      };
+    }
+    const { useEngineStore } = await import("../../stores/engine-store");
+    const maskEngine = await useEngineStore.getState().getMaskEngine();
+    maskEngine.loadMasks([...written.masks]);
+
+    let separationApplied = false;
+    const warnings = [...written.warnings];
+    if (request.separation) {
+      try {
+        const {
+          planSubjectSeparation,
+          backgroundRemovalSettingsFromSeparation,
+          initializeBackgroundRemovalEngine,
+        } = await import("@kove-advanced/core");
+        const plan = planSubjectSeparation(request.separation);
+        warnings.push(...plan.warnings);
+        const engine = initializeBackgroundRemovalEngine();
+        engine.setSettings(
+          request.clipId,
+          backgroundRemovalSettingsFromSeparation(plan, engine.getSettings(request.clipId)),
+        );
+        // The compositor only applies separation once the engine is
+        // initialized (it loads the local segmentation model). Do it here so
+        // the preset is not a silent no-op, and say so if the model is
+        // unavailable instead of pretending it rendered.
+        if (!engine.isInitialized()) {
+          try {
+            await engine.initialize();
+          } catch (error) {
+            warnings.push(
+              `Subject separation settings were saved, but the model did not initialize: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
+        }
+        separationApplied = true;
+      } catch (error) {
+        warnings.push(
+          `Subject separation settings could not be applied: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    return {
+      maskId: written.maskId,
+      keyframeCount: written.keyframeCount,
+      firstTimeSeconds: written.firstTimeSeconds,
+      lastTimeSeconds: written.lastTimeSeconds,
+      separationApplied,
+      warnings,
+    };
+  }
+
+  /** Falls back to the clip's own out-point when metadata has no duration. */
+  private effectiveDuration(mediaDuration: number, request: { endTime?: number }): number {
+    if (mediaDuration > 0) return mediaDuration;
+    if (request.endTime !== undefined) return request.endTime;
+    return 0;
   }
 
   loadAudioSamples(mediaId: string, audioTrackIndex = 0): Promise<AudioSamples | null> {

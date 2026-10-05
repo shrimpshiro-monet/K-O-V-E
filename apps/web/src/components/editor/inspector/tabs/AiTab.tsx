@@ -8,6 +8,7 @@ import { AutoReframeSection } from "../";
 import { AutoCaptionPanel } from "../AutoCaptionPanel";
 import { CaptionEditorPanel } from "../CaptionEditorPanel";
 import { SilenceFillerPanel } from "../SilenceFillerPanel";
+import { SubjectToolsPanel } from "../SubjectToolsPanel";
 import { AutoEditPanel } from "../../panels/AutoEditPanel";
 import { HighlightExtractorPanel } from "../../panels/HighlightExtractorPanel";
 import { InspectorSection } from "../shell/InspectorSection";
@@ -98,6 +99,16 @@ export const AiTab: React.FC<AiTabProps> = ({
           defaultOpen={false}
         >
           <SilenceFillerPanel clipId={clipId} />
+        </InspectorSection>
+      )}
+
+      {clipType === "video" && (
+        <InspectorSection
+          title="Face & Subject Tools"
+          sectionId="subject-tools"
+          defaultOpen={false}
+        >
+          <SubjectToolsPanel clipId={clipId} />
         </InspectorSection>
       )}
 
