@@ -7,6 +7,8 @@ agent-reach-venv/
 __pycache__/
 *.pyc
 .coverage
+.pyenv-test/
+packages/python-engine/jobs.db
 
 # Build outputs
 dist/

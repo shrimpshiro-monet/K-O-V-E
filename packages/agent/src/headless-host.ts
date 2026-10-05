@@ -1,4 +1,7 @@
+import { execFile } from "node:child_process";
 import { ActionExecutor } from "@kove-advanced/core/actions/action-executor";
+import { measureExportFile } from "@kove-advanced/core/qc/measure-export";
+import type { ExportMeasureReport } from "@kove-advanced/core/qc/measure-export";
 import { ActionHistory } from "@kove-advanced/core/actions/action-history";
 import { CAPABILITY_MANIFEST } from "@kove-advanced/core/capabilities/manifest";
 import type { CapabilityManifest } from "@kove-advanced/core/capabilities/manifest";
@@ -13,6 +16,14 @@ export interface HeadlessHostOptions {
   readonly jobRunner?: JobRunner;
   /** Supplies decoded audio for analysis tools (measure_loudness). Without it they report UNSUPPORTED_HOST. */
   readonly audioSource?: (mediaId: string, audioTrackIndex: number) => Promise<AudioSamples | null>;
+  /**
+   * Command runner for measure_export QC. Defaults to spawning ffmpeg/ffprobe
+   * via node:child_process; tests inject recorded output instead.
+   */
+  readonly measureRunner?: (
+    command: string,
+    args: readonly string[],
+  ) => Promise<{ readonly stdout: string; readonly stderr: string; readonly exitCode: number }>;
 }
 
 /**
@@ -26,6 +37,7 @@ export class HeadlessHost implements EditingHost {
   private readonly history: ActionHistory;
   private readonly jobRunner?: JobRunner;
   private readonly audioSource?: HeadlessHostOptions["audioSource"];
+  private readonly measureRunner?: HeadlessHostOptions["measureRunner"];
   private txnCounter = 0;
   private readonly txnSnapshots = new Map<string, Project>();
   private readonly ledger: HistoryLedger;
@@ -37,6 +49,7 @@ export class HeadlessHost implements EditingHost {
     this.executor = new ActionExecutor(this.history);
     this.jobRunner = options.jobRunner;
     this.audioSource = options.audioSource;
+    this.measureRunner = options.measureRunner;
     this.ledger = new HistoryLedger(this.historyBackend());
     this.historyControl = this.ledger;
   }
@@ -191,4 +204,48 @@ export class HeadlessHost implements EditingHost {
     });
     return result.success;
   }
+
+  /**
+   * ffmpeg/ffprobe QC of an exported file. Requires the ffmpeg/ffprobe
+   * binaries on PATH; missing binaries surface as per-section `errors` in the
+   * report rather than a crash.
+   */
+  async measureExportFile(request: {
+    readonly path: string;
+    readonly expectedDurationSec?: number;
+  }): Promise<
+    ExportMeasureReport | { readonly code: "unsupported_host"; readonly error: string }
+  > {
+    return measureExportFile(
+      this.measureRunner ?? nodeCommandRunner,
+      request.path,
+      { expectedDurationSec: request.expectedDurationSec },
+    );
+  }
+}
+
+/** Spawns ffmpeg/ffprobe via node:child_process; numeric exits resolve, spawn failures reject. */
+function nodeCommandRunner(
+  command: string,
+  args: readonly string[],
+): Promise<{ readonly stdout: string; readonly stderr: string; readonly exitCode: number }> {
+  return new Promise((resolve, reject) => {
+    execFile(
+      command,
+      [...args],
+      { maxBuffer: 64 * 1024 * 1024 },
+      (error, stdout, stderr) => {
+        if (error) {
+          const exitCode = (error as { code?: unknown }).code;
+          if (typeof exitCode === "number") {
+            resolve({ stdout, stderr, exitCode });
+          } else {
+            reject(error);
+          }
+        } else {
+          resolve({ stdout, stderr, exitCode: 0 });
+        }
+      },
+    );
+  });
 }

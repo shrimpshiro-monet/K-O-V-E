@@ -2,7 +2,7 @@
 
 # Kove Advanced Agent — Capability Reference
 
-The agent exposes **323 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
+The agent exposes **324 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
 
 ## Tools
 
@@ -349,6 +349,7 @@ The agent exposes **323 tools** spanning read/observe, project, track, clip, tra
 - **cancel_motion_render_item** — Cancel a queued or in-progress motion render queue item by itemId. A queued item is canceled immediately; a rendering item stops at the next frame boundary. Returns whether the item was found.
 - **export_video** (expensive) — Render the whole project to a local video file (format: mp4|webm|mov, default mp4) and return its local result metadata. Expensive — requires confirmation.
 - **export_audio** (expensive) — Render the project audio to a local file (format: mp3|wav|aac|flac|ogg, default wav) and return its local result metadata. Expensive — requires confirmation.
+- **measure_export** (read-only) — Run ffmpeg/ffprobe QC on an exported media FILE (path): integrated loudness + true peak (EBU R128), black-frame / silence / freeze detection, and container-duration drift vs expectedDurationSec. Returns parsed measurements plus verdicts against long-form targets (integrated −16 LUFS ±1 LU, true peak ≤ −1 dBTP). Read-only. Requires ffmpeg/ffprobe on the host; returns UNSUPPORTED_HOST where they are missing (do not retry).
 
 ## multicam
 - **get_project_manifest** (read-only) — Return the exact kove-advanced-multicam/v1 manifest for a camera group, including participants, camera subjects, sync reference, and hard constraints.
@@ -607,6 +608,11 @@ The agent exposes **323 tools** spanning read/observe, project, track, clip, tra
     {
       "id": "color-bw-high-contrast",
       "name": "B&W High Contrast",
+      "category": "color"
+    },
+    {
+      "id": "color-bw-crushed",
+      "name": "B&W Crushed",
       "category": "color"
     },
     {

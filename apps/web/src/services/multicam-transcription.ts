@@ -84,6 +84,62 @@ export async function transcribeWithWordTimestamps(
   }
 }
 
+/**
+ * Transcribes pre-extracted samples (e.g. one clip's trimmed source region)
+ * with word timestamps. Returned word times are relative to the START OF THE
+ * SAMPLES — pass clip-region samples and the times line up with the
+ * silence-removal cut space directly.
+ */
+export async function transcribeSamplesWithWordTimestamps(
+  samples: Float32Array,
+  options: {
+    model?: WhisperModelKey;
+    language?: string;
+    onStatus?: (message: string) => void;
+  } = {},
+): Promise<WhisperWord[]> {
+  if (samples.length === 0) return [];
+  const worker = new Worker(
+    new URL("../workers/whisper-worker.ts", import.meta.url),
+    { type: "module" },
+  );
+  try {
+    const requestId = crypto.randomUUID();
+    const chunks = await new Promise<WorkerChunk[]>((resolve, reject) => {
+      const handleMessage = (event: MessageEvent<Record<string, unknown>>) => {
+        if (event.data.requestId !== requestId) return;
+        const kind = event.data.type;
+        if (kind === "model-progress") {
+          const progress = Number(event.data.progress ?? 0);
+          options.onStatus?.(
+            `Loading local Whisper model · ${Math.round((progress > 1 ? progress / 100 : progress) * 100)}%`,
+          );
+        } else if (kind === "transcription-progress") {
+          options.onStatus?.("Transcribing locally…");
+        } else if (kind === "result") {
+          worker.removeEventListener("message", handleMessage);
+          resolve((event.data.chunks as WorkerChunk[] | undefined) ?? []);
+        } else if (kind === "error") {
+          worker.removeEventListener("message", handleMessage);
+          reject(new Error(String(event.data.message ?? "Local transcription failed.")));
+        }
+      };
+      worker.addEventListener("message", handleMessage);
+      worker.postMessage({
+        requestId,
+        type: "transcribe",
+        audio: samples,
+        model: options.model ?? "fast",
+        language: options.language,
+        timestamps: "word",
+      });
+    });
+    return whisperChunksToWords(chunks);
+  } finally {
+    worker.terminate();
+  }
+}
+
 export async function transcribeMulticamChannels(
   buffers: ReadonlyMap<string, AudioBuffer>,
   options: {

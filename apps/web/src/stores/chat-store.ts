@@ -65,13 +65,6 @@ export interface TokenUsage {
   readonly outputTokens: number;
 }
 
-export interface AnalysisProgress {
-  readonly stage: string;
-  readonly message: string;
-  readonly current?: number;
-  readonly total?: number;
-}
-
 interface ChatState {
   messages: ChatMessage[];
   status: ChatStatus;
@@ -83,14 +76,12 @@ interface ChatState {
   lastTurnUndoSize: number | null;
   usage: TokenUsage;
   analysisMode: "eco" | "ai";
-  analysisProgress: AnalysisProgress | null;
   projectId: string | null;
   currentConversationId: string | null;
   conversationStartedAt: number | null;
 
   send: (text: string) => Promise<void>;
   setAnalysisMode: (mode: "eco" | "ai") => void;
-  setAnalysisProgress: (progress: AnalysisProgress | null) => void;
   resolveConfirm: (decision: ConfirmDecision) => void;
   stop: () => void;
   undoLastTurn: () => Promise<void>;
@@ -172,7 +163,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
   lastTurnUndoSize: null,
   usage: { inputTokens: 0, outputTokens: 0 },
   analysisMode: "eco" as const,
-  analysisProgress: null,
   projectId: null,
   currentConversationId: null,
   conversationStartedAt: null,
@@ -181,8 +171,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ analysisMode: mode });
     setAgentAnalysisMode(mode);
   },
-
-  setAnalysisProgress: (progress) => set({ analysisProgress: progress }),
 
   send: async (text: string) => {
     const trimmed = text.trim();

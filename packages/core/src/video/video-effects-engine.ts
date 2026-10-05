@@ -15,6 +15,33 @@ interface ResolvedShaderEffect {
   readonly time: number;
 }
 
+/**
+ * Time-gating window for a clip effect, read from the timing params that
+ * plan_edit forwards (`startOffset`/`duration`, clip-local seconds). An
+ * effect with no timing params is active for the whole clip. A malformed
+ * window (negative/zero duration) fails OPEN — an effect must never vanish
+ * because of bad timing data.
+ */
+export function isEffectActiveAtTime(
+  effect: Effect,
+  timeSec: number | undefined,
+): boolean {
+  if (timeSec === undefined || !Number.isFinite(timeSec)) return true;
+  const params = effect.params as Record<string, unknown>;
+  const rawStart = params.startOffset;
+  const rawDuration = params.duration;
+  const startOffset =
+    typeof rawStart === "number" && Number.isFinite(rawStart)
+      ? Math.max(0, rawStart)
+      : 0;
+  const duration =
+    typeof rawDuration === "number" && Number.isFinite(rawDuration)
+      ? rawDuration
+      : Number.POSITIVE_INFINITY;
+  if (duration <= 0) return true;
+  return timeSec >= startOffset && timeSec < startOffset + duration;
+}
+
 function readShaderTime(params: Record<string, unknown>): number {
   const raw = params.time;
   return typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
@@ -631,6 +658,7 @@ export class VideoEffectsEngine {
   async applyEffects(
     image: ImageBitmap,
     effects: Effect[],
+    timeSec?: number,
   ): Promise<FilterResult> {
     const startTime = performance.now();
     const enabledEffects = effects.filter((e) => e.enabled);
@@ -644,7 +672,7 @@ export class VideoEffectsEngine {
 
     // Use CPU processing (Canvas2D filters) - reliable and fast for most effects
     // WebGPU effects pipeline has rendering issues, using CPU for now
-    const result = await this.applyEffectsCPU(image, enabledEffects);
+    const result = await this.applyEffectsCPU(image, enabledEffects, timeSec);
     return {
       image: result,
       processingTime: performance.now() - startTime,
@@ -1169,6 +1197,7 @@ export class VideoEffectsEngine {
   private async renderEffectsOntoFxCanvas(
     image: ImageBitmap,
     effects: Effect[],
+    timeSec?: number,
   ): Promise<OffscreenCanvas> {
     const width = image.width;
     const height = image.height;
@@ -1189,6 +1218,10 @@ export class VideoEffectsEngine {
     };
 
     for (const effect of effects) {
+      // Time-gated hits: an effect carrying startOffset/duration only renders
+      // inside its window (clip-local seconds). Untimed effects are always on.
+      if (!isEffectActiveAtTime(effect, timeSec)) continue;
+
       const cssFilter = this.buildCSSFilter(effect);
       if (cssFilter) {
         pendingCssFilters.push(cssFilter);
@@ -1197,7 +1230,22 @@ export class VideoEffectsEngine {
 
       flushCssFilters();
       if (VideoEffectsEngine.isShaderEffect(effect)) {
-        const resolved = this.resolveShaderEffect(effect);
+        // Animate shader looks from their hit start, not from clip start, so
+        // a 0.3s speed-lines hit doesn't read as the 4th second of one.
+        let shaderEffect = effect;
+        if (timeSec !== undefined && Number.isFinite(timeSec)) {
+          const params = effect.params as Record<string, unknown>;
+          const startOffset =
+            typeof params.startOffset === "number" &&
+            Number.isFinite(params.startOffset)
+              ? Math.max(0, params.startOffset)
+              : 0;
+          shaderEffect = {
+            ...effect,
+            params: { ...params, time: Math.max(0, timeSec - startOffset) },
+          };
+        }
+        const resolved = this.resolveShaderEffect(shaderEffect);
         if (resolved) {
           this.applyShaderEffect(ctx, ctx.canvas, resolved, width, height);
         }
@@ -1235,20 +1283,22 @@ export class VideoEffectsEngine {
   private async applyEffectsCPU(
     image: ImageBitmap,
     effects: Effect[],
+    timeSec?: number,
   ): Promise<ImageBitmap> {
-    const canvas = await this.renderEffectsOntoFxCanvas(image, effects);
+    const canvas = await this.renderEffectsOntoFxCanvas(image, effects, timeSec);
     return createImageBitmap(canvas);
   }
 
   async applyEffectsToCanvas(
     image: ImageBitmap,
     effects: Effect[],
+    timeSec?: number,
   ): Promise<OffscreenCanvas | null> {
     const enabledEffects = effects.filter((e) => e.enabled);
     if (enabledEffects.length === 0) {
       return null;
     }
-    return this.renderEffectsOntoFxCanvas(image, enabledEffects);
+    return this.renderEffectsOntoFxCanvas(image, enabledEffects, timeSec);
   }
 
   private async applyEffectPixelLevel(
@@ -1494,26 +1544,36 @@ export class VideoEffectsEngine {
     midtones: number,
     highlights: number,
   ): void {
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i] / 255;
-      const g = data[i + 1] / 255;
-      const b = data[i + 2] / 255;
-      const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    // The per-pixel adjustment depends only on luma, so precompute a 256-entry
+    // LUT once per call instead of evaluating three smoothsteps per pixel.
+    // Measured at 1920x1080: the per-pixel version cost ~60 ms/frame; see
+    // tonal-perf.probe.test.ts.
+    const lut = new Float32Array(256);
+    for (let i = 0; i < 256; i++) {
+      const luma = i / 255;
       const shadowWeight = 1 - this.smoothstep(0, 0.33, luma);
       const highlightWeight = this.smoothstep(0.66, 1, luma);
       const midtoneWeight = Math.max(0, 1 - shadowWeight - highlightWeight);
-      const adjustment =
-        shadows * shadowWeight * 0.3 +
-        midtones * midtoneWeight * 0.3 +
-        highlights * highlightWeight * 0.3;
-
-      data[i] = Math.round(Math.max(0, Math.min(255, (r + adjustment) * 255)));
-      data[i + 1] = Math.round(
-        Math.max(0, Math.min(255, (g + adjustment) * 255)),
+      // Stored pre-scaled to 0..255 output levels.
+      lut[i] =
+        (shadows * shadowWeight * 0.3 +
+          midtones * midtoneWeight * 0.3 +
+          highlights * highlightWeight * 0.3) *
+        255;
+    }
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const lumaIndex = Math.min(
+        255,
+        Math.max(0, Math.round(0.299 * r + 0.587 * g + 0.114 * b)),
       );
-      data[i + 2] = Math.round(
-        Math.max(0, Math.min(255, (b + adjustment) * 255)),
-      );
+      const adjustment = lut[lumaIndex];
+      // Uint8ClampedArray clamps on assignment.
+      data[i] = Math.round(r + adjustment);
+      data[i + 1] = Math.round(g + adjustment);
+      data[i + 2] = Math.round(b + adjustment);
     }
   }
 

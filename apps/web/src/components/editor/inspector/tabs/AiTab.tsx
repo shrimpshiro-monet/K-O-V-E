@@ -7,6 +7,7 @@ import { ToolcraftText as Text } from "@kove-advanced/ui";
 import { AutoReframeSection } from "../";
 import { AutoCaptionPanel } from "../AutoCaptionPanel";
 import { CaptionEditorPanel } from "../CaptionEditorPanel";
+import { SilenceFillerPanel } from "../SilenceFillerPanel";
 import { AutoEditPanel } from "../../panels/AutoEditPanel";
 import { HighlightExtractorPanel } from "../../panels/HighlightExtractorPanel";
 import { InspectorSection } from "../shell/InspectorSection";
@@ -88,6 +89,16 @@ export const AiTab: React.FC<AiTabProps> = ({
             </div>
           </InspectorSection>
         </>
+      )}
+
+      {clipType === "video" && (
+        <InspectorSection
+          title="Silence & Filler Removal"
+          sectionId="silence-filler-removal"
+          defaultOpen={false}
+        >
+          <SilenceFillerPanel clipId={clipId} />
+        </InspectorSection>
       )}
 
       {clipType === "video" && (

@@ -1,4 +1,5 @@
 import type { Action } from "@kove-advanced/core/types/actions";
+import { summarizeMeasureReport } from "@kove-advanced/core/qc/measure-export";
 import { HISTORY_TOOLS } from "./tools-history";
 import { AUDIO_ANALYSIS_TOOLS } from "./tools-audio-analysis";
 import { RENDER_TOOLS } from "./tools-render";
@@ -2193,8 +2194,11 @@ type IntensityMapping =
 
 const EFFECT_INTENSITY_PARAM: Readonly<Record<string, IntensityMapping>> = {
   brightness: { single: "value", scale: 100 },
-  contrast: { single: "value", scale: 100 },
-  saturation: { single: "value", scale: 100 },
+  // contrast/saturation are CSS MULTIPLIERS (contrast(1) = identity), not
+  // percent offsets: scale 100 emitted contrast(50)/saturate(50) — a blown
+  // frame. Intensity now maps to 1..2 on the multiplier scale.
+  contrast: { multi: (i) => ({ value: 1 + i }) },
+  saturation: { multi: (i) => ({ value: 1 + i }) },
   hue: { single: "rotation", scale: 180 },
   blur: { single: "radius", scale: 10 },
   sharpen: { single: "amount", scale: 100 },
@@ -2223,6 +2227,9 @@ function synthesizeEffectParams(
   if ("multi" in mapping) return mapping.multi(intensity);
   return { [mapping.single]: intensity * mapping.scale };
 }
+
+/** Test-only handle onto effect parameter synthesis. */
+export const _synthesizeEffectParamsForTest = synthesizeEffectParams;
 
 async function materializeEditPlan(
   plan: EditPlan,
@@ -2704,6 +2711,30 @@ function resolveLayoutTransform(
  * `revisionApplied` is included so a caller can tell "this is the best the
  * bounded revision could do" from "no revision was needed".
  */
+/**
+ * Compact effect-cost summary for plan responses: upper-bound sandbox
+ * estimates, used to rank effects and flag over-budget plans (never to
+ * promise an export time).
+ */
+function effectCostPayload(review: EditPlanReview): {
+  overBudget: boolean;
+  estimatedCpuMinutes: number;
+  budgetMinutes: number;
+  realtimeRatio: number;
+  unmeasuredShaderTypes: readonly string[];
+  warnings: readonly string[];
+} {
+  const cost = review.effectCost;
+  return {
+    overBudget: cost.overBudget,
+    estimatedCpuMinutes: Number((cost.estimatedCpuMs / 60000).toFixed(2)),
+    budgetMinutes: Number((cost.budgetMs / 60000).toFixed(2)),
+    realtimeRatio: Number(cost.realtimeRatio.toFixed(3)),
+    unmeasuredShaderTypes: cost.unmeasuredTypes,
+    warnings: cost.warnings,
+  };
+}
+
 function densityPayload(
   review: EditPlanReview,
   revisionApplied?: boolean,
@@ -33881,6 +33912,7 @@ const TOOLS: RegisteredTool[] = [
                 score: planReview.score,
                 deviations: planReview.deviations,
                 revisionApplied: false,
+                effectCost: effectCostPayload(planReview),
               },
               density: densityPayload(planReview),
               quality: {
@@ -33959,6 +33991,7 @@ const TOOLS: RegisteredTool[] = [
           score: planReview.score,
           deviations: planReview.deviations,
           revisionApplied,
+          effectCost: effectCostPayload(planReview),
         },
         density: densityPayload(planReview, revisionApplied),
         // Honest reporting: there is no working timeline frame sampler yet, so
@@ -33996,6 +34029,49 @@ const TOOLS: RegisteredTool[] = [
     "exportAudio",
     obj({ format: str }),
   ),
+  {
+    name: "measure_export",
+    domain: "export",
+    title: "Measure exported file (QC)",
+    description:
+      "Run ffmpeg/ffprobe QC on an exported media FILE (path): integrated loudness + true peak (EBU R128), black-frame / silence / freeze detection, and container-duration drift vs expectedDurationSec. Returns parsed measurements plus verdicts against long-form targets (integrated −16 LUFS ±1 LU, true peak ≤ −1 dBTP). Read-only. Requires ffmpeg/ffprobe on the host; returns UNSUPPORTED_HOST where they are missing (do not retry).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { ...str, description: "Path of the exported file to measure." },
+        expectedDurationSec: {
+          ...num,
+          minimum: 0,
+          description:
+            "Expected timeline duration in seconds; used to detect container-duration drift.",
+        },
+      },
+      required: ["path"],
+      additionalProperties: false,
+    },
+    readOnly: true,
+    destructive: false,
+    expensive: false,
+    strict: true,
+    handler: async (args, host) => {
+      const path = optionalString(args.path);
+      if (!path) return fail("path is required", "INVALID_PARAMS");
+      if (typeof host.measureExportFile !== "function") {
+        return unsupportedHost("measure_export");
+      }
+      const expectedDurationSec = optionalNumber(args.expectedDurationSec);
+      try {
+        const result = await host.measureExportFile({ path, expectedDurationSec });
+        if (!("loudness" in result)) return unsupportedHost("measure_export");
+        return ok(summarizeMeasureReport(result), result);
+      } catch (error) {
+        return fail(
+          `measure_export failed: ${error instanceof Error ? error.message : String(error)}`,
+          "MEASURE_FAILED",
+        );
+      }
+    },
+  },
 ];
 
 // ---- Registry --------------------------------------------------------------

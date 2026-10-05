@@ -1,6 +1,7 @@
 import type { Action, ActionResult } from "@kove-advanced/core/types/actions";
 import type { Project } from "@kove-advanced/core/types/project";
 import type { CapabilityManifest } from "@kove-advanced/core/capabilities/manifest";
+import type { ExportMeasureReport } from "@kove-advanced/core/qc/measure-export";
 import type {
   MulticamActivityMap,
   MulticamManifest,
@@ -383,6 +384,20 @@ export interface EditingHost {
    * `{code:"unsupported_host"}`; it must never return a placeholder image.
    */
   renderTimelineFrame?(request: TimelineFrameRequest): Promise<TimelineFrame | { readonly code: "unsupported_host"; readonly error: string }>;
+
+  /**
+   * Run ffmpeg/ffprobe QC on an exported file: loudness + true peak (EBU
+   * R128), black/silence/freeze detection, and container-duration drift vs
+   * the expected timeline length. Optional: only hosts with ffmpeg on PATH
+   * (or an equivalent) implement it; others omit it or resolve to
+   * `{code:"unsupported_host"}`.
+   */
+  measureExportFile?(request: {
+    readonly path: string;
+    readonly expectedDurationSec?: number;
+  }): Promise<
+    ExportMeasureReport | { readonly code: "unsupported_host"; readonly error: string }
+  >;
 
   /**
    * Project lifecycle + media ingest. Optional because they require a real

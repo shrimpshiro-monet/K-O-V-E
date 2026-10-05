@@ -286,11 +286,82 @@ export async function callVisionWorker(
     throw new Error(`Vision worker error: ${JSON.stringify(error)}`);
   }
 
-  const result = (await response.json()) as {
-    batches: Array<{
-      descriptions: VisionDescription[];
-    }>;
-  };
+  const payload = (await response.json()) as unknown;
 
+  // Job-based backend (python-engine): the POST returns {jobId} immediately
+  // and the result arrives via GET /jobs/{id}. Sync backends (the Cloudflare
+  // worker) return {batches} inline and take the legacy path below.
+  if (isJobAccepted(payload)) {
+    const jobsUrl = new URL(`/jobs/${payload.jobId}`, workerUrl).toString();
+    const result = await pollAnalysisJob(jobsUrl);
+    return result.batches.flatMap((b) => b.descriptions);
+  }
+
+  const result = payload as VisionWorkerSyncResult;
   return result.batches.flatMap((b) => b.descriptions);
+}
+
+interface VisionWorkerSyncResult {
+  batches: Array<{
+    descriptions: VisionDescription[];
+  }>;
+}
+
+interface VisionWorkerJobAccepted {
+  jobId: string;
+  status?: string;
+}
+
+const JOB_POLL_INTERVAL_MS = 500;
+const JOB_POLL_TIMEOUT_MS = 15 * 60 * 1000;
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+function isJobAccepted(value: unknown): value is VisionWorkerJobAccepted {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as Record<string, unknown>).jobId === "string" &&
+    !("batches" in (value as Record<string, unknown>))
+  );
+}
+
+/**
+ * Polls a job-based analysis backend (python-engine) until the job reaches a
+ * terminal status, then returns its result. Cadence is ~500ms with a hard
+ * timeout so a wedged job cannot hang an edit session forever.
+ */
+export async function pollAnalysisJob(
+  jobsUrl: string,
+  options: { pollIntervalMs?: number; timeoutMs?: number } = {},
+): Promise<VisionWorkerSyncResult> {
+  const interval = options.pollIntervalMs ?? JOB_POLL_INTERVAL_MS;
+  const deadline = Date.now() + (options.timeoutMs ?? JOB_POLL_TIMEOUT_MS);
+
+  while (Date.now() < deadline) {
+    const response = await fetch(jobsUrl);
+    if (!response.ok) {
+      throw new Error(`Analysis job poll error: HTTP ${response.status}`);
+    }
+    const job = (await response.json()) as {
+      status: string;
+      result?: VisionWorkerSyncResult | null;
+      error?: string;
+    };
+    if (job.status === "completed") {
+      if (!job.result || !Array.isArray(job.result.batches)) {
+        throw new Error("Analysis job completed without a usable result.");
+      }
+      return job.result;
+    }
+    if (job.status === "failed") {
+      throw new Error("Analysis job failed.");
+    }
+    if (job.status === "unknown") {
+      throw new Error("Analysis job not found (it may have expired).");
+    }
+    await sleep(interval);
+  }
+  throw new Error("Analysis job timed out while polling for completion.");
 }

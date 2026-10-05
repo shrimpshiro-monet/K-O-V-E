@@ -167,6 +167,16 @@ export class VideoEngine {
   private lastExportTime: number = -1;
   private exportFrameRate: number = 30;
   exportMode: boolean = false;
+  /** Scratch canvas used to capture subject frames BEFORE clip effects. */
+  private subjectCaptureCanvas: OffscreenCanvas | null = null;
+  private subjectCaptureCtx: OffscreenCanvasRenderingContext2D | null = null;
+  /**
+   * Frames where a behind-subject text clip fell back to rendering in FRONT
+   * of the subject because the matte was unavailable. Reset per export; a
+   * nonzero count means the reference "text behind subject" look silently
+   * dropped out for those frames.
+   */
+  private behindSubjectFallbackFrames = 0;
 
   /**
    * Creates a new VideoEngine instance.
@@ -790,6 +800,7 @@ export class VideoEngine {
                   clip.colorGrading,
                   width,
                   height,
+                  time - clip.startTime,
                 );
                 await this.drawClipFrameToContext(
                   ctx,
@@ -987,6 +998,7 @@ export class VideoEngine {
               clip.colorGrading,
               width,
               height,
+              time - clip.startTime,
             );
 
             const vidstabEng = getVidstabEngine();
@@ -1017,7 +1029,30 @@ export class VideoEngine {
 
             if (activeTextNeedsSubject) {
               subjectFrame?.close();
-              subjectFrame = await this.captureSubjectFrame(ctx, width, height);
+              // Capture BEFORE clip effects and color grading: the person
+              // model must segment the raw footage, not the stylized frame
+              // (a crushed B&W grade or speed-line wedges fed into MediaPipe
+              // degrade the matte). The transform is recomputed from the raw
+              // bitmap's dimensions for the same reason.
+              const subjectTransform = vidstabEng.hasStabilized(clip.id)
+                ? scaledTransform
+                : getStabilizedTransform(
+                    clip,
+                    scaledTransform,
+                    clipInfo.sourceTime,
+                    {
+                      canvasWidth: width,
+                      canvasHeight: height,
+                      sourceWidth: bitmap.width,
+                      sourceHeight: bitmap.height,
+                    },
+                  );
+              subjectFrame = await this.captureSubjectFramePreEffects(
+                bitmap,
+                subjectTransform,
+                width,
+                height,
+              );
             }
 
             if (processedBitmap !== bitmap) {
@@ -1579,6 +1614,45 @@ export class VideoEngine {
     }
   }
 
+  /**
+   * Captures the clip's RAW frame (pre-effects, pre-grade) on a scratch
+   * canvas as the segmentation input for behind-subject text. Drawn at full
+   * opacity so fades do not starve the person model of signal.
+   */
+  private async captureSubjectFramePreEffects(
+    frame: ImageBitmap,
+    transform: Transform,
+    width: number,
+    height: number,
+  ): Promise<ImageBitmap | null> {
+    try {
+      if (
+        !this.subjectCaptureCanvas ||
+        this.subjectCaptureCanvas.width !== width ||
+        this.subjectCaptureCanvas.height !== height
+      ) {
+        this.subjectCaptureCanvas = new OffscreenCanvas(width, height);
+        this.subjectCaptureCtx = this.subjectCaptureCanvas.getContext("2d");
+      }
+      const captureCtx = this.subjectCaptureCtx;
+      if (!captureCtx || !this.subjectCaptureCanvas) return null;
+      captureCtx.save();
+      captureCtx.setTransform(1, 0, 0, 1, 0, 0);
+      captureCtx.clearRect(0, 0, width, height);
+      captureCtx.restore();
+      this.drawFrameToContext(captureCtx, frame, transform, 1, width, height);
+      return await createImageBitmap(
+        this.subjectCaptureCanvas,
+        0,
+        0,
+        width,
+        height,
+      );
+    } catch {
+      return null;
+    }
+  }
+
   private async getSubjectMaskForFrame(
     subjectFrame: ImageBitmap,
     time: number,
@@ -1731,6 +1805,21 @@ export class VideoEngine {
     }
 
     if (!textClip.behindSubject || !subjectFrame || !subjectMask) {
+      if (textClip.behindSubject && subjectFrame && !subjectMask) {
+        // A person is on screen but the matte failed: text silently falls
+        // back to rendering in FRONT of the subject. Count it, and make it
+        // visible in export logs so the look vanishing is diagnosable.
+        this.behindSubjectFallbackFrames += 1;
+        if (
+          this.exportMode &&
+          (this.behindSubjectFallbackFrames === 1 ||
+            this.behindSubjectFallbackFrames % 150 === 0)
+        ) {
+          console.warn(
+            `[VideoEngine] behind-subject matte unavailable, text "${textClip.text}" rendered in front of the subject (fallback frame #${this.behindSubjectFallbackFrames})`,
+          );
+        }
+      }
       await this.renderTextClipToCanvasCtx(
         ctx,
         textClip,
@@ -2016,8 +2105,18 @@ export class VideoEngine {
 
   resetExportState(): void {
     this.lastExportTime = -1;
+    this.behindSubjectFallbackFrames = 0;
     const particleEngine = getParticleEngine();
     particleEngine.reset();
+  }
+
+  /**
+   * Number of frames in the current export where behind-subject text fell
+   * back to rendering in front of the subject because the matte was
+   * unavailable. Zero before the first export or after resetExportState().
+   */
+  getBehindSubjectFallbackCount(): number {
+    return this.behindSubjectFallbackFrames;
   }
 
   private renderSubtitleToCanvasCtx(
@@ -2266,6 +2365,7 @@ export class VideoEngine {
         clipA.colorGrading,
         width,
         height,
+        time - clipA.startTime,
       );
       processedB =
         clipB && mediaB
@@ -2277,6 +2377,7 @@ export class VideoEngine {
               clipB.colorGrading,
               width,
               height,
+              time - clipB.startTime,
             )
           : bitmapB;
 
@@ -2352,6 +2453,7 @@ export class VideoEngine {
     colorGrading: ClipColorGrading | undefined,
     width: number,
     height: number,
+    timeSec?: number,
   ): Promise<ImageBitmap> {
     let processed = await this.applyClipEffects(
       clipId,
@@ -2360,6 +2462,7 @@ export class VideoEngine {
       effects,
       width,
       height,
+      timeSec,
     );
     processed = await this.applyClipColorGrading(
       clipId,
@@ -2379,6 +2482,7 @@ export class VideoEngine {
     effects: Effect[],
     width: number,
     height: number,
+    timeSec?: number,
   ): Promise<ImageBitmap> {
     const enabledEffects = effects.filter((effect) => effect.enabled);
     if (enabledEffects.length === 0) {
@@ -2387,7 +2491,11 @@ export class VideoEngine {
 
     try {
       const effectsEngine = await this.ensureEffectsEngine(width, height);
-      const result = await effectsEngine.applyEffects(image, enabledEffects);
+      const result = await effectsEngine.applyEffects(
+        image,
+        enabledEffects,
+        timeSec,
+      );
       return this.adoptProcessedBitmap(image, sourceImage, result.image);
     } catch (error) {
       console.warn(
@@ -2406,7 +2514,11 @@ export class VideoEngine {
         let retryEngine: VideoEffectsEngine | null = null;
         try {
           retryEngine = await this.ensureEffectsEngine(width, height);
-          const result = await retryEngine.applyEffects(image, enabledEffects);
+          const result = await retryEngine.applyEffects(
+            image,
+            enabledEffects,
+            timeSec,
+          );
           return this.adoptProcessedBitmap(image, sourceImage, result.image);
         } catch (retryError) {
           retryEngine?.dispose();
