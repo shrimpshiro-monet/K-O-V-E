@@ -1,3 +1,5 @@
+import type { FaceBox, FaceDetectionBackend } from "./face-detection-engine";
+
 export type AspectRatioPreset =
   | "16:9"
   | "9:16"
@@ -115,13 +117,14 @@ export const PLATFORM_PRESETS: Record<PlatformPreset, AspectRatioConfig> = {
   },
 };
 
-export interface DetectedFace {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  confidence: number;
-}
+/**
+ * A face used for crop steering: the shared `FaceBox` plus a confidence.
+ *
+ * This used to be an exported `DetectedFace` interface; it now reuses the
+ * face-detection engine's box type so `AutoReframeEngine` can consume either
+ * the skin-tone fallback or a real detector backend (see `setFaceBackend`).
+ */
+export type ReframeFace = FaceBox & { confidence: number };
 
 export interface ReframeKeyframe {
   time: number;
@@ -165,7 +168,30 @@ export class AutoReframeEngine {
   private canvas: OffscreenCanvas | null = null;
   private ctx: OffscreenCanvasRenderingContext2D | null = null;
   private initialized = false;
-  private faceCache: Map<number, DetectedFace[]> = new Map();
+  private faceCache: Map<number, ReframeFace[]> = new Map();
+  private faceBackend: FaceDetectionBackend | null = null;
+  private faceBackendFailureReported = false;
+
+  /**
+   * Attach a real face detector (e.g. `createMediaPipeFaceBackend()`), or
+   * `null` to use the built-in skin-tone fallback. When attached, the detector
+   * drives crop steering; if it throws, the fallback takes over for that
+   * session so auto-reframe degrades instead of failing.
+   */
+  setFaceBackend(backend: FaceDetectionBackend | null): void {
+    this.faceBackend = backend;
+    this.faceBackendFailureReported = false;
+    this.faceCache.clear();
+  }
+
+  getFaceBackend(): FaceDetectionBackend | null {
+    return this.faceBackend;
+  }
+
+  /** True when a real detector is attached and has not failed yet. */
+  usesFaceBackend(): boolean {
+    return this.faceBackend !== null && !this.faceBackendFailureReported;
+  }
 
   async initialize(onProgress?: ProgressCallback): Promise<void> {
     if (this.initialized) return;
@@ -216,7 +242,7 @@ export class AutoReframeEngine {
 
       onProgress?.(progress, `Analyzing frame ${i + 1}/${frames.length}`);
 
-      const faces = await this.detectFaces(frame, i);
+      const faces = await this.detectFaces(frame, i, time);
 
       const crop = this.calculateOptimalCrop(
         sourceWidth,
@@ -309,17 +335,39 @@ export class AutoReframeEngine {
   private async detectFaces(
     frame: ImageBitmap,
     frameIndex: number,
-  ): Promise<DetectedFace[]> {
+    timeSeconds: number,
+  ): Promise<ReframeFace[]> {
     if (this.faceCache.has(frameIndex)) {
       return this.faceCache.get(frameIndex)!;
     }
 
-    const faces = this.detectFacesSimple(frame);
+    let faces: ReframeFace[];
+    if (this.faceBackend && !this.faceBackendFailureReported) {
+      try {
+        const detected = await this.faceBackend.detect(frame, timeSeconds * 1000);
+        faces = detected.map((face) => ({
+          ...face.box,
+          confidence: face.confidence,
+        }));
+      } catch (error) {
+        // A model/WASM failure must not kill a long reframe: report once,
+        // then keep going with the heuristic for the rest of this clip.
+        this.faceBackendFailureReported = true;
+        console.warn(
+          "[AutoReframe] Face detector failed; falling back to skin-tone detection:",
+          error instanceof Error ? error.message : error,
+        );
+        faces = this.detectFacesSimple(frame);
+      }
+    } else {
+      faces = this.detectFacesSimple(frame);
+    }
+
     this.faceCache.set(frameIndex, faces);
     return faces;
   }
 
-  private detectFacesSimple(frame: ImageBitmap): DetectedFace[] {
+  private detectFacesSimple(frame: ImageBitmap): ReframeFace[] {
     if (!this.ctx || !this.canvas) return [];
 
     this.canvas.width = frame.width;
@@ -350,7 +398,7 @@ export class AutoReframeEngine {
     }));
   }
 
-  private detectSkinRegions(imageData: ImageData): DetectedFace[] {
+  private detectSkinRegions(imageData: ImageData): ReframeFace[] {
     const { data, width, height } = imageData;
     const skinMap = new Uint8Array(width * height);
 
@@ -481,7 +529,7 @@ export class AutoReframeEngine {
     sourceWidth: number,
     sourceHeight: number,
     targetRatio: number,
-    faces: DetectedFace[],
+    faces: ReframeFace[],
     settings: ReframeSettings,
     lastCropX: number,
     lastCropY: number,
