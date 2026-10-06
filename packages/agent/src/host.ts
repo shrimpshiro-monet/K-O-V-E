@@ -81,8 +81,9 @@ export interface AutoReframeRequest {
   readonly maxFrames?: number;
   /**
    * Spend the spare frame budget where the picture moves instead of spreading
-   * it evenly. Default true; `false` (or an explicit `intervalMs`/`maxFrames`)
-   * forces the fixed grid. Reported back as `refinedFrames`.
+   * it evenly. Default true; `false` pins the single-pass grid. `intervalMs`
+   * and `maxFrames` describe the base grid and the budget either way. Reported
+   * back as `refinedFrames`.
    */
   readonly adaptive?: boolean;
 }
@@ -127,8 +128,8 @@ export interface VisionSamplingRequest {
   readonly maxFrames?: number;
   /**
    * Spend the spare frame budget where the picture moves instead of spreading
-   * it evenly. Default true; `false` (or an explicit `intervalMs`/`maxFrames`)
-   * forces the fixed grid.
+   * it evenly. Default true; `false` pins the single-pass grid. `intervalMs`
+   * and `maxFrames` describe the base grid and the budget either way.
    */
   readonly adaptive?: boolean;
 }

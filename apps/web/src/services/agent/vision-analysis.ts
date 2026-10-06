@@ -765,19 +765,18 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
   const engine = deps.engine ?? initializeAutoReframeEngine();
   const warnings: string[] = [];
 
-  // An explicit interval or frame cap is a request for exactly that grid, so
-  // only the default (unspecified) sampling is allowed to adapt.
-  const explicitGrid =
-    deps.request.adaptive === false ||
-    deps.request.intervalMs !== undefined ||
-    deps.request.maxFrames !== undefined;
-  const baseBudget = explicitGrid
-    ? undefined
-    : Math.max(2, Math.ceil(DEFAULT_MAX_FRAMES * (1 - ADAPTIVE_REFINEMENT_RATIO)));
+  // `intervalMs`/`maxFrames` describe the grid and the budget, not a veto: the
+  // base pass takes its share and refinement spends the rest. Only an explicit
+  // `adaptive: false` pins the old single-pass grid.
+  const adaptive = deps.request.adaptive !== false;
+  const budget = Math.max(2, Math.floor(deps.request.maxFrames ?? DEFAULT_MAX_FRAMES));
+  const baseBudget = adaptive
+    ? Math.max(2, Math.ceil(budget * (1 - ADAPTIVE_REFINEMENT_RATIO)))
+    : budget;
 
   const { timesMs, startMs, endMs } = resolveSamplingWindow(deps.durationSeconds, {
     ...deps.request,
-    ...(baseBudget !== undefined ? { maxFrames: baseBudget } : {}),
+    maxFrames: baseBudget,
   });
   if (timesMs.length === 0) {
     throw new Error("No frames to analyze in this range.");
@@ -792,13 +791,13 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
   let analyzedFrames = frames;
   let refinedFrames: number | undefined;
   let sampleTimes: number[] | undefined;
-  if (!explicitGrid && frames.length >= 2) {
+  if (adaptive && frames.length >= 2) {
     const motion = (deps.measureMotion ?? measureFrameMotion)(frames);
     const plan = planAdaptiveSampleTimes(
       frames.map((frame) => frame.timeMs),
       motion,
       {
-        maxFrames: DEFAULT_MAX_FRAMES,
+        maxFrames: budget,
         ...(deps.minIntervalMs !== undefined ? { minIntervalMs: deps.minIntervalMs } : {}),
       },
     );

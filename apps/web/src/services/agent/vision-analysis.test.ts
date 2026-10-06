@@ -747,17 +747,35 @@ describe("analyzeAutoReframe motion-adaptive sampling", () => {
     expect(sampleTimes.slice(0, 2)).toEqual([0, 0.5]);
   });
 
-  it("leaves an explicitly requested grid alone", async () => {
+  it("adapts on top of an explicit base grid, and inside its budget", async () => {
+    // The inspector asks for a 400ms grid and a 90-frame cap. Those describe
+    // the base pass and the budget; they are not a veto on refinement.
+    const engine = reframeEngine();
+    const decode = decoder([]);
+
+    const analysis = await analyzeAutoReframe({
+      ...baseDeps(decode, engine),
+      measureMotion: () => [0, 0, 0, 8, 0, 0, 0],
+      request: { mediaId: "m1", intervalMs: 400, maxFrames: 90 },
+    } as never);
+
+    expect(calls(decode)).toHaveLength(2);
+    expect(analysis.refinedFrames).toBeGreaterThan(0);
+    expect(analysis.sampledFrames).toBeLessThanOrEqual(90);
+  });
+
+  it("pins the even grid when adaptive is switched off", async () => {
     const engine = reframeEngine();
     const decode = decoder([]);
 
     const analysis = await analyzeAutoReframe({
       ...baseDeps(decode, engine),
       measureMotion: spike,
-      request: { mediaId: "m1", intervalMs: 1000 },
+      request: { mediaId: "m1", intervalMs: 1000, adaptive: false },
     } as never);
 
     expect(calls(decode)).toHaveLength(1);
+    expect(calls(decode)[0]).toEqual([0, 1000, 2000, 3000, 4000]);
     expect(analysis.refinedFrames).toBeUndefined();
     const analyzeClip = engine.analyzeClip as unknown as ReturnType<typeof vi.fn>;
     expect(analyzeClip.mock.calls[0][4]).toBeUndefined();

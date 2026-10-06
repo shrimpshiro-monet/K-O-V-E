@@ -140,8 +140,8 @@ the camera cut the corner instead of following it.
 
 Auto-reframe now measures first and samples second:
 
-1. a coarse pass decodes the base grid (500 ms, half of the frame budget) and
-   scores the mean luma change between consecutive thumbnails
+1. a coarse pass decodes the base grid (half of the frame budget) and scores
+   the mean luma change between consecutive thumbnails
 2. `planAdaptiveSampleTimes` bisects the busiest intervals with the remaining
    budget — motion is treated as spread evenly across an interval, so splitting
    halves each child's score and leaves its density unchanged, and the greedy
@@ -154,9 +154,10 @@ Density rather than raw score is what ranks the intervals: a slow drift across a
 whole clip moves further in total than a fast cut, and ranking by total would
 spend the budget on the drift.
 
-Passing `adaptive: false` (or an explicit `intervalMs`/`maxFrames`) keeps the
-even grid. The inspector and `auto_reframe_clip` report `refinedFrames` — how
-many samples the second pass added — so the choice the sampler made is visible.
+`intervalMs` and `maxFrames` describe the base grid and the budget either way;
+only `adaptive: false` pins the single-pass grid. The inspector and
+`auto_reframe_clip` report `refinedFrames` — how many samples the second pass
+added — so the choice the sampler made is visible.
 
 ## Known limits
 
