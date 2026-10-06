@@ -81,9 +81,10 @@ Failure artifacts (screenshots, traces, DOM snapshots) land in
 - Hovering a media tile reveals a full-tile overlay; the suite uses the
   overlay's `Add to timeline` button (same handler as double-clicking the
   thumbnail) to avoid pointer-event races.
-- The editor boots on a scratch canvas with `hasOpenProject: false` and the
-  action executor rejects writes in that state (`"No project is open"`), so the
-  fixture creates a project via the header switcher → *New Project* first.
+- The editor opens a scratch project by itself on boot (`useEnsureOpenProject`);
+  the fixture asserts that before doing anything else, because the store's
+  action executor rejects writes while no project is open (which is how the
+  subject matte gets written).
 - Headless Chromium throttles `requestAnimationFrame`; the fixture painter uses
   `setInterval` so recorded clips really are ~3 s long.
 - On minimal sandboxes Chromium may need `LD_LIBRARY_PATH` pointing at the

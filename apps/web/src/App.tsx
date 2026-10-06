@@ -9,6 +9,7 @@ import { SharePage } from "./pages/SharePage";
 import { useUIStore } from "./stores/ui-store";
 import { useProjectStore } from "./stores/project-store";
 import { useRouter } from "./hooks/use-router";
+import { useEnsureOpenProject } from "./hooks/useEnsureOpenProject";
 import { useProjectRecovery } from "./hooks/useProjectRecovery";
 import { useKieAIPoller } from "./hooks/useKieAIPoller";
 import { SOCIAL_MEDIA_PRESETS, type SocialMediaCategory } from "@kove-advanced/core";
@@ -44,7 +45,8 @@ function App() {
   const { activeModal, closeModal } = useUIStore();
   const { openModal: openSearchModal } = useUIStore();
   const createNewProject = useProjectStore((state) => state.createNewProject);
-  const { showDialog, availableSaves, recover, dismiss, clearAll } = useProjectRecovery();
+  const { isChecking, showDialog, availableSaves, recover, dismiss, clearAll } =
+    useProjectRecovery();
 
   const { route, params, navigate, parsedDimensions, fps } = useRouter();
   const hasHandledInitialRoute = useRef(false);
@@ -135,6 +137,12 @@ function App() {
   }, [handleKeyDown]);
 
   const isSharePage = route === "share" && params.shareId;
+
+  // Share pages and the Motion surface (which opens its own project) opt out.
+  useEnsureOpenProject({
+    enabled: !isMotionSurface && !isSharePage,
+    recoveryPending: isChecking || showDialog,
+  });
 
   return (
     <div className="h-screen w-screen bg-background text-text-primary overflow-hidden">

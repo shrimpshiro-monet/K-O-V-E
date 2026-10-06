@@ -119,15 +119,10 @@ test.describe("vision pipeline in the real editor", () => {
     await page.goto("/");
     await expect(page.getByRole("button", { name: "Import Media" }).first()).toBeVisible();
 
-    // The editor boots on a scratch canvas with no project file open, and the
-    // action executor refuses writes in that state ("No project is open"), so
-    // create a project the way a user does: header switcher → "New Project".
-    const projectName = await page.evaluate(async () => {
-      const { useProjectStore } = await import("/src/stores/project-store.ts");
-      return useProjectStore.getState().project.name;
-    });
-    await page.getByRole("button", { name: projectName, exact: true }).click();
-    await page.getByRole("button", { name: "New Project" }).click();
+    // A fresh install has no project on disk. The editor opens a scratch
+    // project by itself so that every write path works — the AI panels, the
+    // agent host and undo all go through the store's action executor, which
+    // refuses writes while no project is open.
     await expect
       .poll(
         async () =>
@@ -135,7 +130,7 @@ test.describe("vision pipeline in the real editor", () => {
             const { useProjectStore } = await import("/src/stores/project-store.ts");
             return useProjectStore.getState().hasOpenProject;
           }),
-        { message: "creating a project should open it", timeout: 30_000 },
+        { message: "the editor should open a project on boot", timeout: 30_000 },
       )
       .toBe(true);
 
