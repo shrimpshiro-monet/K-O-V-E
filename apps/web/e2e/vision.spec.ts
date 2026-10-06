@@ -153,7 +153,10 @@ test.describe("vision pipeline in the real editor", () => {
     // Hovering a media tile reveals its quick actions; "Add to timeline" runs
     // the same handler as double-clicking the thumbnail, without racing the
     // hover overlay that intercepts pointer events.
-    const tile = page.locator('img[alt$="subject-clip.webm"]').first();
+    // The tile is matched on the file that was actually imported, so a test
+    // can record its own fixture instead of sharing one filename.
+    const fileName = videoPath.split(/[\\/]/).pop() ?? "";
+    const tile = page.locator(`img[alt$="${fileName}"]`).first();
     await expect(tile).toBeVisible();
     await tile.hover();
     await page.getByRole("button", { name: "Add to timeline" }).first().click();
