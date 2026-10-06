@@ -8,16 +8,20 @@
  */
 
 import {
+  FaceDetectionEngine,
   alphaFromRgba,
+  createMediaPipeFaceBackend,
   getFaceDetectionEngine,
   getPersonSegmentationEngine,
   planRotoscope,
   sampleFrameTimes,
+  setFaceDetectionEngine,
+  setVisionAssets,
   sourceTimeToTimelineSeconds,
+  visionAssetsFromBaseUrl,
   type AlphaMask,
   type BezierPath,
   type ClipTimeMapping,
-  type FaceDetectionEngine,
   type Mask,
   type RotoscopePlan,
   type SegmentationResult,
@@ -28,6 +32,33 @@ import type {
   SubjectMatteResult,
   VisionSamplingRequest,
 } from "@kove-advanced/agent";
+
+/**
+ * Deployments that self-host the MediaPipe runtime and models (offline or
+ * air-gapped installs, e2e harnesses) set `VITE_VISION_ASSET_BASE_URL` to a
+ * base directory laid out as documented in docs/AGENT-VISION.md. Unset means
+ * the public CDN defaults from core.
+ */
+const visionAssetBaseUrl = import.meta.env.VITE_VISION_ASSET_BASE_URL as string | undefined;
+if (visionAssetBaseUrl) {
+  setVisionAssets(visionAssetsFromBaseUrl(visionAssetBaseUrl));
+}
+
+/**
+ * Optional face model selection, for mirrors that only carry one of them.
+ * "face-landmarker" switches the default backend to the landmarker task, which
+ * also yields landmarks and blendshapes (see `MediaPipeFaceBackendOptions`).
+ * Unset keeps the default BlazeFace short-range detector.
+ */
+const visionFaceModel = import.meta.env.VITE_VISION_FACE_MODEL as
+  | "blaze-face"
+  | "face-landmarker"
+  | undefined;
+if (visionFaceModel === "face-landmarker") {
+  setFaceDetectionEngine(
+    new FaceDetectionEngine(() => createMediaPipeFaceBackend({ model: "face-landmarker" })),
+  );
+}
 
 export interface DecodedFrame {
   bitmap: ImageBitmap;

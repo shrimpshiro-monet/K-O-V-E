@@ -7,19 +7,14 @@ import type {
   SegmentationWorkerRequest,
   SegmentationWorkerResponse,
 } from "./person-segmentation-protocol";
+import type { VisionAssetUrls } from "./vision-assets";
 
 // Keep worker-local declarations out of the global lexical scope. MediaPipe's
 // classic CJS bundle is loaded with importScripts and has its own top-level
 // declarations; isolating ours prevents collisions between the two scripts.
 (() => {
-const HIGH_QUALITY_MODEL_URL =
-  "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite";
-const FAST_FALLBACK_MODEL_URL =
-  "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite";
-const TASKS_VISION_BUNDLE_URL =
-  "https://unpkg.com/@mediapipe/tasks-vision@0.10.35/vision_bundle.cjs";
-const TASKS_VISION_WASM_URL =
-  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
+// Resolved per `init` message so hosts can self-host the runtime and models.
+let assets: VisionAssetUrls | null = null;
 const SEGMENTATION_LONG_EDGE = 384;
 const DISCONTINUITY_THRESHOLD_MS = 500;
 const MAX_STREAM_STATES = 4;
@@ -69,7 +64,8 @@ function loadVisionTasks(): {
   const cjsExports: Record<string, unknown> = {};
   workerScope.exports = cjsExports;
   try {
-    workerScope.importScripts(TASKS_VISION_BUNDLE_URL);
+    if (!assets) throw new Error("Segmentation worker initialized without assets");
+    workerScope.importScripts(assets.tasksVisionBundleUrl);
   } finally {
     workerScope.exports = previousExports;
   }
@@ -90,10 +86,11 @@ function loadVisionTasks(): {
 }
 
 async function initialize(): Promise<void> {
+  if (!assets) throw new Error("Segmentation worker initialized without assets");
   if (segmenter) return;
 
   const { FilesetResolver, ImageSegmenter } = loadVisionTasks();
-  const vision = await FilesetResolver.forVisionTasks(TASKS_VISION_WASM_URL);
+  const vision = await FilesetResolver.forVisionTasks(assets.wasmBaseUrl);
   const createSegmenter = (
     modelAssetPath: string,
     delegate: "GPU" | "CPU",
@@ -106,12 +103,12 @@ async function initialize(): Promise<void> {
     });
 
   try {
-    segmenter = await createSegmenter(HIGH_QUALITY_MODEL_URL, "GPU");
+    segmenter = await createSegmenter(assets.segmenterModelAssetPath, "GPU");
   } catch {
     try {
-      segmenter = await createSegmenter(FAST_FALLBACK_MODEL_URL, "GPU");
+      segmenter = await createSegmenter(assets.segmenterFallbackModelAssetPath, "GPU");
     } catch {
-      segmenter = await createSegmenter(FAST_FALLBACK_MODEL_URL, "CPU");
+      segmenter = await createSegmenter(assets.segmenterFallbackModelAssetPath, "CPU");
     }
   }
 
@@ -474,6 +471,7 @@ async function segmentFrame(
 workerScope.onmessage = (event): void => {
   const request = event.data;
   if (request.type === "init") {
+    assets = request.assets;
     void initialize()
       .then(() => post({ type: "ready" }))
       .catch((error: unknown) =>

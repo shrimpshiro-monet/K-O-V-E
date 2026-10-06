@@ -1,7 +1,25 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+/** Records how the production backend configures MediaPipe. */
+const mpCalls: { options: Record<string, unknown>; kind: string }[] = [];
+let mpResult: Record<string, unknown> = {};
+
+vi.mock("@mediapipe/tasks-vision", () => {
+  const createFromOptions = (kind: string) => async (_fileset: unknown, options: Record<string, unknown>) => {
+    mpCalls.push({ kind, options });
+    return { detect: () => mpResult, close: () => undefined };
+  };
+  return {
+    FilesetResolver: { forVisionTasks: async (path: string) => ({ path }) },
+    FaceDetector: { createFromOptions: createFromOptions("FaceDetector") },
+    FaceLandmarker: { createFromOptions: createFromOptions("FaceLandmarker") },
+  };
+});
+
 import {
   FaceDetectionEngine,
   boxIou,
+  createMediaPipeFaceBackend,
   faceTrackCenterKeyframes,
   sampleFrameTimes,
   selectPrimaryFaceTrack,
@@ -10,6 +28,7 @@ import {
   type FaceDetectionBackend,
   type FaceFrameResult,
 } from "./face-detection-engine";
+import { resetVisionAssets, setVisionAssets } from "./vision-assets";
 
 const FRAME_WIDTH = 1920;
 const FRAME_HEIGHT = 1080;
@@ -318,5 +337,95 @@ describe("FaceDetectionEngine", () => {
     expect(engine.isInitialized()).toBe(false);
     await engine.initialize();
     expect(engine.isInitialized()).toBe(true);
+  });
+});
+
+describe("createMediaPipeFaceBackend", () => {
+  beforeEach(() => {
+    mpCalls.length = 0;
+    mpResult = {};
+    resetVisionAssets();
+  });
+
+  const landmarksFor = (points: { x: number; y: number }[]) => ({ faceLandmarks: [points] });
+
+  it("synthesizes a pixel box from landmarker landmarks", async () => {
+    mpResult = landmarksFor([
+      { x: 0.25, y: 0.25 },
+      { x: 0.5, y: 0.75 },
+    ]);
+    const backend = createMediaPipeFaceBackend({ model: "face-landmarker", delegate: "CPU" });
+    await backend.initialize();
+    const faces = await backend.detect(bitmap(400, 200));
+    expect(faces).toHaveLength(1);
+    expect(faces[0].box).toEqual({ x: 100, y: 50, width: 100, height: 100 });
+    expect(faces[0].confidence).toBe(0.5);
+    expect(faces[0].landmarks).toHaveLength(2);
+    expect(mpCalls).toHaveLength(1);
+    expect(mpCalls[0].kind).toBe("FaceLandmarker");
+    expect((mpCalls[0].options.baseOptions as { delegate: string }).delegate).toBe("CPU");
+  });
+
+  it("attaches blendshapes without inventing a second face", async () => {
+    mpResult = {
+      ...landmarksFor([{ x: 0.1, y: 0.1 }, { x: 0.2, y: 0.2 }]),
+      faceBlendshapes: [{ categories: [{ categoryName: "jawOpen", score: 0.4 }] }],
+    };
+    const backend = createMediaPipeFaceBackend({ model: "face-landmarker" });
+    await backend.initialize();
+    const faces = await backend.detect(bitmap(100, 100));
+    expect(faces).toHaveLength(1);
+    expect(faces[0].blendshapes).toEqual({ jawOpen: 0.4 });
+  });
+
+  it("skips degenerate landmark sets instead of emitting a zero-size box", async () => {
+    mpResult = landmarksFor([
+      { x: 0.5, y: 0.5 },
+      { x: 0.5, y: 0.5 },
+    ]);
+    const backend = createMediaPipeFaceBackend({ model: "face-landmarker" });
+    await backend.initialize();
+    expect(await backend.detect(bitmap(100, 100))).toEqual([]);
+  });
+
+  it("ignores non-finite landmarks when sizing the box", async () => {
+    mpResult = landmarksFor([
+      { x: Number.NaN, y: 0.2 },
+      { x: 0.1, y: 0.1 },
+      { x: 0.5, y: 0.6 },
+    ]);
+    const backend = createMediaPipeFaceBackend({ model: "face-landmarker" });
+    await backend.initialize();
+    const faces = await backend.detect(bitmap(200, 200));
+    expect(faces).toHaveLength(1);
+    // Box spans only the finite landmarks (0.1..0.5, 0.1..0.6) at 200px.
+    expect(faces[0].box).toEqual({ x: 20, y: 20, width: 80, height: 100 });
+  });
+
+  it("still prefers detector bounding boxes when the task returns them", async () => {
+    mpResult = {
+      detections: [
+        {
+          boundingBox: { originX: 5, originY: 6, width: 7, height: 8 },
+          categories: [{ score: 0.9 }],
+        },
+      ],
+    };
+    const backend = createMediaPipeFaceBackend({});
+    await backend.initialize();
+    const faces = await backend.detect(bitmap(100, 100));
+    expect(faces).toEqual([{ box: { x: 5, y: 6, width: 7, height: 8 }, confidence: 0.9 }]);
+    expect(mpCalls[0].kind).toBe("FaceDetector");
+  });
+
+  it("uses self-hosted asset URLs from the vision asset config", async () => {
+    setVisionAssets({
+      wasmBaseUrl: "http://localhost:8788/wasm",
+      faceModelAssetPath: "http://localhost:8788/models/blaze_face_short_range.tflite",
+    });
+    const backend = createMediaPipeFaceBackend({});
+    await backend.initialize();
+    const baseOptions = mpCalls[0].options.baseOptions as { modelAssetPath: string };
+    expect(baseOptions.modelAssetPath).toBe("http://localhost:8788/models/blaze_face_short_range.tflite");
   });
 });

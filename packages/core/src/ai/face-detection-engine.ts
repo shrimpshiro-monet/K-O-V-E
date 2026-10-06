@@ -11,6 +11,8 @@
  * occlusions, and a primary-face scorer for auto-reframe / subject work.
  */
 
+import { getVisionAssets } from "./vision-assets";
+
 export interface FaceBox {
   /** Pixels in the analyzed frame's coordinate space. */
   x: number;
@@ -50,9 +52,10 @@ export interface FaceFrameResult {
  * MediaPipe for a native/desktop detector without touching the tracker. */
 export interface FaceDetectionBackend {
   initialize(): Promise<void>;
-  /** Stateless per-frame detection. `timestampMs` only matters for backends
-   * that run a video-mode graph; frames may be analyzed out of order. */
-  detect(frame: ImageBitmap, timestampMs: number): Promise<DetectedFace[]>;
+  /** Stateless per-frame detection. Frames may be analyzed out of order, so
+   * backends must not depend on call order; `timestampMs` is supplied by the
+   * engine for video-mode graphs and may be ignored by stateless ones. */
+  detect(frame: ImageBitmap, timestampMs?: number): Promise<DetectedFace[]>;
   dispose(): void;
 }
 
@@ -63,10 +66,19 @@ export interface MediaPipeFaceBackendOptions {
   minDetectionConfidence?: number;
   /** Blendshapes are only produced by the landmarker model. */
   outputBlendshapes?: boolean;
-  /** Override for self-hosted model/WASM assets. */
+  /** Override for self-hosted model/WASM assets. Defaults come from
+   * `getVisionAssets()`, so `setVisionAssets()` retargets these too. */
   wasmBaseUrl?: string;
   modelAssetPath?: string;
+  /** Inference delegate. Defaults to "GPU"; "CPU" is the portable fallback. */
+  delegate?: "GPU" | "CPU";
 }
+
+/**
+ * The landmarker returns landmarks and no per-face score, so a synthesized
+ * detection carries this neutral confidence instead of an invented one.
+ */
+const LANDMARK_DETECTION_CONFIDENCE = 0.5;
 
 export interface FaceTrackingOptions {
   /** IoU above which a detection continues an existing track. Default 0.3. */
@@ -380,20 +392,52 @@ export function faceTrackCenterKeyframes(
   return track.points.map((point) => ({ timeMs: point.timeMs, ...boxCenter(point.box) }));
 }
 
+/**
+ * Bounding box of a landmark set, in pixels. MediaPipe normalizes landmarks to
+ * the analyzed image, so out-of-range or degenerate sets return null rather
+ * than a bogus box.
+ */
+function landmarkBox(
+  landmarks: readonly { x: number; y: number }[],
+  width: number,
+  height: number,
+): FaceBox | null {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const point of landmarks) {
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  }
+  if (!Number.isFinite(minX) || !Number.isFinite(minY) || maxX <= minX || maxY <= minY) {
+    return null;
+  }
+  const box = {
+    x: minX * width,
+    y: minY * height,
+    width: (maxX - minX) * width,
+    height: (maxY - minY) * height,
+  };
+  if (box.width <= 0 || box.height <= 0) return null;
+  return box;
+}
+
 /** Production backend. MediaPipe is imported lazily so the module can be
  * loaded (and tested) in environments without the dependency's WASM assets. */
 export function createMediaPipeFaceBackend(
   options: MediaPipeFaceBackendOptions = {},
 ): FaceDetectionBackend {
   const model = options.model ?? "blaze-face";
-  const wasmBaseUrl =
-    options.wasmBaseUrl ??
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
+  const assets = getVisionAssets();
+  const wasmBaseUrl = options.wasmBaseUrl ?? assets.wasmBaseUrl;
   const modelAssetPath =
     options.modelAssetPath ??
-    (model === "face-landmarker"
-      ? "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
-      : "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite");
+    (model === "face-landmarker" ? assets.faceLandmarkerAssetPath : assets.faceModelAssetPath);
+  const delegate = options.delegate ?? "GPU";
 
   // The detector/landmarker instances are structurally different; keep the
   // smallest common surface we actually call.
@@ -436,14 +480,14 @@ export function createMediaPipeFaceBackend(
       const fileset = await tasksVision.FilesetResolver.forVisionTasks(wasmBaseUrl);
       if (model === "face-landmarker") {
         detector = await tasksVision.FaceLandmarker.createFromOptions(fileset, {
-          baseOptions: { modelAssetPath, delegate: "GPU" },
+          baseOptions: { modelAssetPath, delegate },
           runningMode: "IMAGE",
           numFaces: Math.max(1, options.numFaces ?? 5),
           outputFaceBlendshapes: options.outputBlendshapes ?? true,
         });
       } else {
         detector = await tasksVision.FaceDetector.createFromOptions(fileset, {
-          baseOptions: { modelAssetPath, delegate: "GPU" },
+          baseOptions: { modelAssetPath, delegate },
           runningMode: "IMAGE",
           minDetectionConfidence: options.minDetectionConfidence ?? 0.5,
           numFaces: Math.max(1, options.numFaces ?? 5),
@@ -476,15 +520,29 @@ export function createMediaPipeFaceBackend(
       }
       if (result.faceLandmarks) {
         result.faceLandmarks.forEach((landmarks, index) => {
-          const existing = faces[index];
+          if (landmarks.length === 0) return;
           const blendshapes: Record<string, number> = {};
           for (const shape of result.faceBlendshapes?.[index]?.categories ?? []) {
             blendshapes[shape.categoryName] = shape.score;
           }
+          const mapped = landmarks.map(({ x, y, z }) => ({ x, y, ...(z !== undefined ? { z } : {}) }));
+          const existing = faces[index];
           if (existing) {
-            existing.landmarks = landmarks.map(({ x, y, z }) => ({ x, y, ...(z !== undefined ? { z } : {}) }));
+            existing.landmarks = mapped;
             if (Object.keys(blendshapes).length > 0) existing.blendshapes = blendshapes;
+            return;
           }
+          // FaceLandmarker reports landmarks only (no `detections`), so derive
+          // the box from the landmark extent. Landmarks are normalized to the
+          // analyzed frame, hence the width/height multiplication.
+          const box = landmarkBox(landmarks, frame.width, frame.height);
+          if (!box) return;
+          faces.push({
+            box,
+            confidence: LANDMARK_DETECTION_CONFIDENCE,
+            landmarks: mapped,
+            ...(Object.keys(blendshapes).length > 0 ? { blendshapes } : {}),
+          });
         });
       }
       return faces;
