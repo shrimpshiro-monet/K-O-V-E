@@ -248,11 +248,21 @@ export class AutoReframeEngine {
     return this.initialized;
   }
 
+  /**
+   * Picks a crop per frame.
+   *
+   * `frameRate` turns a frame index into a source timestamp, which assumes the
+   * frames were sampled on a uniform grid. Pass `sampleTimes` (source seconds,
+   * one per frame) when they were not — a motion-adaptive sampler decodes
+   * densely only where the picture changes, and the camera path is fitted in
+   * real time either way.
+   */
   async analyzeClip(
     frames: ImageBitmap[],
     frameRate: number,
     settings: ReframeSettings,
     onProgress?: ProgressCallback,
+    sampleTimes?: readonly number[],
   ): Promise<ReframeResult> {
     if (!this.initialized || !this.ctx) {
       return {
@@ -278,7 +288,7 @@ export class AutoReframeEngine {
 
     for (let i = 0; i < frames.length; i++) {
       const frame = frames[i];
-      const time = i / frameRate;
+      const time = sampleTimes?.[i] ?? i / frameRate;
       const progress = Math.round((i / frames.length) * 100);
 
       onProgress?.(progress, `Analyzing frame ${i + 1}/${frames.length}`);
