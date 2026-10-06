@@ -49,7 +49,7 @@ Matte keyframe times are written on the **timeline** clock
 
 Every editor capability is reachable, even where no dedicated tool exists:
 
-- Prefer the dedicated tool (328 of them) — it validates its arguments and returns
+- Prefer the dedicated tool (330 of them) — it validates its arguments and returns
   a shaped result.
 - For anything else, `list_action_types` enumerates the action types this build can
   dispatch (handler-backed types plus the executor's prefix domains), and
@@ -58,10 +58,39 @@ Every editor capability is reachable, even where no dedicated tool exists:
 - The Auto Reframe camera move, for example, is `auto_reframe_clip` or the raw
   `keyframe/setAll` action with `position.x`/`position.y`/`scale.x`/`scale.y`.
 
+## Matte edge refinement
+
+A rotoscoped matte's edge is per-keyframe state, not a single mask-wide value.
+`MaskKeyframe` carries optional `feathering` / `expansion` / `inverted` /
+`opacity` overrides; `resolveMaskEdgeAtTime()` blends them between keyframes
+(booleans hold, numbers interpolate), and a keyframe that omits one inherits the
+mask's own value — so mattes written before this existed resolve to exactly the
+old uniform edge.
+
+`planMatteEdgeRefinement()` derives the values: `featherPx` is the edge softness
+where the subject is still, and `motionSensitivity` (0..1) widens it where the
+subject moves — where sampled contours lag and motion blur already smears the
+silhouette — up to `maxFeatherPx`. Motion is a normalized mix of centroid travel
+and coverage change, scaled against the busiest keyframe, so it is
+resolution- and framerate-independent.
+
+Reachable three ways:
+
+- inspector: *Face & Subject Tools* → Edge refinement, with a live before/after
+  canvas preview and a per-keyframe feather list
+- `apply_subject_matte` with an `edge` block (writes the matte and refines it)
+- `refine_matte_edges` on a mask that already exists — it reads the committed
+  keyframe paths and recovers each silhouette's centroid and area from them, so
+  refining an edge never re-runs segmentation
+
 ## Known limits
 
 - The renderer only composites separation while `BackgroundRemovalEngine` is
   initialized; both apply paths call `initialize()` and warn if it fails.
+- The edge preview approximates the renderer's morphological grow/shrink with a
+  canvas stroke; the blur (feather) step is the same operation the renderer uses.
+- Motion is measured between keyframes, so a reframe/matte sampled very coarsely
+  sees coarser motion too.
 - Holes inside a subject are reported in warnings; mattes are written as their
   outer contour (a `BezierPath` has no sub-paths).
 - Rotoscoping is batch analysis, not realtime: detection/segmentation run on

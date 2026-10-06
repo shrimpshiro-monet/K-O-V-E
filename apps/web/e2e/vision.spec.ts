@@ -327,6 +327,86 @@ test.describe("vision pipeline in the real editor", () => {
     expectNoRemoteModels(assetRequests);
   });
 
+  test("refines the matte edge per keyframe, and previews it", async ({ page }) => {
+    const assetRequests = recordAssetRequests(page);
+    const videoPath = outputPath("edge-clip.webm");
+    await recordFixtureVideo(page, videoPath);
+    await importClipAndOpenTools(page, videoPath);
+
+    await page.getByRole("button", { name: "Analyze Subject" }).click();
+    const applyButton = page.getByRole("button", { name: /Apply matte \(\d+ keyframes?\)/ });
+    await expect(applyButton).toBeVisible({ timeout: 150_000 });
+
+    // The edge controls are live once a plan exists.
+    const edgeList = page.getByTestId("matte-edge-keyframes");
+    await expect(edgeList).toBeVisible();
+
+    // The synthetic segmenter drifts, so the plan has motion and the planner
+    // must widen the feather somewhere rather than write one flat value.
+    const listed = await edgeList.locator("li").allInnerTexts();
+    expect(listed.length).toBeGreaterThan(1);
+    const feathers = listed.map((text) => Number(/([\d.]+)px/.exec(text)?.[1] ?? "0"));
+    expect(feathers.every((value) => Number.isFinite(value))).toBe(true);
+    expect(Math.max(...feathers) - Math.min(...feathers)).toBeGreaterThan(0.5);
+
+    // Live preview: both canvases really draw, and the refined edge is softer
+    // than the base one. Counting semi-transparent pixels is what makes this
+    // more than "a canvas exists".
+    const bands = await page.evaluate(() => {
+      const read = (testId: string) => {
+        const canvas = document.querySelector<HTMLCanvasElement>(
+          `[data-testid="${testId}"]`,
+        );
+        if (!canvas) return null;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        let opaque = 0;
+        let edge = 0;
+        for (let index = 3; index < data.length; index += 4) {
+          const alpha = data[index];
+          if (alpha > 250) opaque += 1;
+          else if (alpha > 4) edge += 1;
+        }
+        return { opaque, edge };
+      };
+      return { before: read("matte-edge-preview-before"), after: read("matte-edge-preview-after") };
+    });
+    await page.screenshot({ path: outputPath("06-edge-preview.png") });
+
+    expect(bands.before).toBeTruthy();
+    expect(bands.after).toBeTruthy();
+    expect(bands.before!.opaque).toBeGreaterThan(0);
+    // A wider feather spreads the same silhouette over more partial pixels.
+    expect(bands.after!.edge).toBeGreaterThan(bands.before!.edge);
+
+    await applyButton.click();
+    await expect(page.getByText(/Wrote \d+ matte keyframe\(s\)/).first()).toBeVisible({ timeout: 120_000 });
+    // The panel reports the range it wrote, not a generic confirmation.
+    await expect(page.getByText(/Edge feather [\d.]+–[\d.]+px/)).toBeVisible();
+
+    // The committed mask carries per-keyframe feather overrides: that is the
+    // difference between this and the old single mask-wide feather.
+    const written = await page.evaluate(async () => {
+      const { useProjectStore } = await import("/src/stores/project-store.ts");
+      const mask = (useProjectStore.getState().project.masks ?? [])[0];
+      return {
+        maskFeathering: mask?.feathering ?? null,
+        feathers: (mask?.keyframes ?? []).map((keyframe) => keyframe.feathering ?? null),
+      };
+    });
+
+    expect(written.feathers.length).toBeGreaterThan(1);
+    expect(written.feathers.every((value) => typeof value === "number")).toBe(true);
+    const values = written.feathers as number[];
+    expect(Math.max(...values) - Math.min(...values)).toBeGreaterThan(0.5);
+    // The mask-level value is the base those keyframes inherit.
+    expect(written.maskFeathering).toBe(4);
+
+    await page.screenshot({ path: outputPath("07-edge-applied.png") });
+    expectNoRemoteModels(assetRequests);
+  });
+
   test("auto-reframes the clip with a real tracked camera move", async ({ page }) => {
     const assetRequests = recordAssetRequests(page);
     const videoPath = outputPath("subject-clip.webm");
