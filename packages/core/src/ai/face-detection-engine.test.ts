@@ -3,10 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 /** Records how the production backend configures MediaPipe. */
 const mpCalls: { options: Record<string, unknown>; kind: string }[] = [];
 let mpResult: Record<string, unknown> = {};
+/** Delegates that should reject on creation, to exercise the CPU fallback. */
+const mpFailingDelegates = new Set<string>();
 
 vi.mock("@mediapipe/tasks-vision", () => {
   const createFromOptions = (kind: string) => async (_fileset: unknown, options: Record<string, unknown>) => {
     mpCalls.push({ kind, options });
+    const delegate = (options.baseOptions as { delegate: string }).delegate;
+    if (mpFailingDelegates.has(delegate)) throw new Error(`${delegate} delegate unavailable`);
     return { detect: () => mpResult, close: () => undefined };
   };
   return {
@@ -344,6 +348,7 @@ describe("createMediaPipeFaceBackend", () => {
   beforeEach(() => {
     mpCalls.length = 0;
     mpResult = {};
+    mpFailingDelegates.clear();
     resetVisionAssets();
   });
 
@@ -427,5 +432,47 @@ describe("createMediaPipeFaceBackend", () => {
     await backend.initialize();
     const baseOptions = mpCalls[0].options.baseOptions as { modelAssetPath: string };
     expect(baseOptions.modelAssetPath).toBe("http://localhost:8788/models/blaze_face_short_range.tflite");
+  });
+
+  describe("GPU delegate fallback", () => {
+    it("retries on CPU when the GPU graph cannot start, and still detects", async () => {
+      mpFailingDelegates.add("GPU");
+      mpResult = landmarksFor([{ x: 0.25, y: 0.25 }, { x: 0.5, y: 0.75 }]);
+      const backend = createMediaPipeFaceBackend({ model: "face-landmarker" });
+      await backend.initialize();
+      expect(mpCalls.map((call) => (call.options.baseOptions as { delegate: string }).delegate)).toEqual([
+        "GPU",
+        "CPU",
+      ]);
+      const faces = await backend.detect(bitmap(400, 200));
+      expect(faces).toHaveLength(1);
+      expect(faces[0].box).toEqual({ x: 100, y: 50, width: 100, height: 100 });
+    });
+
+    it("retries the detector model too", async () => {
+      mpFailingDelegates.add("GPU");
+      const backend = createMediaPipeFaceBackend({});
+      await backend.initialize();
+      expect(mpCalls.map((call) => (call.options.baseOptions as { delegate: string }).delegate)).toEqual([
+        "GPU",
+        "CPU",
+      ]);
+      expect(mpCalls[1].kind).toBe("FaceDetector");
+    });
+
+    it("does not mask a CPU failure with a second identical attempt", async () => {
+      mpFailingDelegates.add("CPU");
+      const backend = createMediaPipeFaceBackend({ delegate: "CPU" });
+      await expect(backend.initialize()).rejects.toThrow("CPU delegate unavailable");
+      expect(mpCalls).toHaveLength(1);
+    });
+
+    it("surfaces the original GPU error when CPU is also unavailable", async () => {
+      mpFailingDelegates.add("GPU");
+      mpFailingDelegates.add("CPU");
+      const backend = createMediaPipeFaceBackend({ model: "face-landmarker" });
+      await expect(backend.initialize()).rejects.toThrow("CPU delegate unavailable");
+      expect(mpCalls).toHaveLength(2);
+    });
   });
 });

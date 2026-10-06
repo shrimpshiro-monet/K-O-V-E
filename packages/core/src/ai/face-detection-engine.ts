@@ -478,20 +478,32 @@ export function createMediaPipeFaceBackend(
         };
       };
       const fileset = await tasksVision.FilesetResolver.forVisionTasks(wasmBaseUrl);
-      if (model === "face-landmarker") {
-        detector = await tasksVision.FaceLandmarker.createFromOptions(fileset, {
-          baseOptions: { modelAssetPath, delegate },
-          runningMode: "IMAGE",
-          numFaces: Math.max(1, options.numFaces ?? 5),
-          outputFaceBlendshapes: options.outputBlendshapes ?? true,
-        });
-      } else {
-        detector = await tasksVision.FaceDetector.createFromOptions(fileset, {
-          baseOptions: { modelAssetPath, delegate },
-          runningMode: "IMAGE",
-          minDetectionConfidence: options.minDetectionConfidence ?? 0.5,
-          numFaces: Math.max(1, options.numFaces ?? 5),
-        });
+      const create = (useDelegate: "GPU" | "CPU"): Promise<DetectorLike> =>
+        model === "face-landmarker"
+          ? tasksVision.FaceLandmarker.createFromOptions(fileset, {
+              baseOptions: { modelAssetPath, delegate: useDelegate },
+              runningMode: "IMAGE",
+              numFaces: Math.max(1, options.numFaces ?? 5),
+              outputFaceBlendshapes: options.outputBlendshapes ?? true,
+            })
+          : tasksVision.FaceDetector.createFromOptions(fileset, {
+              baseOptions: { modelAssetPath, delegate: useDelegate },
+              runningMode: "IMAGE",
+              minDetectionConfidence: options.minDetectionConfidence ?? 0.5,
+              numFaces: Math.max(1, options.numFaces ?? 5),
+            });
+
+      try {
+        detector = await create(delegate);
+      } catch (error) {
+        // The GPU graph needs a WebGL2 context, which headless browsers and
+        // software-rendering machines lack. CPU inference is slower but runs
+        // anywhere, so fall back once instead of failing the whole analysis.
+        // An explicit `delegate: "CPU"` request never reaches here, and a CPU
+        // failure is rethrown as-is.
+        if (delegate !== "GPU") throw error;
+        console.warn("[face-detection] GPU delegate unavailable, falling back to CPU inference", error);
+        detector = await create("CPU");
       }
     },
 
