@@ -1,5 +1,6 @@
 export * from "./background-removal-engine";
 export * from "./auto-reframe-engine";
+export * from "./auto-reframe-apply";
 export * from "./person-segmentation-engine";
 export * from "./face-detection-engine";
 export * from "./rotoscope";

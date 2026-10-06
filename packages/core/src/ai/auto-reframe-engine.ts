@@ -171,6 +171,7 @@ export class AutoReframeEngine {
   private faceCache: Map<number, ReframeFace[]> = new Map();
   private faceBackend: FaceDetectionBackend | null = null;
   private faceBackendFailureReported = false;
+  private faceBackendReady = false;
 
   /**
    * Attach a real face detector (e.g. `createMediaPipeFaceBackend()`), or
@@ -181,6 +182,7 @@ export class AutoReframeEngine {
   setFaceBackend(backend: FaceDetectionBackend | null): void {
     this.faceBackend = backend;
     this.faceBackendFailureReported = false;
+    this.faceBackendReady = false;
     this.faceCache.clear();
   }
 
@@ -201,8 +203,35 @@ export class AutoReframeEngine {
     this.canvas = new OffscreenCanvas(1920, 1080);
     this.ctx = this.canvas.getContext("2d");
 
+    onProgress?.(60, "Loading face model...");
+    await this.ensureFaceBackendReady();
+
     onProgress?.(100, "Auto-reframe engine ready");
     this.initialized = true;
+  }
+
+  /**
+   * Brings an attached face backend up, once.
+   *
+   * MediaPipe backends throw if they are used before `initialize()`, and the
+   * engine attaches the detector itself — so without this an attached detector
+   * would fail on the first frame and silently degrade every reframe to the
+   * skin-tone heuristic. A backend attached after `initialize()` is picked up
+   * on the next analysis.
+   */
+  private async ensureFaceBackendReady(): Promise<void> {
+    const backend = this.faceBackend;
+    if (!backend || this.faceBackendReady || this.faceBackendFailureReported) return;
+    try {
+      await backend.initialize();
+      this.faceBackendReady = true;
+    } catch (error) {
+      this.faceBackendFailureReported = true;
+      console.warn(
+        "[AutoReframe] Face detector could not initialize; using skin-tone detection:",
+        error instanceof Error ? error.message : error,
+      );
+    }
   }
 
   isInitialized(): boolean {
@@ -224,6 +253,8 @@ export class AutoReframeEngine {
         message: "Engine not initialized",
       };
     }
+
+    await this.ensureFaceBackendReady();
 
     const targetConfig = this.getTargetConfig(settings);
     const keyframes: ReframeKeyframe[] = [];

@@ -17,6 +17,23 @@ const backend = (faces: DetectedFace[] | (() => DetectedFace[])) => ({
   dispose: vi.fn(),
 });
 
+
+/** A backend that, like MediaPipe's, refuses to detect before initialize(). */
+const uninitializedSensitiveBackend = () => {
+  let ready = false;
+  const detect = vi.fn(async () => {
+    if (!ready) throw new Error("backing detector is not initialized");
+    return DETECTED.map((face) => ({ ...face }));
+  });
+  return {
+    initialize: vi.fn(async () => {
+      ready = true;
+    }),
+    detect,
+    dispose: vi.fn(),
+  };
+};
+
 const blackContext = {
   drawImage: vi.fn(),
   getImageData: vi.fn((_x: number, _y: number, width: number, height: number) => ({
@@ -129,5 +146,52 @@ describe("AutoReframeEngine face detection integration", () => {
     engine.setFaceBackend(second);
     await engine.analyzeClip([bitmap()], 30, settings);
     expect(second.detect).toHaveBeenCalledTimes(1);
+  });
+
+  it("initializes an attached detector before the first frame", async () => {
+    const engine = new AutoReframeEngine();
+    const detector = uninitializedSensitiveBackend();
+    engine.setFaceBackend(detector);
+
+    await engine.initialize();
+    const result = await engine.analyzeClip([bitmap()], 30, settings);
+
+    expect(detector.initialize).toHaveBeenCalledTimes(1);
+    expect(result.success).toBe(true);
+    expect(engine.usesFaceBackend()).toBe(true);
+    expect(detector.detect).toHaveBeenCalledTimes(1);
+    // If the engine had skipped initialization, the detector would have thrown
+    // and the heuristic would have taken over silently.
+    expect(blackContext.getImageData).not.toHaveBeenCalled();
+  });
+
+  it("initializes a detector attached after the engine was initialized", async () => {
+    const engine = new AutoReframeEngine();
+    await engine.initialize();
+
+    const detector = uninitializedSensitiveBackend();
+    engine.setFaceBackend(detector);
+    await engine.analyzeClip([bitmap()], 30, settings);
+
+    expect(detector.initialize).toHaveBeenCalledTimes(1);
+    expect(engine.usesFaceBackend()).toBe(true);
+  });
+
+  it("degrades to the heuristic when the detector cannot initialize", async () => {
+    const engine = new AutoReframeEngine();
+    await engine.initialize();
+    engine.setFaceBackend({
+      initialize: vi.fn(async () => {
+        throw new Error("model unavailable");
+      }),
+      detect: vi.fn(async () => DETECTED.map((face) => ({ ...face }))),
+      dispose: vi.fn(),
+    });
+
+    const result = await engine.analyzeClip([bitmap()], 30, settings);
+
+    expect(result.success).toBe(true);
+    expect(engine.usesFaceBackend()).toBe(false);
+    expect(blackContext.getImageData).toHaveBeenCalled();
   });
 });
