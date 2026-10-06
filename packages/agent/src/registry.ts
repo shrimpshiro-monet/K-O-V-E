@@ -4,6 +4,7 @@ import { listRegisteredActionTypes } from "@kove-advanced/core/actions/registry"
 import { HISTORY_TOOLS } from "./tools-history";
 import { AUDIO_ANALYSIS_TOOLS } from "./tools-audio-analysis";
 import { VISION_TOOLS } from "./tools-vision";
+import { DISCOVERY_TOOLS } from "./tools-discovery";
 import { RENDER_TOOLS } from "./tools-render";
 import {
   resolveMs,
@@ -34130,7 +34131,7 @@ const TOOLS: RegisteredTool[] = [
 
 // ---- Registry --------------------------------------------------------------
 const REGISTRY = new Map<string, RegisteredTool>(
-  [...TOOLS, ...HISTORY_TOOLS, ...AUDIO_ANALYSIS_TOOLS, ...RENDER_TOOLS, ...VISION_TOOLS].map((t) => [t.name, t]),
+  [...TOOLS, ...HISTORY_TOOLS, ...AUDIO_ANALYSIS_TOOLS, ...RENDER_TOOLS, ...VISION_TOOLS, ...DISCOVERY_TOOLS].map((t) => [t.name, t]),
 );
 
 export function getTool(name: string): RegisteredTool | undefined {
@@ -34139,6 +34140,24 @@ export function getTool(name: string): RegisteredTool | undefined {
 
 export function listTools(): RegisteredTool[] {
   return [...REGISTRY.values()];
+}
+
+/**
+ * Register a tool at runtime.
+ *
+ * Everything the agent can do is read from this one registry — the router, the
+ * provider tool payloads, the capability doc and the discovery tools all derive
+ * from it — so a tool registered here is immediately selectable when it is
+ * relevant, findable in search_tools, and callable through run_tool. No
+ * allowlist needs updating.
+ */
+export function registerTool(tool: RegisteredTool): void {
+  REGISTRY.set(tool.name, tool);
+}
+
+/** Test/plugin seam: remove a previously registered tool. */
+export function unregisterTool(name: string): boolean {
+  return REGISTRY.delete(name);
 }
 
 export function toolDefs(): ToolDef[] {

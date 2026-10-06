@@ -7,7 +7,7 @@ import type {
   LoopToolResult,
   LoopToolResultBlock,
 } from "./llm";
-import { executeTool, isDestructive, isExpensive } from "./executor";
+import { executeTool, isDestructive, isExpensive, resolveCallTarget } from "./executor";
 import { getTool, hasExistingDirectorPlan } from "./registry";
 
 export interface RunTurnInput {
@@ -337,13 +337,16 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
           args: toolUse.input,
         };
         emit({ type: "tool_call", call });
+        // A call may be wrapped in run_tool (discovery invoker). Gates and
+        // confirmations judge the tool it actually targets.
+        const targeted = resolveCallTarget(call.name, call.args);
 
         if (
           requiresDirectorPlan &&
           !directorPlanCompleted &&
-          call.name !== "plan_edit" &&
-          !isReadOnly(call.name) &&
-          !isDirectorDiscoveryTool(call.name)
+          targeted.name !== "plan_edit" &&
+          !isReadOnly(targeted.name) &&
+          !isDirectorDiscoveryTool(targeted.name)
         ) {
           const blocked = {
             ok: false as const,
@@ -386,10 +389,16 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
         const needsConfirm =
           !dryRun &&
           !approveAll &&
-          (isDestructive(call.name) || isExpensive(call.name));
+          (isDestructive(targeted.name) || isExpensive(targeted.name));
         if (needsConfirm && confirmGate) {
-          emit({ type: "awaiting_confirmation", call });
-          const decision = await confirmGate(call);
+          // Show the real target: approving "run_tool" would hide which tool the
+          // user is actually letting loose on their timeline.
+          const confirmCall =
+            targeted.name === call.name
+              ? call
+              : { ...call, name: targeted.name, args: targeted.args ?? {} };
+          emit({ type: "awaiting_confirmation", call: confirmCall });
+          const decision = await confirmGate(confirmCall);
           if (decision === "approve_for_turn") approveAll = true;
           if (decision === "reject") {
             const rejected = {
@@ -408,7 +417,7 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
         }
 
         let result;
-        if (dryRun && !isReadOnly(call.name)) {
+        if (dryRun && !isReadOnly(targeted.name)) {
           result = {
             ok: true as const,
             summary: `[dry-run] would call ${call.name}`,

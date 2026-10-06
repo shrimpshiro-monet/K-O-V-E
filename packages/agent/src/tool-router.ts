@@ -4,7 +4,7 @@ import type { RegisteredTool } from "./registry";
 /** Leave headroom below provider limits for future built-in/meta tools. */
 export const DEFAULT_AGENT_TOOL_LIMIT = 120;
 
-const ALWAYS_AVAILABLE = new Set([
+export const ALWAYS_AVAILABLE = new Set([
   "get_editor_state",
   "list_media",
   "list_tracks",
@@ -27,6 +27,11 @@ const ALWAYS_AVAILABLE = new Set([
   "insert_motion_into_editor",
   "execute_action",
   "batch_actions",
+  // discovery: any registered tool must stay reachable even when its own schema
+  // is not in this turn's routed subset, and any action type must be listable.
+  "search_tools",
+  "run_tool",
+  "list_action_types",
   // safety net: must be reachable on every turn
   "create_checkpoint",
   "list_checkpoints",
@@ -91,6 +96,12 @@ function isCreationTool(tool: RegisteredTool): boolean {
  * The registry remains authoritative and executable; routing only limits the
  * function schemas sent on this turn so large registries stay within provider
  * limits and do not waste the user's context window.
+ *
+ * Two guarantees the model depends on:
+ *   - every ALWAYS_AVAILABLE tool is included, even when `maxTools` is smaller
+ *     than that set (the result may exceed `maxTools` by that much);
+ *   - a tool that is not selected here is still reachable, because
+ *     `search_tools` + `run_tool` are always available.
  */
 export function selectToolsForPrompt(
   prompt: string,
@@ -119,19 +130,30 @@ export function selectToolsForPrompt(
     return tool.domain === "read" || ["project", "media", "export", "raw"].includes(tool.domain);
   });
 
-  return candidates
-    .map((tool, index) => ({
-      tool,
-      index,
-      score:
-        relevance(tool, promptWords) +
-        (prior.has(tool.name) ? 5_000 : 0) +
-        (wantsCreation && isCreationTool(tool) ? 100 : 0) +
-        (wantsMotion && tool.domain === "motion" ? 50 : 0) +
-        (wantsDirector && DIRECTOR_DOMAINS.has(tool.domain) ? 200 : 0),
-    }))
-    .sort((a, b) => b.score - a.score || a.index - b.index)
-    .slice(0, maxTools)
+  const scored = candidates.map((tool, index) => ({
+    tool,
+    index,
+    score:
+      relevance(tool, promptWords) +
+      (prior.has(tool.name) ? 5_000 : 0) +
+      (wantsCreation && isCreationTool(tool) ? 100 : 0) +
+      (wantsMotion && tool.domain === "motion" ? 50 : 0) +
+      (wantsDirector && DIRECTOR_DOMAINS.has(tool.domain) ? 200 : 0),
+  }));
+
+  // "Always available" has to mean always: safety-net and discovery tools are
+  // not optional, so they are admitted first and the cap only governs the
+  // optional remainder. A tight cap (a small provider limit) must not be able
+  // to strand undo, checkpoints, execute_action, search_tools or run_tool —
+  // which is exactly what used to happen once the always-available set grew
+  // past the cap, because ties broke on registry order.
+  const mandatory = scored.filter((entry) => ALWAYS_AVAILABLE.has(entry.tool.name));
+  const optional = scored
+    .filter((entry) => !ALWAYS_AVAILABLE.has(entry.tool.name))
+    .sort((a, b) => b.score - a.score || a.index - b.index);
+  const remaining = Math.max(0, maxTools - mandatory.length);
+
+  return [...mandatory, ...optional.slice(0, remaining)]
     .sort((a, b) => a.index - b.index)
     .map(({ tool }) => tool.name);
 }

@@ -2,7 +2,7 @@
 
 # Kove Advanced Agent — Capability Reference
 
-The agent exposes **329 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
+The agent exposes **331 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
 
 ## Tools
 
@@ -35,6 +35,7 @@ The agent exposes **329 tools** spanning read/observe, project, track, clip, tra
 - **get_motion_composition** (read-only) — Full detail for one Motion Creator composition: every layer with its id, type, transform, keyframes, and type-specific fields, plus variables, markers, beat markers, camera, and lights. Use this to recover auto-generated layer ids before animating or editing.
 - **list_action_types** (read-only) — Every editor action type this build can dispatch, plus the action domains the executor routes by prefix. execute_action and batch_actions accept any of these — that is the path for a property or setting that has no dedicated tool, so check this list before telling the user something is impossible. Handler-backed types are exact (e.g. "mask/setAll"); a domain entry (e.g. "clip/…") accepts any type in that domain, with params validated by the editor.
 - **render_timeline_frame** (read-only, expensive) — Render the composited main timeline (all tracks, effects, text, transitions) at one instant and return it as an image you can look at. Use it to verify an edit visually. Different from render_motion_frame, which renders one motion composition in isolation. Check get_capabilities → host.renderTimelineFrame first: a false flag means this returns UNSUPPORTED_HOST and you should not retry.
+- **search_tools** (read-only) — Find tools by keyword. The per-turn tool list only carries a relevant subset of the registry, so use this when nothing you were given matches what the user asked for — a niche tool, a newly added one, or one you know exists but cannot see ('face', 'mask', 'keyframe', 'shader', 'marker', 'caption'…). Returns matching tool names with their flags, one-line purpose and required arguments; call the match with run_tool. Search does not consume the tool budget and never edits anything.
 
 ## motion
 - **rig_humanoid_model** (expensive) — Run the desktop Blender rigging backend to create or repair a humanoid armature for a GLB/glTF model and export a rigged GLB. Use inspect_3d_model first to confirm meshes/armature/animations. Provide modelUrl directly, or resolve an existing model with compositionId+layerId(+objectId), sceneId+creationObjectId, or assetId. outputPath is optional; when omitted the desktop backend writes a temporary GLB and returns outputUrl/outputPath. overwriteExisting=true replaces an existing armature; false preserves one when present.
@@ -341,6 +342,7 @@ The agent exposes **329 tools** spanning read/observe, project, track, clip, tra
 ## raw
 - **execute_action** (destructive) — Escape hatch: dispatch any underlying editor action by type + params. Use get_capabilities and the action catalog for valid types.
 - **batch_actions** (destructive) — Dispatch a sequence of raw actions in order; stops on first failure.
+- **run_tool** — Call a tool that is not in this turn's tool list — look it up with search_tools first. Args are validated against that tool's schema, host capability checks still apply, and a destructive or expensive target still asks for confirmation. Use this instead of reporting that a capability is unavailable: if the registry has the tool, this can call it. Do not wrap tools that are already available; call them directly.
 
 ## export
 - **export_motion_video** (expensive) — Render a motion composition to a finished video file and return the filename plus width/height/duration/framesRendered and the format actually encoded. format: 'mp4' (H.264, opaque), 'webm-alpha' (VP9 with transparency), or 'mov-prores4444' (ProRes 4444 with transparency); default 'mp4'. On the web build only the desktop app can produce transparent WebM or ProRes — for those formats on web the export normalizes to opaque H.264, so you MUST pass acknowledgeH264Fallback:true to consent (otherwise the export fails with a warning telling you to acknowledge or use desktop). Optional filename overrides the auto-generated name. Inspect data.normalizedToH264 / data.encodedFormat to see what was really written. Expensive — requires confirmation.
