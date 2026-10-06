@@ -326,4 +326,69 @@ test.describe("vision pipeline in the real editor", () => {
     expect(assetRequests.some((url) => url.endsWith("/vision_bundle.cjs"))).toBe(true);
     expectNoRemoteModels(assetRequests);
   });
+
+  test("auto-reframes the clip with a real tracked camera move", async ({ page }) => {
+    const assetRequests = recordAssetRequests(page);
+    const videoPath = outputPath("subject-clip.webm");
+    await recordFixtureVideo(page, videoPath);
+    await importClipAndOpenTools(page, videoPath);
+
+    // Open the Auto Reframe section (the same one ship users see).
+    const section = page.getByRole("button", { name: /Auto Reframe section/i }).first();
+    await expect(section).toBeVisible();
+    if (/Expand/i.test((await section.getAttribute("aria-label")) ?? "")) await section.click();
+
+    const analyze = page.getByRole("button", { name: "Analyze & Reframe" });
+    await expect(analyze).toBeVisible();
+    await analyze.click();
+
+    // Real work: the canvas is resized to the vertical target...
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(async () => {
+            const { useProjectStore } = await import("/src/stores/project-store.ts");
+            const settings = useProjectStore.getState().project.settings;
+            return `${settings.width}x${settings.height}`;
+          }),
+        { message: "auto reframe should resize the canvas to the target", timeout: 150_000 },
+      )
+      .toBe("1080x1920");
+
+    // ...and the camera move is written as clip transform keyframes.
+    const camera = await page.evaluate(async () => {
+      const { useProjectStore } = await import("/src/stores/project-store.ts");
+      const store = useProjectStore.getState();
+      const clips = store.project.timeline.tracks.flatMap((track) => track.clips);
+      const clip = clips[0];
+      const cameraProperties = ["position.x", "position.y", "scale.x", "scale.y"];
+      const keyframes = (clip?.keyframes ?? []).filter((kf) => cameraProperties.includes(kf.property));
+      return {
+        properties: [...new Set(keyframes.map((kf) => kf.property))].sort(),
+        samples: new Set(keyframes.map((kf) => kf.time)).size,
+        times: [...new Set(keyframes.map((kf) => kf.time))].sort((a, b) => a - b),
+        maxScale: Math.max(
+          ...keyframes.filter((kf) => kf.property === "scale.x").map((kf) => Number(kf.value)),
+          0,
+        ),
+        undoLabel: store.actionHistory.undoStack?.[store.actionHistory.undoStack.length - 1]?.description ?? null,
+      };
+    });
+
+    // All four animated properties are present (the renderer interpolates each).
+    expect(camera.properties).toEqual(["position.x", "position.y", "scale.x", "scale.y"]);
+    expect(camera.samples).toBeGreaterThan(0);
+    expect(camera.times[0]).toBeGreaterThanOrEqual(0);
+    // The clip is scaled up so the vertical crop fills the canvas: an identity
+    // transform would mean the "reframe" did nothing.
+    expect(camera.maxScale).toBeGreaterThan(1.05);
+
+    await page.screenshot({ path: outputPath("05-auto-reframed.png") });
+
+    // The visible surface reports what actually happened.
+    await expect(page.getByText(/camera keyframe\(s\) from \d+ frame\(s\)/)).toBeVisible();
+
+    expect(assetRequests.some((url) => url.endsWith("/models/face_landmarker.task"))).toBe(true);
+    expectNoRemoteModels(assetRequests);
+  });
 });

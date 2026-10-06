@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { ToolcraftButton as Button } from "@kove-advanced/ui";
 import { ToolcraftCard as Card } from "@kove-advanced/ui";
 import { ToolcraftClickableCard as ClickableCard } from "@kove-advanced/ui";
@@ -14,18 +14,23 @@ import {
   CheckCircle,
 } from "@/icons/lucide-compat";
 import {
-  getAutoReframeEngine,
-  initializeAutoReframeEngine,
   type ReframeSettings,
   type AspectRatioPreset,
   type PlatformPreset,
   type ReframeResult,
+  type ClipTimeMapping,
   ASPECT_RATIO_PRESETS,
   PLATFORM_PRESETS,
   DEFAULT_REFRAME_SETTINGS,
 } from "@kove-advanced/core";
+import type { Action } from "@kove-advanced/core/types/actions";
 import { toast } from "../../../stores/notification-store";
 import { useProjectStore } from "../../../stores/project-store";
+import {
+  analyzeAutoReframe,
+  probeVideoSize,
+  type AutoReframeAnalysis,
+} from "../../../services/agent/vision-analysis";
 
 interface AutoReframeSectionProps {
   clipId: string;
@@ -48,43 +53,17 @@ export const AutoReframeSection: React.FC<AutoReframeSectionProps> = ({
   clipId,
   onReframeComplete,
 }) => {
-  const updateProjectDimensions = useProjectStore(
-    (state) => state.updateSettings,
-  );
   const [reframeSettings, setReframeSettings] = useState<ReframeSettings>(
     DEFAULT_REFRAME_SETTINGS,
   );
-  const [isInitializing, setIsInitializing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
   const [selectedPlatform, setSelectedPlatform] =
     useState<PlatformPreset | null>("tiktok");
 
-  useEffect(() => {
-    const engine = getAutoReframeEngine();
-    if (engine) {
-      setIsInitialized(engine.isInitialized());
-    }
-  }, [clipId]);
-
-  const handleInitialize = useCallback(async () => {
-    setIsInitializing(true);
-    try {
-      const engine = initializeAutoReframeEngine();
-      await engine.initialize((prog, msg) => {
-        setProgress(prog);
-        setProgressMessage(msg);
-      });
-      setIsInitialized(true);
-    } catch (error) {
-      console.error("Failed to initialize auto-reframe:", error);
-    } finally {
-      setIsInitializing(false);
-    }
-  }, []);
+  const [result, setResult] = useState<AutoReframeAnalysis | null>(null);
 
   const updateLocalSettings = useCallback(
     (updates: Partial<ReframeSettings>) => {
@@ -117,70 +96,137 @@ export const AutoReframeSection: React.FC<AutoReframeSectionProps> = ({
     [updateLocalSettings],
   );
 
+  /**
+   * Reframe for real: decode frames across the clip, let the auto-reframe
+   * engine pick a crop per frame (steered by the face detector when available),
+   * then commit the resulting camera move as clip transform keyframes.
+   *
+   * The canvas resize and the keyframes belong to the same user action, so they
+   * share one undo step.
+   */
   const handleAnalyze = useCallback(async () => {
+    const store = useProjectStore.getState();
+    const clip = store.getClip(clipId);
+    if (!clip) {
+      toast.error("Auto Reframe Failed", "Select a clip on the timeline first.");
+      return;
+    }
+    const mediaItem = store.getMediaItem(clip.mediaId);
+    const blob =
+      mediaItem?.blob ??
+      (mediaItem?.fileHandle ? await mediaItem.fileHandle.getFile() : null);
+    if (!blob) {
+      toast.error("Auto Reframe Failed", "Reconnect the source media and try again.");
+      return;
+    }
+
     setIsProcessing(true);
+    setResult(null);
     setProgress(0);
-    setProgressMessage("Initializing...");
+    setProgressMessage("Decoding frames...");
+    setIsApplied(false);
 
     try {
-      if (!isInitialized) {
-        setProgressMessage("Loading AI engine...");
-        setProgress(10);
-        await handleInitialize();
-      }
+      const targetConfig = ASPECT_RATIO_PRESETS[reframeSettings.targetAspectRatio];
+      const metadata = mediaItem?.metadata as { width?: number; height?: number } | undefined;
+      const durationSeconds =
+        (mediaItem?.metadata as { duration?: number } | undefined)?.duration ??
+        Math.max(clip.outPoint, clip.duration);
+      const timeMapping: ClipTimeMapping = {
+        startTime: clip.startTime,
+        inPoint: clip.inPoint,
+        speed: Math.max(0.001, clip.speed ?? 1),
+        outPoint: clip.outPoint,
+        ...(clip.reversed ? { reversed: true } : {}),
+      };
 
-      const engine = getAutoReframeEngine();
-      if (!engine) {
-        throw new Error("Engine not available");
-      }
+      const size =
+        metadata?.width && metadata?.height
+          ? { width: metadata.width, height: metadata.height }
+          : await probeVideoSize(blob);
 
-      setProgressMessage("Configuring reframe settings...");
-      setProgress(30);
-
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      setProgressMessage("Applying smart crop configuration...");
-      setProgress(60);
-
-      const targetConfig =
-        ASPECT_RATIO_PRESETS[reframeSettings.targetAspectRatio];
-
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      setProgressMessage("Updating project settings...");
-      setProgress(80);
-
-      await updateProjectDimensions({
-        width: targetConfig.width,
-        height: targetConfig.height,
+      const analysis = await analyzeAutoReframe({
+        blob,
+        durationSeconds,
+        request: {
+          mediaId: clip.mediaId,
+          startTime: clip.inPoint,
+          endTime: clip.outPoint > clip.inPoint ? clip.outPoint : undefined,
+          intervalMs: 400,
+          maxFrames: 90,
+        },
+        settings: reframeSettings,
+        mediaWidth: size.width,
+        mediaHeight: size.height,
+        canvasWidth: targetConfig.width,
+        canvasHeight: targetConfig.height,
+        ...(clip.transform.fitMode ? { fitMode: clip.transform.fitMode } : {}),
+        timeMapping,
+        onProgress: (value, message) => {
+          setProgress(value);
+          setProgressMessage(message);
+        },
       });
 
-      setProgressMessage("Finalizing...");
-      setProgress(90);
+      setProgressMessage("Writing camera keyframes...");
+      store.beginHistoryGroup("AI auto reframe");
+      try {
+        const resized = await useProjectStore.getState().executeAction({
+          type: "project/updateSettings",
+          id: crypto.randomUUID(),
+          timestamp: Date.now(),
+          params: { width: targetConfig.width, height: targetConfig.height },
+        } as Action);
+        if (!resized.success) {
+          throw new Error(resized.error?.message ?? "Resizing the canvas failed.");
+        }
 
-      await new Promise((resolve) => setTimeout(resolve, 200));
+        const written = await useProjectStore.getState().executeAction({
+          type: "keyframe/setAll",
+          id: crypto.randomUUID(),
+          timestamp: Date.now(),
+          params: {
+            clipId,
+            keyframes: [
+              ...(clip.keyframes ?? []).filter(
+                (existing) =>
+                  !["position.x", "position.y", "scale.x", "scale.y"].includes(
+                    existing.property,
+                  ),
+              ),
+              ...analysis.keyframes,
+            ],
+          },
+        } as Action);
+        if (!written.success) {
+          throw new Error(written.error?.message ?? "Writing camera keyframes failed.");
+        }
+      } finally {
+        useProjectStore.getState().endHistoryGroup();
+      }
 
       setProgress(100);
       setProgressMessage("Complete!");
       setIsApplied(true);
+      setResult(analysis);
 
-      const result: ReframeResult = {
+      const reframeResult: ReframeResult = {
         keyframes: [],
-        outputWidth: targetConfig.width,
-        outputHeight: targetConfig.height,
+        outputWidth: analysis.outputWidth,
+        outputHeight: analysis.outputHeight,
         success: true,
-        message: `Configured for ${targetConfig.name} (${targetConfig.width}x${targetConfig.height})`,
+        message: `Wrote ${analysis.keyframeSamples} camera keyframe(s) from ${analysis.sampledFrames} analyzed frame(s)`,
       };
-
-      onReframeComplete?.(result);
+      onReframeComplete?.(reframeResult);
 
       const platformName = selectedPlatform
         ? PLATFORM_PRESETS[selectedPlatform].name
         : reframeSettings.targetAspectRatio;
       toast.success(
         "Auto Reframe Applied",
-        `Project resized to ${platformName} (${targetConfig.width}x${targetConfig.height})`,
+        `${platformName} (${targetConfig.width}x${targetConfig.height}) — ${analysis.keyframeSamples} camera keyframe(s)${analysis.usedFaceBackend ? " tracking faces" : ""}.`,
       );
+      for (const warning of analysis.warnings) toast.warning("Auto Reframe", warning);
     } catch (error) {
       console.error("Auto-reframe failed:", error);
       toast.error(
@@ -191,14 +237,7 @@ export const AutoReframeSection: React.FC<AutoReframeSectionProps> = ({
     } finally {
       setIsProcessing(false);
     }
-  }, [
-    isInitialized,
-    handleInitialize,
-    reframeSettings,
-    selectedPlatform,
-    onReframeComplete,
-    updateProjectDimensions,
-  ]);
+  }, [clipId, onReframeComplete, reframeSettings, selectedPlatform]);
 
   return (
     <div className="space-y-3">
@@ -332,16 +371,14 @@ export const AutoReframeSection: React.FC<AutoReframeSectionProps> = ({
 
         <Button
           label={
-            isInitializing || isProcessing
-              ? isInitializing
-                ? "Initializing..."
-                : "Analyzing..."
+            isProcessing
+              ? "Analyzing..."
               : isApplied
                 ? "Applied - Click to Reanalyze"
                 : "Analyze & Reframe"
           }
           icon={
-            isInitializing || isProcessing ? (
+            isProcessing ? (
               <Loader2 size={14} className="animate-spin" />
             ) : isApplied ? (
               <CheckCircle size={14} />
@@ -352,9 +389,16 @@ export const AutoReframeSection: React.FC<AutoReframeSectionProps> = ({
           variant="primary"
           size="sm"
           onClick={handleAnalyze}
-          isDisabled={isInitializing || isProcessing}
+          isDisabled={isProcessing}
           className="w-full justify-center"
         />
+
+        {result && !isProcessing && (
+          <Text type="supporting" color="secondary" className="text-center text-[9px]">
+            {result.keyframeSamples} camera keyframe(s) from {result.sampledFrames} frame(s)
+            {result.usedFaceBackend ? " · face tracking" : " · subject fallback"}
+          </Text>
+        )}
 
         <Text type="supporting" color="secondary" className="text-center text-[9px]">
           Output:{" "}

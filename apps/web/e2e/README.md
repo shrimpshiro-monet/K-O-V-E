@@ -29,6 +29,7 @@ Everything the app does is real; only the segmentation *weights* are synthetic.
 | Face model | real `face_landmarker.task` (from the `mediapipe-nodejs` npm package) |
 | Segmentation worker + protocol, temporal smoothing, rotoscope geometry, mask write, undo group | real |
 | Segmentation **model weights** | synthetic — `stub-segmenter-runtime.cjs` |
+| Auto reframe (crop plan → clip transform keyframes) | real, with the real face model steering the crop |
 
 ## What the assertions prove
 
@@ -43,6 +44,13 @@ Face test:
   many sampled frames, which a single lucky frame cannot produce (verified by
   mutating the analysis to one frame: the test goes red)
 - the model and runtime came from the local asset server, never a CDN
+
+Auto-reframe test:
+
+- clicking "Analyze & Reframe" resizes the canvas to the target resolution
+- the clip ends up with all four animated camera properties
+  (`position.x/y`, `scale.x/y`), and `scale.x` is above 1 — an identity
+  transform would mean the reframe did nothing
 
 Matte test:
 

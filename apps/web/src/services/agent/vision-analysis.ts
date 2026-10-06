@@ -13,16 +13,24 @@ import {
   createMediaPipeFaceBackend,
   getFaceDetectionEngine,
   getPersonSegmentationEngine,
+  initializeAutoReframeEngine,
   planRotoscope,
+  reframePlanToTransformKeyframes,
   sampleFrameTimes,
   setFaceDetectionEngine,
   setVisionAssets,
   sourceTimeToTimelineSeconds,
   visionAssetsFromBaseUrl,
   type AlphaMask,
+  type AutoReframeEngine,
   type BezierPath,
   type ClipTimeMapping,
+  type FaceDetectionBackend,
+  type Keyframe,
   type Mask,
+  type ReframeCropKeyframe,
+  type ReframeFitMode,
+  type ReframeSettings,
   type RotoscopePlan,
   type SegmentationResult,
 } from "@kove-advanced/core";
@@ -185,6 +193,40 @@ export const decodeVideoFrames: VideoFrameDecoder = async (blob, timesMs, option
   }
   return frames;
 };
+
+/** Reads a video blob's intrinsic size (metadata is not always available). */
+export const probeVideoSize: (blob: Blob) => Promise<{ width: number; height: number }> = (
+  blob,
+) =>
+  new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const video = document.createElement("video");
+    video.muted = true;
+    video.preload = "metadata";
+    video.src = url;
+    const cleanup = () => {
+      video.removeAttribute("src");
+      video.load();
+      URL.revokeObjectURL(url);
+    };
+    video.addEventListener(
+      "loadedmetadata",
+      () => {
+        const size = { width: video.videoWidth, height: video.videoHeight };
+        cleanup();
+        resolve(size);
+      },
+      { once: true },
+    );
+    video.addEventListener(
+      "error",
+      () => {
+        cleanup();
+        reject(new Error("Could not read this video's dimensions."));
+      },
+      { once: true },
+    );
+  });
 
 /** Segmentation-backed matte sampler (streams through the shared worker). */
 export const sampleSubjectMask: SubjectMaskSampler = async (bitmap, timeMs, streamId) => {
@@ -430,4 +472,145 @@ export function applyRotoscopeKeyframeTime(
   mapping: ClipTimeMapping,
 ): number {
   return sourceTimeToTimelineSeconds(timeMs / 1000, mapping);
+}
+
+export interface AutoReframeDeps {
+  blob: Blob;
+  durationSeconds: number;
+  /** Source sampling window (source seconds) and density. */
+  request: VisionSamplingRequest;
+  settings: ReframeSettings;
+  /** Source media dimensions — the crop plan is normalized to these. */
+  mediaWidth: number;
+  mediaHeight: number;
+  /** Project canvas the clip is reframed into. */
+  canvasWidth: number;
+  canvasHeight: number;
+  fitMode?: ReframeFitMode;
+  /** Source→timeline mapping so keyframes land on the clip-local clock. */
+  timeMapping?: ClipTimeMapping;
+  decode?: VideoFrameDecoder;
+  /** Engine used for the crop plan. Defaults to the shared auto-reframe engine. */
+  engine?: AutoReframeEngine;
+  onProgress?: (progress: number, message: string) => void;
+}
+
+export interface AutoReframeAnalysis {
+  /** Every animated property keyframe the renderer needs. */
+  keyframes: Keyframe[];
+  /** Sampled frames that drove the decision. */
+  sampledFrames: number;
+  keyframeSamples: number;
+  outputWidth: number;
+  outputHeight: number;
+  /** True when the real face detector (not the skin-tone fallback) steered it. */
+  usedFaceBackend: boolean;
+  warnings: string[];
+}
+
+/**
+ * Reframe a clip for a target aspect ratio.
+ *
+ * Decodes frames across the requested window, lets the auto-reframe engine pick
+ * a crop per frame (steered by the real face detector when one is attached, and
+ * falling back to the built-in detector if it fails), then converts the crop
+ * plan into clip transform keyframes. Read-only: the caller decides how to
+ * commit them.
+ */
+export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoReframeAnalysis> {
+  const decode = deps.decode ?? decodeVideoFrames;
+  const engine = deps.engine ?? initializeAutoReframeEngine();
+  const warnings: string[] = [];
+
+  const { timesMs, startMs, endMs } = resolveSamplingWindow(deps.durationSeconds, deps.request);
+  if (timesMs.length === 0) {
+    throw new Error("No frames to analyze in this range.");
+  }
+
+  const frames = await decode(deps.blob, timesMs);
+  if (frames.length === 0) {
+    throw new Error("Could not decode this video for reframing.");
+  }
+
+  await engine.initialize();
+
+  // Prefer the real detector; the engine degrades to its built-in fallback if
+  // this backend fails, so a missing model cannot break reframing.
+  if (!engine.getFaceBackend()) {
+    engine.setFaceBackend(createConfiguredFaceBackend());
+  }
+
+  // Frames are sampled on a fixed grid, so the sampling rate is the frame rate
+  // the engine should assume when it stamps crop times.
+  const spacingMs =
+    frames.length > 1 ? Math.max(1, frames[1].timeMs - frames[0].timeMs) : Math.max(1, endMs - startMs);
+  const plan = await engine.analyzeClip(
+    frames.map((frame) => frame.bitmap),
+    1000 / spacingMs,
+    deps.settings,
+    (progress, message) => deps.onProgress?.(progress, message),
+  );
+
+  if (!plan.success) {
+    throw new Error(plan.message ?? "Auto reframe failed.");
+  }
+
+  // The engine reports crops in the analyzed frame's pixel space (cropWidth =
+  // frameHeight * targetRatio), so normalize by that frame before mapping —
+  // the result is then resolution-independent, like the transform it feeds.
+  const frameWidth = Math.max(1, frames[0].bitmap.width);
+  const frameHeight = Math.max(1, frames[0].bitmap.height);
+  const cropKeyframes: ReframeCropKeyframe[] = plan.keyframes.map((keyframe) => ({
+    // The engine stamps `time` from frame index / sampling rate: source seconds
+    // measured from the start of the analyzed window.
+    time: keyframe.time + startMs / 1000,
+    cropX: keyframe.cropX / frameWidth,
+    cropY: keyframe.cropY / frameHeight,
+    cropWidth: keyframe.cropWidth / frameWidth,
+    cropHeight: keyframe.cropHeight / frameHeight,
+  }));
+
+  const keyframes = reframePlanToTransformKeyframes(
+    cropKeyframes,
+    {
+      mediaWidth: deps.mediaWidth,
+      mediaHeight: deps.mediaHeight,
+      canvasWidth: deps.canvasWidth,
+      canvasHeight: deps.canvasHeight,
+      ...(deps.fitMode ? { fitMode: deps.fitMode } : {}),
+    },
+    {
+      createId: () => crypto.randomUUID(),
+      ...(deps.timeMapping ? { timeMapping: deps.timeMapping } : {}),
+    },
+  );
+
+  const keyframeSamples = new Set(keyframes.map((keyframe) => keyframe.time)).size;
+  if (keyframeSamples <= 1) {
+    warnings.push(
+      "The subject barely moved, so the reframe is a single static crop rather than a camera move.",
+    );
+  }
+  if (!engine.usesFaceBackend()) {
+    warnings.push(
+      "The face model was unavailable, so the crop was steered by the built-in subject detector.",
+    );
+  }
+
+  return {
+    keyframes,
+    sampledFrames: frames.length,
+    keyframeSamples,
+    outputWidth: plan.outputWidth,
+    outputHeight: plan.outputHeight,
+    usedFaceBackend: engine.usesFaceBackend(),
+    warnings,
+  };
+}
+
+/** Face backend honouring `VITE_VISION_FACE_MODEL` (see the module header). */
+function createConfiguredFaceBackend(): FaceDetectionBackend {
+  return createMediaPipeFaceBackend(
+    visionFaceModel === "face-landmarker" ? { model: "face-landmarker" } : {},
+  );
 }
