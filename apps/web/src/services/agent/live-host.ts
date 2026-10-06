@@ -40,6 +40,8 @@ import type {
   SubjectMatteResult,
   ApplySubjectMatteRequest,
   ApplySubjectMatteResult,
+  AutoReframeRequest,
+  AutoReframeHostResult,
 } from "@kove-advanced/agent";
 import type { TextStyle, TextAnimationPreset } from "@kove-advanced/core/text/types";
 import type { ShapeStyle, ShapeType } from "@kove-advanced/core/graphics/types";
@@ -319,6 +321,158 @@ export class LiveEditorHost implements EditingHost {
       analyzeFaces: hasVision,
       analyzeSubjectMatte: hasVision,
       applySubjectMatte: hasVision,
+      autoReframe: hasVision,
+    };
+  }
+
+  /**
+   * Reframes a clip for a target aspect ratio: sample its frames, let the
+   * auto-reframe engine choose a crop per frame (face-steered when a detector
+   * is available), then commit the camera move as clip transform keyframes.
+   * Canvas resize + keyframes share one undo step.
+   */
+  async autoReframe(request: AutoReframeRequest): Promise<
+    AutoReframeHostResult | { readonly code: "unsupported_host"; readonly error: string }
+  > {
+    const project = this.getProject();
+    const clip = project.timeline.tracks
+      .flatMap((track) => track.clips)
+      .find((entry) => entry.id === request.clipId);
+    if (!clip) return { code: "unsupported_host", error: `Clip not found: ${request.clipId}` };
+    const source = this.visionSource(clip.mediaId);
+    if ("error" in source) return { code: "unsupported_host", error: source.error };
+
+    const media = project.mediaLibrary.items.find((item) => item.id === clip.mediaId);
+    const metadata = media?.metadata as { width?: number; height?: number } | undefined;
+
+    const { ASPECT_RATIO_PRESETS, DEFAULT_REFRAME_SETTINGS } = await import("@kove-advanced/core");
+    const presetKey = (request.targetAspectRatio ?? DEFAULT_REFRAME_SETTINGS.targetAspectRatio) as
+      keyof typeof ASPECT_RATIO_PRESETS;
+    const targetConfig = ASPECT_RATIO_PRESETS[presetKey];
+    if (!targetConfig) {
+      return { code: "unsupported_host", error: `Unknown aspect ratio preset: ${String(presetKey)}` };
+    }
+
+    const settings = {
+      ...DEFAULT_REFRAME_SETTINGS,
+      targetAspectRatio: presetKey,
+      ...(request.trackingSpeed !== undefined ? { trackingSpeed: request.trackingSpeed } : {}),
+      ...(request.padding !== undefined ? { padding: request.padding } : {}),
+      ...(request.smoothing !== undefined ? { smoothing: request.smoothing } : {}),
+      ...(request.followSubject !== undefined ? { followSubject: request.followSubject } : {}),
+      ...(request.centerBias !== undefined ? { centerBias: request.centerBias } : {}),
+    };
+
+    const {
+      analyzeAutoReframe,
+      probeVideoSize,
+    } = await import("./vision-analysis");
+    const size =
+      metadata?.width && metadata?.height
+        ? { width: metadata.width, height: metadata.height }
+        : await probeVideoSize(source.blob);
+
+    const analysis = await analyzeAutoReframe({
+      blob: source.blob,
+      durationSeconds: this.effectiveDuration(source.durationSeconds, request),
+      request: {
+        mediaId: clip.mediaId,
+        ...(request.startTime !== undefined ? { startTime: request.startTime } : {}),
+        ...(request.endTime !== undefined ? { endTime: request.endTime } : {}),
+        ...(request.intervalMs !== undefined ? { intervalMs: request.intervalMs } : {}),
+        ...(request.maxFrames !== undefined ? { maxFrames: request.maxFrames } : {}),
+      },
+      settings,
+      mediaWidth: size.width,
+      mediaHeight: size.height,
+      canvasWidth: targetConfig.width,
+      canvasHeight: targetConfig.height,
+      ...(clip.transform.fitMode ? { fitMode: clip.transform.fitMode } : {}),
+      timeMapping: {
+        startTime: clip.startTime,
+        inPoint: clip.inPoint ?? 0,
+        speed: Math.max(0.001, clip.speed ?? 1),
+        ...(clip.outPoint !== undefined ? { outPoint: clip.outPoint } : {}),
+        ...(clip.reversed ? { reversed: true } : {}),
+      },
+    });
+
+    if (analysis.keyframes.length === 0) {
+      return {
+        keyframesWritten: 0,
+        keyframeSamples: 0,
+        sampledFrames: analysis.sampledFrames,
+        outputWidth: targetConfig.width,
+        outputHeight: targetConfig.height,
+        usedFaceBackend: analysis.usedFaceBackend,
+        warnings: [...analysis.warnings],
+      };
+    }
+
+    const store = (await import("../../stores/project-store")).useProjectStore.getState();
+    const setCanvasSize = request.setCanvasSize !== false;
+    let committed = false;
+    store.beginHistoryGroup("AI auto reframe");
+    try {
+      if (setCanvasSize) {
+        const resized = await store.executeAction({
+          type: "project/updateSettings",
+          id: crypto.randomUUID(),
+          timestamp: Date.now(),
+          params: { width: targetConfig.width, height: targetConfig.height },
+        } as Action);
+        if (!resized.success) {
+          return {
+            keyframesWritten: 0,
+            keyframeSamples: 0,
+            sampledFrames: analysis.sampledFrames,
+            outputWidth: targetConfig.width,
+            outputHeight: targetConfig.height,
+            usedFaceBackend: analysis.usedFaceBackend,
+            warnings: [`Canvas resize failed: ${resized.error?.message ?? "unknown error"}`],
+          };
+        }
+      }
+
+      // Reframe owns the camera properties; other keyframes on the clip stay.
+      const cameraProperties = new Set(["position.x", "position.y", "scale.x", "scale.y"]);
+      const keyframes = [
+        ...(clip.keyframes ?? []).filter((existing) => !cameraProperties.has(existing.property)),
+        ...analysis.keyframes,
+      ];
+      const written = await store.executeAction({
+        type: "keyframe/setAll",
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        params: { clipId: clip.id, keyframes },
+      } as Action);
+      if (!written.success) {
+        return {
+          keyframesWritten: 0,
+          keyframeSamples: 0,
+          sampledFrames: analysis.sampledFrames,
+          outputWidth: targetConfig.width,
+          outputHeight: targetConfig.height,
+          usedFaceBackend: analysis.usedFaceBackend,
+          warnings: [`Camera keyframes could not be saved: ${written.error?.message ?? "unknown error"}`],
+        };
+      }
+      committed = true;
+    } finally {
+      store.endHistoryGroup();
+    }
+    if (!committed) {
+      return { code: "unsupported_host", error: "Auto reframe did not commit a camera move." };
+    }
+
+    return {
+      keyframesWritten: analysis.keyframes.length,
+      keyframeSamples: analysis.keyframeSamples,
+      sampledFrames: analysis.sampledFrames,
+      outputWidth: targetConfig.width,
+      outputHeight: targetConfig.height,
+      usedFaceBackend: analysis.usedFaceBackend,
+      warnings: [...analysis.warnings],
     };
   }
 
