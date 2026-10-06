@@ -5,4 +5,5 @@ export * from "./person-segmentation-engine";
 export * from "./face-detection-engine";
 export * from "./rotoscope";
 export * from "./subject-separation";
+export * from "./matte-edge-refinement";
 export * from "./vision-assets";
