@@ -70,7 +70,9 @@ export interface MediaPipeFaceBackendOptions {
    * `getVisionAssets()`, so `setVisionAssets()` retargets these too. */
   wasmBaseUrl?: string;
   modelAssetPath?: string;
-  /** Inference delegate. Defaults to "GPU"; "CPU" is the portable fallback. */
+  /** Inference delegate. Defaults to "GPU" with an automatic one-shot "CPU"
+   * retry when the GPU delegate cannot run (no WebGL context: headless
+   * browsers, VMs, servers), so face detection works everywhere MediaPipe does. */
   delegate?: "GPU" | "CPU";
 }
 
@@ -426,6 +428,29 @@ function landmarkBox(
   return box;
 }
 
+/**
+ * MediaPipe's GPU delegate needs a working WebGL context. Where there is none
+ * (headless browsers, VMs, servers) the failure surfaces in different ways — a
+ * graph service error ("kGpuService ... was not provided"), a raw wasm call on
+ * a missing context ("Cannot read properties of undefined (reading
+ * 'activeTexture')"), or a failed graph start — so instead of pattern-matching
+ * messages, a GPU failure simply buys the frame one retry on the CPU delegate,
+ * which runs the same model wherever MediaPipe runs.
+ */
+const describeError = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+/** MediaPipe fails like this when the browser cannot create a WebGL context
+ * (headless Chromium without SwiftShader, a VM, a blocklisted GPU driver). Even
+ * the CPU delegate converts frames through WebGL, so no delegate can recover —
+ * the caller deserves to be told that instead of a raw wasm TypeError. */
+const WEBGL_REQUIRED_HINT =
+  "MediaPipe Tasks needs a WebGL context and this browser could not create one, so face detection cannot run here.";
+const withWebglHint = (error: unknown): Error | null =>
+  /activeTexture|webgl|getContext/i.test(describeError(error))
+    ? new Error(`${describeError(error)} (${WEBGL_REQUIRED_HINT})`)
+    : null;
+
 /** Production backend. MediaPipe is imported lazily so the module can be
  * loaded (and tested) in environments without the dependency's WASM assets. */
 export function createMediaPipeFaceBackend(
@@ -437,7 +462,7 @@ export function createMediaPipeFaceBackend(
   const modelAssetPath =
     options.modelAssetPath ??
     (model === "face-landmarker" ? assets.faceLandmarkerAssetPath : assets.faceModelAssetPath);
-  const delegate = options.delegate ?? "GPU";
+  let delegate: "GPU" | "CPU" = options.delegate ?? "GPU";
 
   // The detector/landmarker instances are structurally different; keep the
   // smallest common surface we actually call.
@@ -457,6 +482,8 @@ export function createMediaPipeFaceBackend(
   }
 
   let detector: DetectorLike | null = null;
+  let createDetector: ((withDelegate: "GPU" | "CPU") => Promise<DetectorLike>) | null = null;
+  let cpuFallbackUsed = false;
 
   return {
     async initialize(): Promise<void> {
@@ -478,26 +505,72 @@ export function createMediaPipeFaceBackend(
         };
       };
       const fileset = await tasksVision.FilesetResolver.forVisionTasks(wasmBaseUrl);
-      if (model === "face-landmarker") {
-        detector = await tasksVision.FaceLandmarker.createFromOptions(fileset, {
-          baseOptions: { modelAssetPath, delegate },
-          runningMode: "IMAGE",
-          numFaces: Math.max(1, options.numFaces ?? 5),
-          outputFaceBlendshapes: options.outputBlendshapes ?? true,
-        });
-      } else {
-        detector = await tasksVision.FaceDetector.createFromOptions(fileset, {
-          baseOptions: { modelAssetPath, delegate },
+      createDetector = async (withDelegate) => {
+        if (model === "face-landmarker") {
+          return tasksVision.FaceLandmarker.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath, delegate: withDelegate },
+            runningMode: "IMAGE",
+            numFaces: Math.max(1, options.numFaces ?? 5),
+            outputFaceBlendshapes: options.outputBlendshapes ?? true,
+          });
+        }
+        return tasksVision.FaceDetector.createFromOptions(fileset, {
+          baseOptions: { modelAssetPath, delegate: withDelegate },
           runningMode: "IMAGE",
           minDetectionConfidence: options.minDetectionConfidence ?? 0.5,
           numFaces: Math.max(1, options.numFaces ?? 5),
         });
+      };
+
+      try {
+        detector = await createDetector(delegate);
+      } catch (error) {
+        // Some hosts fail while building the GPU graph rather than at run time.
+        if (delegate !== "GPU") throw error;
+        delegate = "CPU";
+        cpuFallbackUsed = true;
+        try {
+          detector = await createDetector(delegate);
+        } catch (cpuError) {
+          throw new Error(
+            `Face detector could not initialize on the GPU delegate (${describeError(error)}) ` +
+              `or the CPU fallback (${describeError(cpuError)})`,
+          );
+        }
       }
     },
 
     async detect(frame: ImageBitmap): Promise<DetectedFace[]> {
       if (!detector) throw new Error("Face backend is not initialized");
-      const result = detector.detect(frame);
+      let result: ReturnType<DetectorLike["detect"]>;
+      try {
+        result = detector.detect(frame);
+      } catch (error) {
+        if (delegate !== "GPU" || cpuFallbackUsed || !createDetector) {
+          throw withWebglHint(error) ?? error;
+        }
+        // No usable GPU delegate: rebuild on the CPU and retry this frame so
+        // detection keeps working instead of failing on every frame.
+        cpuFallbackUsed = true;
+        delegate = "CPU";
+        try {
+          detector.close();
+        } catch {
+          // The GPU context may already be gone; rebuilding does not need it.
+        }
+        try {
+          detector = await createDetector(delegate);
+          result = detector.detect(frame);
+        } catch (cpuError) {
+          throw (
+            withWebglHint(cpuError) ??
+            new Error(
+              `Face detection failed on the GPU delegate (${describeError(error)}) ` +
+                `and on the CPU fallback (${describeError(cpuError)})`,
+            )
+          );
+        }
+      }
       const faces: DetectedFace[] = [];
       if (result.detections) {
         for (const detection of result.detections) {

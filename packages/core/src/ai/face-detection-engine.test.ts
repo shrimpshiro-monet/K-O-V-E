@@ -3,11 +3,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 /** Records how the production backend configures MediaPipe. */
 const mpCalls: { options: Record<string, unknown>; kind: string }[] = [];
 let mpResult: Record<string, unknown> = {};
+/** Errors the next `detect()` calls must throw, oldest first. */
+let mpFailures: string[] = [];
 
 vi.mock("@mediapipe/tasks-vision", () => {
   const createFromOptions = (kind: string) => async (_fileset: unknown, options: Record<string, unknown>) => {
     mpCalls.push({ kind, options });
-    return { detect: () => mpResult, close: () => undefined };
+    return {
+      detect: () => {
+        const failure = mpFailures.shift();
+        if (failure) throw new Error(failure);
+        return mpResult;
+      },
+      close: () => undefined,
+    };
   };
   return {
     FilesetResolver: { forVisionTasks: async (path: string) => ({ path }) },
@@ -344,6 +353,7 @@ describe("createMediaPipeFaceBackend", () => {
   beforeEach(() => {
     mpCalls.length = 0;
     mpResult = {};
+    mpFailures = [];
     resetVisionAssets();
   });
 
@@ -427,5 +437,76 @@ describe("createMediaPipeFaceBackend", () => {
     await backend.initialize();
     const baseOptions = mpCalls[0].options.baseOptions as { modelAssetPath: string };
     expect(baseOptions.modelAssetPath).toBe("http://localhost:8788/models/blaze_face_short_range.tflite");
+  });
+
+  it("retries the frame on the CPU delegate when the GPU delegate fails", async () => {
+    mpResult = {
+      detections: [{ boundingBox: { originX: 1, originY: 2, width: 3, height: 4 }, categories: [{ score: 0.8 }] }],
+    };
+    // What a machine without a WebGL context reports on every single frame.
+    mpFailures = ["Cannot read properties of undefined (reading 'activeTexture')"];
+    const backend = createMediaPipeFaceBackend({});
+    await backend.initialize();
+    const faces = await backend.detect(bitmap(100, 100));
+
+    expect(faces).toEqual([{ box: { x: 1, y: 2, width: 3, height: 4 }, confidence: 0.8 }]);
+    expect(mpCalls).toHaveLength(2);
+    expect((mpCalls[0].options.baseOptions as { delegate: string }).delegate).toBe("GPU");
+    expect((mpCalls[1].options.baseOptions as { delegate: string }).delegate).toBe("CPU");
+
+    // The rebuild happens once: later frames go straight to the CPU detector.
+    await backend.detect(bitmap(100, 100));
+    expect(mpCalls).toHaveLength(2);
+  });
+
+  it("already-CPU backends never rebuild", async () => {
+    mpFailures = ["frame is not a valid bitmap"];
+    const backend = createMediaPipeFaceBackend({ delegate: "CPU" });
+    await backend.initialize();
+    await expect(backend.detect(bitmap(100, 100))).rejects.toThrow("frame is not a valid bitmap");
+    expect(mpCalls).toHaveLength(1);
+  });
+
+  it("explains a WebGL-less browser instead of leaking a wasm TypeError", async () => {
+    mpFailures = ["Cannot read properties of undefined (reading 'activeTexture')"];
+    const backend = createMediaPipeFaceBackend({ delegate: "CPU" });
+    await backend.initialize();
+    await expect(backend.detect(bitmap(100, 100))).rejects.toThrow(
+      /needs a WebGL context and this browser could not create one/,
+    );
+  });
+
+  it("reports both delegates when the CPU fallback fails too", async () => {
+    mpFailures = ["gpu exploded", "cpu exploded"];
+    const backend = createMediaPipeFaceBackend({});
+    await backend.initialize();
+    await expect(backend.detect(bitmap(100, 100))).rejects.toThrow(
+      "Face detection failed on the GPU delegate (gpu exploded) and on the CPU fallback (cpu exploded)",
+    );
+    expect(mpCalls).toHaveLength(2);
+  });
+
+  it("falls back to CPU when the GPU detector cannot even initialize", async () => {
+    const failingCreate = async () => {
+      throw new Error("emscripten_webgl_create_context() returned error 0");
+    };
+    const tasksVision = await import("@mediapipe/tasks-vision");
+    const spy = vi
+      .spyOn(tasksVision.FaceDetector, "createFromOptions")
+      .mockImplementationOnce(failingCreate as never);
+    try {
+      const backend = createMediaPipeFaceBackend({});
+      await backend.initialize();
+      // Once on the GPU (which failed), then immediately on the CPU.
+      expect(spy).toHaveBeenCalledTimes(2);
+      const delegates = spy.mock.calls.map(
+        (call) => (call[1] as { baseOptions: { delegate: string } }).baseOptions.delegate,
+      );
+      expect(delegates).toEqual(["GPU", "CPU"]);
+      expect(await backend.detect(bitmap(100, 100))).toEqual([]);
+      expect(mpCalls).toHaveLength(1);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
