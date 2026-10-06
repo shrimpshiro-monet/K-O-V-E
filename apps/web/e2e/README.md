@@ -30,6 +30,32 @@ Everything the app does is real; only the segmentation *weights* are synthetic.
 | Segmentation worker + protocol, temporal smoothing, rotoscope geometry, mask write, undo group | real |
 | Segmentation **model weights** | synthetic — `stub-segmenter-runtime.cjs` |
 
+## What the assertions prove
+
+The suite is deliberately not satisfied by "some keyframes appeared". Both tests
+were mutation-checked: breaking the pipeline makes them fail.
+
+Face test:
+
+- a real track count (`0 face track(s)` fails), not just the words "face track"
+- the track's own detail line (`640×480 · 2.9s · conf 0.71`) must report a span
+  longer than half a second and a confidence above 0.2 — that is tracking across
+  many sampled frames, which a single lucky frame cannot produce (verified by
+  mutating the analysis to one frame: the test goes red)
+- the model and runtime came from the local asset server, never a CDN
+
+Matte test:
+
+- one mask on the clip, carrying as many keyframes as the panel reported
+- every keyframe is a closed path with more than two anchors, and its centroid
+  sits in normalized frame space (pixel coordinates would fail)
+- keyframe times are ascending, distinct and span more than a second — proof the
+  analysis walked the video (mutating the time mapping collapses the keyframes
+  and the test goes red)
+- the traced centroid actually moves between keyframes, so the matte follows the
+  subject rather than being one frozen shape
+- coverage of the subject stays in a sane band
+
 ### Why the segmenter is stubbed
 
 The official `selfie_segmenter` / `selfie_multiclass` Tasks models are only

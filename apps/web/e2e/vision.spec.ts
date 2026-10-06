@@ -210,7 +210,23 @@ test.describe("vision pipeline in the real editor", () => {
     const tracks = page.getByText(/face track/i).first();
     await expect(tracks).toBeVisible({ timeout: 150_000 });
     await expect(page.getByText(/primary/i).first()).toBeVisible();
-    expect(await tracks.textContent()).toMatch(/\d+\s*face track/i);
+
+    // "0 face track(s)" would satisfy a loose /face track/ match, so read the
+    // count the panel actually reports.
+    const panel = await page.locator("body").innerText();
+    const trackCount = Number(/(\d+)\s*face track/i.exec(panel)?.[1] ?? "0");
+    expect(trackCount).toBeGreaterThan(0);
+    expect(panel).toMatch(/face track\(s\); primary /);
+
+    // Each listed track carries the span it was tracked over and its average
+    // confidence ("640×480 · 2.9s · conf 0.71"). A duration spanning several
+    // sampled frames is only produced when the real detector ran across the
+    // whole clip *and* the tracker associated those detections into one track;
+    // a single lucky frame, or a detector that failed on later frames, cannot.
+    const detail = /([\d.]+)s\s*·\s*conf\s*([\d.]+)/.exec(panel);
+    expect(detail, `face track detail line missing from panel: ${panel.slice(0, 400)}`).not.toBeNull();
+    expect(Number(detail?.[1])).toBeGreaterThan(0.5);
+    expect(Number(detail?.[2])).toBeGreaterThan(0.2);
 
     // The official face model came from the local asset server, not a CDN.
     expect(assetRequests.some((url) => url.endsWith("/models/face_landmarker.task"))).toBe(true);
@@ -234,6 +250,13 @@ test.describe("vision pipeline in the real editor", () => {
     const label = (await applyButton.textContent()) ?? "";
     const keyframes = Number(/Apply matte \((\d+)/.exec(label)?.[1] ?? "0");
     expect(keyframes).toBeGreaterThan(0);
+
+    // Read the plan summary now: applying re-renders the panel and the
+    // analysis text is replaced by the applied message.
+    const planSummary = await page.locator("body").innerText();
+    const coverage = Number(/average coverage ([\d.]+)%/.exec(planSummary)?.[1] ?? "0");
+    expect(coverage).toBeGreaterThan(5);
+    expect(coverage).toBeLessThan(80);
     await page.screenshot({ path: outputPath("03-matte-planned.png") });
 
     await applyButton.click();
@@ -246,19 +269,58 @@ test.describe("vision pipeline in the real editor", () => {
       const project = stores.useProjectStore.getState().project;
       return (project.masks ?? []).map((mask) => ({
         clipId: mask.clipId as string,
-        keyframes: mask.keyframes?.length ?? 0,
-        anchors: mask.keyframes?.[0]?.path?.points?.length ?? 0,
-        closed: mask.keyframes?.[0]?.path?.closed ?? false,
         feathering: mask.feathering,
+        keyframes: (mask.keyframes ?? []).map((keyframe) => {
+          const points = keyframe.path?.points ?? [];
+          const centroid = points.reduce(
+            (sum, point) => ({
+              x: sum.x + point.x / points.length,
+              y: sum.y + point.y / points.length,
+            }),
+            { x: 0, y: 0 },
+          );
+          return {
+            time: keyframe.time,
+            anchors: points.length,
+            closed: keyframe.path?.closed ?? false,
+            centroid,
+          };
+        }),
       }));
     });
     await page.screenshot({ path: outputPath("04-matte-applied.png") });
 
     expect(masks).toHaveLength(1);
-    expect(masks[0].keyframes).toBe(keyframes);
-    expect(masks[0].anchors).toBeGreaterThan(2);
-    expect(masks[0].closed).toBe(true);
     expect(masks[0].feathering).toBeGreaterThan(0);
+    const mattes = masks[0].keyframes;
+    expect(mattes).toHaveLength(keyframes);
+
+    for (const matte of mattes) {
+      expect(matte.closed).toBe(true);
+      expect(matte.anchors).toBeGreaterThan(2);
+      // Paths live in normalized frame space; pixel coordinates here would mean
+      // the matte was written in the wrong coordinate space.
+      expect(Number.isFinite(matte.centroid.x)).toBe(true);
+      expect(matte.centroid.x).toBeGreaterThan(0.1);
+      expect(matte.centroid.x).toBeLessThan(0.9);
+      expect(matte.centroid.y).toBeGreaterThan(0.1);
+      expect(matte.centroid.y).toBeLessThan(0.9);
+    }
+
+    // Keyframe times ascend, are distinct, and span the clip: the analysis
+    // really walked the video instead of sampling one frame repeatedly.
+    const times = mattes.map((matte) => matte.time);
+    expect(times).toEqual([...times].sort((a, b) => a - b));
+    expect(new Set(times.map((time) => time.toFixed(3))).size).toBe(times.length);
+    expect(times[times.length - 1] - times[0]).toBeGreaterThan(1);
+
+    // The traced matte moves with the subject (the fixture pans/zooms): a
+    // frozen shape, or a plan whose frames and times got crossed, would sit
+    // still. This is the difference between "keyframes exist" and "keyframes
+    // follow the subject".
+    const centroidsX = mattes.map((matte) => matte.centroid.x);
+    const motionX = Math.max(...centroidsX) - Math.min(...centroidsX);
+    expect(motionX).toBeGreaterThan(0.01);
 
     // The worker loaded its MediaPipe runtime from the local asset server.
     expect(assetRequests.some((url) => url.endsWith("/vision_bundle.cjs"))).toBe(true);
