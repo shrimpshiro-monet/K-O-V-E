@@ -118,6 +118,154 @@ const DEFAULT_INTERVAL_MS = 500;
 const DEFAULT_MAX_FRAMES = 60;
 const ANALYSIS_MAX_DIMENSION = 960;
 
+/** Share of the frame budget held back for motion-adaptive refinement. */
+export const ADAPTIVE_REFINEMENT_RATIO = 0.5;
+/** Refinement never splits an interval narrower than this (ms). */
+export const ADAPTIVE_MIN_INTERVAL_MS = 90;
+
+/**
+ * One score per interval between consecutive base samples, in any consistent
+ * unit — only the *relative* shape matters, so a raw pixel-difference sum works.
+ */
+export type FrameMotionMeasurer = (frames: readonly DecodedFrame[]) => number[];
+
+export interface AdaptiveSamplingOptions {
+  /** Total decode budget, base grid included. Defaults to `DEFAULT_MAX_FRAMES`. */
+  maxFrames?: number;
+  /** Never split an interval narrower than this (ms). */
+  minIntervalMs?: number;
+}
+
+export interface AdaptiveSamplingPlan {
+  /** Base grid plus refinement, ascending and de-duplicated. */
+  timesMs: number[];
+  /** Times added by refinement — the ones still needing a decode. */
+  refinedTimesMs: number[];
+}
+
+/**
+ * Spends the spare decode budget where the picture actually moves.
+ *
+ * The engine sees one crop decision per sampled frame, so a fixed grid has to
+ * pick between wasting decodes on a locked-off shot and under-sampling a fast
+ * one. This bisects the busiest intervals instead: motion is treated as
+ * spread evenly across an interval, so splitting halves each child's score and
+ * leaves its density unchanged — the greedy pass therefore keeps subdividing
+ * the same busy region until it hits `minIntervalMs` or the budget runs out,
+ * and leaves quiet stretches on the coarse grid.
+ *
+ * Pure: no decoding, no canvas.
+ */
+export function planAdaptiveSampleTimes(
+  baseTimesMs: readonly number[],
+  motion: readonly number[],
+  options: AdaptiveSamplingOptions = {},
+): AdaptiveSamplingPlan {
+  if (baseTimesMs.length < 2) {
+    return { timesMs: [...baseTimesMs], refinedTimesMs: [] };
+  }
+
+  const maxFrames = Math.max(2, Math.floor(options.maxFrames ?? DEFAULT_MAX_FRAMES));
+  const minIntervalMs = Math.max(1, options.minIntervalMs ?? ADAPTIVE_MIN_INTERVAL_MS);
+
+  // Normalize so the caller's units cannot skew the split order.
+  const peak = motion.reduce((max, value) => Math.max(max, Number.isFinite(value) ? value : 0), 0);
+  const normalized =
+    peak > 0 ? motion.map((value) => (Number.isFinite(value) ? Math.max(0, value) / peak : 0)) : motion.map(() => 0);
+
+  const segments = baseTimesMs.slice(0, -1).map((start, index) => ({
+    start,
+    score: normalized[index] ?? 0,
+  }));
+  const end = baseTimesMs[baseTimesMs.length - 1];
+
+  let budget = maxFrames - baseTimesMs.length;
+  while (budget > 0) {
+    let best = -1;
+    let bestDensity = -1;
+    for (let index = 0; index < segments.length; index += 1) {
+      const segmentStart = segments[index].start;
+      const segmentEnd = segments[index + 1]?.start ?? end;
+      const length = segmentEnd - segmentStart;
+      // Halving would drop below the floor; this interval is done.
+      if (length / 2 < minIntervalMs) continue;
+      const density = length > 0 ? segments[index].score / length : 0;
+      if (density > bestDensity) {
+        bestDensity = density;
+        best = index;
+      }
+    }
+    // Everything is either already at the floor or motionless.
+    if (best < 0 || bestDensity <= 0) break;
+
+    const split = segments[best];
+    const segmentEnd = segments[best + 1]?.start ?? end;
+    const midpoint = (split.start + segmentEnd) / 2;
+    segments.splice(best + 1, 0, { start: midpoint, score: split.score / 2 });
+    split.score /= 2;
+    budget -= 1;
+  }
+
+  const timesMs = [...segments.map((segment) => segment.start), end];
+  const base = new Set(baseTimesMs);
+  return {
+    timesMs,
+    refinedTimesMs: timesMs.filter((time) => !base.has(time)),
+  };
+}
+
+/**
+ * Mean luma change between consecutive frames, one score per interval.
+ *
+ * Frames are drawn into a thumbnail first: the motion that should drive
+ * sampling is the subject crossing the frame, not sensor noise at full
+ * resolution. Returns an empty array when pixels cannot be read (no DOM, or a
+ * decoder that handed back placeholder bitmaps), which leaves the caller on its
+ * base grid rather than failing the analysis.
+ */
+export const measureFrameMotion: FrameMotionMeasurer = (frames) => {
+  if (typeof document === "undefined" || frames.length < 2) return [];
+  const width = 48;
+  const height = 27;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return [];
+
+  const thumbnails: Uint8ClampedArray[] = [];
+  for (const frame of frames) {
+    context.clearRect(0, 0, width, height);
+    try {
+      context.drawImage(frame.bitmap, 0, 0, width, height);
+    } catch {
+      return [];
+    }
+    let data: Uint8ClampedArray;
+    try {
+      data = context.getImageData(0, 0, width, height).data;
+    } catch {
+      return [];
+    }
+    thumbnails.push(data);
+  }
+
+  const scores: number[] = [];
+  for (let index = 1; index < thumbnails.length; index += 1) {
+    const previous = thumbnails[index - 1];
+    const current = thumbnails[index];
+    let total = 0;
+    for (let pixel = 0; pixel < current.length; pixel += 4) {
+      total +=
+        Math.abs(current[pixel] - previous[pixel]) +
+        Math.abs(current[pixel + 1] - previous[pixel + 1]) +
+        Math.abs(current[pixel + 2] - previous[pixel + 2]);
+    }
+    scores.push(total / (width * height * 3));
+  }
+  return scores;
+};
+
 /** Resolves the sampling window in milliseconds, clamped to the media. */
 export function resolveSamplingWindow(
   durationSeconds: number,
@@ -565,6 +713,13 @@ export interface AutoReframeDeps {
   /** Source→timeline mapping so keyframes land on the clip-local clock. */
   timeMapping?: ClipTimeMapping;
   decode?: VideoFrameDecoder;
+  /**
+   * Scores the motion between consecutive base samples. Defaults to
+   * `measureFrameMotion`; inject it to drive refinement from a known curve.
+   */
+  measureMotion?: FrameMotionMeasurer;
+  /** Floor for motion-adaptive refinement, in ms. */
+  minIntervalMs?: number;
   /** Engine used for the crop plan. Defaults to the shared auto-reframe engine. */
   engine?: AutoReframeEngine;
   onProgress?: (progress: number, message: string) => void;
@@ -575,6 +730,11 @@ export interface AutoReframeAnalysis {
   keyframes: Keyframe[];
   /** Sampled frames that drove the decision. */
   sampledFrames: number;
+  /**
+   * Samples added on top of the base grid because the picture moved there.
+   * Present only when motion-adaptive sampling ran and had something to add.
+   */
+  refinedFrames?: number;
   keyframeSamples: number;
   outputWidth: number;
   outputHeight: number;
@@ -605,7 +765,20 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
   const engine = deps.engine ?? initializeAutoReframeEngine();
   const warnings: string[] = [];
 
-  const { timesMs, startMs, endMs } = resolveSamplingWindow(deps.durationSeconds, deps.request);
+  // An explicit interval or frame cap is a request for exactly that grid, so
+  // only the default (unspecified) sampling is allowed to adapt.
+  const explicitGrid =
+    deps.request.adaptive === false ||
+    deps.request.intervalMs !== undefined ||
+    deps.request.maxFrames !== undefined;
+  const baseBudget = explicitGrid
+    ? undefined
+    : Math.max(2, Math.ceil(DEFAULT_MAX_FRAMES * (1 - ADAPTIVE_REFINEMENT_RATIO)));
+
+  const { timesMs, startMs, endMs } = resolveSamplingWindow(deps.durationSeconds, {
+    ...deps.request,
+    ...(baseBudget !== undefined ? { maxFrames: baseBudget } : {}),
+  });
   if (timesMs.length === 0) {
     throw new Error("No frames to analyze in this range.");
   }
@@ -613,6 +786,32 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
   const frames = await decode(deps.blob, timesMs);
   if (frames.length === 0) {
     throw new Error("Could not decode this video for reframing.");
+  }
+
+  // Second pass: spend what is left of the budget where the picture moves.
+  let analyzedFrames = frames;
+  let refinedFrames: number | undefined;
+  let sampleTimes: number[] | undefined;
+  if (!explicitGrid && frames.length >= 2) {
+    const motion = (deps.measureMotion ?? measureFrameMotion)(frames);
+    const plan = planAdaptiveSampleTimes(
+      frames.map((frame) => frame.timeMs),
+      motion,
+      {
+        maxFrames: DEFAULT_MAX_FRAMES,
+        ...(deps.minIntervalMs !== undefined ? { minIntervalMs: deps.minIntervalMs } : {}),
+      },
+    );
+    if (plan.refinedTimesMs.length > 0) {
+      const extra = await decode(deps.blob, plan.refinedTimesMs);
+      if (extra.length > 0) {
+        analyzedFrames = [...frames, ...extra].sort((a, b) => a.timeMs - b.timeMs);
+        refinedFrames = extra.length;
+        // The grid is no longer uniform, so stamp every crop with its own time
+        // instead of letting the engine derive one from the frame index.
+        sampleTimes = analyzedFrames.map((frame) => (frame.timeMs - startMs) / 1000);
+      }
+    }
   }
 
   await engine.initialize();
@@ -624,14 +823,18 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
   }
 
   // Frames are sampled on a fixed grid, so the sampling rate is the frame rate
-  // the engine should assume when it stamps crop times.
+  // the engine should assume when it stamps crop times. Adaptive sampling hands
+  // it explicit times instead and this stays as the uniform-grid fallback.
   const spacingMs =
-    frames.length > 1 ? Math.max(1, frames[1].timeMs - frames[0].timeMs) : Math.max(1, endMs - startMs);
+    analyzedFrames.length > 1
+      ? Math.max(1, analyzedFrames[1].timeMs - analyzedFrames[0].timeMs)
+      : Math.max(1, endMs - startMs);
   const plan = await engine.analyzeClip(
-    frames.map((frame) => frame.bitmap),
+    analyzedFrames.map((frame) => frame.bitmap),
     1000 / spacingMs,
     deps.settings,
     (progress, message) => deps.onProgress?.(progress, message),
+    sampleTimes,
   );
 
   if (!plan.success) {
@@ -641,8 +844,8 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
   // The engine reports crops in the analyzed frame's pixel space (cropWidth =
   // frameHeight * targetRatio), so normalize by that frame before mapping —
   // the result is then resolution-independent, like the transform it feeds.
-  const frameWidth = Math.max(1, frames[0].bitmap.width);
-  const frameHeight = Math.max(1, frames[0].bitmap.height);
+  const frameWidth = Math.max(1, analyzedFrames[0].bitmap.width);
+  const frameHeight = Math.max(1, analyzedFrames[0].bitmap.height);
   const cropKeyframes: ReframeCropKeyframe[] = plan.keyframes.map((keyframe) => ({
     // The engine stamps `time` from frame index / sampling rate: source seconds
     // measured from the start of the analyzed window.
@@ -683,7 +886,8 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
 
   return {
     keyframes,
-    sampledFrames: frames.length,
+    sampledFrames: analyzedFrames.length,
+    ...(refinedFrames !== undefined ? { refinedFrames } : {}),
     keyframeSamples,
     outputWidth: plan.outputWidth,
     outputHeight: plan.outputHeight,

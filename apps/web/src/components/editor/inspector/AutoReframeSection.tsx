@@ -396,6 +396,9 @@ export const AutoReframeSection: React.FC<AutoReframeSectionProps> = ({
         {result && !isProcessing && (
           <Text type="supporting" color="secondary" className="text-center text-[9px]">
             {result.keyframeSamples} camera keyframe(s) from {result.sampledFrames} frame(s)
+            {result.refinedFrames
+              ? ` · ${result.refinedFrames} added where it moved`
+              : ""}
             {result.usedFaceBackend ? " · face tracking" : " · subject fallback"}
             {result.pathDeviationPx !== undefined
               ? ` · path fit ${result.pathDeviationPx.toFixed(1)}px`

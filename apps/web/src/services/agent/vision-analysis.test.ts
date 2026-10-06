@@ -5,6 +5,8 @@ import {
   analyzeFacesInMedia,
   analyzeSubjectMatte,
   applyRotoscopeKeyframeTime,
+  measureFrameMotion,
+  planAdaptiveSampleTimes,
   resolveSamplingWindow,
   writeMatteToMasks,
   type DecodedFrame,
@@ -588,5 +590,190 @@ describe("analyzeAutoReframe", () => {
     const analysis = await analyzeAutoReframe(deps(engine));
 
     expect(analysis.warnings.join(" ")).toMatch(/static crop/i);
+  });
+});
+
+describe("planAdaptiveSampleTimes", () => {
+  it("keeps the base grid untouched when nothing moves", () => {
+    const plan = planAdaptiveSampleTimes([0, 500, 1000, 1500], [0, 0, 0], { maxFrames: 12 });
+
+    expect(plan.timesMs).toEqual([0, 500, 1000, 1500]);
+    expect(plan.refinedTimesMs).toEqual([]);
+  });
+
+  it("spends the whole budget inside the busy interval", () => {
+    const plan = planAdaptiveSampleTimes([0, 1000, 2000, 3000], [0, 10, 0], { maxFrames: 8 });
+
+    expect(plan.refinedTimesMs).toHaveLength(4);
+    for (const time of plan.refinedTimesMs) {
+      expect(time).toBeGreaterThan(1000);
+      expect(time).toBeLessThan(2000);
+    }
+  });
+
+  it("ranks by motion density, not by raw score", () => {
+    // The long interval moves more in total; the short one moves far more per
+    // millisecond. Refinement follows the rate, or a slow drift across a whole
+    // clip would eat the budget that a fast cut needs.
+    const plan = planAdaptiveSampleTimes([0, 3000, 3200], [1, 0.9], { maxFrames: 4 });
+
+    expect(plan.refinedTimesMs).toEqual([3100]);
+  });
+
+  it("never splits below the interval floor", () => {
+    // 100ms intervals would halve to 50ms, under the 60ms floor, so the grid
+    // stands. One level of splitting *is* allowed when it stays above it.
+    expect(planAdaptiveSampleTimes([0, 100, 200], [1, 1], { maxFrames: 60, minIntervalMs: 60 }).refinedTimesMs).toEqual(
+      [],
+    );
+    expect(planAdaptiveSampleTimes([0, 100, 200], [1, 1], { maxFrames: 60, minIntervalMs: 40 }).refinedTimesMs).toEqual([
+      50, 150,
+    ]);
+  });
+
+  it("respects the total frame budget", () => {
+    const plan = planAdaptiveSampleTimes([0, 1000, 2000, 3000, 4000], [5, 5, 5, 5], { maxFrames: 9 });
+
+    expect(plan.timesMs).toHaveLength(9);
+    expect(plan.timesMs).toEqual([...plan.timesMs].sort((a, b) => a - b));
+  });
+
+  it("keeps every base sample, so refinement only ever adds", () => {
+    const base = [0, 500, 1000, 1500, 2000];
+    const plan = planAdaptiveSampleTimes(base, [1, 0, 0, 4], { maxFrames: 10 });
+
+    for (const time of base) expect(plan.timesMs).toContain(time);
+    expect(plan.timesMs.length).toBeGreaterThan(base.length);
+  });
+
+  it("ignores non-finite scores instead of refining a broken interval", () => {
+    const plan = planAdaptiveSampleTimes([0, 1000, 2000], [Number.NaN, Number.POSITIVE_INFINITY], {
+      maxFrames: 10,
+    });
+
+    expect(plan.timesMs).toEqual([0, 1000, 2000]);
+  });
+
+  it("has nothing to refine on a single sample", () => {
+    expect(planAdaptiveSampleTimes([0], [], { maxFrames: 10 })).toEqual({
+      timesMs: [0],
+      refinedTimesMs: [],
+    });
+  });
+});
+
+describe("measureFrameMotion", () => {
+  it("reports no motion for frames it cannot draw, instead of throwing", () => {
+    // These bitmaps are plain stubs with no pixels, so every thumbnail is blank
+    // and the difference is zero — the point is that an unreadable frame
+    // degrades to "no motion" rather than failing the whole analysis.
+    expect(measureFrameMotion([{ bitmap: bitmap(), timeMs: 0 }, { bitmap: bitmap(), timeMs: 500 }])).toEqual([0]);
+  });
+
+  it("has nothing to compare on a single frame", () => {
+    expect(measureFrameMotion([{ bitmap: bitmap(), timeMs: 0 }])).toEqual([]);
+  });
+});
+
+describe("analyzeAutoReframe motion-adaptive sampling", () => {
+  const settings = {
+    targetAspectRatio: "9:16" as const,
+    trackingSpeed: 0.5,
+    padding: 0.1,
+    smoothing: 0.8,
+    followSubject: true,
+    centerBias: 0.3,
+  };
+
+  /** 4s at the default 500ms grid is nine base samples. */
+  const baseDeps = (
+    decode: VideoFrameDecoder,
+    engine: ReturnType<typeof reframeEngine>,
+    request: Record<string, unknown> = {},
+  ) => ({
+    blob: new Blob(["video"]),
+    durationSeconds: 4,
+    request: { mediaId: "m1", ...request },
+    settings,
+    mediaWidth: 1920,
+    mediaHeight: 1080,
+    canvasWidth: 1080,
+    canvasHeight: 1920,
+    decode,
+    engine,
+  });
+
+  const calls = (decode: VideoFrameDecoder) =>
+    (decode as unknown as ReturnType<typeof vi.fn>).mock.calls.map((call) => call[1] as number[]);
+
+  /** All motion in the 2000–2500ms interval; the rest of the clip is still. */
+  const spike = (frames: readonly DecodedFrame[]) =>
+    frames.slice(1).map((frame) => (frame.timeMs === 2500 ? 50 : 0));
+
+  it("decodes a second pass only where the picture moved", async () => {
+    const engine = reframeEngine();
+    const decode = decoder([]);
+
+    const analysis = await analyzeAutoReframe({
+      ...baseDeps(decode, engine),
+      measureMotion: spike,
+    } as never);
+
+    expect(calls(decode)).toHaveLength(2);
+    const [first, second] = calls(decode);
+    expect(first).toHaveLength(9);
+    for (const time of second) {
+      expect(time).toBeGreaterThan(2000);
+      expect(time).toBeLessThan(2500);
+    }
+    expect(analysis.refinedFrames).toBe(second.length);
+    expect(analysis.sampledFrames).toBe(9 + second.length);
+  });
+
+  it("stamps every crop with its own time once the grid is no longer uniform", async () => {
+    const engine = reframeEngine();
+    const decode = decoder([]);
+
+    await analyzeAutoReframe({
+      ...baseDeps(decode, engine),
+      measureMotion: spike,
+    } as never);
+
+    const analyzeClip = engine.analyzeClip as unknown as ReturnType<typeof vi.fn>;
+    const sampleTimes = analyzeClip.mock.calls[0][4] as number[];
+    // Window-relative seconds, ascending, one per analyzed frame.
+    expect(sampleTimes).toEqual([...sampleTimes].sort((a, b) => a - b));
+    expect(sampleTimes).toHaveLength(9 + calls(decode)[1].length);
+    expect(sampleTimes.slice(0, 2)).toEqual([0, 0.5]);
+  });
+
+  it("leaves an explicitly requested grid alone", async () => {
+    const engine = reframeEngine();
+    const decode = decoder([]);
+
+    const analysis = await analyzeAutoReframe({
+      ...baseDeps(decode, engine),
+      measureMotion: spike,
+      request: { mediaId: "m1", intervalMs: 1000 },
+    } as never);
+
+    expect(calls(decode)).toHaveLength(1);
+    expect(analysis.refinedFrames).toBeUndefined();
+    const analyzeClip = engine.analyzeClip as unknown as ReturnType<typeof vi.fn>;
+    expect(analyzeClip.mock.calls[0][4]).toBeUndefined();
+  });
+
+  it("stays on the base grid when motion cannot be measured", async () => {
+    const engine = reframeEngine();
+    const decode = decoder([]);
+
+    const analysis = await analyzeAutoReframe({
+      ...baseDeps(decode, engine),
+      measureMotion: () => [],
+    } as never);
+
+    expect(calls(decode)).toHaveLength(1);
+    expect(analysis.sampledFrames).toBe(9);
+    expect(analysis.refinedFrames).toBeUndefined();
   });
 });
