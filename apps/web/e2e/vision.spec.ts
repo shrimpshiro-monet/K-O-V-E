@@ -190,6 +190,96 @@ test.describe("vision pipeline in the real editor", () => {
     expect(requests.filter((url) => url.includes("storage.googleapis.com"))).toEqual([]);
   }
 
+  /**
+   * Runs agent tools through the browser host — the same path the director
+   * uses (registry → tool → host → store), minus the LLM.
+   */
+  async function runAgentTool(
+    page: Page,
+    name: string,
+    args: Record<string, unknown>,
+  ): Promise<{ ok: boolean; summary: string }> {
+    return page.evaluate(
+      async ({ toolName, toolArgs }) => {
+        const [{ executeTool }, { getLiveEditorHost }] = await Promise.all([
+          import("/@id/@kove-advanced/agent"),
+          import("/src/services/agent/host-singleton.ts"),
+        ]);
+        const host = getLiveEditorHost();
+        const result = await executeTool(toolName, toolArgs, host);
+        return { ok: result.ok, summary: result.summary };
+      },
+      { toolName: name, toolArgs: args },
+    );
+  }
+
+  /** Moves the playhead and reads the preview canvas back as pixels. */
+  async function samplePreview(
+    page: Page,
+    timeSeconds: number,
+  ): Promise<{ contentPixels: number; leftEdge: number; width: number; height: number }> {
+    return page.evaluate(async (time) => {
+      const { useTimelineStore } = await import("/src/stores/timeline-store.ts");
+      const settle = () =>
+        new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      // Nudge off the time first so the preview always sees a playhead change:
+      // reading the same instant twice must not hand back a stale composite.
+      useTimelineStore.getState().setPlayheadPosition(time + 0.05);
+      await settle();
+      useTimelineStore.getState().setPlayheadPosition(time);
+      await settle();
+
+      const canvas = document.querySelector<HTMLCanvasElement>("canvas[data-preview-canvas]");
+      if (!canvas) throw new Error("no preview canvas found");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("preview canvas has no 2d context");
+
+      const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const lit = (x: number, y: number): boolean => {
+        const i = (y * width + x) * 4;
+        // Ignore the near-black backdrop: count pixels that are clearly lit.
+        return 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2] > 40;
+      };
+
+      let content = 0;
+      for (let y = 0; y < height; y += 3) {
+        for (let x = 0; x < width; x += 3) {
+          if (lit(x, y)) content += 1;
+        }
+      }
+
+      // Where does the picture start on the horizontal axis? A clip translated
+      // to the right leaves dark space on the left, which is what a keyframe
+      // written by an agent must produce. Column-based, so it cannot saturate
+      // the way a centroid does for a frame-filling clip.
+      let leftEdge = 1;
+      const sampledRows: number[] = [];
+      for (let y = 0; y < height; y += 4) sampledRows.push(y);
+      for (let x = 0; x < width; x += 2) {
+        const hits = sampledRows.reduce((total, y) => total + (lit(x, y) ? 1 : 0), 0);
+        if (hits / sampledRows.length >= 0.2) {
+          leftEdge = x / width;
+          break;
+        }
+      }
+
+      return { contentPixels: content, leftEdge, width, height };
+    }, timeSeconds);
+  }
+
+  /**
+   * MediaPipe Tasks runs every delegate through a WebGL context (even the CPU
+   * one), so a browser without WebGL cannot run the face model at all. Some
+   * sandbox builds ship no SwiftShader libs and land here; a real machine never
+   * does. Tests that need the model are skipped rather than failed for that.
+   */
+  async function hasWebgl(page: Page): Promise<boolean> {
+    return page.evaluate(() => {
+      const canvas = document.createElement("canvas");
+      return Boolean(canvas.getContext("webgl2") ?? canvas.getContext("webgl"));
+    });
+  }
+
   function outputPath(name: string): string {
     const dir = test.info().outputDir;
     mkdirSync(dir, { recursive: true });
@@ -199,6 +289,11 @@ test.describe("vision pipeline in the real editor", () => {
   test("detects faces in an imported clip with the local face model", async ({ page }) => {
     const assetRequests = recordAssetRequests(page);
     const videoPath = outputPath("subject-clip.webm");
+    test.skip(
+      !(await hasWebgl(page)),
+      "this browser exposes no WebGL context, so MediaPipe Tasks cannot run",
+    );
+
     await recordFixtureVideo(page, videoPath);
     await importClipAndOpenTools(page, videoPath);
 
@@ -390,5 +485,127 @@ test.describe("vision pipeline in the real editor", () => {
 
     expect(assetRequests.some((url) => url.endsWith("/models/face_landmarker.task"))).toBe(true);
     expectNoRemoteModels(assetRequests);
+  });
+
+  test("agent tools land on the timeline, in the preview and on the keyframe clock", async ({ page }) => {
+    const videoPath = outputPath("subject-clip.webm");
+    await recordFixtureVideo(page, videoPath);
+    await importClipAndOpenTools(page, videoPath);
+
+    const clipId = await page.evaluate(async () => {
+      const { useProjectStore } = await import("/src/stores/project-store.ts");
+      const clips = useProjectStore.getState().project.timeline.tracks.flatMap((track) => track.clips);
+      return clips.find((clip) => "mediaId" in clip)?.id ?? "";
+    });
+    expect(clipId).not.toBe("");
+
+    // --- text pillar: a tool adds text; the store, timeline and preview all
+    // --- agree about it, at a time where the video itself shows nothing.
+    const emptyFrame = await samplePreview(page, 4.2);
+    const text = await runAgentTool(page, "create_text_clip", {
+      clip: { text: "PILLAR", startTime: 3.5, duration: 1.4 },
+    });
+    expect(text.ok, text.summary).toBe(true);
+
+    await expect
+      .poll(async () => (await samplePreview(page, 4.2)).contentPixels, {
+        message: "the preview should render the text clip the tool created",
+        timeout: 20_000,
+      })
+      .toBeGreaterThan(emptyFrame.contentPixels + 10);
+
+    // The timeline pillar agrees with the store and the preview.
+    await expect(page.getByRole("button", { name: /Select.*clip PILLAR/i }).first()).toBeVisible();
+    const stored = await page.evaluate(async () => {
+      const { useProjectStore } = await import("/src/stores/project-store.ts");
+      const project = useProjectStore.getState().project;
+      const clips = project.timeline.tracks.flatMap((track) => track.clips);
+      // Text overlays live in their own project collection; the timeline renders
+      // them alongside the media clips.
+      const textClips = project.textClips ?? [];
+      return {
+        mediaClips: clips.length,
+        trackCount: project.timeline.tracks.length,
+        texts: textClips.map((clip) => clip.text),
+        textWindow: textClips.map((clip) => `${clip.startTime}-${clip.startTime + clip.duration}`),
+      };
+    });
+    expect(stored.texts).toContain("PILLAR");
+    expect(stored.mediaClips).toBeGreaterThanOrEqual(1);
+    expect(stored.textWindow).toContain("3.5-4.9");
+
+    // The timeline UI carries the same numbers the model does.
+    const timeline = page.locator("[data-timeline-view]");
+    await expect(timeline).toHaveAttribute("data-track-count", String(stored.trackCount));
+    await expect(timeline).toHaveAttribute("data-playhead-sec", "4.200");
+
+    // --- keyframe pillar: tool-written keyframes move the picture -----------
+    // Precondition: the clip is actually on screen at this playhead (decoding a
+    // recorded webm takes a moment; a placeholder frame carries no transform).
+    await expect
+      .poll(async () => (await samplePreview(page, 2.3)).contentPixels, {
+        message: "the video clip should be rendered before the keyframes can move it",
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(50);
+    const beforeKeyframes = await samplePreview(page, 2.3);
+    // Transform keyframes are in project pixels (that is what auto-reframe
+    // writes and what the renderer translates by), so ask the project how wide
+    // it is and move the clip by 45% of that.
+    const shiftPixels = await page.evaluate(async () => {
+      const { useProjectStore } = await import("/src/stores/project-store.ts");
+      return useProjectStore.getState().project.settings.width * 0.45;
+    });
+    const keyframed = await runAgentTool(page, "set_clip_keyframes", {
+      clipId,
+      keyframes: [
+        { id: "kf-a", time: 0, property: "position.x", value: 0, easing: "linear" },
+        { id: "kf-b", time: 0.5, property: "position.x", value: shiftPixels, easing: "linear" },
+      ],
+    });
+    expect(keyframed.ok, keyframed.summary).toBe(true);
+
+    // The model pillar first: the tool's keyframes are on the clip.
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(async (id) => {
+            const { useProjectStore } = await import("/src/stores/project-store.ts");
+            const clips = useProjectStore.getState().project.timeline.tracks.flatMap((track) => track.clips);
+            const clip = clips.find((entry) => entry.id === id) as
+              | { keyframes?: { property: string; time: number; value?: unknown }[] }
+              | undefined;
+            return clip?.keyframes?.map((keyframe) => `${keyframe.property}@${keyframe.time}=${String(keyframe.value)}`) ?? [];
+          }, clipId),
+        { message: "the tool's keyframes should be on the clip in the project model" },
+      )
+      .toEqual(["position.x@0=0", `position.x@0.5=${shiftPixels}`]);
+
+    // Same playhead, same frame: only the keyframes changed, so any movement is
+    // the preview interpolating what the tool wrote.
+    await expect
+      .poll(async () => (await samplePreview(page, 2.3)).leftEdge, {
+        message: "the preview should move the clip with the keyframes the tool wrote",
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(beforeKeyframes.leftEdge + 0.3);
+
+    // ...and the interpolation is real: earlier in the clip the same clip sits
+    // closer to its untransformed position.
+    const late = await samplePreview(page, 2.3);
+    const early = await samplePreview(page, 0.2);
+    expect(late.leftEdge).toBeGreaterThan(early.leftEdge + 0.2);
+
+    const storedKeyframes = await page.evaluate(async (id) => {
+      const { useProjectStore } = await import("/src/stores/project-store.ts");
+      const clips = useProjectStore.getState().project.timeline.tracks.flatMap((track) => track.clips);
+      const clip = clips.find((entry) => entry.id === id) as { keyframes?: { property: string }[] } | undefined;
+      return clip?.keyframes?.map((keyframe) => keyframe.property) ?? [];
+    }, clipId);
+    expect(storedKeyframes).toEqual(["position.x", "position.x"]);
+
+    // The timeline keeps showing the clip after the tool rewrote it.
+    await expect(page.getByRole("button", { name: /Select clip.*subject-clip/i }).first()).toBeVisible();
+    await page.screenshot({ path: outputPath("06-pillars-in-sync.png") });
   });
 });

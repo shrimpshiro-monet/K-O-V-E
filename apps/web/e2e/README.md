@@ -5,6 +5,13 @@ a project through the UI, records a video fixture in the browser, imports it,
 puts it on the timeline, opens the clip inspector's *Face & Subject Tools*
 panel, and asserts on the resulting project state.
 
+The last test drives **agent tools** through the same path the AI director uses
+(`executeTool(name, args, host)` — registry → host → store, minus the model) and
+then reads every pillar back: project model, timeline rows and attributes,
+preview canvas pixels, and clip keyframes animating that canvas. The pattern,
+its stable data attributes and the unit traps are documented in
+`docs/AGENT-UX-TESTING.md`.
+
 ```bash
 # from the repo root
 pnpm --filter @kove-advanced/web test:e2e     # = node e2e/setup-assets.mjs && playwright test
@@ -16,6 +23,18 @@ starts two servers: the asset server on `:8788` and Vite on `:5199`.
 
 The suite is **skipped, not failed**, when no Chromium is available, so
 `pnpm test` stays green on machines without a browser.
+
+### Browser requirements
+
+MediaPipe Tasks — the face model — needs a **WebGL context**, including on its
+CPU delegate (the tasks build converts frames through WebGL). Playwright's own
+Chromium ships SwiftShader and works anywhere; some minimal builds
+(`@sparticuz/chromium`, used in sandboxes) do not, and then every face detection
+frame fails with `Cannot read properties of undefined (reading 'activeTexture')`
+after the backend has already retried on the CPU delegate. The face test detects
+that (`hasWebgl`) and **skips with a reason** instead of failing, because it is a
+property of the browser, not of the edit. Everything else in the suite needs no
+GPU.
 
 ## What is real vs substituted
 
@@ -51,6 +70,20 @@ Auto-reframe test:
 - the clip ends up with all four animated camera properties
   (`position.x/y`, `scale.x/y`), and `scale.x` is above 1 — an identity
   transform would mean the reframe did nothing
+
+Agent-tool pillars test (no model, no keys):
+
+- `create_text_clip` through the real tool path puts the text in
+  `project.textClips`, in a timeline row (`Select text clip PILLAR`) and into the
+  preview's pixels at a time where the video shows nothing — the empty frame is
+  the same-time baseline
+- the timeline shell reports the same numbers as the model
+  (`data-track-count`, `data-playhead-sec`)
+- `set_clip_keyframes` writes clip keyframes in *project pixels* (the units the
+  renderer and auto-reframe use), the model holds exactly what was sent, the
+  preview's picture moves at the same playhead by the shifted amount, and it
+  interpolates — early in the clip the picture is still closer to its
+  untransformed position
 
 Matte test:
 

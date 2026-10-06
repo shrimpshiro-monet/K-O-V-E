@@ -960,6 +960,12 @@ export const Timeline: React.FC = () => {
   return (
     <div
       data-tour="timeline"
+      // Stable handles for browser-driven (Playwright) assertions: the number of
+      // tracks and the playhead in seconds, so a spec can prove the timeline
+      // agrees with the model and the preview without scraping pixels.
+      data-timeline-view=""
+      data-track-count={tracks.length}
+      data-playhead-sec={playheadPosition.toFixed(3)}
       className="h-full bg-transparent flex flex-col min-h-0 relative overflow-hidden"
     >
       {/* ── Timeline toolbar (glass chrome; bed + ruler stay opaque) ── */}
