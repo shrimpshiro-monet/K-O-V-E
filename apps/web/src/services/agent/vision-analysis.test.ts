@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AlphaMask, Mask } from "@kove-advanced/core";
 import {
+  analyzeAutoReframe,
   analyzeFacesInMedia,
   analyzeSubjectMatte,
   applyRotoscopeKeyframeTime,
@@ -482,5 +483,110 @@ describe("writeMatteToMasks edge refinement", () => {
     });
 
     expect(result.warnings.join(" ")).toMatch(/no keyframes/i);
+  });
+});
+
+/** An auto-reframe engine double: no canvas, no model, deterministic plan. */
+const reframeEngine = (
+  plan: Partial<{
+    keyframes: Array<{ time: number; cropX: number; cropY: number; cropWidth: number; cropHeight: number; scale: number }>;
+    outputWidth: number;
+    outputHeight: number;
+    success: boolean;
+    message: string;
+    pathDeviationPx: number;
+    peakSpeedCropRatios: number;
+    warnings: string[];
+  }> = {},
+) => {
+  const resolved = {
+    keyframes: [
+      { time: 0, cropX: 200, cropY: 0, cropWidth: 608, cropHeight: 960, scale: 1 },
+      { time: 1, cropX: 500, cropY: 0, cropWidth: 608, cropHeight: 960, scale: 1 },
+      { time: 2, cropX: 900, cropY: 0, cropWidth: 608, cropHeight: 960, scale: 1 },
+    ],
+    outputWidth: 1080,
+    outputHeight: 1920,
+    success: true,
+    ...plan,
+  };
+  return {
+    initialize: vi.fn(async () => undefined),
+    getFaceBackend: vi.fn(() => null),
+    setFaceBackend: vi.fn(),
+    usesFaceBackend: vi.fn(() => true),
+    analyzeClip: vi.fn(async () => resolved),
+  } as unknown as import("@kove-advanced/core").AutoReframeEngine;
+};
+
+describe("analyzeAutoReframe", () => {
+  const deps = (engine: ReturnType<typeof reframeEngine>) => ({
+    blob: new Blob(["video"]),
+    durationSeconds: 4,
+    request: { mediaId: "m1" },
+    settings: {
+      targetAspectRatio: "9:16" as const,
+      trackingSpeed: 0.5,
+      padding: 0.1,
+      smoothing: 0.8,
+      followSubject: true,
+      centerBias: 0.3,
+    },
+    mediaWidth: 1920,
+    mediaHeight: 1080,
+    canvasWidth: 1080,
+    canvasHeight: 1920,
+    decode: decoder([]) as never,
+    engine,
+    createId: () => "id",
+  });
+
+  it("turns the crop plan into camera keyframes", async () => {
+    const engine = reframeEngine();
+    const analysis = await analyzeAutoReframe(deps(engine));
+
+    // One sampled frame per plan keyframe, decoded through the injected decoder.
+    expect(analysis.sampledFrames).toBeGreaterThan(0);
+    expect(analysis.keyframes.length).toBeGreaterThan(0);
+    // Every animated camera property is present.
+    const properties = new Set(analysis.keyframes.map((keyframe) => keyframe.property));
+    expect([...properties].sort()).toEqual([
+      "position.x",
+      "position.y",
+      "scale.x",
+      "scale.y",
+    ]);
+  });
+
+  it("surfaces the path fit and camera speed the engine measured", async () => {
+    const engine = reframeEngine({ pathDeviationPx: 2.75, peakSpeedCropRatios: 0.42 });
+    const analysis = await analyzeAutoReframe(deps(engine));
+
+    expect(analysis.pathDeviationPx).toBe(2.75);
+    expect(analysis.peakSpeedCropRatios).toBe(0.42);
+  });
+
+  it("surfaces the engine's own warnings about the camera move", async () => {
+    const engine = reframeEngine({
+      warnings: ["The crop fills the frame vertically, so the camera has no vertical freedom."],
+    });
+    const analysis = await analyzeAutoReframe(deps(engine));
+
+    expect(analysis.warnings.join(" ")).toMatch(/no vertical freedom/i);
+  });
+
+  it("fails loudly when the engine cannot produce a plan", async () => {
+    const engine = reframeEngine({ success: false, message: "Engine not initialized" });
+
+    await expect(analyzeAutoReframe(deps(engine))).rejects.toThrow("Engine not initialized");
+  });
+
+  it("warns when the camera ends up static", async () => {
+    const engine = reframeEngine({
+      keyframes: [{ time: 0, cropX: 500, cropY: 0, cropWidth: 608, cropHeight: 960, scale: 1 }],
+    });
+    const analysis = await analyzeAutoReframe(deps(engine));
+
+    expect(analysis.warnings.join(" ")).toMatch(/static crop/i);
   });
 });

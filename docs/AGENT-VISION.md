@@ -83,6 +83,34 @@ Reachable three ways:
   keyframe paths and recovers each silhouette's centroid and area from them, so
   refining an edge never re-runs segmentation
 
+## Follow-cam: how the camera path is smoothed
+
+`analyzeClip` decides where the camera looks once per *sampled* frame, but what
+reaches the screen is the polyline the renderer draws between the emitted
+keyframes. Two things used to make that look worse than the analysis was:
+
+- a centred moving average whose window was sized from `smoothing` alone, so on
+  a short clip it could span nearly the whole path and average the camera move
+  out of existence
+- linear interpolation between coarse samples, at a few hundred milliseconds
+  apart, which changes the camera's speed in visible steps at every keyframe
+
+`reframe-camera-path.ts` replaces both. Samples are de-jittered with a bounded
+moving average (never wider than a third of the samples), a monotone spline is
+fitted through them, and keyframes are placed only where the curve bends —
+densely enough that the drawn polyline stays within a pixel tolerance of it.
+Monotone tangents mean the fit never overshoots past where the analysis said
+the subject was.
+
+Measured on a subject that walks across frame and stops, the worst single step
+in camera speed drops from **1.00 to 0.25** of the path's top speed, while the
+camera still travels the same 588px — smoothing no longer costs the move.
+
+The inspector and `auto_reframe_clip` both report `pathDeviationPx` (how closely
+the emitted keyframes follow the fitted curve) and `peakSpeedCropRatios` (how
+fast the camera crosses its own crop width), so the quality of a camera move is
+visible instead of implied.
+
 ## Known limits
 
 - The renderer only composites separation while `BackgroundRemovalEngine` is
@@ -95,3 +123,7 @@ Reachable three ways:
   outer contour (a `BezierPath` has no sub-paths).
 - Rotoscoping is batch analysis, not realtime: detection/segmentation run on
   sampled frames, then interpolate between keyframes.
+- Auto-reframe can only pan on the axes its crop leaves free. A 9:16 crop of
+  16:9 footage fills the frame vertically, so there is no vertical camera
+  movement to be had — the engine says so in its warnings rather than
+  pretending to smooth an axis it cannot move.

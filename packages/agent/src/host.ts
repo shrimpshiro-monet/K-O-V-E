@@ -91,6 +91,14 @@ export interface AutoReframeHostResult {
   readonly outputHeight: number;
   /** True when the real face detector steered the crop. */
   readonly usedFaceBackend: boolean;
+  /**
+   * Largest gap between the fitted camera curve and the polyline the renderer
+   * draws, in source pixels. Lower means the emitted keyframes hug the smooth
+   * path more closely.
+   */
+  readonly pathDeviationPx?: number;
+  /** Fastest camera motion, in crop-widths per second. */
+  readonly peakSpeedCropRatios?: number;
   readonly warnings: string[];
 }
 

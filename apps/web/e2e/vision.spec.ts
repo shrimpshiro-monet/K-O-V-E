@@ -465,8 +465,10 @@ test.describe("vision pipeline in the real editor", () => {
 
     await page.screenshot({ path: outputPath("05-auto-reframed.png") });
 
-    // The visible surface reports what actually happened.
+    // The visible surface reports what actually happened, including how closely
+    // the emitted keyframes follow the fitted camera curve.
     await expect(page.getByText(/camera keyframe\(s\) from \d+ frame\(s\)/)).toBeVisible();
+    await expect(page.getByText(/path fit [\d.]+px/)).toBeVisible();
 
     expect(assetRequests.some((url) => url.endsWith("/models/face_landmarker.task"))).toBe(true);
     expectNoRemoteModels(assetRequests);

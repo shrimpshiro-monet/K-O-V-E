@@ -580,6 +580,14 @@ export interface AutoReframeAnalysis {
   outputHeight: number;
   /** True when the real face detector (not the skin-tone fallback) steered it. */
   usedFaceBackend: boolean;
+  /**
+   * Largest gap between the fitted camera curve and the polyline the renderer
+   * draws, in source pixels — how closely the emitted keyframes follow the
+   * smooth path they were fitted to.
+   */
+  pathDeviationPx?: number;
+  /** Fastest camera motion, in crop-widths per second. */
+  peakSpeedCropRatios?: number;
   warnings: string[];
 }
 
@@ -671,6 +679,7 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
       "The face model was unavailable, so the crop was steered by the built-in subject detector.",
     );
   }
+  warnings.push(...(plan.warnings ?? []));
 
   return {
     keyframes,
@@ -679,6 +688,10 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
     outputWidth: plan.outputWidth,
     outputHeight: plan.outputHeight,
     usedFaceBackend: engine.usesFaceBackend(),
+    ...(plan.pathDeviationPx !== undefined ? { pathDeviationPx: plan.pathDeviationPx } : {}),
+    ...(plan.peakSpeedCropRatios !== undefined
+      ? { peakSpeedCropRatios: plan.peakSpeedCropRatios }
+      : {}),
     warnings,
   };
 }

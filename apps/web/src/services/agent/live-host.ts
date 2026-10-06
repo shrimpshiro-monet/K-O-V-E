@@ -489,6 +489,12 @@ export class LiveEditorHost implements EditingHost {
       outputWidth: targetConfig.width,
       outputHeight: targetConfig.height,
       usedFaceBackend: analysis.usedFaceBackend,
+      ...(analysis.pathDeviationPx !== undefined
+        ? { pathDeviationPx: analysis.pathDeviationPx }
+        : {}),
+      ...(analysis.peakSpeedCropRatios !== undefined
+        ? { peakSpeedCropRatios: analysis.peakSpeedCropRatios }
+        : {}),
       warnings: [...analysis.warnings],
     };
   }

@@ -51,6 +51,18 @@ Auto-reframe test:
 - the clip ends up with all four animated camera properties
   (`position.x/y`, `scale.x/y`), and `scale.x` is above 1 — an identity
   transform would mean the reframe did nothing
+- the panel reports the measured path fit (`path fit <n>px`), so a reframe that
+  silently stopped fitting its curve would fail rather than pass quietly
+
+Matte edge test:
+
+- the per-keyframe feather list varies across the matte (a single mask-wide
+  value would produce a flat list)
+- the before/after preview canvases are read back pixel by pixel, and the
+  refined edge must spread the silhouette over more partial-alpha pixels than
+  the base one — an assertion about what is drawn, not that a canvas exists
+- the committed mask carries per-keyframe `feathering` overrides that vary,
+  with the mask-level value left as the base those keyframes inherit
 
 Matte test:
 

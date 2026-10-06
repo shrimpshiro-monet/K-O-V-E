@@ -590,6 +590,12 @@ export const VISION_TOOLS: RegisteredTool[] = [
           outputWidth: result.outputWidth,
           outputHeight: result.outputHeight,
           usedFaceBackend: result.usedFaceBackend,
+          ...(result.pathDeviationPx !== undefined
+            ? { pathDeviationPx: round(result.pathDeviationPx, 2) }
+            : {}),
+          ...(result.peakSpeedCropRatios !== undefined
+            ? { peakSpeedCropRatios: round(result.peakSpeedCropRatios, 2) }
+            : {}),
           timebase: "clip-local-seconds",
         },
         warnings: warnings.length > 0 ? warnings : undefined,
