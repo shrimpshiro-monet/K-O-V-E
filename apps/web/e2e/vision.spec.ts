@@ -472,8 +472,111 @@ test.describe("vision pipeline in the real editor", () => {
     // the emitted keyframes follow the fitted camera curve.
     await expect(page.getByText(/camera keyframe\(s\) from \d+ frame\(s\)/)).toBeVisible();
     await expect(page.getByText(/path fit [\d.]+px/)).toBeVisible();
+    // Motion-adaptive sampling: the recorded clip pans and zooms, so the second
+    // pass must have found somewhere worth decoding more densely than the base
+    // grid — and say so, rather than leaving the sample count unexplained.
+    await expect(page.getByText(/\d+ added where it moved/)).toBeVisible();
 
     expect(assetRequests.some((url) => url.endsWith("/models/face_landmarker.task"))).toBe(true);
     expectNoRemoteModels(assetRequests);
+  });
+
+
+  test("hand-edits one keyframe's edge on the mask timeline", async ({ page }) => {
+    const videoPath = outputPath("handedit-clip.webm");
+    await recordFixtureVideo(page, videoPath);
+    await importClipAndOpenTools(page, videoPath);
+
+    // Commit a rotoscoped matte first: the hand editor works on a real mask
+    // with real planner-written keyframes, not a fixture.
+    await page.getByRole("button", { name: "Analyze Subject" }).click();
+    const applyButton = page.getByRole("button", { name: /Apply matte \(\d+ keyframes?\)/ });
+    await expect(applyButton).toBeVisible({ timeout: 150_000 });
+    await applyButton.click();
+    await expect(page.getByText(/Wrote \d+ matte keyframe\(s\)/).first()).toBeVisible({
+      timeout: 120_000,
+    });
+
+    const readMask = () =>
+      page.evaluate(async () => {
+        const { useProjectStore } = await import("/src/stores/project-store.ts");
+        const mask = (useProjectStore.getState().project.masks ?? [])[0];
+        return {
+          maskFeathering: mask?.feathering ?? null,
+          keyframes: (mask?.keyframes ?? []).map((keyframe) => ({
+            time: keyframe.time,
+            feathering: keyframe.feathering ?? null,
+          })),
+        };
+      });
+
+    const planned = await readMask();
+    expect(planned.keyframes.length).toBeGreaterThan(1);
+
+    const masking = page.getByRole("button", { name: /Masking section/i }).first();
+    await expect(masking).toBeVisible();
+    if (/Expand/i.test((await masking.getAttribute("aria-label")) ?? "")) await masking.click();
+    await page.getByRole("button", { name: "Expand mask", exact: true }).click();
+    await page.getByRole("button", { name: /Expand keyframe edges/i }).click();
+    await expect(page.getByTestId("mask-keyframe-edges")).toBeVisible();
+    await page.screenshot({ path: outputPath("08-keyframe-edges.png") });
+
+    // One keyframe gets a hand-set feather; its neighbours must be untouched.
+    await page.getByRole("button", { name: "Select keyframe 2" }).click();
+    // Typed rather than filled: a controlled number input clamps on every
+    // keystroke, and replacing the whole value in one event is not what a
+    // user's hand does anyway.
+    const featherInput = page.getByLabel("Keyframe 2 feather px");
+    await featherInput.click();
+    await featherInput.press("ControlOrMeta+a");
+    await featherInput.pressSequentially("40");
+
+    await expect
+      .poll(async () => (await readMask()).keyframes[1]?.feathering, {
+        message: "the hand-set feather should reach the committed mask",
+        timeout: 30_000,
+      })
+      .toBe(40);
+
+    const edited = await readMask();
+    expect(edited.keyframes[0]?.feathering).toBe(planned.keyframes[0]?.feathering);
+    expect(edited.keyframes[2]?.feathering).toBe(planned.keyframes[2]?.feathering);
+    expect(edited.maskFeathering).toBe(planned.maskFeathering);
+
+    // Scrubbing between keyframe 1 and 2 shows the blended edge, not either
+    // keyframe's own value — the hand-set 40px has to interpolate, not jump.
+    const midpoint = (edited.keyframes[0].time + edited.keyframes[1].time) / 2;
+    // Driven through the native value setter: a range input's `fill` rejects any
+    // value that is not exactly on its step grid.
+    const scrubbed = await page
+      .getByLabel("Scrub edge time")
+      .evaluate((element, value) => {
+        const input = element as HTMLInputElement;
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+        setter?.call(input, String(value));
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        return Number(input.value);
+      }, midpoint);
+
+    const caption = (await page.getByText(/· feather/i).first().textContent()) ?? "";
+    const blended = Number(/([\d.]+)px/.exec(caption)?.[1] ?? "0");
+    const span = edited.keyframes[1].time - edited.keyframes[0].time;
+    const t = span > 0 ? (scrubbed - edited.keyframes[0].time) / span : 0;
+    const firstFeather = edited.keyframes[0].feathering ?? planned.maskFeathering ?? 0;
+    // Strictly between the two keyframes, and blended by exactly how far along
+    // the scrub is — a step change at the keyframe would fail both.
+    expect(t).toBeGreaterThan(0.2);
+    expect(t).toBeLessThan(0.8);
+    expect(Math.abs(blended - (firstFeather + (40 - firstFeather) * t))).toBeLessThan(1);
+    await page.screenshot({ path: outputPath("09-keyframe-edge-scrubbed.png") });
+
+    // Reset drops the override instead of pinning it to the current value.
+    await page.getByRole("button", { name: "Reset keyframe 2 edge" }).click();
+    await expect
+      .poll(async () => (await readMask()).keyframes[1]?.feathering, {
+        message: "reset should hand the keyframe back to the mask's own feather",
+        timeout: 30_000,
+      })
+      .toBeNull();
   });
 });
