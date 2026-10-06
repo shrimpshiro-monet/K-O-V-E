@@ -14,6 +14,7 @@ import {
   getFaceDetectionEngine,
   getPersonSegmentationEngine,
   initializeAutoReframeEngine,
+  planMatteEdgeRefinement,
   planRotoscope,
   reframePlanToTransformKeyframes,
   sampleFrameTimes,
@@ -28,6 +29,8 @@ import {
   type FaceDetectionBackend,
   type Keyframe,
   type Mask,
+  type MaskKeyframe,
+  type MatteEdgeSettings,
   type ReframeCropKeyframe,
   type ReframeFitMode,
   type ReframeSettings,
@@ -358,6 +361,12 @@ export interface WriteMatteRequest {
   featherPx?: number;
   expansionPx?: number;
   invertMask?: boolean;
+  /**
+   * Edge refinement. When set, feather/expansion are written *per keyframe*
+   * (widening where the subject moves) and the mask-level values become the
+   * defaults a keyframe inherits. Omitting it keeps the legacy uniform edge.
+   */
+  edge?: MatteEdgeSettings;
   createId: () => string;
 }
 
@@ -368,6 +377,16 @@ export interface WriteMatteResult {
   firstTimeSeconds: number | null;
   lastTimeSeconds: number | null;
   warnings: string[];
+  /**
+   * Per-keyframe motion scores (0..1) and the feather range actually written,
+   * present only when edge refinement ran. Surfaced so the UI and the agent can
+   * report what the edge does instead of leaving it invisible.
+   */
+  edge?: {
+    motion: number[];
+    minFeatherPx: number;
+    maxFeatherPx: number;
+  };
 }
 
 /**
@@ -393,8 +412,15 @@ export function writeMatteToMasks(request: WriteMatteRequest): WriteMatteResult 
   let first: number | null = null;
   let last: number | null = null;
 
+  // Edge refinement is derived from the same plan the paths come from, so the
+  // per-keyframe feather lines up with the keyframe it describes (same order).
+  const edgePlan = request.edge
+    ? planMatteEdgeRefinement(request.plan.keyframes, request.edge)
+    : null;
+  if (edgePlan) warnings.push(...edgePlan.warnings);
+
   const originMs = 0;
-  for (const keyframe of request.plan.keyframes) {
+  for (const [index, keyframe] of request.plan.keyframes.entries()) {
     const timeSeconds = applyRotoscopeKeyframeTime(keyframe.timeMs - originMs, request.timeMapping);
     const path: BezierPath = keyframe.path;
     // Replace any keyframe at the same instant so re-running the tool does not
@@ -402,7 +428,17 @@ export function writeMatteToMasks(request: WriteMatteRequest): WriteMatteResult 
     const duplicateIndex = keyframes.findIndex(
       (entry) => Math.abs(entry.time - timeSeconds) < 1e-3,
     );
-    const entry = { id: request.createId(), time: timeSeconds, path, easing: "linear" as const };
+    const edgeValues = edgePlan?.keyframes[index];
+    const entry: MaskKeyframe = {
+      id: request.createId(),
+      time: timeSeconds,
+      path,
+      easing: "linear" as const,
+      // Per-keyframe overrides; the renderer blends these between keyframes.
+      ...(edgeValues
+        ? { feathering: edgeValues.featherPx, expansion: edgeValues.expansionPx }
+        : {}),
+    };
     if (duplicateIndex >= 0) keyframes[duplicateIndex] = entry;
     else keyframes.push(entry);
     written += 1;
@@ -421,24 +457,52 @@ export function writeMatteToMasks(request: WriteMatteRequest): WriteMatteResult 
     ],
   };
 
+  // With edge refinement the mask-level values are the *defaults* a keyframe
+  // inherits; the per-keyframe overrides above are what the renderer blends.
+  // Without it, the legacy flat feather/expansion behaviour is preserved.
+  // An existing mask only has its edge overwritten where the caller actually
+  // asked, so re-writing paths never silently resets a hand-tuned feather.
+  const edgeDefaults: Partial<Pick<Mask, "feathering" | "expansion" | "inverted" | "opacity">> =
+    request.edge
+      ? {
+          feathering: Math.max(0, request.edge.featherPx),
+          expansion: Math.max(-100, Math.min(100, request.edge.expansionPx)),
+          inverted: request.edge.invert ?? false,
+          opacity: Math.max(0, Math.min(1, request.edge.opacity ?? 1)),
+        }
+      : {
+          ...(request.featherPx !== undefined ? { feathering: request.featherPx } : {}),
+          ...(request.expansionPx !== undefined ? { expansion: request.expansionPx } : {}),
+          ...(request.invertMask !== undefined ? { inverted: request.invertMask } : {}),
+        };
+
+  const freshEdge = request.edge
+    ? {
+        feathering: Math.max(0, request.edge.featherPx),
+        expansion: Math.max(-100, Math.min(100, request.edge.expansionPx)),
+        inverted: request.edge.invert ?? false,
+        opacity: Math.max(0, Math.min(1, request.edge.opacity ?? 1)),
+      }
+    : {
+        feathering: request.featherPx ?? 4,
+        expansion: request.expansionPx ?? 0,
+        inverted: request.invertMask ?? false,
+        opacity: 1,
+      };
+
   const mask: Mask = existing
     ? {
         ...existing,
         path: keyframes[0]?.path ?? existing.path,
         keyframes,
-        ...(request.featherPx !== undefined ? { feathering: request.featherPx } : {}),
-        ...(request.expansionPx !== undefined ? { expansion: request.expansionPx } : {}),
-        ...(request.invertMask !== undefined ? { inverted: request.invertMask } : {}),
+        ...edgeDefaults,
       }
     : {
         id: request.createId(),
         clipId: request.clipId,
         type: "drawn",
         path: fallbackPath,
-        feathering: request.featherPx ?? 4,
-        inverted: request.invertMask ?? false,
-        expansion: request.expansionPx ?? 0,
-        opacity: 1,
+        ...freshEdge,
         keyframes,
       };
 
@@ -452,6 +516,8 @@ export function writeMatteToMasks(request: WriteMatteRequest): WriteMatteResult 
     ? request.masks.map((entry) => (entry.id === mask.id ? mask : entry))
     : [...request.masks, mask];
 
+  const feathers = edgePlan?.keyframes.map((keyframe) => keyframe.featherPx) ?? [];
+
   return {
     masks,
     maskId: mask.id,
@@ -459,6 +525,15 @@ export function writeMatteToMasks(request: WriteMatteRequest): WriteMatteResult 
     firstTimeSeconds: first,
     lastTimeSeconds: last,
     warnings,
+    ...(edgePlan && feathers.length > 0
+      ? {
+          edge: {
+            motion: edgePlan.motion,
+            minFeatherPx: Math.min(...feathers),
+            maxFeatherPx: Math.max(...feathers),
+          },
+        }
+      : {}),
   };
 }
 

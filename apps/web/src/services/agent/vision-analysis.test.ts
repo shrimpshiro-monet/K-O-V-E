@@ -323,3 +323,164 @@ describe("writeMatteToMasks", () => {
     expect(result.masks[0].keyframes.map((keyframe) => keyframe.time)).toEqual([2, 2.5]);
   });
 });
+
+/** A plan whose subject moves fast in the middle and settles at the end. */
+const movingPlan = {
+  keyframes: [
+    {
+      timeMs: 0,
+      path: { closed: true as const, points: [{ x: 0.1, y: 0.1 }] },
+      coverage: 0.2,
+      centroid: { x: 0.2, y: 0.5 },
+      pointCount: 3,
+    },
+    {
+      timeMs: 1000,
+      path: { closed: true as const, points: [{ x: 0.5, y: 0.1 }] },
+      coverage: 0.3,
+      centroid: { x: 0.5, y: 0.5 },
+      pointCount: 3,
+    },
+    {
+      timeMs: 2000,
+      path: { closed: true as const, points: [{ x: 0.5, y: 0.1 }] },
+      coverage: 0.3,
+      centroid: { x: 0.5, y: 0.5 },
+      pointCount: 3,
+    },
+  ],
+  sampledFrames: 3,
+  missedFrames: 0,
+  averageCoverage: 0.27,
+  boundingBox: { x: 0.1, y: 0.1, width: 0.4, height: 0.4 },
+  warnings: [],
+};
+
+describe("writeMatteToMasks edge refinement", () => {
+  const ids = () => {
+    let id = 0;
+    return () => `kf-${++id}`;
+  };
+
+  it("writes a per-keyframe feather that follows the subject's motion", () => {
+    const result = writeMatteToMasks({
+      masks: [],
+      clipId: "c1",
+      plan: movingPlan,
+      timeMapping: { startTime: 0, inPoint: 0, speed: 1 },
+      edge: { featherPx: 4, expansionPx: 0, motionSensitivity: 1, maxFeatherPx: 12 },
+      createId: ids(),
+    });
+
+    const feathers = result.masks[0].keyframes.map((keyframe) => keyframe.feathering);
+    // The subject moves between the first two keyframes and is still for the
+    // last one, so the edge tightens back to base at the end.
+    expect(feathers[0]).toBeCloseTo(12, 5);
+    expect(feathers[1]).toBeCloseTo(12, 5);
+    expect(feathers[2]).toBeCloseTo(4, 5);
+  });
+
+  it("uses the mask-level feather as the default a keyframe inherits", () => {
+    const result = writeMatteToMasks({
+      masks: [],
+      clipId: "c1",
+      plan: movingPlan,
+      timeMapping: { startTime: 0, inPoint: 0, speed: 1 },
+      edge: { featherPx: 6, expansionPx: -3, invert: true, opacity: 0.8 },
+      createId: ids(),
+    });
+
+    const mask = result.masks[0];
+    expect(mask.feathering).toBe(6);
+    expect(mask.expansion).toBe(-3);
+    expect(mask.inverted).toBe(true);
+    expect(mask.opacity).toBe(0.8);
+  });
+
+  it("reports the feather range it actually wrote", () => {
+    const result = writeMatteToMasks({
+      masks: [],
+      clipId: "c1",
+      plan: movingPlan,
+      timeMapping: { startTime: 0, inPoint: 0, speed: 1 },
+      edge: { featherPx: 4, expansionPx: 0, motionSensitivity: 1, maxFeatherPx: 12 },
+      createId: ids(),
+    });
+
+    expect(result.edge?.minFeatherPx).toBeCloseTo(4, 5);
+    expect(result.edge?.maxFeatherPx).toBeCloseTo(12, 5);
+    expect(result.edge?.motion).toHaveLength(3);
+    expect(Math.max(...(result.edge?.motion ?? []))).toBeCloseTo(1, 5);
+  });
+
+  it("leaves keyframes without overrides when no edge is requested", () => {
+    const result = writeMatteToMasks({
+      masks: [],
+      clipId: "c1",
+      plan: movingPlan,
+      timeMapping: { startTime: 0, inPoint: 0, speed: 1 },
+      featherPx: 8,
+      createId: ids(),
+    });
+
+    const mask = result.masks[0];
+    expect(mask.feathering).toBe(8);
+    // Flat edge: the renderer falls back to the mask-level value everywhere.
+    expect(mask.keyframes.every((keyframe) => keyframe.feathering === undefined)).toBe(true);
+    expect(result.edge).toBeUndefined();
+  });
+
+  it("replaces the per-keyframe overrides when re-applied with new settings", () => {
+    const first = writeMatteToMasks({
+      masks: [],
+      clipId: "c1",
+      plan: movingPlan,
+      timeMapping: { startTime: 0, inPoint: 0, speed: 1 },
+      edge: { featherPx: 2, expansionPx: 0, motionSensitivity: 1, maxFeatherPx: 20 },
+      createId: ids(),
+    });
+
+    const second = writeMatteToMasks({
+      masks: first.masks,
+      clipId: "c1",
+      maskId: first.maskId,
+      plan: movingPlan,
+      timeMapping: { startTime: 0, inPoint: 0, speed: 1 },
+      edge: { featherPx: 2, expansionPx: 0, motionSensitivity: 0 },
+      createId: ids(),
+    });
+
+    // Sensitivity 0 => uniform feather, so the earlier widening is gone.
+    expect(second.masks[0].keyframes.map((keyframe) => keyframe.feathering)).toEqual([2, 2, 2]);
+    expect(second.masks[0].keyframes).toHaveLength(3);
+  });
+
+  it("keeps the edge aligned with the clip's speed and in-point", () => {
+    const result = writeMatteToMasks({
+      masks: [],
+      clipId: "c1",
+      plan: movingPlan,
+      timeMapping: { startTime: 10, inPoint: 0, speed: 2 },
+      edge: { featherPx: 4, expansionPx: 0, motionSensitivity: 1, maxFeatherPx: 12 },
+      createId: ids(),
+    });
+
+    const mask = result.masks[0];
+    expect(mask.keyframes.map((keyframe) => keyframe.time)).toEqual([10, 10.5, 11]);
+    // The feather belongs to the shape at that time, so it travels with it.
+    expect(mask.keyframes[2].feathering).toBeCloseTo(4, 5);
+  });
+
+  it("surfaces edge-plan warnings alongside the matte's own", () => {
+    const result = writeMatteToMasks({
+      masks: [],
+      clipId: "c1",
+      plan: { ...movingPlan, keyframes: [] },
+      timeMapping: { startTime: 0, inPoint: 0, speed: 1 },
+      edge: { featherPx: 4, expansionPx: 0 },
+      createId: ids(),
+    });
+
+    expect(result.warnings.join(" ")).toMatch(/no keyframes/i);
+  });
+});
