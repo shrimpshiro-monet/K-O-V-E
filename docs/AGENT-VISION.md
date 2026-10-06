@@ -83,6 +83,25 @@ Reachable three ways:
   keyframe paths and recovers each silhouette's centroid and area from them, so
   refining an edge never re-runs segmentation
 
+## Hand-editing a keyframe's edge
+
+The planner is not the only writer any more. Every mask with keyframes has a
+*Keyframe edges* block in *Masking*: pick a keyframe, set its feather,
+expansion and opacity, and scrub a slider that shows the edge the renderer will
+actually blend at that instant — the preview reads `resolveMaskEdgeAtTime`, the
+same function the compositor uses, so a hand-set value interpolates against its
+neighbours exactly like a planned one.
+
+A keyframe without an override inherits the mask's own feather/expansion/
+opacity, which is what keeps mattes written before this existed looking
+unchanged. The reset button drops a keyframe's overrides rather than setting
+them to the current values, so "inherit" stays distinguishable from "happen to
+match".
+
+The agent drives the same state directly: `execute_action` with `mask/setAll`,
+where each keyframe may carry `feathering`, `expansion`, `inverted` and
+`opacity` overrides. Setting one is a hand edit; omitting it is the reset.
+
 ## Follow-cam: how the camera path is smoothed
 
 `analyzeClip` decides where the camera looks once per *sampled* frame, but what
