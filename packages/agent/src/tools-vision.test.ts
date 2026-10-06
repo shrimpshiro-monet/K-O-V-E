@@ -7,6 +7,8 @@ import type { Project } from "@kove-advanced/core/types/project";
 import type {
   ApplySubjectMatteRequest,
   ApplySubjectMatteResult,
+  AutoReframeHostResult,
+  AutoReframeRequest,
   FaceAnalysisResult,
   HostFeatures,
   SubjectMatteRequest,
@@ -74,6 +76,16 @@ const MATTE_RESULT: SubjectMatteResult = {
   warnings: ["1 sampled frame(s) had no subject"],
 };
 
+const REFRAME_RESULT: AutoReframeHostResult = {
+  keyframesWritten: 24,
+  keyframeSamples: 6,
+  sampledFrames: 6,
+  outputWidth: 1080,
+  outputHeight: 1920,
+  usedFaceBackend: true,
+  warnings: [],
+};
+
 const APPLY_RESULT: ApplySubjectMatteResult = {
   maskId: "mask-1",
   keyframeCount: 12,
@@ -88,7 +100,8 @@ class FakeVisionHost extends HeadlessHost {
     faces: VisionSamplingRequest[];
     matte: SubjectMatteRequest[];
     apply: ApplySubjectMatteRequest[];
-  } = { faces: [], matte: [], apply: [] };
+    reframe: AutoReframeRequest[];
+  } = { faces: [], matte: [], apply: [], reframe: [] };
 
   constructor(
     project: Project = projectWithMedia(),
@@ -96,6 +109,7 @@ class FakeVisionHost extends HeadlessHost {
       faces?: FaceAnalysisResult | { code: "unsupported_host"; error: string };
       matte?: SubjectMatteResult | { code: "unsupported_host"; error: string };
       apply?: ApplySubjectMatteResult | { code: "unsupported_host"; error: string };
+      reframe?: AutoReframeHostResult | { code: "unsupported_host"; error: string };
     } = {},
   ) {
     super(project);
@@ -107,6 +121,7 @@ class FakeVisionHost extends HeadlessHost {
       analyzeFaces: true,
       analyzeSubjectMatte: true,
       applySubjectMatte: true,
+      autoReframe: true,
     };
   }
 
@@ -124,6 +139,11 @@ class FakeVisionHost extends HeadlessHost {
     this.requests.apply.push(request);
     return this.overrides.apply ?? APPLY_RESULT;
   }
+
+  async autoReframe(request: AutoReframeRequest) {
+    this.requests.reframe.push(request);
+    return this.overrides.reframe ?? REFRAME_RESULT;
+  }
 }
 
 describe("vision tool registration", () => {
@@ -131,6 +151,7 @@ describe("vision tool registration", () => {
     const faces = getTool("detect_faces")!;
     const rotoscope = getTool("rotoscope_subject")!;
     const apply = getTool("apply_subject_matte")!;
+    const reframe = getTool("auto_reframe_clip")!;
 
     for (const tool of [faces, rotoscope]) {
       expect(tool.strict).toBe(true);
@@ -145,6 +166,26 @@ describe("vision tool registration", () => {
     expect(apply.destructive).toBe(true);
     expect(apply.inputSchema.additionalProperties).toBe(false);
     expect(apply.inputSchema.required as string[]).toContain("clipId");
+
+    expect(reframe.strict).toBe(true);
+    expect(reframe.domain).toBe("ai");
+    expect(reframe.readOnly).toBe(false);
+    expect(reframe.destructive).toBe(true);
+    expect(reframe.expensive).toBe(true);
+    expect(reframe.inputSchema.additionalProperties).toBe(false);
+    expect(reframe.inputSchema.required as string[]).toEqual(["clipId"]);
+    // The camera knobs the director can tweak are all advertised.
+    expect(Object.keys(reframe.inputSchema.properties as object)).toEqual(
+      expect.arrayContaining([
+        "targetAspectRatio",
+        "trackingSpeed",
+        "padding",
+        "smoothing",
+        "followSubject",
+        "centerBias",
+        "setCanvasSize",
+      ]),
+    );
   });
 });
 
@@ -155,6 +196,7 @@ describe("vision tools on the headless host", () => {
       ["detect_faces", { mediaId: "m1" }],
       ["rotoscope_subject", { mediaId: "m1" }],
       ["apply_subject_matte", { clipId: "c1" }],
+      ["auto_reframe_clip", { clipId: "c1" }],
     ] as const) {
       const result = await executeTool(tool, args as Record<string, unknown>, host);
       expect(result.ok).toBe(false);
@@ -382,5 +424,79 @@ describe("apply_subject_matte", () => {
       return spy.mock.calls.length;
     })();
     expect(effects).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("auto_reframe_clip", () => {
+  it("passes the director's camera settings through to the host", async () => {
+    const host = new FakeVisionHost();
+    const result = await executeTool(
+      "auto_reframe_clip",
+      {
+        clipId: "c1",
+        targetAspectRatio: "1:1",
+        trackingSpeed: 0.25,
+        padding: 0.2,
+        smoothing: 0.9,
+        followSubject: false,
+        centerBias: 0.1,
+        setCanvasSize: false,
+        intervalMs: 200,
+      },
+      host,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.requests.reframe).toHaveLength(1);
+    expect(host.requests.reframe[0]).toEqual({
+      clipId: "c1",
+      targetAspectRatio: "1:1",
+      trackingSpeed: 0.25,
+      padding: 0.2,
+      smoothing: 0.9,
+      followSubject: false,
+      centerBias: 0.1,
+      setCanvasSize: false,
+      startTime: 0,
+      endTime: 5,
+      intervalMs: 200,
+    });
+    expect(result.summary).toContain("1080x1920");
+    expect(result.summary).toContain("6 camera keyframe(s)");
+    expect(result.summary).toContain("one undo step");
+    expect((result.data as { usedFaceBackend?: boolean } | undefined)?.usedFaceBackend).toBe(true);
+  });
+
+  it("reports honestly when the host cannot reframe", async () => {
+    const host = new FakeVisionHost(projectWithMedia(), {
+      reframe: { code: "unsupported_host", error: "no decoder" },
+    });
+    const result = await executeTool("auto_reframe_clip", { clipId: "c1" }, host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("UNSUPPORTED_HOST");
+    expect(result.error?.suggestedFix).toContain("Do not retry");
+  });
+
+  it("fails with a suggested fix when no camera move was produced", async () => {
+    const host = new FakeVisionHost(projectWithMedia(), {
+      reframe: { ...REFRAME_RESULT, keyframesWritten: 0, keyframeSamples: 0 },
+    });
+    const result = await executeTool("auto_reframe_clip", { clipId: "c1" }, host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("NO_CAMERA_MOVE");
+    expect(result.error?.suggestedFix).toContain("retry");
+  });
+
+  it("surfaces the built-in-detector fallback as a warning", async () => {
+    const host = new FakeVisionHost(projectWithMedia(), {
+      reframe: { ...REFRAME_RESULT, usedFaceBackend: false, warnings: ["face model unavailable"] },
+    });
+    const result = await executeTool("auto_reframe_clip", { clipId: "c1" }, host);
+
+    expect(result.ok).toBe(true);
+    expect(result.summary).toContain("subject detector");
+    expect(result.warnings).toContain("face model unavailable");
   });
 });

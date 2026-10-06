@@ -51,6 +51,45 @@ export interface HostFeatures {
   readonly analyzeSubjectMatte: boolean;
   /** Write a tracked matte + separation settings onto a clip (apply_subject_matte). */
   readonly applySubjectMatte: boolean;
+  /** Reframe a clip for a target aspect ratio (auto_reframe_clip). */
+  readonly autoReframe: boolean;
+}
+
+/** How the auto-reframe camera should behave. Mirrors core `ReframeSettings`. */
+export interface AutoReframeRequest {
+  readonly clipId: string;
+  /** Target aspect ratio preset, e.g. "9:16". Defaults to the session default. */
+  readonly targetAspectRatio?: string;
+  /** 0..1 — how fast the camera is allowed to catch up with the subject. */
+  readonly trackingSpeed?: number;
+  /** 0..0.4 — headroom kept around the tracked subject. */
+  readonly padding?: number;
+  /** 0..1 — temporal smoothing of the crop path. */
+  readonly smoothing?: number;
+  /** Steer the crop with the tracked subject rather than the frame centre. */
+  readonly followSubject?: boolean;
+  /** 0..1 — pull the crop towards the centre of the source. */
+  readonly centerBias?: number;
+  /** Also resize the project canvas to the target resolution. Default true. */
+  readonly setCanvasSize?: boolean;
+  /** Sampling window (source seconds) and density. */
+  readonly startTime?: number;
+  readonly endTime?: number;
+  readonly intervalMs?: number;
+  readonly maxFrames?: number;
+}
+
+export interface AutoReframeHostResult {
+  /** Camera keyframes written (one per kept sample, per animated property). */
+  readonly keyframesWritten: number;
+  /** Distinct sample times the camera move is built from. */
+  readonly keyframeSamples: number;
+  readonly sampledFrames: number;
+  readonly outputWidth: number;
+  readonly outputHeight: number;
+  /** True when the real face detector steered the crop. */
+  readonly usedFaceBackend: boolean;
+  readonly warnings: string[];
 }
 
 /** Which part of a media item's source to analyze. Times are source seconds. */
@@ -528,6 +567,18 @@ export interface EditingHost {
    */
   applySubjectMatte?(request: ApplySubjectMatteRequest): Promise<
     ApplySubjectMatteResult | { readonly code: "unsupported_host"; readonly error: string }
+  >;
+
+  /**
+   * Reframe a clip for a target aspect ratio: sample its frames, pick a crop
+   * per frame (face-steered when a detector is available), and commit the
+   * camera move as clip transform keyframes — one undo step, resizing the
+   * canvas too when `setCanvasSize` is not false. Optional: hosts without a
+   * decoder or keyframe writer omit it and report
+   * `features().autoReframe === false`.
+   */
+  autoReframe?(request: AutoReframeRequest): Promise<
+    AutoReframeHostResult | { readonly code: "unsupported_host"; readonly error: string }
   >;
 
   /**

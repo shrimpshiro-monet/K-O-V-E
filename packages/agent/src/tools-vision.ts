@@ -1,5 +1,6 @@
 import type {
   ApplySubjectMatteRequest,
+  AutoReframeRequest,
   EditingHost,
   SubjectMatteRequest,
   SubjectSeparationRequest,
@@ -400,6 +401,122 @@ export const VISION_TOOLS: RegisteredTool[] = [
           lastTimeSeconds: result.lastTimeSeconds,
           separationApplied: result.separationApplied,
           timebase: "timeline-seconds",
+        },
+        warnings: warnings.length > 0 ? warnings : undefined,
+      };
+    },
+  },
+
+  {
+    name: "auto_reframe_clip",
+    domain: "ai",
+    title: "Reframe a clip for a target aspect ratio",
+    description:
+      "Reframe one clip for a different aspect ratio (16:9 → 9:16 and so on). Samples the clip's frames, picks a crop per frame — steered by face tracking when a face detector is available, otherwise by the built-in subject detector — and commits the camera move as clip transform keyframes (position.x/position.y/scale.x/scale.y) on the clip-local clock, so clip speed and reverse are accounted for. Resizes the project canvas to the target resolution unless setCanvasSize is false. The canvas resize and the camera move are ONE undo step. Destructive — requires confirmation. Check get_capabilities → host.autoReframe first.",
+    inputSchema: strictObject(
+      {
+        ...samplingSchema(),
+        clipId: { type: "string", description: "Clip to reframe (required)." },
+        targetAspectRatio: {
+          type: "string",
+          enum: ["16:9", "9:16", "1:1", "4:5", "4:3", "21:9"],
+          description: "Target aspect ratio. Default 9:16 (vertical).",
+        },
+        trackingSpeed: {
+          type: "number",
+          minimum: 0,
+          maximum: 1,
+          description: "How quickly the camera catches up with the subject. Default 0.5.",
+        },
+        padding: {
+          type: "number",
+          minimum: 0,
+          maximum: 0.4,
+          description: "Headroom kept around the subject, as a fraction of the frame. Default 0.1.",
+        },
+        smoothing: {
+          type: "number",
+          minimum: 0,
+          maximum: 1,
+          description: "Temporal smoothing of the camera move. Default 0.8.",
+        },
+        followSubject: {
+          type: "boolean",
+          description: "Track the subject instead of keeping the crop centred. Default true.",
+        },
+        centerBias: {
+          type: "number",
+          minimum: 0,
+          maximum: 1,
+          description: "Bias the crop towards the centre of the source. Default 0.3.",
+        },
+        setCanvasSize: {
+          type: "boolean",
+          description: "Resize the project canvas to the target resolution. Default true.",
+        },
+      },
+      ["clipId"],
+    ),
+    readOnly: false,
+    destructive: true,
+    expensive: true,
+    strict: true,
+    handler: async (args, host: EditingHost): Promise<ToolResult> => {
+      host.requireOpenProject();
+      if (host.features?.().autoReframe === false || typeof host.autoReframe !== "function") {
+        return unsupported("autoReframe", "auto_reframe_clip");
+      }
+      const clipId = args.clipId as string | undefined;
+      if (!clipId) {
+        return fail("INVALID_PARAMS", "clipId is required.", "Pick the clip to reframe.");
+      }
+      const target = resolveVisionTarget(host, {
+        clipId,
+        startTime: args.startTime as number | undefined,
+        endTime: args.endTime as number | undefined,
+      });
+      if ("error" in target) return target.error;
+
+      const request: AutoReframeRequest = {
+        clipId,
+        ...(typeof args.targetAspectRatio === "string" ? { targetAspectRatio: args.targetAspectRatio } : {}),
+        ...(typeof args.trackingSpeed === "number" ? { trackingSpeed: args.trackingSpeed } : {}),
+        ...(typeof args.padding === "number" ? { padding: args.padding } : {}),
+        ...(typeof args.smoothing === "number" ? { smoothing: args.smoothing } : {}),
+        ...(typeof args.followSubject === "boolean" ? { followSubject: args.followSubject } : {}),
+        ...(typeof args.centerBias === "number" ? { centerBias: args.centerBias } : {}),
+        ...(typeof args.setCanvasSize === "boolean" ? { setCanvasSize: args.setCanvasSize } : {}),
+        ...(target.startTime !== undefined ? { startTime: target.startTime } : {}),
+        ...(target.endTime !== undefined ? { endTime: target.endTime } : {}),
+        ...(typeof args.intervalMs === "number" ? { intervalMs: args.intervalMs } : {}),
+        ...(typeof args.maxFrames === "number" ? { maxFrames: args.maxFrames } : {}),
+      };
+
+      const result = await host.autoReframe(request);
+      if ("code" in result) {
+        return fail("UNSUPPORTED_HOST", result.error, "Do not retry. Check get_capabilities → host.autoReframe.");
+      }
+      if (result.keyframesWritten === 0) {
+        return fail(
+          "NO_CAMERA_MOVE",
+          "Reframing produced no camera keyframes for this clip.",
+          "Check the clip has decodable video in its in/out range, then retry.",
+        );
+      }
+      const warnings = [...target.warnings, ...result.warnings];
+      return {
+        ok: true,
+        summary: `Reframed the clip to ${result.outputWidth}x${result.outputHeight}: ${result.keyframeSamples} camera keyframe(s) from ${result.sampledFrames} analyzed frame(s)${
+          result.usedFaceBackend ? " tracking faces" : " using the built-in subject detector"
+        } (one undo step).`,
+        data: {
+          keyframesWritten: result.keyframesWritten,
+          keyframeSamples: result.keyframeSamples,
+          sampledFrames: result.sampledFrames,
+          outputWidth: result.outputWidth,
+          outputHeight: result.outputHeight,
+          usedFaceBackend: result.usedFaceBackend,
+          timebase: "clip-local-seconds",
         },
         warnings: warnings.length > 0 ? warnings : undefined,
       };

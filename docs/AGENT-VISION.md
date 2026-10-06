@@ -42,6 +42,21 @@ Matte keyframe times are written on the **timeline** clock
   `applySubjectMatte` methods that tests implement with fixtures.
 - `HeadlessHost` reports all three vision features as `false`, so the tools fail
   with `UNSUPPORTED_HOST` instead of silently no-oping.
+- `auto_reframe_clip` works the same way: the host seam exposes `autoReframe`, and
+  the browser suite drives the inspector's Auto Reframe section end to end.
+
+## Choosing a tool (for the agent)
+
+Every editor capability is reachable, even where no dedicated tool exists:
+
+- Prefer the dedicated tool (328 of them) — it validates its arguments and returns
+  a shaped result.
+- For anything else, `list_action_types` enumerates the action types this build can
+  dispatch (handler-backed types plus the executor's prefix domains), and
+  `execute_action` / `batch_actions` dispatch them. An unknown type is refused
+  loudly rather than silently ignored.
+- The Auto Reframe camera move, for example, is `auto_reframe_clip` or the raw
+  `keyframe/setAll` action with `position.x`/`position.y`/`scale.x`/`scale.y`.
 
 ## Known limits
 

@@ -67,6 +67,7 @@ export class HeadlessHost implements EditingHost {
       analyzeFaces: false,
       analyzeSubjectMatte: false,
       applySubjectMatte: false,
+      autoReframe: false,
     };
   }
 
