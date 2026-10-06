@@ -1,7 +1,10 @@
 import type { Action } from "@kove-advanced/core/types/actions";
 import { summarizeMeasureReport } from "@kove-advanced/core/qc/measure-export";
+import { listRegisteredActionTypes } from "@kove-advanced/core/actions/registry";
 import { HISTORY_TOOLS } from "./tools-history";
 import { AUDIO_ANALYSIS_TOOLS } from "./tools-audio-analysis";
+import { VISION_TOOLS } from "./tools-vision";
+import { DISCOVERY_TOOLS } from "./tools-discovery";
 import { RENDER_TOOLS } from "./tools-render";
 import {
   resolveMs,
@@ -11627,6 +11630,35 @@ async function captureBaselineFrames(
   }
   return { frames, firstError };
 }
+
+/** Action domains the executor routes by prefix (see core's ActionExecutor). */
+const ACTION_DOMAINS = [
+  "project",
+  "media",
+  "track",
+  "clip",
+  "effect",
+  "transform",
+  "keyframe",
+  "transition",
+  "audio",
+  "subtitle",
+  "marker",
+] as const;
+
+const ACTION_DOMAIN_PURPOSE: Record<(typeof ACTION_DOMAINS)[number], string> = {
+  project: "Canvas settings, project lifecycle, history.",
+  media: "Media library items and their metadata.",
+  track: "Timeline tracks (add/remove/mute/rename).",
+  clip: "Clip lifecycle and per-clip switches (blend, speed, reverse, fade, volume).",
+  effect: "Video effects and color grading on a clip.",
+  transform: "Clip transform: position, scale, rotation, opacity, crop, fit mode.",
+  keyframe: "Clip keyframes — any animatable property (e.g. position.x, scale.x).",
+  transition: "Transitions between adjacent clips.",
+  audio: "Audio-level actions (volume, fades, audio effects).",
+  subtitle: "Subtitle and caption tracks.",
+  marker: "Timeline markers.",
+};
 
 const TOOLS: RegisteredTool[] = [
   // read
@@ -32592,6 +32624,29 @@ const TOOLS: RegisteredTool[] = [
     },
   },
 
+  {
+    name: "list_action_types",
+    domain: "read",
+    title: "List action types",
+    description: `Every editor action type this build can dispatch, plus the action domains the executor routes by prefix. execute_action and batch_actions accept any of these — that is the path for a property or setting that has no dedicated tool, so check this list before telling the user something is impossible. Handler-backed types are exact (e.g. "mask/setAll"); a domain entry (e.g. "clip/…") accepts any type in that domain, with params validated by the editor.`,
+    inputSchema: { type: "object", properties: {}, required: [], additionalProperties: false },
+    readOnly: true,
+    destructive: false,
+    expensive: false,
+    strict: true,
+    handler: () =>
+      Promise.resolve(
+        ok("list_action_types ok", {
+          handlerTypes: listRegisteredActionTypes().sort(),
+          domains: ACTION_DOMAINS.map((domain) => ({
+            prefix: `${domain}/`,
+            purpose: ACTION_DOMAIN_PURPOSE[domain],
+          })),
+          note:
+            "execute_action({ type, params }) dispatches one action; batch_actions({ actions }) dispatches a sequence and stops on the first failure. An unknown type is refused loudly, never silently ignored.",
+        }),
+      ),
+  },
   // raw escape hatch
   {
     name: "execute_action",
@@ -34076,7 +34131,7 @@ const TOOLS: RegisteredTool[] = [
 
 // ---- Registry --------------------------------------------------------------
 const REGISTRY = new Map<string, RegisteredTool>(
-  [...TOOLS, ...HISTORY_TOOLS, ...AUDIO_ANALYSIS_TOOLS, ...RENDER_TOOLS].map((t) => [t.name, t]),
+  [...TOOLS, ...HISTORY_TOOLS, ...AUDIO_ANALYSIS_TOOLS, ...RENDER_TOOLS, ...VISION_TOOLS, ...DISCOVERY_TOOLS].map((t) => [t.name, t]),
 );
 
 export function getTool(name: string): RegisteredTool | undefined {
@@ -34085,6 +34140,24 @@ export function getTool(name: string): RegisteredTool | undefined {
 
 export function listTools(): RegisteredTool[] {
   return [...REGISTRY.values()];
+}
+
+/**
+ * Register a tool at runtime.
+ *
+ * Everything the agent can do is read from this one registry — the router, the
+ * provider tool payloads, the capability doc and the discovery tools all derive
+ * from it — so a tool registered here is immediately selectable when it is
+ * relevant, findable in search_tools, and callable through run_tool. No
+ * allowlist needs updating.
+ */
+export function registerTool(tool: RegisteredTool): void {
+  REGISTRY.set(tool.name, tool);
+}
+
+/** Test/plugin seam: remove a previously registered tool. */
+export function unregisterTool(name: string): boolean {
+  return REGISTRY.delete(name);
 }
 
 export function toolDefs(): ToolDef[] {

@@ -1,5 +1,11 @@
 export interface SegmentationWorkerInitRequest {
   type: "init";
+  /**
+   * Resolved asset locations. Required (rather than optional with defaults)
+   * because the worker is a classic script that must not import runtime
+   * modules — see the note in `person-segmentation-worker.ts`.
+   */
+  assets: VisionAssetUrls;
 }
 
 export interface SegmentationWorkerFrameRequest {
@@ -14,6 +20,8 @@ export interface SegmentationWorkerFrameRequest {
 export interface SegmentationWorkerDisposeRequest {
   type: "dispose";
 }
+
+import type { VisionAssetUrls } from "./vision-assets";
 
 export type SegmentationWorkerRequest =
   | SegmentationWorkerInitRequest

@@ -1,3 +1,4 @@
+import { getVisionAssets } from "./vision-assets";
 import type {
   SegmentationWorkerFrameRequest,
   SegmentationWorkerRequest,
@@ -16,6 +17,21 @@ export interface SegmentationResult {
   referenceRgba: Uint8ClampedArray;
   referenceWidth: number;
   referenceHeight: number;
+}
+
+/**
+ * What callers need from a person-mask source. `PersonSegmentationEngine` is
+ * the MediaPipe implementation; tests and embedders can substitute another one
+ * through `setPersonSegmentationEngine()`.
+ */
+export interface PersonMaskProvider {
+  initialize(): Promise<void>;
+  isInitialized(): boolean;
+  getPersonMask(
+    frame: ImageBitmap,
+    options?: PersonMaskOptions,
+  ): Promise<SegmentationResult | null>;
+  dispose(): void;
 }
 
 export interface PersonMaskOptions {
@@ -60,7 +76,7 @@ const MAX_STREAM_STATES = 4;
 // fallback. Allow its first uncached download to finish on slower connections.
 const INITIALIZATION_TIMEOUT_MS = 45_000;
 
-export class PersonSegmentationEngine {
+export class PersonSegmentationEngine implements PersonMaskProvider {
   private worker: Worker | null = null;
   private initialized = false;
   private initializing: Promise<void> | null = null;
@@ -124,7 +140,7 @@ export class PersonSegmentationEngine {
           reject(new Error(event.message || "Person segmentation worker failed"));
         };
 
-        const request: SegmentationWorkerRequest = { type: "init" };
+        const request: SegmentationWorkerRequest = { type: "init", assets: getVisionAssets() };
         worker.postMessage(request);
       });
     } catch (error) {
@@ -441,11 +457,19 @@ export class PersonSegmentationEngine {
   }
 }
 
-let instance: PersonSegmentationEngine | null = null;
+let instance: PersonMaskProvider | null = null;
 
-export function getPersonSegmentationEngine(): PersonSegmentationEngine {
+export function getPersonSegmentationEngine(): PersonMaskProvider {
   if (!instance) instance = new PersonSegmentationEngine();
   return instance;
+}
+
+/**
+ * Replaces the singleton mask source (tests, e2e harnesses, embedders running a
+ * different model). Pass null to fall back to the MediaPipe engine.
+ */
+export function setPersonSegmentationEngine(engine: PersonMaskProvider | null): void {
+  instance = engine;
 }
 
 export function disposePersonSegmentationEngine(): void {

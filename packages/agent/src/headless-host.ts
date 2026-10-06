@@ -1,4 +1,3 @@
-import { execFile } from "node:child_process";
 import { ActionExecutor } from "@kove-advanced/core/actions/action-executor";
 import { measureExportFile } from "@kove-advanced/core/qc/measure-export";
 import type { ExportMeasureReport } from "@kove-advanced/core/qc/measure-export";
@@ -63,6 +62,12 @@ export class HeadlessHost implements EditingHost {
       exportVideo: hasRunner,
       checkpoints: true,
       analyzeAudio: this.audioSource !== undefined,
+      // Vision analysis needs a video decoder + MediaPipe, which only the
+      // browser host has. Headless tools fail clearly with UNSUPPORTED_HOST.
+      analyzeFaces: false,
+      analyzeSubjectMatte: false,
+      applySubjectMatte: false,
+      autoReframe: false,
     };
   }
 
@@ -224,11 +229,20 @@ export class HeadlessHost implements EditingHost {
   }
 }
 
-/** Spawns ffmpeg/ffprobe via node:child_process; numeric exits resolve, spawn failures reject. */
-function nodeCommandRunner(
+/**
+ * Spawns ffmpeg/ffprobe via node:child_process; numeric exits resolve, spawn
+ * failures reject.
+ *
+ * `node:child_process` is imported lazily: this module is re-exported from the
+ * package barrel, so a top-level import drags a Node builtin into browser
+ * bundles (Vite externalizes it and throws on access at module init, which
+ * takes down any UI that imports the agent).
+ */
+async function nodeCommandRunner(
   command: string,
   args: readonly string[],
 ): Promise<{ readonly stdout: string; readonly stderr: string; readonly exitCode: number }> {
+  const { execFile } = await import("node:child_process");
   return new Promise((resolve, reject) => {
     execFile(
       command,

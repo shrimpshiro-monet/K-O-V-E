@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   PersonSegmentationEngine,
+  getPersonSegmentationEngine,
+  setPersonSegmentationEngine,
+  type PersonMaskProvider,
   type SegmentationResult,
 } from "./person-segmentation-engine";
+import { DEFAULT_VISION_ASSET_URLS, resetVisionAssets, setVisionAssets } from "./vision-assets";
 import type {
   SegmentationWorkerFrameRequest,
   SegmentationWorkerRequest,
@@ -28,6 +32,7 @@ class FakeWorker {
     null;
   onerror: ((event: ErrorEvent) => void) | null = null;
   readonly frameRequests: SegmentationWorkerFrameRequest[] = [];
+  readonly initRequests: SegmentationWorkerRequest[] = [];
 
   constructor() {
     FakeWorker.latest = this;
@@ -35,6 +40,7 @@ class FakeWorker {
 
   postMessage(request: SegmentationWorkerRequest): void {
     if (request.type === "init") {
+      this.initRequests.push(request);
       queueMicrotask(() => this.emit({ type: "ready" }));
       return;
     }
@@ -290,5 +296,67 @@ describe("PersonSegmentationEngine realtime matte alignment", () => {
     });
     expect(current?.timestampMs).toBe(2_000);
     engine.dispose();
+  });
+});
+
+describe("person segmentation engine seams", () => {
+  beforeEach(() => {
+    vi.stubGlobal("Worker", FakeWorker);
+    vi.stubGlobal("OffscreenCanvas", class {});
+  });
+
+  afterEach(() => {
+    resetVisionAssets();
+    setPersonSegmentationEngine(null);
+    FakeWorker.latest = null;
+    vi.unstubAllGlobals();
+  });
+
+  it("hands the resolved vision assets to the worker", async () => {
+    setVisionAssets({
+      wasmBaseUrl: "http://localhost:8788/wasm",
+      tasksVisionBundleUrl: "http://localhost:8788/vision_bundle.cjs",
+      segmenterModelAssetPath: "http://localhost:8788/models/selfie_multiclass_256x256.tflite",
+    });
+    const engine = new PersonSegmentationEngine();
+    await engine.initialize();
+    const init = FakeWorker.latest?.initRequests[0];
+    if (init?.type !== "init") throw new Error("init request was not sent");
+    expect(init.assets.wasmBaseUrl).toBe("http://localhost:8788/wasm");
+    expect(init.assets.tasksVisionBundleUrl).toBe("http://localhost:8788/vision_bundle.cjs");
+    expect(init.assets.segmenterModelAssetPath).toBe(
+      "http://localhost:8788/models/selfie_multiclass_256x256.tflite",
+    );
+    // Untouched keys keep the CDN defaults.
+    expect(init.assets.faceModelAssetPath).toBe(DEFAULT_VISION_ASSET_URLS.faceModelAssetPath);
+    engine.dispose();
+  });
+
+  it("swaps the singleton for an injected mask provider", async () => {
+    const mask = {
+      alpha: new Uint8ClampedArray([255]),
+      width: 1,
+      height: 1,
+      referenceRgba: new Uint8ClampedArray([0, 0, 0, 255]),
+      referenceWidth: 1,
+      referenceHeight: 1,
+      timestampMs: 0,
+    } as unknown as SegmentationResult;
+    const provider: PersonMaskProvider = {
+      initialize: vi.fn(async () => undefined),
+      isInitialized: () => true,
+      getPersonMask: vi.fn(async () => mask),
+      dispose: vi.fn(),
+    };
+
+    setPersonSegmentationEngine(provider);
+    expect(getPersonSegmentationEngine()).toBe(provider);
+    await getPersonSegmentationEngine().initialize();
+    expect(await getPersonSegmentationEngine().getPersonMask(frame())).toBe(mask);
+
+    setPersonSegmentationEngine(null);
+    const restored = getPersonSegmentationEngine();
+    expect(restored).not.toBe(provider);
+    expect(restored).toBeInstanceOf(PersonSegmentationEngine);
   });
 });

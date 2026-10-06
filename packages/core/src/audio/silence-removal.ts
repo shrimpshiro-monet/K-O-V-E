@@ -26,6 +26,8 @@ import type { Clip } from "../types/timeline";
 import type { Project } from "../types/project";
 import type { Action, ActionResult } from "../types/actions";
 import type { MultiCamGroup } from "../video/multicam-engine";
+import type { TranscriptWord } from "./highlight-analyzer";
+import type { TimeRange } from "./types";
 
 /**
  * Hardcoded filler lexicon (spec step E: settings-store is the API-keys
@@ -51,17 +53,8 @@ export const FILLER_LEXICON: readonly string[] = [
   "err",
 ];
 
-export interface TranscriptWord {
-  readonly text: string;
-  /** Seconds, relative to the start of the analyzed source region. */
-  readonly start: number;
-  readonly end: number;
-}
-
-export interface TimeRange {
-  readonly start: number;
-  readonly end: number;
-}
+export type { TranscriptWord } from "./highlight-analyzer";
+export type { TimeRange } from "./types";
 
 export interface VadSegmentationOptions {
   /** Probability at/above which a frame counts as speech. */
