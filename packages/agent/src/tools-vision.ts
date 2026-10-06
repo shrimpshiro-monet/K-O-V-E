@@ -486,7 +486,7 @@ export const VISION_TOOLS: RegisteredTool[] = [
     domain: "ai",
     title: "Reframe a clip for a target aspect ratio",
     description:
-      "Reframe one clip for a different aspect ratio (16:9 → 9:16 and so on). Samples the clip's frames, picks a crop per frame — steered by face tracking when a face detector is available, otherwise by the built-in subject detector — and commits the camera move as clip transform keyframes (position.x/position.y/scale.x/scale.y) on the clip-local clock, so clip speed and reverse are accounted for. Resizes the project canvas to the target resolution unless setCanvasSize is false. The canvas resize and the camera move are ONE undo step. Destructive — requires confirmation. Check get_capabilities → host.autoReframe first.",
+      "Reframe one clip for a different aspect ratio (16:9 → 9:16 and so on). Samples the clip's frames, picks a crop per frame — steered by face tracking when a face detector is available, otherwise by the built-in subject detector. Sampling is motion-adaptive by default: a coarse pass finds where the picture moves and a second pass spends the rest of the frame budget there, so a fast cut is not under-sampled and a locked-off shot is not over-decoded (pass adaptive false to force the even grid). The camera move is fitted as a smooth path and committed as clip transform keyframes (position.x/position.y/scale.x/scale.y) on the clip-local clock, so clip speed and reverse are accounted for. Resizes the project canvas to the target resolution unless setCanvasSize is false. The canvas resize and the camera move are ONE undo step. Destructive — requires confirmation. Check get_capabilities → host.autoReframe first.",
     inputSchema: strictObject(
       {
         ...samplingSchema(),
@@ -528,6 +528,11 @@ export const VISION_TOOLS: RegisteredTool[] = [
           type: "boolean",
           description: "Resize the project canvas to the target resolution. Default true.",
         },
+        adaptive: {
+          type: "boolean",
+          description:
+            "Sample more densely where the picture moves instead of on an even grid. Default true. Set false (or pass intervalMs/maxFrames) to force the even grid.",
+        },
       },
       ["clipId"],
     ),
@@ -564,6 +569,7 @@ export const VISION_TOOLS: RegisteredTool[] = [
         ...(target.endTime !== undefined ? { endTime: target.endTime } : {}),
         ...(typeof args.intervalMs === "number" ? { intervalMs: args.intervalMs } : {}),
         ...(typeof args.maxFrames === "number" ? { maxFrames: args.maxFrames } : {}),
+        ...(typeof args.adaptive === "boolean" ? { adaptive: args.adaptive } : {}),
       };
 
       const result = await host.autoReframe(request);
@@ -581,12 +587,15 @@ export const VISION_TOOLS: RegisteredTool[] = [
       return {
         ok: true,
         summary: `Reframed the clip to ${result.outputWidth}x${result.outputHeight}: ${result.keyframeSamples} camera keyframe(s) from ${result.sampledFrames} analyzed frame(s)${
+          result.refinedFrames ? ` (${result.refinedFrames} of them added where the picture moved)` : ""
+        }${
           result.usedFaceBackend ? " tracking faces" : " using the built-in subject detector"
         } (one undo step).`,
         data: {
           keyframesWritten: result.keyframesWritten,
           keyframeSamples: result.keyframeSamples,
           sampledFrames: result.sampledFrames,
+          ...(result.refinedFrames !== undefined ? { refinedFrames: result.refinedFrames } : {}),
           outputWidth: result.outputWidth,
           outputHeight: result.outputHeight,
           usedFaceBackend: result.usedFaceBackend,

@@ -79,6 +79,12 @@ export interface AutoReframeRequest {
   readonly endTime?: number;
   readonly intervalMs?: number;
   readonly maxFrames?: number;
+  /**
+   * Spend the spare frame budget where the picture moves instead of spreading
+   * it evenly. Default true; `false` (or an explicit `intervalMs`/`maxFrames`)
+   * forces the fixed grid. Reported back as `refinedFrames`.
+   */
+  readonly adaptive?: boolean;
 }
 
 export interface AutoReframeHostResult {
@@ -87,6 +93,11 @@ export interface AutoReframeHostResult {
   /** Distinct sample times the camera move is built from. */
   readonly keyframeSamples: number;
   readonly sampledFrames: number;
+  /**
+   * Samples added on top of the base grid because the picture moved there.
+   * Present only when adaptive sampling ran and had something to add.
+   */
+  readonly refinedFrames?: number;
   readonly outputWidth: number;
   readonly outputHeight: number;
   /** True when the real face detector steered the crop. */
@@ -114,6 +125,12 @@ export interface VisionSamplingRequest {
   readonly intervalMs?: number;
   /** Hard cap on sampled frames. Default 60. */
   readonly maxFrames?: number;
+  /**
+   * Spend the spare frame budget where the picture moves instead of spreading
+   * it evenly. Default true; `false` (or an explicit `intervalMs`/`maxFrames`)
+   * forces the fixed grid.
+   */
+  readonly adaptive?: boolean;
 }
 
 export interface FaceTrackSummary {

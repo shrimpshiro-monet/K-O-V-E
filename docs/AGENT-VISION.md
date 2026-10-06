@@ -111,8 +111,42 @@ the emitted keyframes follow the fitted curve) and `peakSpeedCropRatios` (how
 fast the camera crosses its own crop width), so the quality of a camera move is
 visible instead of implied.
 
+## Motion-adaptive reframe sampling
+
+`analyzeClip` makes one crop decision per *sampled* frame, so the sampling grid
+is the resolution of the whole camera move. A single grid has to be picked
+blind: dense enough for the fastest moment in the clip, which wastes decodes on
+every locked-off shot, or coarse, which under-samples that fast moment and lets
+the camera cut the corner instead of following it.
+
+Auto-reframe now measures first and samples second:
+
+1. a coarse pass decodes the base grid (500 ms, half of the frame budget) and
+   scores the mean luma change between consecutive thumbnails
+2. `planAdaptiveSampleTimes` bisects the busiest intervals with the remaining
+   budget — motion is treated as spread evenly across an interval, so splitting
+   halves each child's score and leaves its density unchanged, and the greedy
+   pass keeps subdividing the same busy region until it hits the 90 ms floor
+3. a second pass decodes only the newly added times, and every crop is stamped
+   with its own timestamp instead of `index / frameRate`, because the grid is no
+   longer uniform
+
+Density rather than raw score is what ranks the intervals: a slow drift across a
+whole clip moves further in total than a fast cut, and ranking by total would
+spend the budget on the drift.
+
+Passing `adaptive: false` (or an explicit `intervalMs`/`maxFrames`) keeps the
+even grid. The inspector and `auto_reframe_clip` report `refinedFrames` — how
+many samples the second pass added — so the choice the sampler made is visible.
+
 ## Known limits
 
+- Motion-adaptive sampling refines from the *coarse* pass's motion: a subject
+  that moves only between two base samples is still missed on the first pass and
+  cannot be recovered by splitting them.
+- The motion score is a mean luma difference at thumbnail size, so a fast cut
+  between two identically-lit shots scores low. Ranking is relative, and a clip
+  with no measurable motion anywhere simply keeps its base grid.
 - The renderer only composites separation while `BackgroundRemovalEngine` is
   initialized; both apply paths call `initialize()` and warn if it fails.
 - The edge preview approximates the renderer's morphological grow/shrink with a
