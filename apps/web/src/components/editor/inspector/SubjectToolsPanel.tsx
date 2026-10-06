@@ -6,6 +6,7 @@ import {
   SUBJECT_SEPARATION_PRESETS,
   backgroundRemovalSettingsFromSeparation,
   initializeBackgroundRemovalEngine,
+  planMatteEdgeRefinement,
   planSubjectSeparation,
   type SubjectSeparationPreset,
 } from "@kove-advanced/core";
@@ -20,6 +21,7 @@ import {
 } from "../../../services/agent/vision-analysis";
 import type { Action } from "@kove-advanced/core/types/actions";
 import { PropertySlider } from "./shell/PropertySlider";
+import { MatteEdgePreview } from "./MatteEdgePreview";
 
 type Phase = "idle" | "faces" | "matte" | "applying";
 
@@ -47,6 +49,13 @@ export const SubjectToolsPanel: React.FC<SubjectToolsPanelProps> = ({ clipId }) 
   const [appliedMessage, setAppliedMessage] = useState<string | null>(null);
   const [preset, setPreset] = useState<SubjectSeparationPreset>("cutout");
   const [featherPx, setFeatherPx] = useState(4);
+  /** Edge refinement knobs. `featherPx` is the base; motion widens it. */
+  const [expansionPx, setExpansionPx] = useState(0);
+  const [motionSensitivity, setMotionSensitivity] = useState(0.6);
+  const [invert, setInvert] = useState(false);
+  const [opacity, setOpacity] = useState(100);
+  /** Which matte keyframe the edge preview is showing. */
+  const [previewIndex, setPreviewIndex] = useState(0);
   /** Matte created by this panel, so re-applying updates it instead of stacking masks. */
   const [appliedMaskId, setAppliedMaskId] = useState<string | null>(null);
 
@@ -167,7 +176,13 @@ export const SubjectToolsPanel: React.FC<SubjectToolsPanelProps> = ({ clipId }) 
           ...(clip.outPoint !== undefined ? { outPoint: clip.outPoint } : {}),
           ...(clip.reversed ? { reversed: true } : {}),
         },
-        featherPx,
+        edge: {
+          featherPx,
+          expansionPx,
+          motionSensitivity,
+          invert,
+          opacity: opacity / 100,
+        },
         createId: () => crypto.randomUUID(),
       });
 
@@ -212,15 +227,58 @@ export const SubjectToolsPanel: React.FC<SubjectToolsPanelProps> = ({ clipId }) 
 
       setAppliedMaskId(written.maskId);
       setWarnings((current) => [...current, ...written.warnings, ...plan.warnings]);
+      const edgeNote = written.edge
+        ? ` Edge feather ${written.edge.minFeatherPx.toFixed(1)}–${written.edge.maxFeatherPx.toFixed(
+            1,
+          )}px, keyframed with the subject's motion.`
+        : "";
       setAppliedMessage(
-        `Wrote ${written.keyframeCount} matte keyframe(s) to ${written.maskId} — one undo step. ${plan.summary}`,
+        `Wrote ${written.keyframeCount} matte keyframe(s) to ${written.maskId} — one undo step. ${plan.summary}${edgeNote}`,
       );
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Applying the matte failed.");
     } finally {
       setPhase("idle");
     }
-  }, [appliedMaskId, clip, featherPx, matte, preset]);
+  }, [
+    appliedMaskId,
+    clip,
+    expansionPx,
+    featherPx,
+    invert,
+    matte,
+    motionSensitivity,
+    opacity,
+    preset,
+  ]);
+
+  /**
+   * Per-keyframe edge plan: the feather widens where the subject moves and
+   * returns to base where it settles. Recomputed from the analysis, so the
+   * preview always shows the values `Apply` would write.
+   */
+  const edgePlan = useMemo(() => {
+    if (!matte || matte.plan.keyframes.length === 0) return null;
+    return planMatteEdgeRefinement(matte.plan.keyframes, {
+      featherPx,
+      expansionPx,
+      motionSensitivity,
+      invert,
+      opacity: opacity / 100,
+    });
+  }, [matte, featherPx, expansionPx, motionSensitivity, invert, opacity]);
+
+  const previewKeyframe = useMemo(() => {
+    if (!matte || matte.plan.keyframes.length === 0 || !edgePlan) return null;
+    const index = Math.max(0, Math.min(previewIndex, matte.plan.keyframes.length - 1));
+    return {
+      index,
+      path: matte.plan.keyframes[index].path,
+      timeMs: matte.plan.keyframes[index].timeMs,
+      featherPx: edgePlan.keyframes[index]?.featherPx ?? featherPx,
+      motion: edgePlan.motion[index] ?? 0,
+    };
+  }, [matte, edgePlan, previewIndex, featherPx]);
 
   const faceSummary = useMemo(() => {
     if (!faces) return null;
@@ -315,7 +373,109 @@ export const SubjectToolsPanel: React.FC<SubjectToolsPanelProps> = ({ clipId }) 
             max={40}
             step={1}
             formatValue={(value) => `${value}px`}
+            description="Edge softness where the subject is still."
           />
+          <PropertySlider
+            label="Edge expansion"
+            value={expansionPx}
+            onChange={setExpansionPx}
+            min={-20}
+            max={20}
+            step={1}
+            formatValue={(value) => `${value > 0 ? "+" : ""}${value}px`}
+            description="Grow (+) or shrink (−) the silhouette to catch stray hair or a halo."
+          />
+          <PropertySlider
+            label="Motion response"
+            value={Math.round(motionSensitivity * 100)}
+            onChange={(value) => setMotionSensitivity(value / 100)}
+            min={0}
+            max={100}
+            step={5}
+            formatValue={(value) => `${value}%`}
+            description="How much a moving subject widens the feather. 0% keeps it uniform."
+          />
+          <PropertySlider
+            label="Matte opacity"
+            value={opacity}
+            onChange={setOpacity}
+            min={0}
+            max={100}
+            step={5}
+            formatValue={(value) => `${value}%`}
+          />
+          <label className="flex items-center gap-2 text-[12px] text-fg-2">
+            <input
+              type="checkbox"
+              checked={invert}
+              onChange={(event) => setInvert(event.target.checked)}
+              className="h-3.5 w-3.5 accent-[color:var(--primary)]"
+            />
+            Invert matte (keep the background, cut the subject out)
+          </label>
+
+          {previewKeyframe && (
+            <div className="space-y-2">
+              <MatteEdgePreview
+                path={previewKeyframe.path}
+                featherPx={previewKeyframe.featherPx}
+                expansionPx={expansionPx}
+                inverted={invert}
+                opacity={opacity / 100}
+                baselineFeatherPx={featherPx}
+                baselineExpansionPx={0}
+                caption={`keyframe ${previewKeyframe.index + 1}/${
+                  matte?.plan.keyframes.length ?? 0
+                } · ${(previewKeyframe.timeMs / 1000).toFixed(2)}s · motion ${(
+                  previewKeyframe.motion * 100
+                ).toFixed(0)}%`}
+              />
+              {matte && matte.plan.keyframes.length > 1 && (
+                <PropertySlider
+                  label="Preview keyframe"
+                  value={previewKeyframe.index + 1}
+                  onChange={(value) => setPreviewIndex(value - 1)}
+                  min={1}
+                  max={matte.plan.keyframes.length}
+                  step={1}
+                  formatValue={(value) => `${value}`}
+                />
+              )}
+            </div>
+          )}
+
+          {edgePlan && edgePlan.keyframes.length > 0 && (
+            <div
+              className="rounded-md border border-border-subtle bg-bg-2 p-2"
+              data-testid="matte-edge-keyframes"
+            >
+              <Text type="supporting" color="secondary" className="text-fg-2">
+                Per-keyframe feather ({edgePlan.keyframes.length})
+              </Text>
+              <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto">
+                {edgePlan.keyframes.map((keyframe, index) => (
+                  <li
+                    key={keyframe.timeMs}
+                    className="flex items-center justify-between text-[11px] tabular-nums"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setPreviewIndex(index)}
+                      className={`truncate hover:text-primary ${
+                        index === previewKeyframe?.index ? "text-primary" : "text-fg-2"
+                      }`}
+                    >
+                      kf {index + 1} · {(keyframe.timeMs / 1000).toFixed(2)}s
+                    </button>
+                    <span className="text-fg-2">
+                      {keyframe.featherPx.toFixed(1)}px · motion{" "}
+                      {((edgePlan.motion[index] ?? 0) * 100).toFixed(0)}%
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="space-y-1">
             <Text type="supporting" color="secondary" className="text-fg-2">
               Separation preset

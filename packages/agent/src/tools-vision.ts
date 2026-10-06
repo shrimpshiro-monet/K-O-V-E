@@ -2,6 +2,8 @@ import type {
   ApplySubjectMatteRequest,
   AutoReframeRequest,
   EditingHost,
+  MatteEdgeRequest,
+  RefineMatteEdgesRequest,
   SubjectMatteRequest,
   SubjectSeparationRequest,
   VisionSamplingRequest,
@@ -137,6 +139,67 @@ function samplingRequest(target: ResolvedVisionTarget, args: Record<string, unkn
     ...(typeof args.intervalMs === "number" ? { intervalMs: args.intervalMs } : {}),
     ...(typeof args.maxFrames === "number" ? { maxFrames: args.maxFrames } : {}),
   };
+}
+
+/** Matte edge knobs, shared by apply_subject_matte and refine_matte_edges. */
+function matteEdgeSchema(): JSONSchema {
+  return {
+    type: "object",
+    additionalProperties: false,
+    description:
+      "Per-keyframe edge refinement. featherPx applies where the subject is still; motionSensitivity widens it where the subject moves, up to maxFeatherPx. Set motionSensitivity to 0 for one uniform feather.",
+    properties: {
+      featherPx: {
+        type: "number",
+        minimum: 0,
+        maximum: 200,
+        description: "Base feather in pixels where the subject is still.",
+      },
+      expansionPx: {
+        type: "number",
+        minimum: -200,
+        maximum: 200,
+        description: "Grow (+) or shrink (−) the silhouette, in pixels. Default 0.",
+      },
+      motionSensitivity: {
+        type: "number",
+        minimum: 0,
+        maximum: 1,
+        description: "How much motion widens the feather, 0..1. Default 0.6.",
+      },
+      maxFeatherPx: {
+        type: "number",
+        minimum: 0,
+        maximum: 200,
+        description: "Cap for the motion-widened feather. Default 3× featherPx.",
+      },
+      invert: { type: "boolean", description: "Keep the background instead of the subject." },
+      opacity: { type: "number", minimum: 0, maximum: 1, description: "Matte opacity. Default 1." },
+    },
+    required: ["featherPx"],
+  };
+}
+
+function readMatteEdge(args: Record<string, unknown>): MatteEdgeRequest | undefined {
+  const raw = args.edge as Record<string, unknown> | undefined;
+  if (!raw || typeof raw.featherPx !== "number") return undefined;
+  return {
+    featherPx: raw.featherPx,
+    ...(typeof raw.expansionPx === "number" ? { expansionPx: raw.expansionPx } : {}),
+    ...(typeof raw.motionSensitivity === "number" ? { motionSensitivity: raw.motionSensitivity } : {}),
+    ...(typeof raw.maxFeatherPx === "number" ? { maxFeatherPx: raw.maxFeatherPx } : {}),
+    ...(raw.invert === true ? { invert: true } : {}),
+    ...(typeof raw.opacity === "number" ? { opacity: raw.opacity } : {}),
+  };
+}
+
+/** Render an edge result as a compact, non-fabricated summary fragment. */
+function edgeSummary(edge: { minFeatherPx: number; maxFeatherPx: number; motion: readonly number[] }): string {
+  const peakMotion = edge.motion.length > 0 ? Math.max(...edge.motion) : 0;
+  const varying = edge.maxFeatherPx - edge.minFeatherPx > 1e-6;
+  return varying
+    ? ` Edge feather ${round(edge.minFeatherPx, 1)}–${round(edge.maxFeatherPx, 1)}px, keyframed with the subject's motion (peak ${(peakMotion * 100).toFixed(0)}%).`
+    : ` Edge feather ${round(edge.minFeatherPx, 1)}px, uniform.`;
 }
 
 export const VISION_TOOLS: RegisteredTool[] = [
@@ -310,6 +373,7 @@ export const VISION_TOOLS: RegisteredTool[] = [
           description: "Mask expansion in pixels (positive grows the matte). Default 0.",
         },
         invertMask: { type: "boolean", description: "Invert the mask (show the background instead)." },
+        edge: matteEdgeSchema(),
         threshold: { type: "number", minimum: 0, maximum: 1, description: "Matte threshold. Default 0.5." },
         simplifyTolerance: {
           type: "number",
@@ -370,6 +434,7 @@ export const VISION_TOOLS: RegisteredTool[] = [
         ...(typeof args.featherPx === "number" ? { featherPx: args.featherPx } : {}),
         ...(typeof args.expansionPx === "number" ? { expansionPx: args.expansionPx } : {}),
         ...(args.invertMask === true ? { invertMask: true } : {}),
+        ...(readMatteEdge(args) ? { edge: readMatteEdge(args) as MatteEdgeRequest } : {}),
         ...(typeof args.threshold === "number" ? { threshold: args.threshold } : {}),
         ...(typeof args.simplifyTolerance === "number" ? { simplifyTolerance: args.simplifyTolerance } : {}),
         ...(typeof args.maxKeyframes === "number" ? { maxKeyframes: args.maxKeyframes } : {}),
@@ -393,13 +458,22 @@ export const VISION_TOOLS: RegisteredTool[] = [
         ok: true,
         summary: `Wrote ${result.keyframeCount} matte keyframe(s) to mask ${result.maskId}${
           result.separationApplied ? " with subject separation" : ""
-        } (one undo step).`,
+        } (one undo step).${result.edge ? edgeSummary(result.edge) : ""}`,
         data: {
           maskId: result.maskId,
           keyframeCount: result.keyframeCount,
           firstTimeSeconds: result.firstTimeSeconds,
           lastTimeSeconds: result.lastTimeSeconds,
           separationApplied: result.separationApplied,
+          ...(result.edge
+            ? {
+                edge: {
+                  minFeatherPx: result.edge.minFeatherPx,
+                  maxFeatherPx: result.edge.maxFeatherPx,
+                  motion: [...result.edge.motion].map((value) => round(value, 3)),
+                },
+              }
+            : {}),
           timebase: "timeline-seconds",
         },
         warnings: warnings.length > 0 ? warnings : undefined,
@@ -519,6 +593,98 @@ export const VISION_TOOLS: RegisteredTool[] = [
           timebase: "clip-local-seconds",
         },
         warnings: warnings.length > 0 ? warnings : undefined,
+      };
+    },
+  },
+
+  {
+    name: "refine_matte_edges",
+    domain: "ai",
+    title: "Refine a matte's edge per keyframe",
+    description:
+      "Re-cut the edge of a rotoscoped matte that is already on a mask: feather, expansion, invert and opacity, written per keyframe so the edge can vary over time. featherPx is the softness where the subject is still; motionSensitivity (0..1) widens it where the subject moves — where sampled contours lag and motion blur already smears the silhouette — up to maxFeatherPx. Set motionSensitivity to 0 for one uniform feather. Reads the mask's existing keyframes, so it does not re-run segmentation: use apply_subject_matte to create or re-track the matte first. Restrict to a timeline range with startTime/endTime to refine part of a shot. Destructive — requires confirmation. Check get_capabilities → host.refineMatteEdges first.",
+    inputSchema: strictObject(
+      {
+        clipId: { type: "string", description: "Clip the mask is attached to." },
+        maskId: { type: "string", description: "Mask whose keyframes get the new edge." },
+        edge: matteEdgeSchema(),
+        startTime: { type: "number", minimum: 0, description: "Refine from this timeline second." },
+        endTime: { type: "number", minimum: 0, description: "Refine up to this timeline second (> startTime)." },
+      },
+      ["clipId", "maskId", "edge"],
+    ),
+    readOnly: false,
+    destructive: true,
+    expensive: false,
+    strict: true,
+    handler: async (args, host: EditingHost): Promise<ToolResult> => {
+      host.requireOpenProject();
+      if (host.features?.().refineMatteEdges === false || typeof host.refineMatteEdges !== "function") {
+        return unsupported("refineMatteEdges", "refine_matte_edges");
+      }
+      const clipId = args.clipId as string | undefined;
+      const maskId = args.maskId as string | undefined;
+      if (!clipId || !maskId) {
+        return fail(
+          "INVALID_PARAMS",
+          "clipId and maskId are required.",
+          "Call apply_subject_matte first to create the matte, then refine it.",
+        );
+      }
+      const edge = readMatteEdge(args);
+      if (!edge) {
+        return fail(
+          "INVALID_PARAMS",
+          "edge.featherPx is required.",
+          "Pass edge: { featherPx: 4 } or similar; featherPx is the edge softness in pixels.",
+        );
+      }
+
+      const startTime = typeof args.startTime === "number" ? args.startTime : undefined;
+      const endTime = typeof args.endTime === "number" ? args.endTime : undefined;
+      if (startTime !== undefined && endTime !== undefined && endTime <= startTime) {
+        return fail(
+          "INVALID_PARAMS",
+          `endTime (${endTime}) must be greater than startTime (${startTime}).`,
+          "Pass the range in timeline seconds, end after start.",
+        );
+      }
+
+      const request: RefineMatteEdgesRequest = {
+        clipId,
+        maskId,
+        edge,
+        ...(startTime !== undefined ? { startTime } : {}),
+        ...(endTime !== undefined ? { endTime } : {}),
+      };
+      const result = await host.refineMatteEdges(request);
+      if ("code" in result) {
+        return fail(
+          "UNSUPPORTED_HOST",
+          result.error,
+          "Do not retry. Check get_capabilities → host.refineMatteEdges.",
+        );
+      }
+      if (result.keyframeCount === 0) {
+        return fail(
+          "NOT_FOUND",
+          `Mask ${maskId} has no keyframes in that range.`,
+          "Check the mask id, widen startTime/endTime, or re-run apply_subject_matte to build the matte.",
+        );
+      }
+
+      return {
+        ok: true,
+        summary: `Refined the edge of ${result.keyframeCount} keyframe(s) on mask ${result.maskId} (one undo step).${edgeSummary(result.edge)}`,
+        data: {
+          maskId: result.maskId,
+          keyframeCount: result.keyframeCount,
+          minFeatherPx: result.edge.minFeatherPx,
+          maxFeatherPx: result.edge.maxFeatherPx,
+          motion: [...result.edge.motion].map((value) => round(value, 3)),
+          timebase: "timeline-seconds",
+        },
+        warnings: result.warnings.length > 0 ? [...result.warnings] : undefined,
       };
     },
   },

@@ -53,6 +53,8 @@ export interface HostFeatures {
   readonly applySubjectMatte: boolean;
   /** Reframe a clip for a target aspect ratio (auto_reframe_clip). */
   readonly autoReframe: boolean;
+  /** Refine a matte's edge per keyframe (refine_matte_edges). */
+  readonly refineMatteEdges: boolean;
 }
 
 /** How the auto-reframe camera should behave. Mirrors core `ReframeSettings`. */
@@ -178,6 +180,34 @@ export interface SubjectSeparationRequest {
   readonly opacity?: number;
 }
 
+/**
+ * Edge refinement for a rotoscoped matte.
+ *
+ * `featherPx` is the edge softness where the subject is still;
+ * `motionSensitivity` lets it widen where the subject moves, up to
+ * `maxFeatherPx`. Set sensitivity to 0 for a uniform, pre-refinement edge.
+ */
+export interface MatteEdgeRequest {
+  /** Base feather in pixels where the subject is still. */
+  readonly featherPx: number;
+  /** Grow (+) or shrink (−) the silhouette, in pixels. */
+  readonly expansionPx?: number;
+  /** 0..1 — how much motion widens the feather. Default 0.6. */
+  readonly motionSensitivity?: number;
+  /** Upper bound for the motion-widened feather, in pixels. Default 3× base. */
+  readonly maxFeatherPx?: number;
+  readonly invert?: boolean;
+  /** Matte opacity, 0..1. Default 1. */
+  readonly opacity?: number;
+}
+
+export interface MatteEdgeResult {
+  /** Per-keyframe motion scores, 0..1. */
+  readonly motion: readonly number[];
+  readonly minFeatherPx: number;
+  readonly maxFeatherPx: number;
+}
+
 export interface ApplySubjectMatteRequest extends SubjectMatteRequest {
   /** Clip the matte is attached to. */
   readonly clipId: string;
@@ -188,6 +218,11 @@ export interface ApplySubjectMatteRequest extends SubjectMatteRequest {
   /** Mask expansion in pixels (positive grows the mask). Default 0. */
   readonly expansionPx?: number;
   readonly invertMask?: boolean;
+  /**
+   * Refine the matte's edge per keyframe instead of using one mask-wide
+   * feather. Overrides `featherPx`/`expansionPx`/`invertMask`.
+   */
+  readonly edge?: MatteEdgeRequest;
   /** Optionally also switch how the subject is composited. */
   readonly separation?: SubjectSeparationRequest;
 }
@@ -198,6 +233,31 @@ export interface ApplySubjectMatteResult {
   readonly firstTimeSeconds: number | null;
   readonly lastTimeSeconds: number | null;
   readonly separationApplied: boolean;
+  readonly warnings: readonly string[];
+  /** Present when the matte was written with per-keyframe edge refinement. */
+  readonly edge?: MatteEdgeResult;
+}
+
+/** Refine the edge of a matte that already exists on a mask. */
+export interface RefineMatteEdgesRequest {
+  readonly clipId: string;
+  /** Mask whose keyframes get the new edge. */
+  readonly maskId: string;
+  /** Edge settings; `motionSensitivity: 0` makes the feather uniform. */
+  readonly edge: MatteEdgeRequest;
+  /**
+   * Restrict refinement to this timeline range (seconds). Omitted refines
+   * every keyframe on the mask.
+   */
+  readonly startTime?: number;
+  readonly endTime?: number;
+}
+
+export interface RefineMatteEdgesResult {
+  readonly maskId: string;
+  /** Keyframes whose edge was rewritten. */
+  readonly keyframeCount: number;
+  readonly edge: MatteEdgeResult;
   readonly warnings: readonly string[];
 }
 
@@ -579,6 +639,16 @@ export interface EditingHost {
    */
   autoReframe?(request: AutoReframeRequest): Promise<
     AutoReframeHostResult | { readonly code: "unsupported_host"; readonly error: string }
+  >;
+
+  /**
+   * Refine a matte's edge per keyframe: feather, expansion, invert and
+   * opacity, with the feather widening where the subject moves. Destructive:
+   * callers must have confirmation. Optional: hosts that cannot write masks
+   * report `features().refineMatteEdges === false`.
+   */
+  refineMatteEdges?(request: RefineMatteEdgesRequest): Promise<
+    RefineMatteEdgesResult | { readonly code: "unsupported_host"; readonly error: string }
   >;
 
   /**
