@@ -11,7 +11,7 @@ const DETECTED: DetectedFace[] = [
 
 const backend = (faces: DetectedFace[] | (() => DetectedFace[])) => ({
   initialize: vi.fn(async () => undefined),
-  detect: vi.fn(async () =>
+  detect: vi.fn(async (_frame: ImageBitmap, _timestampMs?: number) =>
     (typeof faces === "function" ? faces() : faces).map((face) => ({ ...face })),
   ),
   dispose: vi.fn(),
@@ -193,5 +193,43 @@ describe("AutoReframeEngine face detection integration", () => {
     expect(result.success).toBe(true);
     expect(engine.usesFaceBackend()).toBe(false);
     expect(blackContext.getImageData).toHaveBeenCalled();
+  });
+
+  describe("non-uniform sample times", () => {
+    // smoothing 0 keeps the samples as they are, so the emitted times are
+    // exactly what the caller stamped.
+    const raw = { ...settings, smoothing: 0 };
+
+    it("stamps crops with the caller's times instead of index / frameRate", async () => {
+      const engine = new AutoReframeEngine();
+      await engine.initialize();
+      engine.setFaceBackend(backend(DETECTED));
+
+      const result = await engine.analyzeClip([bitmap(), bitmap(), bitmap()], 30, raw, undefined, [0, 1, 4]);
+
+      expect(result.success).toBe(true);
+      expect(result.keyframes.map((keyframe) => keyframe.time)).toEqual([0, 1, 4]);
+    });
+
+    it("hands the detector the real source timestamp, not the frame index", async () => {
+      const engine = new AutoReframeEngine();
+      await engine.initialize();
+      const detector = backend(DETECTED);
+      engine.setFaceBackend(detector);
+
+      await engine.analyzeClip([bitmap(), bitmap()], 30, raw, undefined, [0.5, 3.25]);
+
+      expect(detector.detect.mock.calls.map((call) => call[1])).toEqual([500, 3250]);
+    });
+
+    it("still walks the uniform grid when no times are supplied", async () => {
+      const engine = new AutoReframeEngine();
+      await engine.initialize();
+      engine.setFaceBackend(backend(DETECTED));
+
+      const result = await engine.analyzeClip([bitmap(), bitmap(), bitmap()], 2, raw);
+
+      expect(result.keyframes.map((keyframe) => keyframe.time)).toEqual([0, 0.5, 1]);
+    });
   });
 });

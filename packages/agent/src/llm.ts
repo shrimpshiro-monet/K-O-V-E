@@ -473,3 +473,30 @@ export class MockLLMClient implements LLMClient {
     return next;
   }
 }
+
+/**
+ * A client whose next response is computed from the request.
+ *
+ * `MockLLMClient` replays a fixed script in call order, which is fine for one
+ * agent and useless for several: once subagents run concurrently the order of
+ * their completions is not something a test can predict. This routes on the
+ * request instead, so a test can answer "who is asking, with which tools, and
+ * what history" — which is most of what subagent tests assert on.
+ */
+export class FnLLMClient implements LLMClient {
+  /** Every request received, in arrival order. */
+  readonly calls: LLMTurnInput[] = [];
+
+  constructor(
+    private readonly fn: (
+      input: LLMTurnInput,
+      index: number,
+    ) => LLMResponse | Promise<LLMResponse>,
+  ) {}
+
+  async complete(input: LLMTurnInput): Promise<LLMResponse> {
+    const index = this.calls.length;
+    this.calls.push(input);
+    return this.fn(input, index);
+  }
+}

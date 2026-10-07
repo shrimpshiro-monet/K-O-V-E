@@ -47,6 +47,18 @@ export interface MaskKeyframe {
   time: number;
   path: BezierPath;
   easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+  /**
+   * Per-keyframe edge overrides. Every field is optional: a keyframe that
+   * omits one inherits the mask's own value at that instant, so existing
+   * mattes (and anything that writes paths only) keep their current look.
+   *
+   * This is what lets a rotoscoped matte refine its edge over time — a wider
+   * feather while the subject moves fast, a tighter one once it settles.
+   */
+  feathering?: number;
+  expansion?: number;
+  inverted?: boolean;
+  opacity?: number;
 }
 
 export interface Mask {
@@ -310,6 +322,85 @@ export function applyEasing(
     default:
       return t;
   }
+}
+
+/**
+ * The edge treatment that actually applies at one instant: the interpolated
+ * path plus the feather/expansion/invert/opacity in effect at that time.
+ */
+export interface ResolvedMaskEdge {
+  path: BezierPath;
+  feathering: number;
+  expansion: number;
+  inverted: boolean;
+  opacity: number;
+}
+
+const mix = (from: number, to: number, t: number): number => from + (to - from) * t;
+
+/**
+ * Blend the edge values of two keyframes.
+ *
+ * A keyframe that omits an override inherits the mask's own value, so a matte
+ * written before per-keyframe edges existed resolves to exactly the mask-level
+ * treatment at every instant. `inverted` cannot be blended, so it holds the
+ * preceding keyframe's value (step interpolation), matching how a boolean
+ * property behaves everywhere else in the editor.
+ */
+function resolveEdgeBetween(
+  base: ResolvedMaskEdge,
+  prev: MaskKeyframe,
+  next: MaskKeyframe,
+  t: number,
+): ResolvedMaskEdge {
+  return {
+    path: prev === next ? prev.path : interpolatePaths(prev.path, next.path, t),
+    feathering: mix(prev.feathering ?? base.feathering, next.feathering ?? base.feathering, t),
+    expansion: mix(prev.expansion ?? base.expansion, next.expansion ?? base.expansion, t),
+    inverted: prev.inverted ?? base.inverted,
+    opacity: mix(prev.opacity ?? base.opacity, next.opacity ?? base.opacity, t),
+  };
+}
+
+/**
+ * Resolve a mask's shape *and* edge treatment at a timeline instant.
+ *
+ * Pure and synchronous: the caller supplies the whole `Mask`, so this works
+ * for the live engine, for tests and for the export compositor alike.
+ */
+export function resolveMaskEdgeAtTime(mask: Mask, time: number): ResolvedMaskEdge {
+  const base: ResolvedMaskEdge = {
+    path: mask.path,
+    feathering: mask.feathering,
+    expansion: mask.expansion,
+    inverted: mask.inverted,
+    opacity: mask.opacity,
+  };
+
+  const keyframes = mask.keyframes ?? [];
+  if (keyframes.length === 0) return base;
+  if (keyframes.length === 1) return resolveEdgeBetween(base, keyframes[0], keyframes[0], 0);
+
+  let prevKeyframe: MaskKeyframe | null = null;
+  let nextKeyframe: MaskKeyframe | null = null;
+
+  for (const keyframe of keyframes) {
+    if (keyframe.time <= time) {
+      prevKeyframe = keyframe;
+    } else if (!nextKeyframe) {
+      nextKeyframe = keyframe;
+      break;
+    }
+  }
+
+  if (!prevKeyframe) return resolveEdgeBetween(base, keyframes[0], keyframes[0], 0);
+  if (!nextKeyframe) return resolveEdgeBetween(base, prevKeyframe, prevKeyframe, 0);
+
+  const duration = nextKeyframe.time - prevKeyframe.time;
+  const elapsed = time - prevKeyframe.time;
+  const t = duration > 0 ? Math.max(0, Math.min(1, elapsed / duration)) : 0;
+
+  return resolveEdgeBetween(base, prevKeyframe, nextKeyframe, applyEasing(t, prevKeyframe.easing));
 }
 
 export function pointsToDrawnPath(
@@ -628,6 +719,59 @@ export class MaskEngine {
     }
   }
 
+  /**
+   * Set (or clear) the edge overrides of a single mask keyframe.
+   *
+   * Passing `undefined` for a field removes the override, so the keyframe goes
+   * back to inheriting the mask's value. Returns the updated keyframe, or
+   * `null` when the mask/keyframe does not exist.
+   */
+  setKeyframeEdge(
+    maskId: string,
+    keyframeId: string,
+    edge: {
+      feathering?: number | undefined;
+      expansion?: number | undefined;
+      inverted?: boolean | undefined;
+      opacity?: number | undefined;
+    },
+  ): MaskKeyframe | null {
+    const mask = this.masks.get(maskId);
+    if (!mask) return null;
+
+    let updated: MaskKeyframe | null = null;
+    const keyframes = mask.keyframes.map((keyframe) => {
+      if (keyframe.id !== keyframeId) return keyframe;
+      const next: MaskKeyframe = { ...keyframe };
+      if (edge.feathering !== undefined) {
+        next.feathering = Math.max(0, Math.min(100, edge.feathering));
+      } else if ("feathering" in edge) {
+        delete next.feathering;
+      }
+      if (edge.expansion !== undefined) {
+        next.expansion = Math.max(-100, Math.min(100, edge.expansion));
+      } else if ("expansion" in edge) {
+        delete next.expansion;
+      }
+      if (edge.inverted !== undefined) {
+        next.inverted = edge.inverted;
+      } else if ("inverted" in edge) {
+        delete next.inverted;
+      }
+      if (edge.opacity !== undefined) {
+        next.opacity = Math.max(0, Math.min(1, edge.opacity));
+      } else if ("opacity" in edge) {
+        delete next.opacity;
+      }
+      updated = next;
+      return next;
+    });
+
+    if (!updated) return null;
+    this.masks.set(maskId, { ...mask, keyframes });
+    return updated;
+  }
+
   setKeyframeEasing(
     maskId: string,
     keyframeId: string,
@@ -645,35 +789,7 @@ export class MaskEngine {
   getMaskAtTime(maskId: string, time: number): BezierPath | null {
     const mask = this.masks.get(maskId);
     if (!mask) return null;
-    if (mask.keyframes.length === 0) {
-      return mask.path;
-    }
-    if (mask.keyframes.length === 1) {
-      return mask.keyframes[0].path;
-    }
-    let prevKeyframe: MaskKeyframe | null = null;
-    let nextKeyframe: MaskKeyframe | null = null;
-
-    for (const keyframe of mask.keyframes) {
-      if (keyframe.time <= time) {
-        prevKeyframe = keyframe;
-      } else if (!nextKeyframe) {
-        nextKeyframe = keyframe;
-        break;
-      }
-    }
-    if (!prevKeyframe) {
-      return mask.keyframes[0].path;
-    }
-    if (!nextKeyframe) {
-      return prevKeyframe.path;
-    }
-    const duration = nextKeyframe.time - prevKeyframe.time;
-    const elapsed = time - prevKeyframe.time;
-    const t = duration > 0 ? elapsed / duration : 0;
-    const easedT = applyEasing(t, prevKeyframe.easing);
-
-    return interpolatePaths(prevKeyframe.path, nextKeyframe.path, easedT);
+    return resolveMaskEdgeAtTime(mask, time).path;
   }
 
   deleteMask(maskId: string): void {
@@ -695,18 +811,19 @@ export class MaskEngine {
   ): Promise<MaskResult> {
     const startTime = performance.now();
     this.resizeTo(image.width, image.height);
-    const path =
-      time !== undefined
-        ? this.getMaskAtTime(mask.id, time) || mask.path
-        : mask.path;
+    // Resolve from the mask we were handed (not the registry copy) so the edge
+    // treatment honours per-keyframe feather/expansion/invert/opacity, which
+    // are time-varying and therefore cannot be read off `mask` directly.
+    const edge =
+      time !== undefined ? resolveMaskEdgeAtTime(mask, time) : resolveMaskEdgeAtTime(mask, 0);
     this.ctx.clearRect(0, 0, this.width, this.height);
     this.maskCtx.clearRect(0, 0, this.width, this.height);
-    this.generateMaskFromPath(path, mask.inverted);
-    if (mask.feathering > 0) {
-      this.applyFeathering(mask.feathering);
+    this.generateMaskFromPath(edge.path, edge.inverted);
+    if (edge.feathering > 0) {
+      this.applyFeathering(edge.feathering);
     }
-    if (mask.expansion !== 0) {
-      this.applyExpansion(mask.expansion);
+    if (edge.expansion !== 0) {
+      this.applyExpansion(edge.expansion);
     }
 
     // Draw source image
@@ -714,10 +831,10 @@ export class MaskEngine {
     this.ctx.globalCompositeOperation = "destination-in";
     this.ctx.drawImage(this.maskCanvas, 0, 0);
     this.ctx.globalCompositeOperation = "source-over";
-    if (mask.opacity < 1) {
+    if (edge.opacity < 1) {
       const tempCanvas = new OffscreenCanvas(this.width, this.height);
       const tempCtx = tempCanvas.getContext("2d")!;
-      tempCtx.globalAlpha = mask.opacity;
+      tempCtx.globalAlpha = edge.opacity;
       tempCtx.drawImage(this.canvas, 0, 0);
       this.ctx.clearRect(0, 0, this.width, this.height);
       this.ctx.drawImage(tempCanvas, 0, 0);

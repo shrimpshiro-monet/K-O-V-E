@@ -1,4 +1,5 @@
 import type { FaceBox, FaceDetectionBackend } from "./face-detection-engine";
+import { smoothReframeCameraPath } from "./reframe-camera-path";
 
 export type AspectRatioPreset =
   | "16:9"
@@ -160,6 +161,15 @@ export interface ReframeResult {
   outputHeight: number;
   success: boolean;
   message?: string;
+  /**
+   * Largest gap between the fitted camera curve and the polyline the renderer
+   * will draw, in source pixels. Present once the path was smoothed.
+   */
+  pathDeviationPx?: number;
+  /** Fastest camera motion, in crop-widths per second. */
+  peakSpeedCropRatios?: number;
+  /** Notes on the camera move (no freedom on an axis, whip-pans, thinning). */
+  warnings?: string[];
 }
 
 type ProgressCallback = (progress: number, message: string) => void;
@@ -238,11 +248,21 @@ export class AutoReframeEngine {
     return this.initialized;
   }
 
+  /**
+   * Picks a crop per frame.
+   *
+   * `frameRate` turns a frame index into a source timestamp, which assumes the
+   * frames were sampled on a uniform grid. Pass `sampleTimes` (source seconds,
+   * one per frame) when they were not — a motion-adaptive sampler decodes
+   * densely only where the picture changes, and the camera path is fitted in
+   * real time either way.
+   */
   async analyzeClip(
     frames: ImageBitmap[],
     frameRate: number,
     settings: ReframeSettings,
     onProgress?: ProgressCallback,
+    sampleTimes?: readonly number[],
   ): Promise<ReframeResult> {
     if (!this.initialized || !this.ctx) {
       return {
@@ -268,7 +288,7 @@ export class AutoReframeEngine {
 
     for (let i = 0; i < frames.length; i++) {
       const frame = frames[i];
-      const time = i / frameRate;
+      const time = sampleTimes?.[i] ?? i / frameRate;
       const progress = Math.round((i / frames.length) * 100);
 
       onProgress?.(progress, `Analyzing frame ${i + 1}/${frames.length}`);
@@ -298,18 +318,25 @@ export class AutoReframeEngine {
       });
     }
 
-    const smoothedKeyframes = this.smoothKeyframes(
+    const smoothed = this.smoothKeyframes(
       keyframes,
       settings.smoothing,
+      sourceWidth,
+      sourceHeight,
     );
 
     onProgress?.(100, "Analysis complete");
 
     return {
-      keyframes: smoothedKeyframes,
+      keyframes: smoothed.keyframes,
       outputWidth: targetConfig.width,
       outputHeight: targetConfig.height,
       success: true,
+      // Reported so callers can say what the camera actually does, rather than
+      // leaving the quality of the move invisible.
+      pathDeviationPx: smoothed.deviationPx,
+      peakSpeedCropRatios: smoothed.peakSpeed,
+      warnings: smoothed.warnings,
     };
   }
 
@@ -621,37 +648,59 @@ export class AutoReframeEngine {
     };
   }
 
+  /**
+   * Smooth the camera path.
+   *
+   * This used to be a centred moving average over a fixed window, which had two
+   * problems: the window was sized from `smoothing` alone, so on a short clip it
+   * could span nearly the whole path and average the camera move out of
+   * existence; and averaging does nothing for the joints the renderer actually
+   * draws between keyframes.
+   *
+   * The replacement fits a monotone spline through the samples and places
+   * keyframes only where the path bends, densely enough that the polyline the
+   * renderer interpolates stays within a pixel tolerance of the curve. See
+   * `smoothReframeCameraPath`.
+   */
   private smoothKeyframes(
     keyframes: ReframeKeyframe[],
     smoothing: number,
-  ): ReframeKeyframe[] {
-    if (keyframes.length < 3 || smoothing === 0) return keyframes;
+    sourceWidth: number,
+    sourceHeight: number,
+  ): { keyframes: ReframeKeyframe[]; deviationPx: number; peakSpeed: number; warnings: string[] } {
+    const unchanged = {
+      keyframes,
+      deviationPx: 0,
+      peakSpeed: 0,
+      warnings: [] as string[],
+    };
+    // smoothing 0 means "use the samples as they are", as it always has.
+    if (keyframes.length < 3 || smoothing === 0) return unchanged;
 
-    const smoothed: ReframeKeyframe[] = [];
-    const windowSize = Math.max(3, Math.round(smoothing * 10));
+    const fitted = smoothReframeCameraPath(
+      keyframes.map((keyframe) => ({
+        time: keyframe.time,
+        centerX: keyframe.cropX + keyframe.cropWidth / 2,
+        centerY: keyframe.cropY + keyframe.cropHeight / 2,
+        width: keyframe.cropWidth,
+        height: keyframe.cropHeight,
+      })),
+      { smoothing, sourceWidth, sourceHeight },
+    );
 
-    for (let i = 0; i < keyframes.length; i++) {
-      const start = Math.max(0, i - Math.floor(windowSize / 2));
-      const end = Math.min(keyframes.length, i + Math.ceil(windowSize / 2));
-
-      let sumX = 0,
-        sumY = 0;
-      let count = 0;
-
-      for (let j = start; j < end; j++) {
-        sumX += keyframes[j].cropX;
-        sumY += keyframes[j].cropY;
-        count++;
-      }
-
-      smoothed.push({
-        ...keyframes[i],
-        cropX: Math.round(sumX / count),
-        cropY: Math.round(sumY / count),
-      });
-    }
-
-    return smoothed;
+    return {
+      keyframes: fitted.keyframes.map((keyframe) => ({
+        time: keyframe.time,
+        cropX: Math.round(keyframe.centerX - keyframe.width / 2),
+        cropY: Math.round(keyframe.centerY - keyframe.height / 2),
+        cropWidth: Math.round(keyframe.width),
+        cropHeight: Math.round(keyframe.height),
+        scale: 1,
+      })),
+      deviationPx: fitted.deviationPx,
+      peakSpeed: fitted.peakSpeed,
+      warnings: [...fitted.warnings],
+    };
   }
 
   getKeyframeAtTime(

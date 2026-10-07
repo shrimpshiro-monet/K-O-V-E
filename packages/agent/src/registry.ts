@@ -6,6 +6,7 @@ import { AUDIO_ANALYSIS_TOOLS } from "./tools-audio-analysis";
 import { VISION_TOOLS } from "./tools-vision";
 import { DISCOVERY_TOOLS } from "./tools-discovery";
 import { RENDER_TOOLS } from "./tools-render";
+import { SUBAGENT_TOOLS } from "./tools-subagents";
 import {
   resolveMs,
   resolveRange,
@@ -34131,7 +34132,7 @@ const TOOLS: RegisteredTool[] = [
 
 // ---- Registry --------------------------------------------------------------
 const REGISTRY = new Map<string, RegisteredTool>(
-  [...TOOLS, ...HISTORY_TOOLS, ...AUDIO_ANALYSIS_TOOLS, ...RENDER_TOOLS, ...VISION_TOOLS, ...DISCOVERY_TOOLS].map((t) => [t.name, t]),
+  [...TOOLS, ...HISTORY_TOOLS, ...AUDIO_ANALYSIS_TOOLS, ...RENDER_TOOLS, ...VISION_TOOLS, ...DISCOVERY_TOOLS, ...SUBAGENT_TOOLS].map((t) => [t.name, t]),
 );
 
 export function getTool(name: string): RegisteredTool | undefined {
