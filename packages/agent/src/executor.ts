@@ -4,6 +4,7 @@ import { getTool } from "./registry";
 import { resolveClipId } from "./serialize";
 import { gateToolArgs } from "./schema-validate";
 import { withWarnings } from "./multicam-units";
+import { RUN_TOOL_NAME } from "./tools-discovery";
 
 /**
  * Resolve agent-friendly clip references (clipIndex / atSec [+ trackIndex]) to a
@@ -56,6 +57,29 @@ export async function executeTool(
     const message = error instanceof Error ? error.message : "Tool execution failed";
     return { ok: false, summary: message, error: { code: "TOOL_ERROR", message } };
   }
+}
+
+/**
+ * The tool a call actually targets, unwrapping the discovery invoker.
+ *
+ * `run_tool` exists so the model can reach a tool that the per-turn router did
+ * not send (see tools-discovery.ts). Everything that inspects a call — the
+ * director-plan gate, the destructive/expensive confirmation gate — must judge
+ * the *target*, not the wrapper, or a destructive tool would slip through
+ * unconfirmed and a read-only one would be blocked as if it were an edit.
+ */
+export function resolveCallTarget(
+  name: string,
+  input: Record<string, unknown> | undefined,
+): { readonly name: string; readonly args: Record<string, unknown> | undefined } {
+  if (name !== RUN_TOOL_NAME) return { name, args: input };
+  const target = input?.name;
+  const args = input?.args;
+  if (typeof target !== "string" || target === RUN_TOOL_NAME) return { name, args: input };
+  return {
+    name: target,
+    args: typeof args === "object" && args !== null ? (args as Record<string, unknown>) : undefined,
+  };
 }
 
 export function isDestructive(name: string): boolean {

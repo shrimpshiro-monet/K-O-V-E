@@ -7,7 +7,7 @@ import type { LLMClient, LLMResponse, LoopMessage, LoopToolResultBlock } from ".
 import { toAnthropicTools } from "./registry";
 import { makeEmptyProject, makeProjectWithClip } from "./test-fixtures";
 import type { EditingHost } from "./host";
-import type { AgentEvent } from "./types";
+import type { AgentEvent, ToolCall } from "./types";
 
 const tools = toAnthropicTools();
 const userMsg = (content: string): LoopMessage[] => [{ role: "user", content }];
@@ -156,6 +156,66 @@ describe("runTurn", () => {
     expect(confirmGate).toHaveBeenCalledOnce();
     expect(host.getProject().timeline.tracks[0].clips).toHaveLength(1);
     expect(result.committed).toBe(true);
+  });
+
+  it("confirms the tool behind run_tool, not the wrapper", async () => {
+    const host = new HeadlessHost(makeProjectWithClip());
+    const script: LLMResponse[] = [
+      {
+        text: "",
+        stopReason: "tool_use",
+        // A destructive tool called through the discovery invoker.
+        toolUses: [
+          {
+            id: "t1",
+            name: "run_tool",
+            input: { name: "remove_clip", args: { clipId: "c1" } },
+          },
+        ],
+      },
+      { text: "Cancelled.", stopReason: "end_turn", toolUses: [] },
+    ];
+    const confirmGate = vi.fn((_call: ToolCall) => "reject" as const);
+    await runTurn({
+      host,
+      llm: new MockLLMClient(script),
+      tools,
+      messages: userMsg("delete the clip through discovery"),
+      confirmGate,
+    });
+
+    // The user must be asked about the real tool, and rejecting it must protect
+    // the timeline.
+    expect(confirmGate).toHaveBeenCalledOnce();
+    expect(confirmGate.mock.calls[0][0].name).toBe("remove_clip");
+    expect(host.getProject().timeline.tracks[0].clips).toHaveLength(1);
+  });
+
+  it("does not ask for confirmation on a read-only run_tool call", async () => {
+    const host = new HeadlessHost(makeProjectWithClip());
+    const script: LLMResponse[] = [
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [
+          {
+            id: "t1",
+            name: "run_tool",
+            input: { name: "get_clip", args: { clipId: "c1" } },
+          },
+        ],
+      },
+      { text: "Here is the clip.", stopReason: "end_turn", toolUses: [] },
+    ];
+    const confirmGate = vi.fn((_call: ToolCall) => "reject" as const);
+    await runTurn({
+      host,
+      llm: new MockLLMClient(script),
+      tools,
+      messages: userMsg("what is in this clip?"),
+      confirmGate,
+    });
+    expect(confirmGate).not.toHaveBeenCalled();
   });
 
   it("performs >=5 cross-domain edits in one turn and reverts them atomically on error", async () => {

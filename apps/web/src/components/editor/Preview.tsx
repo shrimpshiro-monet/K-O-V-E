@@ -7644,6 +7644,7 @@ export const Preview: React.FC = () => {
         >
           <canvas
             ref={canvasRef}
+            data-preview-canvas=""
             width={previewRes.width}
             height={previewRes.height}
             className="w-full h-full object-contain bg-[var(--screen-bg)] rounded-[10px]"
