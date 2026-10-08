@@ -670,6 +670,15 @@ export interface RunBaselineOptions {
   readonly client?: LLMClient;
   /** Cap the number of combinations (smoke runs). */
   readonly limit?: number;
+  /** Start index into the flattened corpus combinations (paired with limit for slices). */
+  readonly offset?: number;
+  /**
+   * Exact combination ids (`projectId/promptId`) to run; when non-empty this
+   * wins over offset/limit, and corpus order is preserved so report rows stay
+   * comparable across split runs. Lets mixed-k samplings target a stratified
+   * subset (e.g. k=3 on half the corpus, k=1 on the other half).
+   */
+  readonly includeIds?: readonly string[];
   /** Repeats per combination (k). Baseline runs use k >= 3 for spread. */
   readonly runsPerCombo?: number;
   readonly config?: WorkersAIConfig;
@@ -677,6 +686,31 @@ export interface RunBaselineOptions {
   readonly reportPath?: string;
   readonly root?: string;
   readonly onCase?: (result: BaselineCaseResult) => void;
+}
+
+/**
+ * Selects corpus combinations for a run. `includeIds` (exact
+ * `projectId/promptId` ids) wins when non-empty and preserves corpus order;
+ * otherwise the flattened combos are sliced with offset/limit. Unknown
+ * include ids fail fast here — before a single provider call is made.
+ */
+export function selectCombos(
+  all: readonly { entry: EvalProject; prompt: EvalPrompt }[],
+  opts: { offset?: number; limit?: number; includeIds?: readonly string[] },
+): { entry: EvalProject; prompt: EvalPrompt }[] {
+  const includeIds = (opts.includeIds ?? []).map(id => id.trim()).filter(id => id.length > 0);
+  if (includeIds.length > 0) {
+    const wanted = new Set(includeIds);
+    const present = new Set(all.map(c => `${c.entry.id}/${c.prompt.id}`));
+    const unknown = [...wanted].filter(id => !present.has(id));
+    if (unknown.length > 0) {
+      throw new Error(`Unknown corpus combos: ${unknown.sort().join(", ")}`);
+    }
+    return all.filter(c => wanted.has(`${c.entry.id}/${c.prompt.id}`));
+  }
+  const offset = Math.max(0, opts.offset ?? 0);
+  const limit = Math.max(1, opts.limit ?? Number.MAX_SAFE_INTEGER);
+  return all.slice(offset, offset + limit);
 }
 
 export interface SummarizeOptions {
@@ -774,7 +808,7 @@ export function summarizeBaseline(
   };
 }
 
-/** Runs every corpus project × prompt combination and writes the report. */
+/** Runs every selected corpus project × prompt combination and writes the report. */
 export async function runBaseline(opts: RunBaselineOptions = {}): Promise<BaselineSummary> {
   const root = opts.root ?? CORPUS_DIR;
   const corpus = loadCorpus(opts.root ? resolve(opts.root, "projects.json") : CORPUS_PATH);
@@ -790,9 +824,10 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
   }
 
   const runsPerCombo = Math.max(1, opts.runsPerCombo ?? 1);
-  const combos = corpus
-    .flatMap(entry => entry.prompts.map(prompt => ({ entry, prompt })))
-    .slice(0, Math.max(1, opts.limit ?? Number.MAX_SAFE_INTEGER));
+  const combos = selectCombos(
+    corpus.flatMap(entry => entry.prompts.map(prompt => ({ entry, prompt }))),
+    { offset: opts.offset, limit: opts.limit, includeIds: opts.includeIds },
+  );
   const work = combos.flatMap(combo =>
     Array.from({ length: runsPerCombo }, (_, run) => ({ ...combo, run })),
   );

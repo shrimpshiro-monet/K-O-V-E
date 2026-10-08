@@ -1,7 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { Project } from "@kove-advanced/core/types/project";
 import type { Track } from "@kove-advanced/core/types/timeline";
+import type { LLMClient } from "../llm";
 import {
   DEFAULT_REPORT_PATH,
   PINNED_SAMPLING,
@@ -13,19 +16,36 @@ import {
   isQuotaMessage,
   pinnedSend,
   runBaseline,
+  selectCombos,
   summarizeBaseline,
   REPO_ROOT,
 } from "./baseline";
 import { loadCorpus, missingAssets } from "./corpus";
+import type { EvalProject, EvalPrompt } from "./corpus";
 import { CORPUS_PATH } from "./baseline";
 
 const LIVE = process.env.KOVE_EVAL_BASELINE === "1";
 const LIMIT = Number(process.env.KOVE_EVAL_LIMIT ?? "0") || undefined;
+/** Start index into the flattened combos (pairs with LIMIT for slices). */
+const OFFSET = Number(process.env.KOVE_EVAL_OFFSET ?? "0") || undefined;
+/**
+ * Mixed-k sampling: exact `projectId/promptId` combos to run (comma-separated).
+ * Wins over OFFSET/LIMIT, so one run can do k=3 on a stratified half of the
+ * corpus and a second run k=1 on the rest. Reports land in distinct files so
+ * split runs never clobber each other.
+ */
+const INCLUDE = (process.env.KOVE_EVAL_INCLUDE ?? "")
+  .split(",")
+  .map(id => id.trim())
+  .filter(Boolean);
 /** Repeats per combination (k). k >= 3 so gate rates carry a spread. */
 const RUNS = Number(process.env.KOVE_EVAL_RUNS ?? "3") || 3;
-const reportPath = LIMIT
-  ? new URL("../../../../evaluation-files/baseline-smoke.json", import.meta.url).pathname
-  : undefined;
+const selection = INCLUDE.length > 0 ? `include-${INCLUDE.length}` : OFFSET ? `offset-${OFFSET}` : undefined;
+const reportPath = selection
+  ? new URL(`../../../../evaluation-files/baseline-r${RUNS}-${selection}.json`, import.meta.url).pathname
+  : LIMIT
+    ? new URL("../../../../evaluation-files/baseline-smoke.json", import.meta.url).pathname
+    : undefined;
 
 function syntheticProject(tracks: Track[]): Project {
   const now = Date.now();
@@ -72,6 +92,102 @@ function trackWith(clips: Array<{ id: string; startTime: number; duration: numbe
     solo: false,
   } as unknown as Track;
 }
+
+describe("combo selection for split-k runs", () => {
+  const prompt = (id: string, type: EvalPrompt["type"]): EvalPrompt => ({
+    id,
+    type,
+    text: `prompt ${id}`,
+  });
+  const project = (id: string, prompts: readonly EvalPrompt[]): EvalProject => ({
+    id,
+    category: "test",
+    media: ["clip.mp4"],
+    music: null,
+    reference: null,
+    notes: "",
+    prompts,
+  });
+  const corpus: EvalProject[] = [
+    project("a", [prompt("d", "detailed"), prompt("v", "vague"), prompt("g", "genre")]),
+    project("b", [prompt("d", "detailed"), prompt("v", "vague"), prompt("g", "genre")]),
+  ];
+  const combos = corpus.flatMap(entry => entry.prompts.map(p => ({ entry, prompt: p })));
+  const ids = (selected: readonly { entry: EvalProject; prompt: EvalPrompt }[]): string[] =>
+    selected.map(({ entry, prompt }) => `${entry.id}/${prompt.id}`);
+
+  it("slices with offset and limit; offset alone runs the tail", () => {
+    expect(ids(selectCombos(combos, {}))).toEqual(["a/d", "a/v", "a/g", "b/d", "b/v", "b/g"]);
+    expect(ids(selectCombos(combos, { limit: 2 }))).toEqual(["a/d", "a/v"]);
+    expect(ids(selectCombos(combos, { offset: 4 }))).toEqual(["b/v", "b/g"]);
+    expect(ids(selectCombos(combos, { offset: 2, limit: 2 }))).toEqual(["a/g", "b/d"]);
+  });
+
+  it("include wins over offset/limit, preserves corpus order, and tolerates whitespace", () => {
+    const include = [" b/v ", "a/d", "b/g"];
+    expect(ids(selectCombos(combos, { includeIds: include, offset: 4, limit: 1 }))).toEqual([
+      "a/d",
+      "b/v",
+      "b/g",
+    ]);
+    expect(ids(selectCombos(combos, { includeIds: ["b/g"] }))).toEqual(["b/g"]);
+  });
+
+  it("fails fast on unknown include ids before any case runs", () => {
+    expect(() => selectCombos(combos, { includeIds: ["a/d", "zzz/q"] })).toThrow(
+      /Unknown corpus combos: zzz\/q/,
+    );
+  });
+
+  it("runs only the included combinations at k repeats and writes the report", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kove-eval-include-"));
+    try {
+      writeFileSync(join(root, "clip.mp4"), "");
+      writeFileSync(
+        join(root, "projects.json"),
+        JSON.stringify(
+          corpus.map(entry => ({
+            id: entry.id,
+            category: entry.category,
+            media: entry.media,
+            music: entry.music,
+            reference: entry.reference,
+            notes: entry.notes,
+            prompts: entry.prompts,
+          })),
+        ),
+      );
+      const reportPath = join(root, "report.json");
+      // Every case fails here (dummy assets cannot probe): fine — selection is
+      // observable purely from which result rows exist and how often.
+      const client: LLMClient = {
+        complete: () => Promise.reject(new Error("offline client; must never be called")),
+      };
+      const summary = await runBaseline({
+        root,
+        client,
+        includeIds: ["a/g", "b/d"],
+        runsPerCombo: 2,
+        reportPath,
+      });
+      expect(summary.cases).toBe(2);
+      expect(summary.runsPerCombo).toBe(2);
+      expect(summary.total).toBe(4);
+      expect(summary.results.map(r => `${r.id}#${r.run}`)).toEqual([
+        "a/g#0",
+        "a/g#1",
+        "b/d#0",
+        "b/d#1",
+      ]);
+      expect(summary.status).toBe("complete");
+      const written = JSON.parse(readFileSync(reportPath, "utf8")) as { results: unknown[]; cases: number };
+      expect(written.cases).toBe(2);
+      expect(written.results).toHaveLength(4);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("baseline harness helpers", () => {
   it("loads the corpus and passes the asset-existence gate", () => {
@@ -260,6 +376,8 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
     async () => {
       const summary = await runBaseline({
         limit: LIMIT,
+        offset: OFFSET,
+        includeIds: INCLUDE.length > 0 ? INCLUDE : undefined,
         runsPerCombo: RUNS,
         reportPath,
         concurrency: 3,
@@ -279,7 +397,9 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
         },
       });
 
-      const cases = LIMIT ?? 27;
+      const cases = INCLUDE.length > 0
+        ? INCLUDE.length
+        : Math.max(0, Math.min(LIMIT ?? 27, 27 - (OFFSET ?? 0)));
       expect(summary.cases).toBe(cases);
       expect(summary.runsPerCombo).toBe(RUNS);
       expect(summary.total).toBeLessThanOrEqual(cases * RUNS);
