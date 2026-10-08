@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -14,6 +15,7 @@ import {
   loadWorkersAIConfig,
   parseDevVars,
   isQuotaMessage,
+  fingerprintCorpusFile,
   pinnedSend,
   runBaseline,
   selectCombos,
@@ -180,9 +182,34 @@ describe("combo selection for split-k runs", () => {
         "b/d#1",
       ]);
       expect(summary.status).toBe("complete");
-      const written = JSON.parse(readFileSync(reportPath, "utf8")) as { results: unknown[]; cases: number };
+      // The report pins the exact corpus bytes it ran: sha256 of the file we wrote.
+      const expectedFp = createHash("sha256").update(readFileSync(join(root, "projects.json"))).digest("hex");
+      expect(summary.corpusFingerprint).toBe(expectedFp);
+      const written = JSON.parse(readFileSync(reportPath, "utf8")) as {
+        results: unknown[];
+        cases: number;
+        corpusFingerprint: string;
+      };
       expect(written.cases).toBe(2);
       expect(written.results).toHaveLength(4);
+      expect(written.corpusFingerprint).toBe(expectedFp);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("the corpus fingerprint changes when any corpus byte changes", () => {
+    const root = mkdtempSync(join(tmpdir(), "kove-eval-fp-"));
+    try {
+      const a = join(root, "a.json");
+      const b = join(root, "b.json");
+      const bytes = JSON.stringify([{ id: "p" }], null, 2);
+      writeFileSync(a, bytes);
+      writeFileSync(b, `${bytes}\n`); // single-byte difference
+      const fpA = fingerprintCorpusFile(a);
+      expect(fpA).toMatch(/^[0-9a-f]{64}$/);
+      expect(fingerprintCorpusFile(a)).toBe(fpA); // stable
+      expect(fingerprintCorpusFile(b)).not.toBe(fpA); // byte-sensitive
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -306,7 +333,15 @@ describe("baseline harness helpers", () => {
         make("c", 1, true, false),
         make("c", 2, true, false),
       ],
-      { model: "m", cases: 3, runsPerCombo: 3, status: "aborted", abortReason: "stopped early", quotaExcluded: 1 },
+      {
+        model: "m",
+        cases: 3,
+        runsPerCombo: 3,
+        status: "aborted",
+        abortReason: "stopped early",
+        quotaExcluded: 1,
+        corpusFingerprint: "test-fingerprint",
+      },
     );
     expect(summary.quotaExcluded).toBe(1);
     expect(summary.status).toBe("aborted");

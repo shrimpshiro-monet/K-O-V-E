@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -424,6 +425,13 @@ export interface BaselineSummary {
   readonly model: string;
   readonly sampling: SamplingPinning;
   readonly runsPerCombo: number;
+  /**
+   * sha256 of the corpus file bytes this run measured. Live runs happen
+   * against whatever corpus the checkout holds (clean-clone synthetic or a
+   * local real-media corpus), and two corpora may share project ids — a
+   * report that does not pin its corpus can be silently cross-attributed.
+   */
+  readonly corpusFingerprint: string;
   /** Distinct corpus combinations (independent of repeats). */
   readonly cases: number;
   /** Case-runs attempted (cases × runsPerCombo when complete, fewer when aborted). */
@@ -720,6 +728,12 @@ export interface SummarizeOptions {
   readonly status: "complete" | "aborted";
   readonly abortReason?: string;
   readonly quotaExcluded: number;
+  readonly corpusFingerprint: string;
+}
+
+/** sha256 of the corpus file bytes — pins every report to the exact corpus it ran. */
+export function fingerprintCorpusFile(corpusFile: string): string {
+  return createHash("sha256").update(readFileSync(corpusFile)).digest("hex");
 }
 
 /**
@@ -784,6 +798,7 @@ export function summarizeBaseline(
     model: opts.model,
     sampling: PINNED_SAMPLING,
     runsPerCombo: opts.runsPerCombo,
+    corpusFingerprint: opts.corpusFingerprint,
     cases: opts.cases,
     total: results.length,
     passed: valid.filter(r => r.ok).length,
@@ -811,7 +826,9 @@ export function summarizeBaseline(
 /** Runs every selected corpus project × prompt combination and writes the report. */
 export async function runBaseline(opts: RunBaselineOptions = {}): Promise<BaselineSummary> {
   const root = opts.root ?? CORPUS_DIR;
-  const corpus = loadCorpus(opts.root ? resolve(opts.root, "projects.json") : CORPUS_PATH);
+  const corpusFile = opts.root ? resolve(opts.root, "projects.json") : CORPUS_PATH;
+  const corpus = loadCorpus(corpusFile);
+  const corpusFingerprint = fingerprintCorpusFile(corpusFile);
   const missing = missingAssets(corpus, root);
   if (missing.length > 0) {
     throw new Error(`Corpus asset gate failed:\n${missing.join("\n")}`);
@@ -855,6 +872,7 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
     model: config?.model ?? "injected-client",
     cases: combos.length,
     runsPerCombo,
+    corpusFingerprint,
     status: settled.length === expected && quotaExcluded === 0 ? "complete" : "aborted",
     ...(settled.length === expected && quotaExcluded === 0
       ? {}
