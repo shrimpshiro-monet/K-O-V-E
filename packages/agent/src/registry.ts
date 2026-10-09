@@ -33849,14 +33849,22 @@ const TOOLS: RegisteredTool[] = [
           // Fall through: report the original blocking issues below.
         }
         if (blocking.length > 0) {
+          const invalidPayload = {
+            issues: blocking,
+            warnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
+            repairAttempted,
+          };
+          // non-enumerable: keeps this out of JSON.stringify so the model's tool_result
+          // stays byte-identical; read it via direct property access
+          Object.defineProperty(invalidPayload, "editPlan", {
+            value: finalPlan,
+            enumerable: false,
+            configurable: true,
+          });
           return fail(
             `Director produced an invalid EditPlan${repairAttempted ? " (one repair attempt also failed)" : ""}: ${blocking.map((issue) => `[${issue.code}] ${issue.message}`).join("; ")}`,
             "INVALID_EDIT_PLAN",
-            {
-              issues: blocking,
-              warnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
-              repairAttempted,
-            },
+            invalidPayload,
           );
         }
       }
@@ -34000,10 +34008,18 @@ const TOOLS: RegisteredTool[] = [
         } catch {
           // Best effort — reported below.
         }
+        const applyPayload = { compensation };
+        // non-enumerable: keeps this out of JSON.stringify so the model's tool_result
+        // stays byte-identical; read it via direct property access
+        Object.defineProperty(applyPayload, "editPlan", {
+          value: finalPlan,
+          enumerable: false,
+          configurable: true,
+        });
         return fail(
           `EditPlan was valid but could not be applied: ${message}. The timeline was left at its previous revision (${compensation.removed} partial artifact(s) removed).`,
           "EDIT_PLAN_APPLY_FAILED",
-          { compensation },
+          applyPayload,
         );
       }
 

@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { extname, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Project, MediaItem } from "@kove-advanced/core/types/project";
 import type { Track } from "@kove-advanced/core/types/timeline";
@@ -377,6 +377,14 @@ export interface BaselineGates {
   readonly noClipOverlaps: boolean;
 }
 
+export type PlanIssue = ReturnType<typeof validateEditPlan>[number];
+
+/** Failure-only payload too large for the report body: written to a sidecar file. */
+export interface FailureArtifact {
+  readonly editPlan: EditPlan;
+  readonly issues: readonly PlanIssue[];
+}
+
 export interface BaselineCaseResult {
   readonly id: string;
   /** 0-based repeat index within the k-run sampling of this combination. */
@@ -406,6 +414,13 @@ export interface BaselineCaseResult {
     readonly planScore: number | null;
     readonly timelineDuration: number;
   };
+  /**
+   * Plan + issues captured for a failed case. In-memory only: `serializeCaseResult`
+   * writes it to a sidecar file and strips it before the report is serialized.
+   */
+  readonly artifact?: FailureArtifact;
+  /** Sidecar filename for this row's failure payload, relative to the report file. */
+  readonly failureArtifact?: string;
 }
 
 export interface GateRate {
@@ -467,6 +482,62 @@ export interface BaselineSummary {
 /** Workers AI daily-free-allocation exhaustion is transport, not a model result. */
 export function isQuotaMessage(text: string): boolean {
   return /\b429\b|used up your daily free allocation|code.?:?4006/.test(text);
+}
+
+// ---------------------------------------------------------------------------
+// Duration fidelity — WARN level only. Never feeds planValidates/materializes/
+// noClipOverlaps/allGates, so v0 gate rates stay stitchable with new runs.
+// ---------------------------------------------------------------------------
+
+export interface DurationTarget {
+  /** First mention's hi end, in seconds. Null when the prompt names no duration. */
+  readonly target: number | null;
+  /** Every raw matched substring, in order — quoted verbatim in the warning. */
+  readonly mentions: readonly string[];
+}
+
+/**
+ * Reads the brief's target length: first mention decides, ranges take the hi end.
+ * "Cut a 45-second Short ... hit roughly one point every 12-15 seconds" → 45s.
+ */
+export function promptDurationTarget(promptText: string): DurationTarget {
+  const mentions: string[] = [];
+  let target: number | null = null;
+  const pattern =
+    /(\d+(?:\.\d+)?)(?:\s*(?:-|–|—|to|through)\s*(\d+(?:\.\d+)?))?\s*-?\s*(seconds?|secs?|s|minutes?|mins?)(?![a-z0-9])/gi;
+  for (const match of promptText.matchAll(pattern)) {
+    mentions.push(match[0]);
+    if (target !== null) continue;
+    const lo = Number(match[1]);
+    const hi = match[2] !== undefined ? Number(match[2]) : lo;
+    const unit = match[3].toLowerCase();
+    target = Math.max(lo, hi) * (unit.startsWith("min") ? 60 : 1);
+  }
+  return { target, mentions };
+}
+
+function formatSeconds(value: number): string {
+  return `${Math.round(value * 10) / 10}s`;
+}
+
+/**
+ * `[duration_fidelity]` entry for a produced timeline outside [0.25x, 2x] of
+ * the brief. Returns null when the prompt names no duration, when nothing was
+ * produced (timelineDuration 0 — failures[] already says so), or when the edit
+ * is in band: the channel exists to catch the passed row with an absurd length.
+ */
+export function durationFidelityWarning(
+  promptText: string,
+  timelineDuration: number,
+): string | null {
+  if (timelineDuration <= 0) return null;
+  const { target, mentions } = promptDurationTarget(promptText);
+  if (target === null) return null;
+  if (timelineDuration >= target * 0.25 && timelineDuration <= target * 2) return null;
+  return (
+    `[duration_fidelity] timeline ${formatSeconds(timelineDuration)} vs ~${formatSeconds(target)} brief ` +
+    `(mentions found: ${mentions.map(mention => `"${mention}"`).join(", ")})`
+  );
 }
 
 interface PlanEditData {
@@ -599,6 +670,24 @@ export async function runBaselineCase(opts: {
     const passed = gates.planValidates && gates.materializes && gates.noClipOverlaps && toolOk;
     if (!passed && failures.length === 0) failures.push("one or more hard gates failed");
 
+    // Warn-level only — appended after the gates are computed so it can never
+    // feed planValidates / materializes / noClipOverlaps / allGates.
+    const durationWarning = durationFidelityWarning(opts.prompt.text, timelineDuration);
+    if (durationWarning) warnings.push(durationWarning);
+
+    // Failed cases keep their plan for a sidecar file. `editPlan` is
+    // non-enumerable on the plan_edit fail() payload (so the model's
+    // tool_result stays byte-identical) — direct property access is the read.
+    const artifact: FailureArtifact | undefined =
+      !toolOk && data?.editPlan && segmentMap
+        ? {
+            editPlan: data.editPlan,
+            issues:
+              (result.data as { issues?: readonly PlanIssue[] } | undefined)?.issues ??
+              validateEditPlan(data.editPlan, segmentMap),
+          }
+        : undefined;
+
     return {
       id,
       run,
@@ -611,6 +700,7 @@ export async function runBaselineCase(opts: {
       gates,
       failures,
       warnings,
+      ...(artifact ? { artifact } : {}),
       stats: {
         durationMs: Date.now() - started,
         clipCount,
@@ -823,6 +913,40 @@ export function summarizeBaseline(
   };
 }
 
+/**
+ * Writes a failed case's payload to `<report>.failures/<combo>#run<N>.json` and
+ * returns the report row pointing at it. The plan never lands in the report
+ * body — only the sidecar filename does.
+ *
+ * Built from named fields, never `JSON.stringify(result.data)`: `editPlan` is
+ * non-enumerable on the plan_edit fail() payload, so a wholesale stringify of
+ * the data object would silently omit the plan from the artifact.
+ */
+export function serializeCaseResult(
+  result: BaselineCaseResult,
+  reportPath: string,
+): BaselineCaseResult {
+  const { artifact, ...row } = result;
+  if (!artifact || result.ok || result.quotaExhausted) return row;
+  const relative = `${basename(reportPath)}.failures/${result.id}#run${result.run}.json`;
+  const target = join(dirname(reportPath), relative);
+  mkdirSync(dirname(target), { recursive: true });
+  const payload = {
+    id: result.id,
+    run: result.run,
+    projectId: result.projectId,
+    promptId: result.promptId,
+    promptType: result.promptType,
+    toolCode: result.toolCode,
+    failures: result.failures,
+    warnings: result.warnings,
+    issues: artifact.issues,
+    editPlan: artifact.editPlan,
+  };
+  writeFileSync(target, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  return { ...row, failureArtifact: relative };
+}
+
 /** Runs every selected corpus project × prompt combination and writes the report. */
 export async function runBaseline(opts: RunBaselineOptions = {}): Promise<BaselineSummary> {
   const root = opts.root ?? CORPUS_DIR;
@@ -868,7 +992,11 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
 
   const expected = combos.length * runsPerCombo;
   const quotaExcluded = settled.filter(r => r.quotaExhausted).length;
-  const summary = summarizeBaseline(settled, {
+  const reportPath = opts.reportPath ?? DEFAULT_REPORT_PATH;
+  // Sidecars are written before summarizing, so report rows carry only the
+  // artifact filename — the plan itself never lands in the report body.
+  const rows = settled.map(result => serializeCaseResult(result, reportPath));
+  const summary = summarizeBaseline(rows, {
     model: config?.model ?? "injected-client",
     cases: combos.length,
     runsPerCombo,
@@ -885,7 +1013,6 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
     quotaExcluded,
   });
 
-  const reportPath = opts.reportPath ?? DEFAULT_REPORT_PATH;
   writeFileSync(reportPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
   return summary;
 }

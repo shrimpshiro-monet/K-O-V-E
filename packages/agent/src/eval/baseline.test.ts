@@ -6,19 +6,23 @@ import { describe, expect, it, vi } from "vitest";
 import type { Project } from "@kove-advanced/core/types/project";
 import type { Track } from "@kove-advanced/core/types/timeline";
 import type { LLMClient } from "../llm";
+import type { BaselineCaseResult, FailureArtifact, PlanIssue } from "./baseline";
 import {
   DEFAULT_REPORT_PATH,
   PINNED_SAMPLING,
   buildBaselineProject,
   buildSegmentMap,
   clipOverlaps,
+  durationFidelityWarning,
   loadWorkersAIConfig,
   parseDevVars,
   isQuotaMessage,
   fingerprintCorpusFile,
   pinnedSend,
+  promptDurationTarget,
   runBaseline,
   selectCombos,
+  serializeCaseResult,
   summarizeBaseline,
   REPO_ROOT,
 } from "./baseline";
@@ -401,6 +405,191 @@ describe("baseline harness helpers", () => {
       expect(config?.model).toContain("@cf/");
     } finally {
       vi.unstubAllEnvs();
+    }
+  });
+});
+
+describe("duration fidelity (warn-level only)", () => {
+  it("takes the first mention's hi end and keeps every raw mention", () => {
+    const cut = "Cut a 45-second Short from podcast #1.mp4. Hit roughly one point every 12-15 seconds.";
+    expect(promptDurationTarget(cut)).toEqual({
+      target: 45,
+      mentions: ["45-second", "12-15 seconds"],
+    });
+    // A later, shorter mention (teaser/beat length) never steals the target.
+    const teaser =
+      "Create a 60-second Instagram Reels cut. Cold-open on a 2-second teaser of the best moment.";
+    expect(promptDurationTarget(teaser).target).toBe(60);
+    // Ranges take the hi end.
+    expect(promptDurationTarget("make it 2-3 minutes long")).toEqual({
+      target: 180,
+      mentions: ["2-3 minutes"],
+    });
+    expect(promptDurationTarget("make the best clip possible")).toEqual({
+      target: null,
+      mentions: [],
+    });
+  });
+
+  it("warns only outside [0.25x, 2x], never for an empty timeline", () => {
+    const brief = "Build a 90-second YouTube long-form video.";
+    expect(durationFidelityWarning(brief, 1845.24)).toBe(
+      '[duration_fidelity] timeline 1845.2s vs ~90s brief (mentions found: "90-second")',
+    );
+    expect(durationFidelityWarning(brief, 23)).toBeNull(); // 0.25x is inclusive
+    expect(durationFidelityWarning(brief, 180)).toBeNull(); // 2x is inclusive
+    expect(durationFidelityWarning(brief, 22.4)).not.toBeNull();
+    expect(durationFidelityWarning(brief, 181)).not.toBeNull();
+    expect(durationFidelityWarning(brief, 0)).toBeNull(); // nothing produced
+    expect(durationFidelityWarning("make the best clip possible", 1845)).toBeNull(); // no mention
+  });
+
+  it("never feeds pass/fail, any gate, or the report's gate rates", () => {
+    const stats = {
+      durationMs: 1,
+      clipCount: 4,
+      transitionCount: 1,
+      effectCount: 2,
+      audioCount: 0,
+      textCount: 1,
+      planScore: 0.8,
+      timelineDuration: 1845.24,
+    };
+    const make = (warnings: string[]) => ({
+      id: "a",
+      run: 0,
+      projectId: "p",
+      promptId: "q",
+      promptType: "detailed" as const,
+      ok: true,
+      toolCode: null,
+      quotaExhausted: false,
+      gates: { planValidates: true, materializes: true, noClipOverlaps: true },
+      failures: [],
+      warnings,
+      stats,
+    });
+    const opts = {
+      model: "m",
+      cases: 1,
+      runsPerCombo: 1,
+      status: "complete" as const,
+      quotaExcluded: 0,
+      corpusFingerprint: "fp",
+    };
+    const warned = summarizeBaseline(
+      [make(['[duration_fidelity] timeline 1845.2s vs ~90s brief (mentions found: "90-second")'])],
+      opts,
+    );
+    const clean = summarizeBaseline([make([])], opts);
+    expect(warned.gateRates).toEqual(clean.gateRates);
+    expect(warned.determinism).toEqual(clean.determinism);
+    expect(warned.passed).toBe(clean.passed);
+
+    // The warning is appended only after pass/fail is already computed, and the
+    // pass/fail expression itself carries no duration signal.
+    const source = readFileSync(join(REPO_ROOT, "packages/agent/src/eval/baseline.ts"), "utf8");
+    const body = source.slice(source.indexOf("export async function runBaselineCase"));
+    const passedAt = body.indexOf("const passed =");
+    const warnedAt = body.indexOf("durationFidelityWarning(");
+    expect(passedAt).toBeGreaterThan(-1);
+    expect(warnedAt).toBeGreaterThan(passedAt);
+    expect(body.slice(passedAt, body.indexOf("\n", passedAt))).not.toMatch(/duration/i);
+  });
+});
+
+describe("failure sidecars", () => {
+  const stats = {
+    durationMs: 1,
+    clipCount: 0,
+    transitionCount: 0,
+    effectCount: 0,
+    audioCount: 0,
+    textCount: 0,
+    planScore: null,
+    timelineDuration: 0,
+  };
+  const make = (overrides: Partial<BaselineCaseResult> = {}): BaselineCaseResult => ({
+    id: "pod-02/pod-02-genre",
+    run: 0,
+    projectId: "pod-02",
+    promptId: "pod-02-genre",
+    promptType: "genre",
+    ok: false,
+    toolCode: "EDIT_PLAN_APPLY_FAILED",
+    quotaExhausted: false,
+    gates: { planValidates: true, materializes: false, noClipOverlaps: true },
+    failures: ["plan_edit failed [EDIT_PLAN_APPLY_FAILED]: Cannot convert undefined or null to object"],
+    warnings: [],
+    stats,
+    ...overrides,
+  });
+  const plan = {
+    segments: [{ sourceVideoId: "video-1", sourceStartTime: 0, sourceEndTime: 4 }],
+    transitions: [],
+  } as unknown as FailureArtifact["editPlan"];
+  const artifact: FailureArtifact = {
+    editPlan: plan,
+    issues: [
+      {
+        code: "insufficient_speed_keyframes",
+        severity: "error",
+        message: "Segment 2 speed ramps need at least two keyframes.",
+        path: "segments.2.speedRamp.keyframes",
+      } as unknown as PlanIssue,
+    ],
+  };
+
+  it("writes the plan to a sidecar and keeps it out of the report body", () => {
+    const root = mkdtempSync(join(tmpdir(), "kove-sidecar-"));
+    try {
+      const reportPath = join(root, "baseline-r1-include-18.json");
+      const row = serializeCaseResult(make({ artifact }), reportPath);
+
+      expect(row.artifact).toBeUndefined(); // stripped from the report row
+      expect(row.failureArtifact).toBe(
+        "baseline-r1-include-18.json.failures/pod-02/pod-02-genre#run0.json",
+      );
+      const sidecar = JSON.parse(readFileSync(join(root, row.failureArtifact ?? ""), "utf8")) as {
+        editPlan: unknown;
+        issues: { code: string }[];
+        failures: string[];
+        warnings: string[];
+        toolCode: string;
+      };
+      expect(sidecar.editPlan).toEqual(plan); // plan is IN the sidecar
+      expect(sidecar.issues[0]?.code).toBe("insufficient_speed_keyframes");
+      expect(sidecar.failures[0]).toContain("EDIT_PLAN_APPLY_FAILED");
+      expect(sidecar.toolCode).toBe("EDIT_PLAN_APPLY_FAILED");
+      expect(JSON.stringify(row)).not.toContain("sourceVideoId"); // ...and NOT in the report
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("writes no sidecar when no plan was captured (skip-write)", () => {
+    const root = mkdtempSync(join(tmpdir(), "kove-sidecar-"));
+    try {
+      const reportPath = join(root, "baseline-r1-include-18.json");
+      const row = serializeCaseResult(make(), reportPath);
+      expect(row.failureArtifact).toBeUndefined();
+      expect(existsSync(join(root, "baseline-r1-include-18.json.failures"))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("writes no sidecar for quota rows or passing rows", () => {
+    const root = mkdtempSync(join(tmpdir(), "kove-sidecar-"));
+    try {
+      const reportPath = join(root, "report.json");
+      const quota = serializeCaseResult(make({ artifact, quotaExhausted: true }), reportPath);
+      const pass = serializeCaseResult(make({ artifact, ok: true, toolCode: null }), reportPath);
+      expect(quota.failureArtifact).toBeUndefined();
+      expect(pass.failureArtifact).toBeUndefined();
+      expect(existsSync(join(root, "report.json.failures"))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 });
