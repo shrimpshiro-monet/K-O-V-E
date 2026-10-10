@@ -383,6 +383,12 @@ describe("baseline harness helpers", () => {
   });
 
   it("prefers KOVE_EVAL_CLOUDFLARE_* credentials over generic env and .dev.vars", () => {
+    // Ambient eval-scoped creds must never decide this test's outcome: a live
+    // harness run exports these to select an account, and unstubAllEnvs below
+    // would restore them mid-test.
+    vi.stubEnv("KOVE_EVAL_CLOUDFLARE_ACCOUNT_ID", "");
+    vi.stubEnv("KOVE_EVAL_CLOUDFLARE_API_TOKEN", "");
+    vi.stubEnv("KOVE_EVAL_CLOUDFLARE_AI_MODEL", "");
     vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "acct-generic");
     vi.stubEnv("CLOUDFLARE_API_TOKEN", "tok-generic");
     vi.stubEnv("KOVE_EVAL_CLOUDFLARE_ACCOUNT_ID", "acct-eval");
@@ -397,6 +403,10 @@ describe("baseline harness helpers", () => {
 
       // Without the eval override, generic env still wins over .dev.vars.
       vi.unstubAllEnvs();
+      // unstubAllEnvs restores ambient shell env, so re-scrub before asserting.
+      vi.stubEnv("KOVE_EVAL_CLOUDFLARE_ACCOUNT_ID", "");
+      vi.stubEnv("KOVE_EVAL_CLOUDFLARE_API_TOKEN", "");
+      vi.stubEnv("KOVE_EVAL_CLOUDFLARE_AI_MODEL", "");
       vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "acct-generic");
       vi.stubEnv("CLOUDFLARE_API_TOKEN", "tok-generic");
       const config = loadWorkersAIConfig();
