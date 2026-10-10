@@ -1,31 +1,57 @@
-import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { Project } from "@kove-advanced/core/types/project";
 import type { Track } from "@kove-advanced/core/types/timeline";
+import type { LLMClient } from "../llm";
+import type { BaselineCaseResult, FailureArtifact, PlanIssue } from "./baseline";
 import {
   DEFAULT_REPORT_PATH,
   PINNED_SAMPLING,
   buildBaselineProject,
   buildSegmentMap,
   clipOverlaps,
+  durationFidelityWarning,
   loadWorkersAIConfig,
   parseDevVars,
   isQuotaMessage,
+  fingerprintCorpusFile,
   pinnedSend,
+  promptDurationTarget,
   runBaseline,
+  selectCombos,
+  serializeCaseResult,
   summarizeBaseline,
   REPO_ROOT,
 } from "./baseline";
 import { loadCorpus, missingAssets } from "./corpus";
+import type { EvalProject, EvalPrompt } from "./corpus";
 import { CORPUS_PATH } from "./baseline";
 
 const LIVE = process.env.KOVE_EVAL_BASELINE === "1";
 const LIMIT = Number(process.env.KOVE_EVAL_LIMIT ?? "0") || undefined;
+/** Start index into the flattened combos (pairs with LIMIT for slices). */
+const OFFSET = Number(process.env.KOVE_EVAL_OFFSET ?? "0") || undefined;
+/**
+ * Mixed-k sampling: exact `projectId/promptId` combos to run (comma-separated).
+ * Wins over OFFSET/LIMIT, so one run can do k=3 on a stratified half of the
+ * corpus and a second run k=1 on the rest. Reports land in distinct files so
+ * split runs never clobber each other.
+ */
+const INCLUDE = (process.env.KOVE_EVAL_INCLUDE ?? "")
+  .split(",")
+  .map(id => id.trim())
+  .filter(Boolean);
 /** Repeats per combination (k). k >= 3 so gate rates carry a spread. */
 const RUNS = Number(process.env.KOVE_EVAL_RUNS ?? "3") || 3;
-const reportPath = LIMIT
-  ? new URL("../../../../evaluation-files/baseline-smoke.json", import.meta.url).pathname
-  : undefined;
+const selection = INCLUDE.length > 0 ? `include-${INCLUDE.length}` : OFFSET ? `offset-${OFFSET}` : undefined;
+const reportPath = selection
+  ? new URL(`../../../../evaluation-files/baseline-r${RUNS}-${selection}.json`, import.meta.url).pathname
+  : LIMIT
+    ? new URL("../../../../evaluation-files/baseline-smoke.json", import.meta.url).pathname
+    : undefined;
 
 function syntheticProject(tracks: Track[]): Project {
   const now = Date.now();
@@ -72,6 +98,127 @@ function trackWith(clips: Array<{ id: string; startTime: number; duration: numbe
     solo: false,
   } as unknown as Track;
 }
+
+describe("combo selection for split-k runs", () => {
+  const prompt = (id: string, type: EvalPrompt["type"]): EvalPrompt => ({
+    id,
+    type,
+    text: `prompt ${id}`,
+  });
+  const project = (id: string, prompts: readonly EvalPrompt[]): EvalProject => ({
+    id,
+    category: "test",
+    media: ["clip.mp4"],
+    music: null,
+    reference: null,
+    notes: "",
+    prompts,
+  });
+  const corpus: EvalProject[] = [
+    project("a", [prompt("d", "detailed"), prompt("v", "vague"), prompt("g", "genre")]),
+    project("b", [prompt("d", "detailed"), prompt("v", "vague"), prompt("g", "genre")]),
+  ];
+  const combos = corpus.flatMap(entry => entry.prompts.map(p => ({ entry, prompt: p })));
+  const ids = (selected: readonly { entry: EvalProject; prompt: EvalPrompt }[]): string[] =>
+    selected.map(({ entry, prompt }) => `${entry.id}/${prompt.id}`);
+
+  it("slices with offset and limit; offset alone runs the tail", () => {
+    expect(ids(selectCombos(combos, {}))).toEqual(["a/d", "a/v", "a/g", "b/d", "b/v", "b/g"]);
+    expect(ids(selectCombos(combos, { limit: 2 }))).toEqual(["a/d", "a/v"]);
+    expect(ids(selectCombos(combos, { offset: 4 }))).toEqual(["b/v", "b/g"]);
+    expect(ids(selectCombos(combos, { offset: 2, limit: 2 }))).toEqual(["a/g", "b/d"]);
+  });
+
+  it("include wins over offset/limit, preserves corpus order, and tolerates whitespace", () => {
+    const include = [" b/v ", "a/d", "b/g"];
+    expect(ids(selectCombos(combos, { includeIds: include, offset: 4, limit: 1 }))).toEqual([
+      "a/d",
+      "b/v",
+      "b/g",
+    ]);
+    expect(ids(selectCombos(combos, { includeIds: ["b/g"] }))).toEqual(["b/g"]);
+  });
+
+  it("fails fast on unknown include ids before any case runs", () => {
+    expect(() => selectCombos(combos, { includeIds: ["a/d", "zzz/q"] })).toThrow(
+      /Unknown corpus combos: zzz\/q/,
+    );
+  });
+
+  it("runs only the included combinations at k repeats and writes the report", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kove-eval-include-"));
+    try {
+      writeFileSync(join(root, "clip.mp4"), "");
+      writeFileSync(
+        join(root, "projects.json"),
+        JSON.stringify(
+          corpus.map(entry => ({
+            id: entry.id,
+            category: entry.category,
+            media: entry.media,
+            music: entry.music,
+            reference: entry.reference,
+            notes: entry.notes,
+            prompts: entry.prompts,
+          })),
+        ),
+      );
+      const reportPath = join(root, "report.json");
+      // Every case fails here (dummy assets cannot probe): fine — selection is
+      // observable purely from which result rows exist and how often.
+      const client: LLMClient = {
+        complete: () => Promise.reject(new Error("offline client; must never be called")),
+      };
+      const summary = await runBaseline({
+        root,
+        client,
+        includeIds: ["a/g", "b/d"],
+        runsPerCombo: 2,
+        reportPath,
+      });
+      expect(summary.cases).toBe(2);
+      expect(summary.runsPerCombo).toBe(2);
+      expect(summary.total).toBe(4);
+      expect(summary.results.map(r => `${r.id}#${r.run}`)).toEqual([
+        "a/g#0",
+        "a/g#1",
+        "b/d#0",
+        "b/d#1",
+      ]);
+      expect(summary.status).toBe("complete");
+      // The report pins the exact corpus bytes it ran: sha256 of the file we wrote.
+      const expectedFp = createHash("sha256").update(readFileSync(join(root, "projects.json"))).digest("hex");
+      expect(summary.corpusFingerprint).toBe(expectedFp);
+      const written = JSON.parse(readFileSync(reportPath, "utf8")) as {
+        results: unknown[];
+        cases: number;
+        corpusFingerprint: string;
+      };
+      expect(written.cases).toBe(2);
+      expect(written.results).toHaveLength(4);
+      expect(written.corpusFingerprint).toBe(expectedFp);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("the corpus fingerprint changes when any corpus byte changes", () => {
+    const root = mkdtempSync(join(tmpdir(), "kove-eval-fp-"));
+    try {
+      const a = join(root, "a.json");
+      const b = join(root, "b.json");
+      const bytes = JSON.stringify([{ id: "p" }], null, 2);
+      writeFileSync(a, bytes);
+      writeFileSync(b, `${bytes}\n`); // single-byte difference
+      const fpA = fingerprintCorpusFile(a);
+      expect(fpA).toMatch(/^[0-9a-f]{64}$/);
+      expect(fingerprintCorpusFile(a)).toBe(fpA); // stable
+      expect(fingerprintCorpusFile(b)).not.toBe(fpA); // byte-sensitive
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("baseline harness helpers", () => {
   it("loads the corpus and passes the asset-existence gate", () => {
@@ -190,7 +337,15 @@ describe("baseline harness helpers", () => {
         make("c", 1, true, false),
         make("c", 2, true, false),
       ],
-      { model: "m", cases: 3, runsPerCombo: 3, status: "aborted", abortReason: "stopped early", quotaExcluded: 1 },
+      {
+        model: "m",
+        cases: 3,
+        runsPerCombo: 3,
+        status: "aborted",
+        abortReason: "stopped early",
+        quotaExcluded: 1,
+        corpusFingerprint: "test-fingerprint",
+      },
     );
     expect(summary.quotaExcluded).toBe(1);
     expect(summary.status).toBe("aborted");
@@ -254,12 +409,199 @@ describe("baseline harness helpers", () => {
   });
 });
 
+describe("duration fidelity (warn-level only)", () => {
+  it("takes the first mention's hi end and keeps every raw mention", () => {
+    const cut = "Cut a 45-second Short from podcast #1.mp4. Hit roughly one point every 12-15 seconds.";
+    expect(promptDurationTarget(cut)).toEqual({
+      target: 45,
+      mentions: ["45-second", "12-15 seconds"],
+    });
+    // A later, shorter mention (teaser/beat length) never steals the target.
+    const teaser =
+      "Create a 60-second Instagram Reels cut. Cold-open on a 2-second teaser of the best moment.";
+    expect(promptDurationTarget(teaser).target).toBe(60);
+    // Ranges take the hi end.
+    expect(promptDurationTarget("make it 2-3 minutes long")).toEqual({
+      target: 180,
+      mentions: ["2-3 minutes"],
+    });
+    expect(promptDurationTarget("make the best clip possible")).toEqual({
+      target: null,
+      mentions: [],
+    });
+  });
+
+  it("warns only outside [0.25x, 2x], never for an empty timeline", () => {
+    const brief = "Build a 90-second YouTube long-form video.";
+    expect(durationFidelityWarning(brief, 1845.24)).toBe(
+      '[duration_fidelity] timeline 1845.2s vs ~90s brief (mentions found: "90-second")',
+    );
+    expect(durationFidelityWarning(brief, 23)).toBeNull(); // 0.25x is inclusive
+    expect(durationFidelityWarning(brief, 180)).toBeNull(); // 2x is inclusive
+    expect(durationFidelityWarning(brief, 22.4)).not.toBeNull();
+    expect(durationFidelityWarning(brief, 181)).not.toBeNull();
+    expect(durationFidelityWarning(brief, 0)).toBeNull(); // nothing produced
+    expect(durationFidelityWarning("make the best clip possible", 1845)).toBeNull(); // no mention
+  });
+
+  it("never feeds pass/fail, any gate, or the report's gate rates", () => {
+    const stats = {
+      durationMs: 1,
+      clipCount: 4,
+      transitionCount: 1,
+      effectCount: 2,
+      audioCount: 0,
+      textCount: 1,
+      planScore: 0.8,
+      timelineDuration: 1845.24,
+    };
+    const make = (warnings: string[]) => ({
+      id: "a",
+      run: 0,
+      projectId: "p",
+      promptId: "q",
+      promptType: "detailed" as const,
+      ok: true,
+      toolCode: null,
+      quotaExhausted: false,
+      gates: { planValidates: true, materializes: true, noClipOverlaps: true },
+      failures: [],
+      warnings,
+      stats,
+    });
+    const opts = {
+      model: "m",
+      cases: 1,
+      runsPerCombo: 1,
+      status: "complete" as const,
+      quotaExcluded: 0,
+      corpusFingerprint: "fp",
+    };
+    const warned = summarizeBaseline(
+      [make(['[duration_fidelity] timeline 1845.2s vs ~90s brief (mentions found: "90-second")'])],
+      opts,
+    );
+    const clean = summarizeBaseline([make([])], opts);
+    expect(warned.gateRates).toEqual(clean.gateRates);
+    expect(warned.determinism).toEqual(clean.determinism);
+    expect(warned.passed).toBe(clean.passed);
+
+    // The warning is appended only after pass/fail is already computed, and the
+    // pass/fail expression itself carries no duration signal.
+    const source = readFileSync(join(REPO_ROOT, "packages/agent/src/eval/baseline.ts"), "utf8");
+    const body = source.slice(source.indexOf("export async function runBaselineCase"));
+    const passedAt = body.indexOf("const passed =");
+    const warnedAt = body.indexOf("durationFidelityWarning(");
+    expect(passedAt).toBeGreaterThan(-1);
+    expect(warnedAt).toBeGreaterThan(passedAt);
+    expect(body.slice(passedAt, body.indexOf("\n", passedAt))).not.toMatch(/duration/i);
+  });
+});
+
+describe("failure sidecars", () => {
+  const stats = {
+    durationMs: 1,
+    clipCount: 0,
+    transitionCount: 0,
+    effectCount: 0,
+    audioCount: 0,
+    textCount: 0,
+    planScore: null,
+    timelineDuration: 0,
+  };
+  const make = (overrides: Partial<BaselineCaseResult> = {}): BaselineCaseResult => ({
+    id: "pod-02/pod-02-genre",
+    run: 0,
+    projectId: "pod-02",
+    promptId: "pod-02-genre",
+    promptType: "genre",
+    ok: false,
+    toolCode: "EDIT_PLAN_APPLY_FAILED",
+    quotaExhausted: false,
+    gates: { planValidates: true, materializes: false, noClipOverlaps: true },
+    failures: ["plan_edit failed [EDIT_PLAN_APPLY_FAILED]: Cannot convert undefined or null to object"],
+    warnings: [],
+    stats,
+    ...overrides,
+  });
+  const plan = {
+    segments: [{ sourceVideoId: "video-1", sourceStartTime: 0, sourceEndTime: 4 }],
+    transitions: [],
+  } as unknown as FailureArtifact["editPlan"];
+  const artifact: FailureArtifact = {
+    editPlan: plan,
+    issues: [
+      {
+        code: "insufficient_speed_keyframes",
+        severity: "error",
+        message: "Segment 2 speed ramps need at least two keyframes.",
+        path: "segments.2.speedRamp.keyframes",
+      } as unknown as PlanIssue,
+    ],
+  };
+
+  it("writes the plan to a sidecar and keeps it out of the report body", () => {
+    const root = mkdtempSync(join(tmpdir(), "kove-sidecar-"));
+    try {
+      const reportPath = join(root, "baseline-r1-include-18.json");
+      const row = serializeCaseResult(make({ artifact }), reportPath);
+
+      expect(row.artifact).toBeUndefined(); // stripped from the report row
+      expect(row.failureArtifact).toBe(
+        "baseline-r1-include-18.json.failures/pod-02/pod-02-genre#run0.json",
+      );
+      const sidecar = JSON.parse(readFileSync(join(root, row.failureArtifact ?? ""), "utf8")) as {
+        editPlan: unknown;
+        issues: { code: string }[];
+        failures: string[];
+        warnings: string[];
+        toolCode: string;
+      };
+      expect(sidecar.editPlan).toEqual(plan); // plan is IN the sidecar
+      expect(sidecar.issues[0]?.code).toBe("insufficient_speed_keyframes");
+      expect(sidecar.failures[0]).toContain("EDIT_PLAN_APPLY_FAILED");
+      expect(sidecar.toolCode).toBe("EDIT_PLAN_APPLY_FAILED");
+      expect(JSON.stringify(row)).not.toContain("sourceVideoId"); // ...and NOT in the report
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("writes no sidecar when no plan was captured (skip-write)", () => {
+    const root = mkdtempSync(join(tmpdir(), "kove-sidecar-"));
+    try {
+      const reportPath = join(root, "baseline-r1-include-18.json");
+      const row = serializeCaseResult(make(), reportPath);
+      expect(row.failureArtifact).toBeUndefined();
+      expect(existsSync(join(root, "baseline-r1-include-18.json.failures"))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("writes no sidecar for quota rows or passing rows", () => {
+    const root = mkdtempSync(join(tmpdir(), "kove-sidecar-"));
+    try {
+      const reportPath = join(root, "report.json");
+      const quota = serializeCaseResult(make({ artifact, quotaExhausted: true }), reportPath);
+      const pass = serializeCaseResult(make({ artifact, ok: true, toolCode: null }), reportPath);
+      expect(quota.failureArtifact).toBeUndefined();
+      expect(pass.failureArtifact).toBeUndefined();
+      expect(existsSync(join(root, "report.json.failures"))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
   it(
     "measures plan-validates / materializes / no-overlap over k runs per combination",
     async () => {
       const summary = await runBaseline({
         limit: LIMIT,
+        offset: OFFSET,
+        includeIds: INCLUDE.length > 0 ? INCLUDE : undefined,
         runsPerCombo: RUNS,
         reportPath,
         concurrency: 3,
@@ -279,7 +621,9 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
         },
       });
 
-      const cases = LIMIT ?? 27;
+      const cases = INCLUDE.length > 0
+        ? INCLUDE.length
+        : Math.max(0, Math.min(LIMIT ?? 27, 27 - (OFFSET ?? 0)));
       expect(summary.cases).toBe(cases);
       expect(summary.runsPerCombo).toBe(RUNS);
       expect(summary.total).toBeLessThanOrEqual(cases * RUNS);

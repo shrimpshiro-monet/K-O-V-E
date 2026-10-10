@@ -6,6 +6,7 @@ import {
   pacingMatches,
 } from "@kove-advanced/creation-schema";
 import type { EditingHost, TextOverlayOptions, OverlayRef } from "../host";
+import type { ToolResult } from "../types";
 import { HeadlessHost } from "../headless-host";
 import { executeTool } from "../executor";
 import { MockLLMClient, type LLMClient, type LLMResponse } from "../llm";
@@ -921,5 +922,61 @@ describe("style review pacing equivalence", () => {
     expect(pacingMatches("medium", "medium")).toBe(true);
     expect(pacingMatches("fast", "slow")).toBe(false);
     expect(pacingMatches("unknown", "slow")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Failure payloads carry the plan for the eval harness, but never for the model.
+// `editPlan` is non-enumerable on the plan_edit fail() payloads: JSON.stringify
+// (which is what buildToolResultContent sends back to the model) skips it, while
+// direct property access keeps it readable for the baseline runner's sidecars.
+// ---------------------------------------------------------------------------
+
+describe("failure editPlan is programmatic-only", () => {
+  /** Byte-for-byte what buildToolResultContent serializes into the tool_result. */
+  const modelView = (result: ToolResult): string =>
+    JSON.stringify({
+      ok: result.ok,
+      summary: result.summary,
+      data: result.data,
+      error: result.error,
+      ...(result.warnings && result.warnings.length > 0 ? { warnings: result.warnings } : {}),
+    });
+
+  it("INVALID_EDIT_PLAN: readable directly, invisible to the model", async () => {
+    const bad = validPlan({
+      transitions: [{ afterSegmentIndex: 0, type: "star-wipe-9000", duration: 0.3, rationale: "flashy" }],
+    });
+    const h = harness([planResponse(bad), planResponse(bad)]);
+    const result = await executeTool("plan_edit", { prompt: "fancy transition" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as { editPlan?: { segments: unknown[] }; issues: unknown[] };
+    expect(data.editPlan).toBeDefined();
+    expect(data.editPlan?.segments.length).toBeGreaterThan(0);
+    expect(Array.isArray(data.issues)).toBe(true);
+    expect(modelView(result)).not.toContain('"editPlan"');
+    // The enumerable half of the payload still reaches the model.
+    expect(modelView(result)).toContain('"issues"');
+  });
+
+  it("EDIT_PLAN_APPLY_FAILED: readable directly, invisible to the model", async () => {
+    const h = harness([planResponse(validPlan())]);
+    h.failNextTextCreation(); // text engine throws after clips were added
+    const planWithText = validPlan({
+      textElements: [{ content: "boom", style: "title", startTime: 0, duration: 1, rationale: "x" }],
+    });
+    h.setLlm(planResponse(planWithText));
+    const result = await executeTool("plan_edit", { prompt: "gets interrupted" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("EDIT_PLAN_APPLY_FAILED");
+    const data = result.data as { editPlan?: { segments: unknown[] }; compensation?: unknown };
+    expect(data.editPlan).toBeDefined();
+    expect(data.editPlan?.segments.length).toBeGreaterThan(0);
+    expect(data.compensation).toBeDefined();
+    expect(modelView(result)).not.toContain('"editPlan"');
+    expect(modelView(result)).toContain('"compensation"');
   });
 });

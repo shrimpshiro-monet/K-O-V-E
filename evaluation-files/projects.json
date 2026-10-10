@@ -1,0 +1,227 @@
+[
+  {
+    "id": "game-01",
+    "category": "game",
+    "media": ["media/gameplay-a.mp4"],
+    "music": null,
+    "reference": "reference/ref-highlight.mp4",
+    "notes": "Single gameplay capture plus a reference highlight reel whose pacing the edit should imitate. The reference is analysis material only; it must never be cut into the timeline.",
+    "prompts": [
+      {
+        "id": "detailed",
+        "type": "detailed",
+        "text": "Cut a punchy 10-12s YouTube gaming highlight from gameplay-a.mp4. High-energy, loud, in-your-face pacing. Keep the two most intense moments and cut everything static. Match the rhythm of the reference reel, but don't use its footage."
+      },
+      {
+        "id": "vague",
+        "type": "vague",
+        "text": "Make my gameplay look hype."
+      },
+      {
+        "id": "genre",
+        "type": "genre",
+        "text": "highlight-reel"
+      }
+    ]
+  },
+  {
+    "id": "game-02",
+    "category": "game",
+    "media": ["media/gameplay-b.mp4"],
+    "music": "music/synth-loop.mp3",
+    "reference": null,
+    "notes": "Second gameplay angle with a synth bed for beat-locked cuts.",
+    "prompts": [
+      {
+        "id": "detailed",
+        "type": "detailed",
+        "text": "Make a 12s vertical TikTok clip from gameplay-b.mp4 set to music/synth-loop.mp3. Fun, meme-ish tone with fast cuts on the loudest beats. Keep the weirdest-looking moments; cut anything that looks like flat menus."
+      },
+      {
+        "id": "vague",
+        "type": "vague",
+        "text": "Do a fun edit of this for my channel."
+      },
+      {
+        "id": "genre",
+        "type": "genre",
+        "text": "social-reel"
+      }
+    ]
+  },
+  {
+    "id": "multi-01",
+    "category": "multi",
+    "media": ["media/cam-a.mp4", "media/cam-b.mp4"],
+    "music": null,
+    "reference": null,
+    "notes": "Two camera angles of the same interview; the edit should alternate them like a human multicam operator.",
+    "prompts": [
+      {
+        "id": "detailed",
+        "type": "detailed",
+        "text": "Cut a 25s podcast-style highlight for YouTube from cam-a.mp4 and cam-b.mp4. Professional, conversational tone. Keep exchanges where both angles feel alive, cut the dead air, and alternate the two camera angles naturally instead of staying on one side."
+      },
+      {
+        "id": "vague",
+        "type": "vague",
+        "text": "There's two angles here, edit them together."
+      },
+      {
+        "id": "genre",
+        "type": "genre",
+        "text": "vlog"
+      }
+    ]
+  },
+  {
+    "id": "multi-02",
+    "category": "multi",
+    "media": ["media/cam-a.mp4", "media/cam-b.mp4", "media/screen-cap.mp4"],
+    "music": "music/piano-bed.mp3",
+    "reference": null,
+    "notes": "Two-person shoot plus a screen capture for tutorial material over a quiet piano bed.",
+    "prompts": [
+      {
+        "id": "detailed",
+        "type": "detailed",
+        "text": "Build a 30s tutorial intro for YouTube using cam-a.mp4, cam-b.mp4 and screen-cap.mp4, laid over music/piano-bed.mp3 at low volume. Calm, clear tone. Keep the steps legible on the screen capture; cut rambling between steps."
+      },
+      {
+        "id": "vague",
+        "type": "vague",
+        "text": "Make a clean how-to from these."
+      },
+      {
+        "id": "genre",
+        "type": "genre",
+        "text": "tutorial"
+      }
+    ]
+  },
+  {
+    "id": "multi-03",
+    "category": "multi",
+    "media": ["media/cam-a.mp4", "media/cam-b.mp4"],
+    "music": "music/piano-bed.mp3",
+    "reference": "reference/ref-documentary.mp4",
+    "notes": "Interview pair with both a music bed and a documentary reference cut whose slow rhythm the plan should borrow.",
+    "prompts": [
+      {
+        "id": "detailed",
+        "type": "detailed",
+        "text": "Cut a 20s reflective mini-documentary for YouTube from cam-a.mp4 and cam-b.mp4 over music/piano-bed.mp3. Quiet, cinematic tone that follows the reference cut's pace. Keep pauses that feel intentional; cut the fumbles."
+      },
+      {
+        "id": "vague",
+        "type": "vague",
+        "text": "Give this interview more weight."
+      },
+      {
+        "id": "genre",
+        "type": "genre",
+        "text": "documentary"
+      }
+    ]
+  },
+  {
+    "id": "pod-02",
+    "category": "speech",
+    "media": ["media/talking-head.mp4"],
+    "music": null,
+    "reference": null,
+    "notes": "Single talking-head monologue, no music: the plan lives or dies on what it keeps and what it trims.",
+    "prompts": [
+      {
+        "id": "detailed",
+        "type": "detailed",
+        "text": "Cut a 15s Instagram Reel from talking-head.mp4. Warm, confessional tone with caption-forward pacing. Keep the most quotable monologue moments; cut throat-clearing, stumbles, and repeated takes."
+      },
+      {
+        "id": "vague",
+        "type": "vague",
+        "text": "Make this talk clip pop."
+      },
+      {
+        "id": "genre",
+        "type": "genre",
+        "text": "vlog"
+      }
+    ]
+  },
+  {
+    "id": "speech-01",
+    "category": "speech",
+    "media": ["media/keynote.mp4"],
+    "music": "music/piano-bed.mp3",
+    "reference": null,
+    "notes": "Conference keynote with a bed for a corporate-clean LinkedIn cut.",
+    "prompts": [
+      {
+        "id": "detailed",
+        "type": "detailed",
+        "text": "Cut an 18s LinkedIn-ready keynote highlight from keynote.mp4 with music/piano-bed.mp3 underneath. Confident, corporate-clean tone. Keep the bold declaration moments; cut the transitions between topics."
+      },
+      {
+        "id": "vague",
+        "type": "vague",
+        "text": "Trim my keynote to the good part."
+      },
+      {
+        "id": "genre",
+        "type": "genre",
+        "text": "corporate"
+      }
+    ]
+  },
+  {
+    "id": "sport-01",
+    "category": "sport",
+    "media": ["media/sprint.mp4"],
+    "music": "music/synth-loop.mp3",
+    "reference": null,
+    "notes": "Short sprint clip; the synth bed should drive cut placement.",
+    "prompts": [
+      {
+        "id": "detailed",
+        "type": "detailed",
+        "text": "Cut a 12s Instagram Reel from sprint.mp4 locked to music/synth-loop.mp3. Aggressive, triumphant tone with cuts landing on beat. Keep the peak-speed frames; cut the wind-up and the cooldown."
+      },
+      {
+        "id": "vague",
+        "type": "vague",
+        "text": "Hype up this race clip."
+      },
+      {
+        "id": "genre",
+        "type": "genre",
+        "text": "music-video"
+      }
+    ]
+  },
+  {
+    "id": "stream-01",
+    "category": "stream",
+    "media": ["media/stream-cam.mp4", "media/stream-game.mp4"],
+    "music": "music/synth-loop.mp3",
+    "reference": null,
+    "notes": "Streamer facecam plus gameplay capture; reactions on the cam should get priority over gameplay downtime.",
+    "prompts": [
+      {
+        "id": "detailed",
+        "type": "detailed",
+        "text": "Cut a 15s Twitch highlight for YouTube from stream-cam.mp4 and stream-game.mp4 over music/synth-loop.mp3. Comedic, high-energy tone. Keep reaction-worthy moments on the facecam; cut the dull stretches of gameplay."
+      },
+      {
+        "id": "vague",
+        "type": "vague",
+        "text": "Clip my stream into something watchable."
+      },
+      {
+        "id": "genre",
+        "type": "genre",
+        "text": "highlight-reel"
+      }
+    ]
+  }
+]
