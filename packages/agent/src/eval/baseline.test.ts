@@ -441,6 +441,8 @@ describe("duration fidelity (warn-level only)", () => {
     expect(durationFidelityWarning(brief, 22.4)).not.toBeNull();
     expect(durationFidelityWarning(brief, 181)).not.toBeNull();
     expect(durationFidelityWarning(brief, 0)).toBeNull(); // nothing produced
+    expect(durationFidelityWarning(brief, NaN)).toBeNull(); // underspecified clip path
+    expect(durationFidelityWarning(brief, Infinity)).toBeNull(); // non-finite is never a fidelity signal
     expect(durationFidelityWarning("make the best clip possible", 1845)).toBeNull(); // no mention
   });
 

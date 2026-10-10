@@ -525,12 +525,16 @@ function formatSeconds(value: number): string {
  * the brief. Returns null when the prompt names no duration, when nothing was
  * produced (timelineDuration 0 — failures[] already says so), or when the edit
  * is in band: the channel exists to catch the passed row with an absurd length.
+ *
+ * Non-finite durations (NaN from an underspecified clip's startTime+duration,
+ * or Infinity) are never a fidelity signal — `NaN <= 0` is false, so the
+ * `<= 0` guard alone lets a NaN through and the warning prints "timeline NaNs".
  */
 export function durationFidelityWarning(
   promptText: string,
   timelineDuration: number,
 ): string | null {
-  if (timelineDuration <= 0) return null;
+  if (!Number.isFinite(timelineDuration) || timelineDuration <= 0) return null;
   const { target, mentions } = promptDurationTarget(promptText);
   if (target === null) return null;
   if (timelineDuration >= target * 0.25 && timelineDuration <= target * 2) return null;
