@@ -2937,8 +2937,27 @@ export const useProjectStore = create<ProjectState>()(
             },
           };
         }
+        // The executor mutates `project` IN PLACE, so snapshot the track/clip
+        // id topology BEFORE executing — the render-bridge sync diffs use the
+        // previous ids only to clear stale entries.
+        const previousProject: Project = {
+          ...project,
+          timeline: {
+            ...project.timeline,
+            tracks: project.timeline.tracks.map((track) => ({
+              ...track,
+              clips: [...track.clips],
+            })),
+          },
+        };
         const result = await actionExecutor.execute(action, project);
         if (result.success) {
+          // Keep the preview render bridges in lockstep with every agent/UI
+          // mutation. Without this, executeAction-applied transitions and
+          // effects existed in the store but were INVISIBLE in the preview
+          // (hard cuts, missing glow) while UI-path-added ones rendered.
+          syncProjectEffectsBridge(project, previousProject);
+          syncProjectTransitionsBridge(project, previousProject);
           set({ project: { ...project } });
         }
         return result;
