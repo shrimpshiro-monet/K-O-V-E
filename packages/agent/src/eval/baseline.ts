@@ -5,7 +5,7 @@ import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Project, MediaItem } from "@kove-advanced/core/types/project";
 import type { Track } from "@kove-advanced/core/types/timeline";
-import type { EditPlan, SegmentMap } from "@kove-advanced/creation-schema";
+import type { EditPlan, SegmentMap, PlanMediaCatalogItem } from "@kove-advanced/creation-schema";
 import { validateEditPlan } from "@kove-advanced/creation-schema";
 import { HeadlessHost } from "../headless-host";
 import type { EditingHost } from "../host";
@@ -564,6 +564,17 @@ function timelineClipIds(project: Project): Set<string> {
   return ids;
 }
 
+/**
+ * Audio/video membership catalog for gate A's re-validation. plan_edit passes
+ * the same set to validateEditPlan, so the harness gate measures the exact
+ * audio gate the tool ran (unknown music/sfx refs are errors, not apply crashes).
+ */
+function mediaCatalogFor(project: Project): PlanMediaCatalogItem[] {
+  return project.mediaLibrary.items
+    .filter((item) => item.type === "audio" || item.type === "video")
+    .map((item) => ({ id: item.id, name: item.name ?? item.id, type: item.type as "audio" | "video" }));
+}
+
 /** Runs one corpus combination through the headless director and scores it. */
 export async function runBaselineCase(opts: {
   readonly entry: EvalProject;
@@ -620,7 +631,7 @@ export async function runBaselineCase(opts: {
     // given (plan_edit itself only fails on error-severity issues, so
     // re-validating here makes the gate explicit and independent).
     if (result.ok && data?.editPlan && segmentMap) {
-      const issues = validateEditPlan(data.editPlan, segmentMap);
+      const issues = validateEditPlan(data.editPlan, segmentMap, mediaCatalogFor(project));
       const errors = issues.filter(issue => issue.severity === "error");
       planValidates = errors.length === 0;
       for (const issue of errors) failures.push(`plan invalid [${issue.code}]: ${issue.message}`);
@@ -688,7 +699,7 @@ export async function runBaselineCase(opts: {
             editPlan: data.editPlan,
             issues:
               (result.data as { issues?: readonly PlanIssue[] } | undefined)?.issues ??
-              validateEditPlan(data.editPlan, segmentMap),
+              validateEditPlan(data.editPlan, segmentMap, mediaCatalogFor(project)),
           }
         : undefined;
 

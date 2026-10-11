@@ -383,6 +383,83 @@ describe("plan_edit integrity", () => {
     expect(getDirectorPlanState(h.project).revision).toBe(1);
   });
 
+  it("rejects a hallucinated audio id at validation instead of crashing apply", async () => {
+    // The exact failure family from the account-2 baseline: the model invents
+    // an audio id ("music_1") that is not in the media library. Before the
+    // membership gate this passed validation with issues: [] and crashed
+    // materializeEditPlan with full compensation (EDIT_PLAN_APPLY_FAILED).
+    const hallucinated = validPlan({
+      audioDecisions: [
+        {
+          type: "music",
+          sourceVideoId: "music_1",
+          sourceStartTime: 0,
+          sourceEndTime: 8,
+          startTime: 0,
+          duration: 8,
+          volume: 0.4,
+          rationale: "bed",
+        },
+      ],
+      metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+    });
+    // First attempt invalid; the bounded repair attempt repeats the bad ref.
+    const h = harness([planResponse(hallucinated), planResponse(hallucinated)]);
+    const result = await executeTool("plan_edit", { prompt: "music bed" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as { issues: Array<{ code: string; severity: string; message: string }> };
+    const audioIssue = data.issues.find((issue) => issue.code === "unknown_audio_media");
+    expect(audioIssue).toBeDefined();
+    expect(audioIssue!.severity).toBe("error");
+    // The rejection carries the available media so a repair can re-key.
+    expect(audioIssue!.message).toContain('"music_1"');
+    expect(audioIssue!.message).toContain("audio-1 (track.mp3)");
+    expect(audioIssue!.message).toContain("video-1 (footage.mp4)");
+    // Crucially: never reached materializeEditPlan — no APPLY_FAILED, no
+    // partial-then-compensated apply. The timeline was never touched.
+    expect(result.summary).not.toContain("EDIT_PLAN_APPLY_FAILED");
+    expect(timelineClips(h.project)).toHaveLength(0);
+    expect(getDirectorPlanState(h.project).revision).toBe(0);
+    expect(h.llm.calls).toBe(2); // plan + exactly one repair attempt
+  });
+
+  it("re-keys a hallucinated audio id when the repair attempt reuses a real media id", async () => {
+    const planWithMusic = (sourceVideoId: string): Record<string, unknown> =>
+      validPlan({
+        audioDecisions: [
+          {
+            type: "music",
+            sourceVideoId,
+            sourceStartTime: 0,
+            sourceEndTime: 8,
+            startTime: 0,
+            duration: 8,
+            volume: 0.4,
+            rationale: "bed",
+          },
+        ],
+        metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+      });
+    const h = harness([planResponse(planWithMusic("music_1")), planResponse(planWithMusic("audio-1"))]);
+    const result = await executeTool("plan_edit", { prompt: "music bed" }, h.host);
+
+    expect(result.ok).toBe(true);
+    const data = result.data as { audioCount: number };
+    expect(data.audioCount).toBe(1);
+    const audioClips = h.project.timeline.tracks
+      .filter((track) => track.type === "audio")
+      .flatMap((track) => track.clips);
+    expect(audioClips).toHaveLength(1);
+    expect(getDirectorPlanState(h.project).revision).toBe(1);
+    expect(h.llm.calls).toBe(3); // plan + one repair + one density revision
+    // The repair prompt that re-keyed it advertised the real catalog.
+    const repairPrompt = h.llm.systems[1] ?? "";
+    expect(repairPrompt).toContain("unknown_audio_media");
+    expect(repairPrompt).toContain("audio-1 (track.mp3)");
+  });
+
   it("rejects a text position outside the normalized 0-1 range", async () => {
     const bad = validPlan({
       textElements: [

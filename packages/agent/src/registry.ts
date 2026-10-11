@@ -19,7 +19,7 @@ import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } fro
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
 import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
-import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
+import type { DirectorValidationIssue, PlanMediaCatalogItem } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
   setDirectorPlanState,
@@ -33674,6 +33674,13 @@ const TOOLS: RegisteredTool[] = [
         return fail("No video media in the project. Import at least one video first.", "NO_VIDEO_MEDIA");
       }
 
+      // Audio/video membership for validateEditPlan's audio gate. This is the
+      // same media set materializeEditPlan resolves sourceVideoId against, so
+      // a hallucinated audio id gets caught (and repaired) before apply.
+      const mediaCatalog: PlanMediaCatalogItem[] = allMedia
+        .filter((m) => m.type === "audio" || m.type === "video")
+        .map((m) => ({ id: m.id, name: m.name ?? m.id, type: m.type as "audio" | "video" }));
+
       const state = getDirectorPlanState(project);
 
       // Use provided segmentMap or build a fallback from project media
@@ -33806,7 +33813,7 @@ const TOOLS: RegisteredTool[] = [
           },
           resolvedMap,
         );
-        return { plan: resolved, issues: validateEditPlan(resolved, resolvedMap) };
+        return { plan: resolved, issues: validateEditPlan(resolved, resolvedMap, mediaCatalog) };
       };
 
       const formatIssues = (issues: readonly DirectorValidationIssue[]): string =>

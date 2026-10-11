@@ -100,7 +100,7 @@ export {
   computePlanPlacement,
 } from "./validate";
 
-export type { DirectorValidationIssue } from "./validate";
+export type { DirectorValidationIssue, PlanMediaCatalogItem } from "./validate";
 
 export type { SignatureEffectDef } from "./shader-effects";
 

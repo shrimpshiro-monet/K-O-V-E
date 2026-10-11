@@ -333,3 +333,97 @@ describe("director validation helpers", () => {
     expect(speedRampIssue!.message).toContain("segment.speedRamp");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Audio media membership gate. materializeEditPlan resolves a music/sfx
+// decision's sourceVideoId against the media library and throws (with full
+// apply compensation) on an unresolvable ref — validation must catch it first,
+// with the available media in the message so the repair pass can re-key.
+// ---------------------------------------------------------------------------
+
+describe("audio media membership gate", () => {
+  const catalog = [
+    { id: "video-1", name: "podcast #1.mp4", type: "video" as const },
+    { id: "video-2", name: "podcast 2.mp4", type: "video" as const },
+    { id: "audio-1", name: "audio/Dave - Raindance (ft. Tems).mp3", type: "audio" as const },
+  ];
+  const map: SegmentMap = {
+    videos: [{ videoId: "video-1", duration: 12, segments: [] }],
+  };
+  const cleanPlan = (audioDecisions: EditPlan["audioDecisions"]): EditPlan => ({
+    ...plan,
+    segments: [
+      { ...plan.segments[0]!, sourceVideoId: "video-1", sourceStartTime: 0, sourceEndTime: 4 },
+    ],
+    audioDecisions,
+    metadata: { ...plan.metadata, targetDuration: 4 },
+  });
+  const music = (sourceVideoId: string): EditPlan["audioDecisions"][number] =>
+    ({
+      type: "music",
+      sourceVideoId,
+      startTime: 0,
+      duration: 4,
+      volume: 0.7,
+      rationale: "bed",
+    }) as EditPlan["audioDecisions"][number];
+
+  it("rejects a hallucinated audio id with unknown_audio_media and lists the real media", () => {
+    const issues = validateEditPlan(cleanPlan([music("music_1")]), map, catalog);
+    const audio = issues.filter((issue) => issue.code === "unknown_audio_media");
+    expect(audio).toHaveLength(1);
+    expect(audio[0]!.severity).toBe("error");
+    expect(audio[0]!.path).toBe("audioDecisions.0.sourceVideoId");
+    // The message carries the hallucinated ref AND the available media, so the
+    // bounded repair pass can re-key without a second discovery round-trip.
+    expect(audio[0]!.message).toContain('"music_1"');
+    expect(audio[0]!.message).toContain("audio-1 (audio/Dave - Raindance (ft. Tems).mp3)");
+    expect(audio[0]!.message).toContain("video-1 (podcast #1.mp4)");
+  });
+
+  it("accepts refs that resolve by id or exact name, video sources included", () => {
+    const issues = validateEditPlan(
+      cleanPlan([music("audio-1"), music("audio/Dave - Raindance (ft. Tems).mp3"), music("video-1")]),
+      map,
+      catalog,
+    );
+    expect(issues.filter((issue) => issue.code === "unknown_audio_media")).toEqual([]);
+  });
+
+  it("checks sfx decisions and reports each offending index", () => {
+    const issues = validateEditPlan(
+      cleanPlan([
+        { type: "sfx", sourceVideoId: "audio_raindance", startTime: 0, duration: 0.3, volume: 1, rationale: "hit" } as EditPlan["audioDecisions"][number],
+        music("music_id"),
+      ]),
+      map,
+      catalog,
+    );
+    const audio = issues.filter((issue) => issue.code === "unknown_audio_media");
+    expect(audio.map((issue) => issue.path)).toEqual([
+      "audioDecisions.0.sourceVideoId",
+      "audioDecisions.1.sourceVideoId",
+    ]);
+  });
+
+  it("skips silence decisions, empty refs, and applies no gate without a catalog", () => {
+    const withSilence = cleanPlan([
+      {
+        type: "silence",
+        sourceVideoId: "music_1", // ignored entirely: silence never resolves media
+        startTime: 0,
+        duration: 4,
+        rationale: "no music",
+      } as EditPlan["audioDecisions"][number],
+      music("music_1"),
+      music(""),
+    ]);
+    const gated = validateEditPlan(withSilence, map, catalog);
+    // Only the non-empty, non-silence ref is flagged; silence and "" pass.
+    expect(gated.filter((issue) => issue.code === "unknown_audio_media")).toHaveLength(1);
+    // Legacy callers (no catalog plumbed in) get no audio gate at all —
+    // membership is unknowable from the video-only segment map.
+    expect(validateEditPlan(withSilence, map).filter((issue) => issue.code === "unknown_audio_media")).toEqual([]);
+    expect(validateEditPlan(withSilence, map, []).filter((issue) => issue.code === "unknown_audio_media")).toEqual([]);
+  });
+});

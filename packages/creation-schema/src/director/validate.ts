@@ -33,6 +33,18 @@ export interface DirectorValidationIssue {
   readonly path?: string;
 }
 
+/**
+ * Structural subset of a project media item, just enough for the audio-decision
+ * membership gate. Audio decisions resolve `sourceVideoId` against the media
+ * library by id OR exact name at apply time, so validation needs the same
+ * audio/video set to catch a hallucinated ref before materialization throws.
+ */
+export interface PlanMediaCatalogItem {
+  readonly id: string;
+  readonly name: string;
+  readonly type: "audio" | "video";
+}
+
 function issue(
   severity: DirectorValidationIssue["severity"],
   code: string,
@@ -140,6 +152,7 @@ export function validateSegmentMap(
 export function validateEditPlan(
   plan: EditPlan,
   segmentMap: SegmentMap,
+  mediaCatalog?: readonly PlanMediaCatalogItem[],
 ): readonly DirectorValidationIssue[] {
   const issues: DirectorValidationIssue[] = [];
 
@@ -418,6 +431,40 @@ export function validateEditPlan(
       ));
     }
   });
+
+  // ---- Audio media membership ---------------------------------------------
+  // materializeEditPlan resolves a music/sfx decision's sourceVideoId against
+  // the media library (by id OR exact name) and THROWS when it finds nothing —
+  // after every clip is already on the timeline, so the whole apply is
+  // compensated away. Catching the unresolvable ref here (error severity) lets
+  // the bounded repair pass re-key it to a real media id instead of crashing.
+  // The catalog is optional: without it (legacy callers) membership cannot be
+  // checked from the segment map alone, which only ever lists video sources.
+  // Silence decisions carry no source; a ref on a video item is legal (the
+  // materializer prefers standalone audio deterministically).
+  const catalog = mediaCatalog ?? [];
+  if (catalog.length > 0) {
+    const known = new Set<string>();
+    for (const item of catalog) {
+      known.add(item.id);
+      known.add(item.name);
+    }
+    const available = catalog.map((item) => `${item.id} (${item.name})`).join(", ") || "none";
+    (plan.audioDecisions ?? []).forEach((decision, index) => {
+      if (!decision || decision.type === "silence") return;
+      const ref =
+        typeof decision.sourceVideoId === "string" ? decision.sourceVideoId.trim() : "";
+      if (!ref || known.has(ref)) return;
+      issues.push(
+        issue(
+          "error",
+          "unknown_audio_media",
+          `Audio decision ${index} (${decision.type}) references "${ref}", which is not a media library id or name. Available audio/video media: ${available}.`,
+          `audioDecisions.${index}.sourceVideoId`,
+        ),
+      );
+    });
+  }
 
   // ---- Same-track primary-video overlap ------------------------------------
   const placement = computePlanPlacement(plan);
