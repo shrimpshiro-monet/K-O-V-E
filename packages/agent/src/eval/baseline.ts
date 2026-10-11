@@ -489,36 +489,12 @@ export function isQuotaMessage(text: string): boolean {
 // noClipOverlaps/allGates, so v0 gate rates stay stitchable with new runs.
 // ---------------------------------------------------------------------------
 
-export interface DurationTarget {
-  /** First mention's hi end, in seconds. Null when the prompt names no duration. */
-  readonly target: number | null;
-  /** Every raw matched substring, in order — quoted verbatim in the warning. */
-  readonly mentions: readonly string[];
-}
-
-/**
- * Reads the brief's target length: first mention decides, ranges take the hi end.
- * "Cut a 45-second Short ... hit roughly one point every 12-15 seconds" → 45s.
- */
-export function promptDurationTarget(promptText: string): DurationTarget {
-  const mentions: string[] = [];
-  let target: number | null = null;
-  const pattern =
-    /(\d+(?:\.\d+)?)(?:\s*(?:-|–|—|to|through)\s*(\d+(?:\.\d+)?))?\s*-?\s*(seconds?|secs?|s|minutes?|mins?)(?![a-z0-9])/gi;
-  for (const match of promptText.matchAll(pattern)) {
-    mentions.push(match[0]);
-    if (target !== null) continue;
-    const lo = Number(match[1]);
-    const hi = match[2] !== undefined ? Number(match[2]) : lo;
-    const unit = match[3].toLowerCase();
-    target = Math.max(lo, hi) * (unit.startsWith("min") ? 60 : 1);
-  }
-  return { target, mentions };
-}
-
-function formatSeconds(value: number): string {
-  return `${Math.round(value * 10) / 10}s`;
-}
+// Canonical home: creation-schema — the director plan normalizer derives
+// targetDuration fallbacks with the same parser, so brief-duration semantics
+// can't drift between eval measurement and runtime normalization. Re-exported
+// here so eval callers (and stitched reports) keep their import surface.
+export { promptDurationTarget, formatSeconds, type DurationTarget } from "@kove-advanced/creation-schema";
+import { promptDurationTarget, formatSeconds } from "@kove-advanced/creation-schema";
 
 /**
  * `[duration_fidelity]` entry for a produced timeline outside [0.25x, 2x] of

@@ -82,6 +82,7 @@ export type {
 } from "./style-profile";
 
 export { compareStyleProfile } from "./style-profile";
+export { promptDurationTarget, formatSeconds, type DurationTarget } from "./duration-target";
 export {
   scoreSportsMoment,
   snapTimeToBeat,
