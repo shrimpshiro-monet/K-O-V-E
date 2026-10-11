@@ -33755,7 +33755,12 @@ const TOOLS: RegisteredTool[] = [
         );
       }
 
-      const directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, providedReferenceAnalysis);
+      // Standalone audio for the director prompt: the model must see real
+      // media ids so audioDecisions[].sourceVideoId names a library item.
+      const directorAudio = allMedia
+        .filter((m) => m.type === "audio")
+        .map((m) => ({ id: m.id, name: m.name ?? m.id, duration: m.metadata?.duration }));
+      const directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, providedReferenceAnalysis, directorAudio);
 
       const planTools =
         host.llm.provider === "anthropic"

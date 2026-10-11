@@ -150,3 +150,32 @@ describe("director prompt", () => {
     expect(prompt).toContain("high-energy action");
   });
 });
+
+describe("director prompt audio catalog", () => {
+  const audio = [
+    { id: "audio-1", name: "audio/Dave - Raindance (ft. Tems).mp3", duration: 210.5 },
+    { id: "audio-2", name: "sfx/hit.wav", duration: 0.3 },
+  ];
+
+  it("lists standalone audio by media id so sourceVideoId can name a real item", () => {
+    const prompt = buildDirectorPrompt(segmentMap, "make a beat-synced edit", undefined, undefined, audio);
+    expect(prompt).toContain("## Available audio");
+    expect(prompt).toContain("- audio-1 (audio/Dave - Raindance (ft. Tems).mp3, 210.5s)");
+    expect(prompt).toContain("- audio-2 (sfx/hit.wav, 0.3s)");
+    expect(prompt).toContain("never invent an id");
+  });
+
+  it("says so explicitly when the project has no standalone audio", () => {
+    const prompt = buildDirectorPrompt(segmentMap, "make a highlight");
+    expect(prompt).toContain("## Available audio");
+    expect(prompt).toContain("(none — music/sfx decisions should fall back to a video's own audio or use silence)");
+    // An empty catalog reads the same as no catalog.
+    expect(buildDirectorPrompt(segmentMap, "x", undefined, undefined, [])).toContain("(none —");
+  });
+
+  it("points the music template at the Available audio list, not an unseen list_media call", () => {
+    const prompt = buildDirectorPrompt(segmentMap, "make a highlight", undefined, undefined, audio);
+    expect(prompt).toContain("<media id from the Available audio list below>");
+    expect(prompt).not.toContain("list_media");
+  });
+});

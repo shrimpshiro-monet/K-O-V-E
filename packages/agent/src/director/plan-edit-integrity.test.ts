@@ -1057,3 +1057,19 @@ describe("failure editPlan is programmatic-only", () => {
     expect(modelView(result)).toContain('"compensation"');
   });
 });
+
+describe("director prompt audio visibility", () => {
+  it("advertises the project's standalone audio media to the nested director turn", async () => {
+    const h = harness([planResponse(validPlan())]);
+    const result = await executeTool("plan_edit", { prompt: "hook with music" }, h.host);
+
+    expect(result.ok).toBe(true);
+    // The nested director call's system prompt is the one buildDirectorPrompt
+    // built — the hallucinated-id family came from this turn never seeing
+    // audio-1. It must now be listed by id, name and duration.
+    const directorPrompt = h.llm.systems[0] ?? "";
+    expect(directorPrompt).toContain("## Available audio");
+    expect(directorPrompt).toContain("- audio-1 (track.mp3, 30.0s)");
+    expect(directorPrompt).toContain("never invent an id");
+  });
+});

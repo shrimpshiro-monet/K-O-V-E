@@ -107,7 +107,7 @@ Every EditPlan you submit MUST contain ALL of these arrays — never leave them 
    - Text → \`plan.textElements[]\`
 4. **transitions** (required where the contract asks for them): rendered blends are punctuation, not a default. Keep hard cuts as the backbone, then use 2-5 deliberate blends (whipPan, flash, zoom, glitch, crossfade, slide) at chapter changes — never the same type twice in a row.
 5. **audioDecisions** (required): Prefer EXTERNAL audio files (media items with type "audio", e.g. uploaded mp3/wav) over the video's own audio. Use the external file's media ID as \`sourceVideoId\`. Only fall back to a video's own audio when no separate audio file exists in the library, or mark as silence.
-   - Music:  { "type": "music",  "sourceVideoId": "<media id from list_media>", "startTime": 0, "duration": <edit length>, "volume": 0.7, "rationale": "..." }
+   - Music:  { "type": "music",  "sourceVideoId": "<media id from the Available audio list below>", "startTime": 0, "duration": <edit length>, "volume": 0.7, "rationale": "..." }
    - SFX:    { "type": "sfx",    "sourceVideoId": "<media id>", "startTime": <hit time>, "duration": 0.3, "volume": 1.0, "rationale": "..." }
    - Silence: { "type": "silence", "startTime": 0, "duration": <edit length>, "rationale": "no audio source in library" }
 
@@ -411,6 +411,7 @@ export function buildDirectorPrompt(
   prompt: string,
   genre?: Genre,
   referenceAnalysis?: unknown,
+  audioCatalog?: readonly { id: string; name: string; duration?: number }[],
 ): string {
   const videos = Array.isArray(segmentMap?.videos) ? segmentMap.videos : [];
   const safeMap: SegmentMap = { videos };
@@ -500,6 +501,18 @@ export function buildDirectorPrompt(
 
   const densityContract = buildDensityContract(prompt, genre);
 
+  // Standalone audio catalog: the director must see uploaded music/SFX by
+  // media id so audioDecisions[].sourceVideoId names a real library item —
+  // a hallucinated id used to crash materializeEditPlan with full apply
+  // compensation (now also caught by validateEditPlan's membership gate).
+  const audioList = (audioCatalog ?? [])
+    .map((item) => `- ${item.id} (${item.name}${item.duration !== undefined ? `, ${item.duration.toFixed(1)}s` : ""})`)
+    .join("\n");
+  const audioInfo =
+    audioList.length > 0
+      ? `\n## Available audio (upload-backed media library items)\nUse these exact ids as audioDecisions[].sourceVideoId for music/sfx — never invent an id:\n${audioList}`
+      : "\n## Available audio\n(none — music/sfx decisions should fall back to a video's own audio or use silence)";
+
   return [
     DIRECTOR_SYSTEM_PROMPT,
     "",
@@ -512,6 +525,7 @@ export function buildDirectorPrompt(
     `Available footage: ${summary}`,
     "Canonical sourceVideoId values (use the value after the colon, never the alias):",
     videoIds || "(none)",
+    audioInfo,
     perceptionSummary,
     "",
     "## Footage Analysis",
