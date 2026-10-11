@@ -358,6 +358,68 @@ describe("plan_edit integrity", () => {
     expect(h.llm.calls).toBe(2); // plan + exactly one repair attempt
   });
 
+  it("derives targetDuration from the brief when the plan omits it (no bad_target_duration self-wound)", async () => {
+    // The normalizer used to manufacture metadata.targetDuration = 0 whenever
+    // the field was missing/non-numeric, which validateEditPlan then rejected
+    // as bad_target_duration — an all-fail class measured on the live
+    // baseline (multi-01-detailed, multi-02-vague).
+    const plan = validPlan({
+      metadata: {
+        targetPlatform: "social",
+        genre: "hype",
+        pacing: "fast",
+        rationale: "the brief names the length",
+      },
+    });
+    const h = harness([planResponse(plan)]);
+    const result = await executeTool(
+      "plan_edit",
+      { prompt: "Cut a 14-second hype montage from my footage." },
+      h.host,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.data && (result.data as Record<string, unknown>).revision).toBe(1);
+    expect(timelineClips(h.project)).toHaveLength(2);
+  });
+
+  it("falls back to the plan's own structural duration when the brief names none", async () => {
+    const plan = validPlan({
+      metadata: {
+        targetDuration: 0, // even an explicit 0 is unusable — derive instead
+        targetPlatform: "social",
+        genre: "test",
+        pacing: "fast",
+        rationale: "no brief duration available",
+      },
+    });
+    const h = harness([planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, h.host);
+
+    expect(result.ok).toBe(true);
+    expect(result.data && (result.data as Record<string, unknown>).revision).toBe(1);
+    expect(timelineClips(h.project)).toHaveLength(2);
+  });
+
+  it("keeps bad_target_duration for a plan with no derivable duration at all", async () => {
+    const plan = validPlan({
+      segments: [],
+      metadata: {
+        targetPlatform: "social",
+        genre: "test",
+        pacing: "fast",
+        rationale: "empty plan, no duration anywhere",
+      },
+    });
+    const h = harness([planResponse(plan), planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as { issues: Array<{ code: string }> };
+    expect(data.issues.some((issue) => issue.code === "bad_target_duration")).toBe(true);
+  });
+
   it("repairs a rejected plan when the second attempt is valid", async () => {
     const bad = validPlan({
       segments: [

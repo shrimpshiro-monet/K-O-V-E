@@ -18,7 +18,7 @@ import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
-import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
+import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, promptDurationTarget, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
 import type { DirectorValidationIssue, PlanMediaCatalogItem } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
@@ -2798,7 +2798,40 @@ function resolveTextStyle<T extends { readonly templateOverride?: Partial<Captio
   };
 }
 
-function normalizeDirectorPlanInput(value: unknown): EditPlan {
+/**
+ * Derive a usable metadata.targetDuration when the plan's own value is
+ * missing/non-finite/non-positive. Priority: the brief's declared length
+ * (same parser the duration-fidelity gate measures), then the plan's own
+ * structure, then 0 (validation reports bad_target_duration — nothing real
+ * to derive). Never override an explicit usable number.
+ */
+function derivePlanTargetDuration(segments: readonly unknown[], promptText?: string): number {
+  if (promptText) {
+    const fromBrief = promptDurationTarget(promptText).target;
+    if (fromBrief !== null && Number.isFinite(fromBrief) && fromBrief > 0) return fromBrief;
+  }
+  let maxEnd = 0;
+  for (const value of segments) {
+    const rec = asRecord(value);
+    if (!rec) continue;
+    const start =
+      typeof rec.sourceStartTime === "number" && Number.isFinite(rec.sourceStartTime)
+        ? Math.max(0, rec.sourceStartTime)
+        : 0;
+    const end =
+      typeof rec.sourceEndTime === "number" && Number.isFinite(rec.sourceEndTime)
+        ? rec.sourceEndTime
+        : 0;
+    const position =
+      typeof rec.targetPosition === "number" && Number.isFinite(rec.targetPosition)
+        ? Math.max(0, rec.targetPosition)
+        : 0;
+    maxEnd = Math.max(maxEnd, position + Math.max(0, end - start));
+  }
+  return maxEnd > 0 ? maxEnd : 0;
+}
+
+function normalizeDirectorPlanInput(value: unknown, opts?: { promptText?: string }): EditPlan {
   const raw = asRecord(value) ?? {};
   const rawSegments = Array.isArray(raw.segments) ? raw.segments : [];
   const rawTextElements = Array.isArray(raw.textElements) ? raw.textElements : [];
@@ -2806,6 +2839,10 @@ function normalizeDirectorPlanInput(value: unknown): EditPlan {
   const rawTransitions = Array.isArray(raw.transitions) ? raw.transitions : [];
   const rawAudioDecisions = Array.isArray(raw.audioDecisions) ? raw.audioDecisions : [];
   const metadata = asRecord(raw.metadata) ?? {};
+  const givenTarget =
+    typeof metadata.targetDuration === "number" && Number.isFinite(metadata.targetDuration) && metadata.targetDuration > 0
+      ? metadata.targetDuration
+      : undefined;
   const motionMoments = (Array.isArray(raw.motionMoments) ? raw.motionMoments : [])
     .map((value) => {
       const moment = asRecord(value);
@@ -2854,7 +2891,7 @@ function normalizeDirectorPlanInput(value: unknown): EditPlan {
     motionMoments,
     metadata: {
       ...metadata,
-      targetDuration: typeof metadata.targetDuration === "number" ? metadata.targetDuration : 0,
+      targetDuration: givenTarget ?? derivePlanTargetDuration(rawSegments, opts?.promptText),
       targetPlatform: typeof metadata.targetPlatform === "string" ? metadata.targetPlatform : "unknown",
       genre: typeof metadata.genre === "string" ? metadata.genre : "unknown",
       pacing: metadata.pacing === "fast" || metadata.pacing === "slow" ? metadata.pacing : "medium",
@@ -33806,7 +33843,7 @@ const TOOLS: RegisteredTool[] = [
       const preparePlan = (
         raw: unknown,
       ): { plan: EditPlan; issues: readonly DirectorValidationIssue[] } => {
-        const normalized = normalizeDirectorPlanInput(raw);
+        const normalized = normalizeDirectorPlanInput(raw, { promptText: prompt });
         const withVocabulary = canonicalizePlanTransitions(normalized);
         const resolved = normalizeEditPlan(
           {
