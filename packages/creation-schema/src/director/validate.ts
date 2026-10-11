@@ -623,6 +623,64 @@ function validateSpeedRamp(
   });
 }
 
+type SpeedRampShape = PlannedSpeedRamp;
+
+/**
+ * Coerce a sloppy-but-salvageable speed ramp toward validity, or drop it when
+ * nothing rampable survives. Never throws and never leaves the plan in a
+ * state the validator flags as fatal: unsorted/wild/out-of-range bookkeeping
+ * errors are the functional equivalent of a clamp, and the live baseline
+ * showed those used to invalidate whole plans.
+ */
+export function sanitizeSpeedRamp(
+  ramp: SpeedRampShape,
+  sourceDuration: number,
+): { speedRamp?: SpeedRampShape; changed: boolean } {
+  const src = Math.max(0, sourceDuration);
+  const clampSpeed = (speed: number) => Math.min(20, Math.max(0.1, speed));
+  const clampTime = (time: number) => Math.min(src, Math.max(0, time));
+  // Keep the source order so same-time dedupe (last-wins) is deterministic.
+  const cleaned = ramp.keyframes
+    .map((kf, index) => ({ kf, index }))
+    .filter(({ kf }) => Number.isFinite(kf.time) && Number.isFinite(kf.speed))
+    .map(({ kf, index }) => ({ kf: { time: clampTime(kf.time), speed: clampSpeed(kf.speed) }, index }))
+    .sort((a, b) => (a.kf.time !== b.kf.time ? a.kf.time - b.kf.time : a.index - b.index));
+  const deduped: Array<{ time: number; speed: number }> = [];
+  for (const { kf } of cleaned) {
+    const last = deduped[deduped.length - 1];
+    if (last && last.time === kf.time) deduped[deduped.length - 1] = kf;
+    else deduped.push(kf);
+  }
+  const freeze = (ramp.freezeFrames ?? [])
+    .filter(
+      (f) =>
+        Number.isFinite(f.sourceTime) && Number.isFinite(f.startTime) && Number.isFinite(f.duration),
+    )
+    .map((f) => ({
+      sourceTime: clampTime(f.sourceTime),
+      startTime: clampTime(f.startTime),
+      duration: Math.max(0.01, Math.min(f.duration, src)),
+    }));
+  if (deduped.length < 2 && freeze.length === 0) {
+    return { speedRamp: undefined, changed: true };
+  }
+  const next: SpeedRampShape = {
+    ...ramp,
+    keyframes: deduped,
+    freezeFrames: freeze.length > 0 ? freeze : undefined,
+  };
+  const changed =
+    deduped.length !== ramp.keyframes.length ||
+    freeze.length !== (ramp.freezeFrames?.length ?? 0) ||
+    deduped.some(
+      (kf, index) =>
+        ramp.keyframes[index] === undefined ||
+        ramp.keyframes[index]!.time !== kf.time ||
+        ramp.keyframes[index]!.speed !== kf.speed,
+    );
+  return { speedRamp: next, changed };
+}
+
 export function normalizeEditPlan(
   plan: EditPlan,
   segmentMap: SegmentMap,
@@ -660,6 +718,11 @@ export function normalizeEditPlan(
     // Camera-move *shapes* are coerced here; unknown move ids are left in
     // place so validation can report them with the supported list.
     const cameraMoves = coerceCameraMoveShapes(segment.cameraMoves, end - start);
+    // Ramp bookkeeping errors (unsorted/wild/out-of-range keyframes, freeze
+    // frames off the source) are coerced here; the ramp is dropped only when
+    // nothing rampable survives — validation then has nothing validatable to
+    // flag fatal.
+    const ramp = segment.speedRamp ? sanitizeSpeedRamp(segment.speedRamp, end - start) : undefined;
 
     return {
       ...segment,
@@ -667,6 +730,11 @@ export function normalizeEditPlan(
       sourceEndTime: end,
       ...(effectSpecs ? { effectSpecs } : {}),
       ...(cameraMoves ? { cameraMoves } : {}),
+      ...(ramp?.speedRamp !== undefined
+        ? { speedRamp: ramp!.speedRamp }
+        : segment.speedRamp
+          ? { speedRamp: undefined }
+          : {}),
       effects,
     };
   });

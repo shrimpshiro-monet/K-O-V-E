@@ -137,6 +137,97 @@ describe("director validation helpers", () => {
     expect(normalized.transitions[0].duration).toBe(0.25);
   });
 
+  it("sanitizeSpeedRamp: sloppy-but-salvageable ramps are coerced, not plan-fatal", () => {
+    // The live baseline invalidated whole plans on ramp bookkeeping errors
+    // (unsorted, one out-of-range keyframe, one wild speed) that are the
+    // functional equivalent of a clamp.
+    const sloppy: EditPlan = {
+      ...plan,
+      segments: [{
+        ...plan.segments[0],
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        speedRamp: {
+          keyframes: [
+            { time: 3.5, speed: 1 },     // unsorted
+            { time: 0, speed: 1 },
+            { time: 9, speed: 40 },      // out of range + wild speed
+            { time: 12, speed: 0.02 },   // duplicate clamp target + wild low speed
+          ],
+        },
+      }],
+    };
+    const normalized = normalizeEditPlan(sloppy, {
+      videos: [{ videoId: "video-1", duration: 4, segments: [] }],
+    });
+    const ramp = normalized.segments[0]!.speedRamp;
+    expect(ramp).toBeDefined();
+    expect(ramp!.keyframes).toEqual([
+      { time: 0, speed: 1 },
+      { time: 3.5, speed: 1 },
+      { time: 4, speed: 0.1 }, // clamped into [0, sourceDuration]; duplicate time → last wins
+    ]);
+    const issues = validateEditPlan(normalized, {
+      videos: [{ videoId: "video-1", duration: 4, segments: [] }],
+    });
+    expect(issues.filter((issue) => issue.code.includes("speed") || issue.code.includes("freeze"))).toEqual([]);
+  });
+
+  it("sanitizeSpeedRamp: a genuinely unusable ramp is dropped, still not plan-fatal", () => {
+    const broken: EditPlan = {
+      ...plan,
+      segments: [{
+        ...plan.segments[0],
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        speedRamp: {
+          keyframes: [{ time: 1, speed: 2 }], // a single point is not a ramp
+        },
+      }],
+    };
+    const normalized = normalizeEditPlan(broken, {
+      videos: [{ videoId: "video-1", duration: 4, segments: [] }],
+    });
+    expect(normalized.segments[0]!.speedRamp).toBeUndefined();
+    const issues = validateEditPlan(normalized, {
+      videos: [{ videoId: "video-1", duration: 4, segments: [] }],
+    });
+    expect(issues.filter((issue) => issue.code.includes("speed"))).toEqual([]);
+  });
+
+  it("sanitizeSpeedRamp: non-finite entries are discarded; freeze frames clamp to source", () => {
+    const fuzzy: EditPlan = {
+      ...plan,
+      segments: [{
+        ...plan.segments[0],
+        sourceStartTime: 1,
+        sourceEndTime: 5,
+        speedRamp: {
+          keyframes: [
+            { time: 0, speed: 1 },
+            { time: Number.NaN, speed: 2 },
+            { time: 2, speed: Number.POSITIVE_INFINITY },
+            { time: 3, speed: 0.4 },
+          ],
+          freezeFrames: [{ sourceTime: -2, startTime: 9, duration: 8 }],
+        },
+      }],
+    };
+    const normalized = normalizeEditPlan(fuzzy, {
+      videos: [{ videoId: "video-1", duration: 5, segments: [] }],
+    });
+    const ramp = normalized.segments[0]!.speedRamp!;
+    expect(ramp.keyframes).toEqual([
+      { time: 0, speed: 1 },
+      { time: 3, speed: 0.4 },
+    ]);
+    expect(ramp.freezeFrames).toEqual([{ sourceTime: 0, startTime: 4, duration: 4 }]);
+    const issues = validateEditPlan(normalized, {
+      videos: [{ videoId: "video-1", duration: 5, segments: [] }],
+    });
+    expect(issues.filter((issue) => issue.code.includes("speed") || issue.code.includes("freeze"))).toEqual([]);
+  });
+
   it("validates speed ramps against source duration and speed limits", () => {
     const issues = validateEditPlan({
       ...plan,
