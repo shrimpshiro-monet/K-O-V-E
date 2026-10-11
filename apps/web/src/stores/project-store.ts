@@ -614,6 +614,11 @@ export interface ProjectState {
   // Execute arbitrary action
   executeAction: (action: Action) => Promise<ActionResult>;
 
+  // Replay the whole project into the transition/effects render bridges.
+  // Call after bridge initialization: mutations landing while init was in
+  // flight are skipped by the isInitialized() gates in the sync helpers.
+  resyncRenderBridges: () => void;
+
   // Computed values
   getTimelineDuration: () => number;
 
@@ -2961,6 +2966,12 @@ export const useProjectStore = create<ProjectState>()(
           set({ project: { ...project } });
         }
         return result;
+      },
+
+      resyncRenderBridges: () => {
+        const { project } = get();
+        syncProjectEffectsBridge(project);
+        syncProjectTransitionsBridge(project);
       },
 
       // Computed values

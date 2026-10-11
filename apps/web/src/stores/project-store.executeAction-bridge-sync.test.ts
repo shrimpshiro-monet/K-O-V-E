@@ -160,6 +160,45 @@ describe("executeAction render-bridge sync (agent mutation path)", () => {
     expect(mockEffectsBridgeState.clipEffects.get("clip-a")?.some((e) => e.type === "glow")).toBe(true);
   });
 
+  it("replays the whole project into the bridges after late init (init-race fix)", () => {
+    // Simulates state after mutations landed while the bridge was still
+    // initializing: project has a transition, the bridges are empty.
+    const project = useProjectStore.getState().project;
+    useProjectStore.setState({
+      project: {
+        ...project,
+        timeline: {
+          ...project.timeline,
+          tracks: project.timeline.tracks.map((track) =>
+            track.id === "video-track-1"
+              ? {
+                  ...track,
+                  transitions: [
+                    {
+                      id: "late-init-transition",
+                      clipAId: "clip-a",
+                      clipBId: "clip-b",
+                      type: "crossfade",
+                      duration: 0.45,
+                      params: {},
+                    } as Transition,
+                  ],
+                }
+              : track,
+          ),
+        },
+      },
+    });
+    expect(mockTransitionBridgeState.trackTransitions.has("video-track-1")).toBe(false);
+
+    useProjectStore.getState().resyncRenderBridges();
+
+    expect(mockTransitionBridgeState.trackTransitions.get("video-track-1")?.[0]?.id).toBe(
+      "late-init-transition",
+    );
+    expect(mockEffectsBridge.deserializeEffects).toHaveBeenCalled();
+  });
+
   it("clears bridge state for clips removed via executeAction", async () => {
     // Pre-seed the bridge as if the clip were already rendered.
     mockEffectsBridgeState.clipEffects.set("clip-a", [{ id: "fx-1", type: "glow" }]);

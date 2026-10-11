@@ -161,6 +161,17 @@ const useEngineInitialization = () => {
         }
         if (!isMounted) return;
 
+        // Mutations applied while init was in flight are silently skipped by
+        // the isInitialized() gates inside the project-store sync helpers
+        // (proven live: a plan that lands before init completes renders hard
+        // cuts instead of its transitions). Replay the current project into
+        // both bridges once init settles so nothing is permanently lost.
+        try {
+          useProjectStore.getState().resyncRenderBridges();
+        } catch (replayError) {
+          console.error("[EditorInterface] bridge replay failed:", replayError);
+        }
+
         setBridgesReady(true);
       } catch (error) {
         console.error("Failed to initialize engines/bridges:", error);
