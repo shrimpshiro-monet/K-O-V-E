@@ -5,6 +5,7 @@
 // UI-added ones rendered fine. Proven live by canvas luminance sweeps.
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useProjectStore } from "./project-store";
+import { getSpeedEngine, initializeSpeedEngine } from "@kove-advanced/core";
 import type { Clip, Transition } from "@kove-advanced/core";
 import { createEmptyProject } from "./project/project-helpers";
 
@@ -213,5 +214,28 @@ describe("executeAction render-bridge sync (agent mutation path)", () => {
     });
     expect(result.success).toBe(true);
     expect(mockEffectsBridgeState.clipEffects.has("clip-a")).toBe(false);
+  });
+
+  it("registers executeAction-applied speed ramps into the speed engine (engine is the render path's only view of speed)", async () => {
+    // Plan-applied ramps go through executeAction("speed/setRampData"); the
+    // video engine reads speed exclusively via the SpeedEngine singleton, so
+    // without a sync here ramps existed on the clip but played as 1x.
+    initializeSpeedEngine();
+    const result = await useProjectStore.getState().executeAction({
+      type: "speed/setRampData",
+      id: "sr-1",
+      timestamp: Date.now(),
+      params: {
+        clipId: "clip-a",
+        keyframes: [
+          { id: "k0", time: 0, speed: 1, easing: "linear" },
+          { id: "k1", time: 4, speed: 2, easing: "linear" },
+        ],
+        freezeFrames: [{ id: "f0", sourceTime: 2, startTime: 1, duration: 0.5 }],
+      },
+    });
+    expect(result.success).toBe(true);
+    expect(getSpeedEngine().getSpeedKeyframes("clip-a")).toHaveLength(2);
+    expect(getSpeedEngine().getFreezeFrames("clip-a")).toHaveLength(1);
   });
 });

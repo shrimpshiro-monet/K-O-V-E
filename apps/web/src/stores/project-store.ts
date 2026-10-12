@@ -2963,6 +2963,11 @@ export const useProjectStore = create<ProjectState>()(
           // (hard cuts, missing glow) while UI-path-added ones rendered.
           syncProjectEffectsBridge(project, previousProject);
           syncProjectTransitionsBridge(project, previousProject);
+          // Same contract for engine-backed clip state: speed ramps / freeze
+          // frames applied via speed/setRampData (plan materialization incl.)
+          // must register in the speed engine, or video renders 1x straight-
+          // through. Also covers overlay engines via the existing sync.
+          syncOverlayEnginesFromProject();
           set({ project: { ...project } });
         }
         return result;
@@ -2972,6 +2977,7 @@ export const useProjectStore = create<ProjectState>()(
         const { project } = get();
         syncProjectEffectsBridge(project);
         syncProjectTransitionsBridge(project);
+        syncOverlayEnginesFromProject();
       },
 
       // Computed values
