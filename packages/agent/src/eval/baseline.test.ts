@@ -633,9 +633,15 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
         },
       });
 
+      // MEASUREMENT BUG (fixed): this expectation used to hardcode "27" — the
+      // corpus size when the live spec was written. The summary itself is
+      // recomputed from the actual selection, so after any corpus growth the
+      // spec measured the report against a phantom size. Derive from the
+      // corpus file instead.
+      const corpusSize = loadCorpus(CORPUS_PATH).flatMap(p => p.prompts).length;
       const cases = INCLUDE.length > 0
         ? INCLUDE.length
-        : Math.max(0, Math.min(LIMIT ?? 27, 27 - (OFFSET ?? 0)));
+        : Math.max(0, Math.min(LIMIT ?? corpusSize, corpusSize - (OFFSET ?? 0)));
       expect(summary.cases).toBe(cases);
       expect(summary.runsPerCombo).toBe(RUNS);
       expect(summary.total).toBeLessThanOrEqual(cases * RUNS);

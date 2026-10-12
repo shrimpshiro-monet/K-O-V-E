@@ -18,7 +18,7 @@ import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
-import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, promptDurationTarget, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
+import { normalizeEditPlan, validateEditPlan, rekeyMediaRef, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, promptDurationTarget, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
 import type { DirectorValidationIssue, PlanMediaCatalogItem } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
@@ -2455,10 +2455,36 @@ async function materializeEditPlan(
       console.warn(`[plan_edit] skipping audio decision ${decision.type} — no sourceVideoId`);
       continue;
     }
-    const media = host.getProject().mediaLibrary.items.find((item) => item.id === decision.sourceVideoId)
-      ?? host.getProject().mediaLibrary.items.find((item) => item.name === decision.sourceVideoId);
+    const items = host.getProject().mediaLibrary.items;
+    const catalog: PlanMediaCatalogItem[] = items
+      .filter((item) => item.type === "audio" || item.type === "video")
+      .map((item) => ({
+        id: item.id,
+        name: item.name ?? item.id,
+        type: item.type as "audio" | "video",
+      }));
+    const dataResolution = rekeyMediaRef(decision.sourceVideoId, catalog);
+    if (dataResolution.kind === "ambiguous") {
+      const colliding = dataResolution.matches
+        .map((item) => `${item.id} (${item.name})`)
+        .join(", ");
+      throw new Error(
+        `Could not add planned ${decision.type}: "${decision.sourceVideoId}" canonically matches multiple media items: ${colliding}. Name one exact media id.`,
+      );
+    }
+    const resolvedMediaItemId = dataResolution.kind === "exact" || dataResolution.kind === "rekeyed"
+      ? dataResolution.item.id
+      : null;
+    if (dataResolution.kind === "rekeyed") {
+      console.warn(
+        `[plan_edit] ${decision.type}: canonicalized audio ref "${dataResolution.from}" → "${dataResolution.item.id}" (${dataResolution.item.name})`,
+      );
+    }
+    const media = resolvedMediaItemId !== null
+      ? items.find((item) => item.id === resolvedMediaItemId)
+      : undefined;
     if (!media) {
-      const available = host.getProject().mediaLibrary.items
+      const available = items
         .filter((item) => item.type === "audio" || item.type === "video")
         .map((item) => `${item.id} (${item.name})`)
         .join(", ") || "none";
@@ -33855,7 +33881,38 @@ const TOOLS: RegisteredTool[] = [
           },
           resolvedMap,
         );
-        return { plan: resolved, issues: validateEditPlan(resolved, resolvedMap, mediaCatalog) };
+        // Deterministic re-key BEFORE validation (and before apply): near-miss
+        // refs (case, separators, missing extension) resolve to the unique
+        // matching library item here, so the plan that runs through
+        // validation, sidecars, and materialization already names real media.
+        // Unknown/ambiguous refs stay verbatim — the membership gate reports
+        // those (and the repair round gets the collision list).
+        const rekeyWarnings: DirectorValidationIssue[] = [];
+        const audioRekeyed = resolved.audioDecisions.length > 0
+          ? {
+              ...resolved,
+              audioDecisions: resolved.audioDecisions.map((decision, index) => {
+                if (decision.type === "silence" || typeof decision.sourceVideoId !== "string") {
+                  return decision;
+                }
+                const resolution = rekeyMediaRef(decision.sourceVideoId.trim(), mediaCatalog);
+                if (resolution.kind !== "rekeyed") return decision;
+                // Visible in success payloads + eval sidecars: a re-keyed
+                // hallucination is a measurement signal, not silent help.
+                rekeyWarnings.push({
+                  severity: "warning",
+                  code: "audio_media_rekeyed",
+                  message: `Audio decision ${index} (${decision.type}) referenced "${resolution.from}", re-keyed deterministically to "${resolution.item.id}" (${resolution.item.name}).`,
+                  path: `audioDecisions.${index}.sourceVideoId`,
+                });
+                return { ...decision, sourceVideoId: resolution.item.id };
+              }),
+            }
+          : resolved;
+        return {
+          plan: audioRekeyed,
+          issues: [...validateEditPlan(audioRekeyed, resolvedMap, mediaCatalog), ...rekeyWarnings],
+        };
       };
 
       const formatIssues = (issues: readonly DirectorValidationIssue[]): string =>

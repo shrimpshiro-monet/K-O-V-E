@@ -833,8 +833,14 @@ export function summarizeBaseline(
     const validPerRun: number[] = [];
     for (let runIndex = 0; runIndex < opts.runsPerCombo; runIndex++) {
       const group = valid.filter(r => r.run === runIndex);
+      // MEASUREMENT BUG (fixed): an empty run — every case in that run was
+      // quota-excluded or never scheduled (abort mid-flight) — used to record
+      // perRun=0 and validPerRun=0. That phantom "0% rate" then contaminated
+      // the mean AND the stdev, making aborted runs look strictly worse than
+      // the model really was. An empty run is no measurement at all: skip it.
+      if (group.length === 0) continue;
       validPerRun.push(group.length);
-      perRun.push(group.length > 0 ? group.filter(pick).length / group.length : 0);
+      perRun.push(group.filter(pick).length / group.length);
     }
     const mean = perRun.reduce((sum, n) => sum + n, 0) / perRun.length;
     const variance =

@@ -45,6 +45,79 @@ export interface PlanMediaCatalogItem {
   readonly type: "audio" | "video";
 }
 
+// ---------------------------------------------------------------------------
+// Deterministic media-ref re-keying
+// ---------------------------------------------------------------------------
+// The three consumers of an audio decision's ref — validateEditPlan's
+// membership gate, plan_edit's prepare pass, and materializeEditPlan's media
+// lookup — must agree on what "this ref names that item" means, or a plan
+// passes one stage and crashes the next. `rekeyMediaRef` is the single
+// canonicalizer they all call: exact id/name first (never rewrites a legal
+// ref), then a normalized comparison that is still safe to apply
+// deterministically:
+//
+//   - surrounding whitespace and a leading "./" are discarded;
+//   - case folds (LLMs fossilize "TRACK.MP3" after seeing examples);
+//   - `-`/`_`/`.` and whitespace collapse to a single separator;
+//   - a known media-file extension may be dropped OR added ("track" ⇄
+//     "track.mp3" — the model routinely answers with the stem).
+//
+// A normalized match only re-keys when it is UNIQUE. Two library items whose
+// canonical keys collide make the ref ambiguous: keep it verbatim and let
+// validation report it — guessing between two real files would be a silent
+// content change.
+const MEDIA_EXTENSIONS =
+  /\.(mp3|wav|m4a|aac|ogg|flac|mp4|mov|mkv|webm|avi|m4v|mpg|mpeg)$/i;
+
+export function canonicalMediaRefKey(ref: string): string {
+  let key = ref.trim();
+  if (key.startsWith("./")) key = key.slice(2);
+  key = key.toLowerCase();
+  // Strip a single trailing media extension so "track.mp3" and "track" share
+  // one key. An id may legitimately END in an extension, so callers compare
+  // canonical keys derived from both the raw ref and the library forms.
+  key = key.replace(MEDIA_EXTENSIONS, "");
+  return key.replace(/[\s_.-]+/g, " ").trim();
+}
+
+export type MediaRefResolution =
+  | { readonly kind: "exact"; readonly item: PlanMediaCatalogItem }
+  | {
+      readonly kind: "rekeyed";
+      readonly item: PlanMediaCatalogItem;
+      /** What the plan said — kept for the warning message and tests. */
+      readonly from: string;
+    }
+  | { readonly kind: "ambiguous"; readonly matches: readonly PlanMediaCatalogItem[]; readonly from: string }
+  | { readonly kind: "unknown"; readonly from: string };
+
+/**
+ * Resolves an audio decision's ref against the media catalog with the
+ * strict-then-canonical ladder above. An empty `catalog` (legacy callers)
+ * yields `unknown` and callers decide.
+ */
+export function rekeyMediaRef(
+  ref: string,
+  catalog: readonly PlanMediaCatalogItem[],
+): MediaRefResolution {
+  const exact =
+    catalog.find((item) => item.id === ref) ?? catalog.find((item) => item.name === ref);
+  if (exact) return { kind: "exact", item: exact };
+  const key = canonicalMediaRefKey(ref);
+  if (key.length === 0) return { kind: "unknown", from: ref };
+  const candidates: PlanMediaCatalogItem[] = [];
+  for (const item of catalog) {
+    const idKey = canonicalMediaRefKey(item.id);
+    const nameKey = canonicalMediaRefKey(item.name);
+    if (idKey === key || nameKey === key) {
+      if (!candidates.some((seen) => seen.id === item.id)) candidates.push(item);
+    }
+  }
+  if (candidates.length === 1) return { kind: "rekeyed", item: candidates[0]!, from: ref };
+  if (candidates.length > 1) return { kind: "ambiguous", matches: candidates, from: ref };
+  return { kind: "unknown", from: ref };
+}
+
 function issue(
   severity: DirectorValidationIssue["severity"],
   code: string,
@@ -434,27 +507,51 @@ export function validateEditPlan(
 
   // ---- Audio media membership ---------------------------------------------
   // materializeEditPlan resolves a music/sfx decision's sourceVideoId against
-  // the media library (by id OR exact name) and THROWS when it finds nothing —
-  // after every clip is already on the timeline, so the whole apply is
-  // compensated away. Catching the unresolvable ref here (error severity) lets
-  // the bounded repair pass re-key it to a real media id instead of crashing.
-  // The catalog is optional: without it (legacy callers) membership cannot be
-  // checked from the segment map alone, which only ever lists video sources.
-  // Silence decisions carry no source; a ref on a video item is legal (the
-  // materializer prefers standalone audio deterministically).
+  // the media library and THROWS when it finds nothing — after every clip is
+  // already on the timeline, so the whole apply is compensated away. Catching
+  // the unresolvable ref here (error severity) lets the bounded repair pass
+  // re-key it to a real media id instead of crashing. The catalog is optional:
+  // without it (legacy callers) membership cannot be checked from the segment
+  // map alone, which only ever lists video sources. Silence decisions carry no
+  // source; a ref on a video item is legal (the materializer prefers standalone
+  // audio deterministically). plan_edit re-keys near-miss refs
+  // deterministically BEFORE this runs — a canonical-unique ref is a warning
+  // (audio_media_canonicalized), only unknown/ambiguous refs are errors.
   const catalog = mediaCatalog ?? [];
   if (catalog.length > 0) {
-    const known = new Set<string>();
-    for (const item of catalog) {
-      known.add(item.id);
-      known.add(item.name);
-    }
     const available = catalog.map((item) => `${item.id} (${item.name})`).join(", ") || "none";
     (plan.audioDecisions ?? []).forEach((decision, index) => {
       if (!decision || decision.type === "silence") return;
       const ref =
         typeof decision.sourceVideoId === "string" ? decision.sourceVideoId.trim() : "";
-      if (!ref || known.has(ref)) return;
+      if (!ref) return;
+      const resolution = rekeyMediaRef(ref, catalog);
+      if (resolution.kind === "exact") return;
+      if (resolution.kind === "rekeyed") {
+        issues.push(
+          issue(
+            "warning",
+            "audio_media_canonicalized",
+            `Audio decision ${index} (${decision.type}) references "${ref}", which canonicalizes to "${resolution.item.id}" (${resolution.item.name}). Prefer the exact id or name.`,
+            `audioDecisions.${index}.sourceVideoId`,
+          ),
+        );
+        return;
+      }
+      if (resolution.kind === "ambiguous") {
+        const colliding = resolution.matches
+          .map((item) => `${item.id} (${item.name})`)
+          .join(", ");
+        issues.push(
+          issue(
+            "error",
+            "unknown_audio_media",
+            `Audio decision ${index} (${decision.type}) references "${ref}", which canonically matches multiple media items: ${colliding}. Name one exact media id. Available audio/video media: ${available}.`,
+            `audioDecisions.${index}.sourceVideoId`,
+          ),
+        );
+        return;
+      }
       issues.push(
         issue(
           "error",
@@ -623,62 +720,59 @@ function validateSpeedRamp(
   });
 }
 
-type SpeedRampShape = PlannedSpeedRamp;
-
 /**
- * Coerce a sloppy-but-salvageable speed ramp toward validity, or drop it when
- * nothing rampable survives. Never throws and never leaves the plan in a
- * state the validator flags as fatal: unsorted/wild/out-of-range bookkeeping
- * errors are the functional equivalent of a clamp, and the live baseline
- * showed those used to invalidate whole plans.
+ * Coordinate-sanitize a planned speed ramp against a segment's usable source
+ * span. The live baseline invalidated whole plans on ramp bookkeeping errors
+ * that are the functional equivalent of a clamp — an unsorted list, one
+ * out-of-range keyframe, one wild speed — so normalize passes through here
+ * instead of validation. Rules:
+ *
+ *   - keyframes with non-finite time or speed are discarded;
+ *   - times clamp into [0, sourceDuration] and speeds into [0.1, 20] (the
+ *     same window validateSpeedRamp enforces);
+ *   - sort ascending; a duplicate time keeps the LAST keyframe;
+ *   - freeze frames clamp to the same source window (sourceTime >= 0, the
+ *     hold must start inside the span, duration capped at the span) and
+ *     non-finite ones are dropped;
+ *   - a ramp that cannot express a speed change (< 2 keyframes and no
+ *     freeze frames) is NOT a ramp: it is dropped (`undefined`) so the
+ *     plan stays clean instead of failing validation for nothing.
  */
 export function sanitizeSpeedRamp(
-  ramp: SpeedRampShape,
+  ramp: PlannedSpeedRamp | undefined,
   sourceDuration: number,
-): { speedRamp?: SpeedRampShape; changed: boolean } {
-  const src = Math.max(0, sourceDuration);
-  const clampSpeed = (speed: number) => Math.min(20, Math.max(0.1, speed));
-  const clampTime = (time: number) => Math.min(src, Math.max(0, time));
-  // Keep the source order so same-time dedupe (last-wins) is deterministic.
-  const cleaned = ramp.keyframes
-    .map((kf, index) => ({ kf, index }))
-    .filter(({ kf }) => Number.isFinite(kf.time) && Number.isFinite(kf.speed))
-    .map(({ kf, index }) => ({ kf: { time: clampTime(kf.time), speed: clampSpeed(kf.speed) }, index }))
-    .sort((a, b) => (a.kf.time !== b.kf.time ? a.kf.time - b.kf.time : a.index - b.index));
-  const deduped: Array<{ time: number; speed: number }> = [];
-  for (const { kf } of cleaned) {
-    const last = deduped[deduped.length - 1];
-    if (last && last.time === kf.time) deduped[deduped.length - 1] = kf;
-    else deduped.push(kf);
-  }
-  const freeze = (ramp.freezeFrames ?? [])
+): PlannedSpeedRamp | undefined {
+  if (!ramp) return undefined;
+  const span = Number.isFinite(sourceDuration) && sourceDuration > 0 ? sourceDuration : 0;
+  const keyframes = (ramp.keyframes ?? [])
+    .filter((keyframe) => Number.isFinite(keyframe.time) && Number.isFinite(keyframe.speed))
+    .map((keyframe) => ({
+      time: span > 0 ? Math.min(Math.max(0, keyframe.time), span) : Math.max(0, keyframe.time),
+      speed: Math.min(Math.max(0.1, keyframe.speed), 20),
+    }))
+    .sort((left, right) => left.time - right.time);
+  const deduped = keyframes.filter(
+    (keyframe, index) => index + 1 === keyframes.length || keyframes[index + 1]!.time > keyframe.time + 1e-6,
+  );
+  const freezeFrames = (ramp.freezeFrames ?? [])
     .filter(
-      (f) =>
-        Number.isFinite(f.sourceTime) && Number.isFinite(f.startTime) && Number.isFinite(f.duration),
+      (freeze) =>
+        Number.isFinite(freeze.sourceTime) &&
+        Number.isFinite(freeze.startTime) &&
+        Number.isFinite(freeze.duration),
     )
-    .map((f) => ({
-      sourceTime: clampTime(f.sourceTime),
-      startTime: clampTime(f.startTime),
-      duration: Math.max(0.01, Math.min(f.duration, src)),
-    }));
-  if (deduped.length < 2 && freeze.length === 0) {
-    return { speedRamp: undefined, changed: true };
-  }
-  const next: SpeedRampShape = {
+    .map((freeze) => ({
+      sourceTime: Math.max(0, span > 0 ? Math.min(freeze.sourceTime, span) : freeze.sourceTime),
+      startTime: Math.max(0, span > 0 ? Math.min(freeze.startTime, span) : freeze.startTime),
+      duration: span > 0 ? Math.min(Math.max(0, freeze.duration), span) : Math.max(0, freeze.duration),
+    }))
+    .filter((freeze) => freeze.duration > 0);
+  if (deduped.length < 2 && freezeFrames.length === 0) return undefined;
+  return {
     ...ramp,
-    keyframes: deduped,
-    freezeFrames: freeze.length > 0 ? freeze : undefined,
+    keyframes: deduped.length > 0 ? deduped : [{ time: 0, speed: 1 }],
+    ...(freezeFrames.length > 0 ? { freezeFrames } : {}),
   };
-  const changed =
-    deduped.length !== ramp.keyframes.length ||
-    freeze.length !== (ramp.freezeFrames?.length ?? 0) ||
-    deduped.some(
-      (kf, index) =>
-        ramp.keyframes[index] === undefined ||
-        ramp.keyframes[index]!.time !== kf.time ||
-        ramp.keyframes[index]!.speed !== kf.speed,
-    );
-  return { speedRamp: next, changed };
 }
 
 export function normalizeEditPlan(
@@ -718,11 +812,8 @@ export function normalizeEditPlan(
     // Camera-move *shapes* are coerced here; unknown move ids are left in
     // place so validation can report them with the supported list.
     const cameraMoves = coerceCameraMoveShapes(segment.cameraMoves, end - start);
-    // Ramp bookkeeping errors (unsorted/wild/out-of-range keyframes, freeze
-    // frames off the source) are coerced here; the ramp is dropped only when
-    // nothing rampable survives — validation then has nothing validatable to
-    // flag fatal.
-    const ramp = segment.speedRamp ? sanitizeSpeedRamp(segment.speedRamp, end - start) : undefined;
+    // Speed ramps clamp to the sanitized source span; unusable ramps drop.
+    const speedRamp = sanitizeSpeedRamp(segment.speedRamp, end - start);
 
     return {
       ...segment,
@@ -730,11 +821,7 @@ export function normalizeEditPlan(
       sourceEndTime: end,
       ...(effectSpecs ? { effectSpecs } : {}),
       ...(cameraMoves ? { cameraMoves } : {}),
-      ...(ramp?.speedRamp !== undefined
-        ? { speedRamp: ramp!.speedRamp }
-        : segment.speedRamp
-          ? { speedRamp: undefined }
-          : {}),
+      ...(speedRamp ? { speedRamp } : { speedRamp: undefined }),
       effects,
     };
   });

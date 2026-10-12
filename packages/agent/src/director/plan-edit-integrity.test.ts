@@ -522,6 +522,119 @@ describe("plan_edit integrity", () => {
     expect(repairPrompt).toContain("audio-1 (track.mp3)");
   });
 
+  it("re-keys a near-miss audio ref deterministically — no repair round, warning is surfaced", async () => {
+    // Model fossilizes the file NAME it saw in the prompt instead of the media
+    // id, in upper case, with the extension dropped. Canonical re-keying must
+    // rewrite it BEFORE validation: the plan applies without an LLM repair.
+    const plan = validPlan({
+      audioDecisions: [
+        {
+          type: "music",
+          sourceVideoId: " TRACK.MP3 ", // trims + case-folds + ext-strips → canonical key "track" → audio-1 (track.mp3), unique
+          sourceStartTime: 0,
+          sourceEndTime: 8,
+          startTime: 0,
+          duration: 8,
+          volume: 0.4,
+          rationale: "bed",
+        },
+      ],
+      metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "music bed" }, h.host);
+
+    expect(result.ok).toBe(true);
+    const data = result.data as {
+      audioCount: number;
+      validationWarnings?: Array<{ code: string; message: string }>;
+    };
+    expect(data.audioCount).toBe(1);
+    const audioClip = h.project.timeline.tracks
+      .filter((track) => track.type === "audio")
+      .flatMap((track) => track.clips)[0];
+    expect(audioClip?.mediaId ?? (audioClip as unknown as { sourceId?: string })?.sourceId).toBeTruthy();
+    const rekeyed = (data.validationWarnings ?? []).find((issue) => issue.code === "audio_media_rekeyed");
+    expect(rekeyed).toBeDefined();
+    expect(rekeyed!.message).toContain('"TRACK.MP3"');
+    expect(rekeyed!.message).toContain('"audio-1"');
+    // Deterministically re-keyed: validation saw the real id, nothing to
+    // repair — no second planning call (density review may add one).
+    expect(h.llm.calls).toBeLessThanOrEqual(2);
+    const systems = h.llm.systems.join("\n");
+    expect(systems).not.toContain("unknown_audio_media");
+  });
+
+  it("accepts an extension-stem audio ref ('track' → track.mp3) via the same canonical ladder", async () => {
+    const plan = validPlan({
+      audioDecisions: [
+        {
+          type: "sfx",
+          sourceVideoId: "track",
+          sourceStartTime: 0,
+          sourceEndTime: 1,
+          startTime: 1,
+          duration: 1,
+          volume: 0.8,
+          rationale: "hit",
+        },
+      ],
+      metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "add a hit on the beat" }, h.host);
+
+    expect(result.ok).toBe(true);
+    expect((result.data as { audioCount: number }).audioCount).toBe(1);
+  });
+
+  it("refuses to guess on a canonical collision: ambiguous ref is an error with both candidates", async () => {
+    // Second library item whose canonical key collides with track.mp3.
+    // Inserted here (not in makeProject) so every OTHER test's catalog keeps
+    // unique canonical keys.
+    const planWithCollision = (sourceVideoId: string): Record<string, unknown> =>
+      validPlan({
+        audioDecisions: [
+          {
+            type: "music",
+            sourceVideoId,
+            sourceStartTime: 0,
+            sourceEndTime: 8,
+            startTime: 0,
+            duration: 8,
+            volume: 0.4,
+            rationale: "bed",
+          },
+        ],
+        metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+      });
+    const h = harness([
+      planResponse(planWithCollision("track")),
+      planResponse(planWithCollision("track")),
+    ]);
+    h.project.mediaLibrary.items.push({
+      id: "audio-2",
+      name: "track.m4a", // extension-strips to canonical key "track" — collides with track.mp3
+      type: "audio",
+      metadata: { duration: 20 },
+    } as unknown as Project["mediaLibrary"]["items"][number]);
+
+    const result = await executeTool("plan_edit", { prompt: "music bed" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as { issues: Array<{ code: string; severity: string; message: string }> };
+    const collision = data.issues.find((issue) => issue.code === "unknown_audio_media");
+    expect(collision).toBeDefined();
+    expect(collision!.severity).toBe("error");
+    expect(collision!.message).toContain("audio-1");
+    expect(collision!.message).toContain("audio-2");
+    expect(collision!.message).toContain("canonically matches multiple media items");
+    // Never reached apply: the timeline stayed empty, one repair attempt ran.
+    expect(timelineClips(h.project)).toHaveLength(0);
+    expect(h.llm.calls).toBe(2);
+  });
+
   it("rejects a text position outside the normalized 0-1 range", async () => {
     const bad = validPlan({
       textElements: [
