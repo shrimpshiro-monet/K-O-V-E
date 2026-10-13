@@ -6,7 +6,6 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-import webrtcvad
 
 from kove_engine.types import AudioResult
 
@@ -14,6 +13,12 @@ logger = logging.getLogger(__name__)
 
 SAMPLE_RATE = 16000
 FRAME_DURATION_MS = 30
+
+try:  # webrtcvad is a C extension; environments without Python build tools
+    import webrtcvad  # type: ignore[import-not-found]
+except ImportError:  # pragma: no cover - exercised only where it is absent
+    webrtcvad = None  # type: ignore[assignment]
+    logger.warning("webrtcvad unavailable - VAD-based dialogue detection disabled")
 
 
 class AudioAnalyzer:
@@ -27,7 +32,7 @@ class AudioAnalyzer:
         self.silence_threshold_db = silence_threshold_db
         self.silence_min_duration = silence_min_duration
         self.speech_ratio_threshold = speech_ratio_threshold
-        self.vad = webrtcvad.Vad(vad_aggressiveness)
+        self.vad = None if webrtcvad is None else webrtcvad.Vad(vad_aggressiveness)
 
     def analyze(self, video_path: str, start: float, duration: float) -> AudioResult:
         """Analyze audio segment for silence, speech, and music."""
@@ -89,6 +94,8 @@ class AudioAnalyzer:
         return rms_db < self.silence_threshold_db
 
     def _detect_speech_vad(self, audio: np.ndarray) -> bool:
+        if self.vad is None:
+            return False
         frame_size = int(SAMPLE_RATE * FRAME_DURATION_MS / 1000)
         audio_bytes = (audio[: len(audio) - len(audio) % frame_size] * 32768).astype(
             np.int16
@@ -111,6 +118,57 @@ class AudioAnalyzer:
             return False
 
         return (speech_frames / total_frames) > self.speech_ratio_threshold
+
+    def detect_pauses(self, audio: np.ndarray) -> list[dict]:
+        """Frame-level VAD pass: return silent gaps of at least
+        ``silence_min_duration`` seconds as ``[{start, end}]`` inside this
+        chunk (times relative to the chunk start).
+
+        This is the pause data the editor snaps cut points with — it used to
+        exist only as the ``is_silence`` boolean and never reached consumers.
+        Without webrtcvad this returns an empty list rather than guessing.
+        """
+        if self.vad is None:
+            return []
+
+        frame_size = int(SAMPLE_RATE * FRAME_DURATION_MS / 1000)
+        usable = audio[: len(audio) - len(audio) % frame_size]
+        audio_bytes = (usable * 32768).astype(np.int16).tobytes()
+
+        step = frame_size * 2
+        min_gap_frames = int(self.silence_min_duration * 1000 / FRAME_DURATION_MS)
+        pauses: list[dict] = []
+        silent_run_start: int | None = None
+
+        for i, offset in enumerate(range(0, len(audio_bytes) - step + 1, step)):
+            frame = audio_bytes[offset : offset + step]
+            is_speech = False
+            try:
+                is_speech = self.vad.is_speech(frame, SAMPLE_RATE)
+            except Exception:  # noqa: BLE001 — a bad frame is silence evidence only
+                is_speech = False
+            if is_speech:
+                if silent_run_start is not None and i - silent_run_start >= min_gap_frames:
+                    pauses.append(
+                        {
+                            "start": silent_run_start * FRAME_DURATION_MS / 1000.0,
+                            "end": i * FRAME_DURATION_MS / 1000.0,
+                        }
+                    )
+                silent_run_start = None
+            elif silent_run_start is None:
+                silent_run_start = i
+
+        if silent_run_start is not None:
+            total_frames = len(audio_bytes) // step
+            if total_frames - silent_run_start >= min_gap_frames:
+                pauses.append(
+                    {
+                        "start": silent_run_start * FRAME_DURATION_MS / 1000.0,
+                        "end": total_frames * FRAME_DURATION_MS / 1000.0,
+                    }
+                )
+        return pauses
 
     def _detect_music(self, audio: np.ndarray) -> tuple[bool, float | None]:
         """Detect music via beat tracking. Returns (has_music, bpm)."""
