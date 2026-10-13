@@ -19,6 +19,7 @@ export {
   setAnalysisMode,
   getAnalysisMode,
   resolveAnalysisEndpoint,
+  resolveAnalysisToken,
   isAnalysisAvailable,
   runtimeAnalysisEnvironment,
 } from "./registry";

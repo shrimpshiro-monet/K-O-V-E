@@ -11635,6 +11635,41 @@ export function resolveAnalysisEndpoint(
   return environment.isDev ? DEV_ECO_WORKER_URL : null;
 }
 
+/**
+ * The bearer token for an analysis backend, or null when none is configured.
+ *
+ * Both backends refuse tokenless requests once they hold a token of their own
+ * (`WORKER_AUTH_TOKEN` for the Cloudflare worker, `KOVE_ENGINE_TOKEN` for the
+ * Python engine), so an operator who locks one down must give this build the
+ * matching value or every analysis request fails with 401/503.
+ *
+ * A token read here ends up in the bundle. That is acceptable for a token that
+ * only gates quota (it is a speed bump against casual abuse, and the origin
+ * allowlist is the real browser-side control), but it is not a substitute for
+ * keeping a token secret — deployments that need that should put the backend
+ * behind Cloudflare Access or an authenticated proxy instead.
+ */
+export function resolveAnalysisToken(
+  mode: "eco" | "ai",
+  environment: AnalysisEnvironment = runtimeAnalysisEnvironment(),
+): string | null {
+  const keys = mode === "ai"
+    ? ["KOVE_VISION_WORKER_TOKEN", "VITE_VISION_WORKER_TOKEN"]
+    : ["KOVE_ECO_WORKER_TOKEN", "VITE_ECO_WORKER_TOKEN"];
+  for (const key of keys) {
+    const value = normalizedConfigValue(environment.read(key));
+    if (value) return value;
+  }
+  return null;
+}
+
+/** HTTP status carried by a failed analysis request, when it has one. */
+function httpStatusOf(error: unknown): number | null {
+  if (!error || typeof error !== "object") return null;
+  const status = (error as { status?: unknown }).status;
+  return typeof status === "number" && Number.isFinite(status) ? status : null;
+}
+
 /** Whether the given analysis mode can reach a backend in this build. */
 export function isAnalysisAvailable(mode: "eco" | "ai" = _analysisMode): boolean {
   return resolveAnalysisEndpoint(mode) !== null;
@@ -33484,9 +33519,28 @@ const TOOLS: RegisteredTool[] = [
 
       let result: Awaited<ReturnType<typeof runFrameWorkerPipeline>>;
       try {
-        result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl });
+        result = await runFrameWorkerPipeline({
+          videos: videoInputs,
+          workerUrl,
+          authToken: resolveAnalysisToken(_analysisMode) ?? undefined,
+        });
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
+        const status = httpStatusOf(error);
+        // A locked-down backend answers 401/403/503. Reporting that as
+        // "unreachable" sends the operator to check the URL and CORS when the
+        // real problem is a missing or mismatched token.
+        if (status === 401 || status === 403 || status === 503) {
+          return fail(
+            `Frame analysis was refused by the endpoint at ${workerUrl} ` +
+            `(HTTP ${status}). The backend requires a bearer token: set ` +
+            `${_analysisMode === "ai" ? "VITE_VISION_WORKER_TOKEN" : "VITE_ECO_WORKER_TOKEN"} ` +
+            `to the same value the backend was configured with (` +
+            `${_analysisMode === "ai" ? "WORKER_AUTH_TOKEN" : "KOVE_ENGINE_TOKEN"}), ` +
+            `or configure the backend with a token if it has none.`,
+            "ANALYSIS_UNAUTHORIZED",
+          );
+        }
         return fail(
           `Frame analysis failed: the endpoint at ${workerUrl} could not be reached ` +
           `(${detail}). Confirm the analysis engine is running and allows this ` +

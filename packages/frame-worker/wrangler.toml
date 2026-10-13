@@ -28,6 +28,9 @@ CF_AI_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct"
 #   CLOUDFLARE_API_TOKEN   required; vision model calls
 #
 # Without WORKER_AUTH_TOKEN the worker returns 503 and serves nothing rather than
-# running unauthenticated. MAX_REQUESTS_PER_MINUTE is best-effort: it counts per
-# worker isolate, so it is a speed bump rather than a global quota — use
-# Cloudflare Rate Limiting rules or the account's AI gateway limits for a real one.
+# running unauthenticated. The client must send the same value as
+# `VITE_VISION_WORKER_TOKEN` (or `KOVE_VISION_WORKER_TOKEN`); a build without it
+# gets HTTP 401/503 and reports ANALYSIS_UNAUTHORIZED.
+# MAX_REQUESTS_PER_MINUTE is best-effort: it counts per worker isolate, so it is a
+# speed bump rather than a global quota — use Cloudflare Rate Limiting rules or
+# the account's AI gateway limits for a real one.

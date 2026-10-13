@@ -265,15 +265,95 @@ export function descriptionsToSegmentMap(
   return { videoId, duration, segments };
 }
 
+/**
+ * Bearer header for an analysis backend, or nothing when no token is configured.
+ *
+ * Both backends refuse requests that carry no token once one is configured: the
+ * Cloudflare worker answers 503 until `WORKER_AUTH_TOKEN` exists, and the Python
+ * engine answers 401 when `KOVE_ENGINE_TOKEN` is set. Without this header the
+ * client could not talk to a hardened backend at all, which would make the
+ * lockdown inert — so the token travels with every request, including the polls.
+ */
+function authHeaders(authToken?: string): Record<string, string> {
+  const token = authToken?.trim();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * A failure that carries the HTTP status, so callers can tell "the backend
+ * refused me" from "the backend isn't there". Reaching a 401 by way of a JSON
+ * parse error is how an auth misconfiguration gets reported as a network
+ * outage.
+ */
+export class VisionWorkerHttpError extends Error {
+  readonly status: number;
+  readonly detail: string;
+
+  constructor(status: number, detail: string) {
+    super(`Vision worker error: HTTP ${status}${detail ? ` (${detail})` : ""}`);
+    this.name = "VisionWorkerHttpError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+/** Best-effort error text from a failed response, capped for log/UI sanity. */
+async function describeFailure(response: {
+  status?: number;
+  json?: () => Promise<unknown>;
+  text?: () => Promise<string>;
+}): Promise<string> {
+  const body = await readFailureBody(response);
+  if (body === null) return "";
+  if (typeof body === "string") return body.trim().slice(0, 300);
+  try {
+    return JSON.stringify(body).slice(0, 300);
+  } catch {
+    return "";
+  }
+}
+
+async function readFailureBody(response: {
+  json?: () => Promise<unknown>;
+  text?: () => Promise<string>;
+}): Promise<unknown> {
+  if (typeof response.text === "function") {
+    try {
+      return await response.text();
+    } catch {
+      return null;
+    }
+  }
+  if (typeof response.json === "function") {
+    try {
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+export interface VisionWorkerCallOptions {
+  /**
+   * Shared secret for a hardened backend, from the app's configuration. Empty or
+   * absent means no Authorization header is sent — correct for a backend that
+   * has not been locked down yet, and the only case that works against one that
+   * has.
+   */
+  readonly authToken?: string;
+}
+
 export async function callVisionWorker(
   workerUrl: string,
   videoId: string,
   totalDuration: number,
   batches: readonly FrameBatch[],
+  options: VisionWorkerCallOptions = {},
 ): Promise<readonly VisionDescription[]> {
   const response = await fetch(workerUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders(options.authToken) },
     body: JSON.stringify({
       videoId,
       totalDuration,
@@ -282,8 +362,10 @@ export async function callVisionWorker(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`Vision worker error: ${JSON.stringify(error)}`);
+    throw new VisionWorkerHttpError(
+      response.status ?? 0,
+      await describeFailure(response),
+    );
   }
 
   const payload = (await response.json()) as unknown;
@@ -293,7 +375,7 @@ export async function callVisionWorker(
   // worker) return {batches} inline and take the legacy path below.
   if (isJobAccepted(payload)) {
     const jobsUrl = new URL(`/jobs/${payload.jobId}`, workerUrl).toString();
-    const result = await pollAnalysisJob(jobsUrl);
+    const result = await pollAnalysisJob(jobsUrl, { authToken: options.authToken });
     return result.batches.flatMap((b) => b.descriptions);
   }
 
@@ -334,14 +416,20 @@ function isJobAccepted(value: unknown): value is VisionWorkerJobAccepted {
  */
 export async function pollAnalysisJob(
   jobsUrl: string,
-  options: { pollIntervalMs?: number; timeoutMs?: number } = {},
+  options: { pollIntervalMs?: number; timeoutMs?: number; authToken?: string } = {},
 ): Promise<VisionWorkerSyncResult> {
   const interval = options.pollIntervalMs ?? JOB_POLL_INTERVAL_MS;
   const deadline = Date.now() + (options.timeoutMs ?? JOB_POLL_TIMEOUT_MS);
 
   while (Date.now() < deadline) {
-    const response = await fetch(jobsUrl);
+    const response = await fetch(jobsUrl, { headers: authHeaders(options.authToken) });
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403 || response.status === 503) {
+        throw new VisionWorkerHttpError(
+          response.status,
+          await describeFailure(response),
+        );
+      }
       throw new Error(`Analysis job poll error: HTTP ${response.status}`);
     }
     const job = (await response.json()) as {

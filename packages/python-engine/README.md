@@ -108,9 +108,14 @@ In a development build (`import.meta.env.DEV`) `eco` falls back to
 `http://localhost:8000/analyze-frames` so contributors can run the engine
 locally with no configuration.
 
+Production builds have no such fallback. A deployed app cannot reach a
+visitor's `localhost`, so an unconfigured `eco` mode fails with an explicit
+`ANALYSIS_UNAVAILABLE` message rather than a confusing network error, and an
+endpoint that cannot be reached reports `ANALYSIS_UNREACHABLE`.
+
 ### Access control
 
-Two variables, both optional, both read per request:
+Two server-side variables, both optional, both read per request:
 
 | Variable | Default | Effect |
 | --- | --- | --- |
@@ -122,17 +127,24 @@ address gets `503` naming the missing variable. That keeps a local `uvicorn` run
 frictionless without leaving a network-reachable engine, which has no
 authentication of its own, open to the network.
 
+**The client has to send that token.** The app reads it from
+`VITE_ECO_WORKER_TOKEN` (or `KOVE_ECO_WORKER_TOKEN`) and puts it on every
+request, including job polls. Setting `KOVE_ENGINE_TOKEN` on the engine without
+giving the build a matching value locks the app out with HTTP 401
+(`ANALYSIS_UNAUTHORIZED` in the agent's report) — a configuration error, not an
+outage, which is why the agent distinguishes the two.
+
+A token that ships in a browser bundle is public. It is a speed bump against
+casual abuse, not a secret; anything stronger belongs in front of the engine
+(Cloudflare Access, an authenticated proxy, or a network the engine is only
+reachable from).
+
 `POST /analyze` resolves every requested path with `realpath` and refuses
 anything outside `KOVE_MEDIA_ROOTS`, that is not a regular file, or whose
 extension is not a known media type. It previously accepted any path the process
 could read. Errors name the reason and never echo the resolved path; a failed job
 returns a generic message plus its job id, with the detail written to the engine
 log instead of the HTTP response.
-
-Production builds have no such fallback. A deployed app cannot reach a
-visitor's `localhost`, so an unconfigured `eco` mode fails with an explicit
-`ANALYSIS_UNAVAILABLE` message rather than a confusing network error, and an
-endpoint that cannot be reached reports `ANALYSIS_UNREACHABLE`.
 
 ## AI mode
 
