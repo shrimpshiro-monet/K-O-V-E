@@ -33,7 +33,7 @@ class AnalyzeRequest(BaseModel):
     video_paths: list[str]
     baseline_fps: float = 1.5
     burst_fps: float = 10.0
-    scene_threshold: float = 0.3
+    scene_adaptive_threshold: float = 3.0
 
 
 class FrameData(BaseModel):
@@ -95,7 +95,7 @@ async def _run_analysis_job(job_id: str, req: AnalyzeRequest) -> None:
         orchestrator = Orchestrator(
             baseline_fps=req.baseline_fps,
             burst_fps=req.burst_fps,
-            scene_threshold=req.scene_threshold,
+            scene_adaptive_threshold=req.scene_adaptive_threshold,
         )
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(

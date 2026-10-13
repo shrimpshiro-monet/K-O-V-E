@@ -31,10 +31,10 @@ class Orchestrator:
         self,
         baseline_fps: float = 1.5,
         burst_fps: float = 10.0,
-        scene_threshold: float = 0.3,
+        scene_adaptive_threshold: float = 3.0,
         on_progress: Callable[[dict], None] | None = None,
     ) -> None:
-        self.scene_detector = SceneDetector(threshold=scene_threshold)
+        self.scene_detector = SceneDetector(adaptive_threshold=scene_adaptive_threshold)
         self.frame_sampler = FrameSampler(baseline_fps=baseline_fps, burst_fps=burst_fps)
         self.motion_analyzer = MotionAnalyzer()
         self.audio_analyzer = AudioAnalyzer()
@@ -58,16 +58,19 @@ class Orchestrator:
         video_id = Path(video_path).stem
         logger.info("Analyzing video: %s", video_path)
 
+        # Duration is read first because the detector needs it to close the final
+        # scene: boundaries alone cannot say where the last shot ends, and the
+        # detector used to guess a flat +10s instead.
+        duration = self._get_duration(video_path)
+
         self._emit("scene_detecting", "Detecting scene cuts...")
-        scene_cuts = self.scene_detector.detect(video_path)
+        scene_cuts = self.scene_detector.detect(video_path, duration)
         logger.info("Detected %d scenes", len(scene_cuts))
 
         self._emit("extracting_frames", "Extracting frames...")
         frame_paths = self.frame_sampler.sample(video_path, scene_cuts)
         logger.info("Extracted %d frames", len(frame_paths))
         self._emit("extracting_frames", f"Extracted {len(frame_paths)} frames", total=len(frame_paths))
-
-        duration = self._get_duration(video_path)
 
         frame_descriptions = self._analyze_frames(video_path, frame_paths, duration, scene_cuts)
 

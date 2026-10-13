@@ -5,8 +5,11 @@ The analysis engine produces a versioned `referenceAnalysis` report for every in
 ## Pipeline
 
 1. `ffprobe` reads container, codec, frame-rate, resolution, audio-track, and frame-count metadata.
-2. `ffmpeg` detects candidate scene boundaries and extracts adaptive samples.
-3. OpenCV compares decoded neighboring frames for hard cuts, fades to black, motion spikes, black frames, color treatment, and overlay candidates.
+2. OpenCV decodes the file at full frame rate and scores frame-to-frame content
+   change against an adaptive threshold to find shot boundaries. `ffmpeg` is the
+   fallback for containers OpenCV cannot open. There is no minimum scene length,
+   so fast-cut references are measured rather than smoothed away.
+3. OpenCV compares decoded neighboring frames for fades to black, motion spikes, black frames, color treatment, and overlay candidates.
 4. WebRTC VAD, RMS analysis, and `librosa` inspect speech, silence, music, BPM, and energy.
 5. MediaPipe and the existing visual/motion analyzers classify faces, talking heads, settings, and motion.
 6. Optional Cloudflare vision analysis enriches sampled frames with shot type, visible text, semantic effects, color descriptions, and editorial purpose.
