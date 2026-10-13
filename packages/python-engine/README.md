@@ -17,29 +17,62 @@ The local engine deliberately returns evidence and confidence rather than invent
 
 - Python 3.11 or 3.12 (not 3.13+ — see below)
 - `ffmpeg` and `ffprobe` on `PATH`
-- A system OpenGL library, `libGL.so.1` (Debian/Ubuntu: `apt-get install -y libgl1`)
 - The pinned dependencies in `pyproject.toml`
+
+No system OpenGL library is needed. The engine uses `opencv-python-headless`,
+which is what makes it installable on a headless host — the previously pinned
+`opencv-contrib-python` build aborted at `import cv2` with
+`libGL.so.1: cannot open shared object file` wherever `libgl1` was absent.
 
 ```bash
 python -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 ```
 
+### Face detection is optional
+
+`mediapipe` is **not** part of the core install. `FaceAnalyzer` degrades to zero
+faces and logs one warning when the backend is absent, so the pipeline runs
+either way (`face_analyzer.py`).
+
+Enabling it is a deliberate *replacement* of OpenCV rather than an extra, because
+`mediapipe==0.10.21` hard-requires `opencv-contrib-python` (non-headless) and
+`numpy<2`. Installing it alongside the headless build leaves two distributions
+writing into `cv2/`, and `import cv2` then fails outright.
+
+Use a **fresh** virtualenv — do not convert an existing one in place:
+
+```bash
+python -m venv .venv
+apt-get install -y libgl1                      # required by the contrib build
+.venv/bin/pip install -r requirements-faces.txt
+.venv/bin/pip install -e ".[dev]"              # resolves numpy<2 against the same set
+```
+
+`requirements-faces.txt` pins `numpy==1.26.4` and
+`opencv-contrib-python==4.11.0.86` so exactly one package provides `cv2`. Swap
+the order of the last two lines and pip's resolver picks `numpy` 2.x, which
+mediapipe cannot use.
+
+Switching in place is unreliable even when done "correctly": `pip uninstall`
+does not remove files that the other OpenCV distribution also shipped, so a
+converted environment can keep loading a mixture of the two builds. That is why
+the recipe starts from a new venv. The lasting fix is migrating
+`face_analyzer.py` to the mediapipe Tasks API, which carries neither constraint.
+
 ### Why the pins and the version bound
 
-`mediapipe` pins `numpy<2`, which in turn caps `opencv-contrib-python` at
-4.11.0.86 because later OpenCV releases require numpy 2. `mediapipe` also
-requires the *non-headless* OpenCV build, which is where the `libGL.so.1`
-requirement comes from. `opencv-python-headless` is not a drop-in substitute
-while mediapipe remains a dependency: two distributions cannot both provide
-`cv2`, and installing both is what produced the duplicated OpenCV install this
-pin set replaces.
+Core pins the versions verified by running the test suite on CPython 3.11.
+`numpy` and `opencv-python-headless` are the two ranges rather than exact pins,
+because the optional face-detection set has to be able to resolve against this
+same declaration; `requirements.lock` records the exact verified closure of the
+default install.
 
+The version bound follows the optional face-detection set rather than the core:
 `mediapipe` removed the `mp.solutions` API that `face_analyzer.py` uses in 1.0,
 and the last release that still provides it ships wheels only for CPython
-3.9-3.12. That is why the floor is capped at `<3.13`: without the cap, Python
-3.13 would resolve `mediapipe==1.1.0` and the face analyzer would fail at
-import.
+3.9-3.12. Core has no upper bound of its own, but one matrix that everything has
+actually been verified against is worth more than an untested 3.13 core.
 
 `webrtcvad-wheels` is the maintained fork of `webrtcvad`. The original ships
 only an sdist and imports `pkg_resources`, which a clean venv lacks, so

@@ -6,22 +6,28 @@ build-backend = "hatchling.build"
 name = "kove-engine"
 version = "0.1.0"
 description = "Local video analysis engine for K.O.V.E."
-# Upper bound is real, not cosmetic: mediapipe dropped the `mp.solutions` API
-# used by the face analyzer in 1.0, and the last release that still has it
-# (0.10.21) only ships wheels for CPython 3.9-3.12. On 3.13+ pip would happily
-# install mediapipe 1.1.0 and the analyzer would fail at import.
+# Upper bound follows the `faces` extra rather than the core install: mediapipe
+# dropped the `mp.solutions` API used by the face analyzer in 1.0, and the last
+# release that still has it (0.10.21) ships wheels only for CPython 3.9-3.12.
+# Core has no upper bound of its own, but one version matrix that everything has
+# been verified against is worth more than an untested 3.13 core.
 requires-python = ">=3.11,<3.13"
 dependencies = [
     # Exact pins, resolved on CPython 3.11 and verified by running the test
     # suite (see README). Move them deliberately, not implicitly.
     #
-    # The chain worth knowing about: mediapipe==0.10.21 requires numpy<2, which
-    # caps opencv-contrib-python at 4.11.0.86 because later OpenCV releases
-    # require numpy>=2. Do not add a second OpenCV distribution here — cv2
-    # would then be provided by two packages at once.
-    "numpy==1.26.4",
-    "mediapipe==0.10.21",
-    "opencv-contrib-python==4.11.0.86",
+    # numpy and opencv are ranges rather than exact pins because the optional
+    # `faces` extra has to be able to resolve against this same set: mediapipe
+    # requires numpy<2 and a pre-4.12 OpenCV, so a fixed numpy>=2 floor here
+    # would make `.[faces]` unsatisfiable. requirements.lock records the exact
+    # verified closure of the default (headless) install.
+    #
+    # opencv-python-headless, not opencv-contrib-python or plain opencv-python:
+    # it needs no system libGL, which is what the engine's deployment target
+    # lacks. Do not add a second OpenCV distribution — cv2 would then be
+    # provided by two packages at once.
+    "numpy>=1.26.4,<3",
+    "opencv-python-headless>=4.11.0.86,<5",
     "scipy==1.17.1",
     "librosa==0.11.0",
     # The maintained fork of webrtcvad. The original is sdist-only and imports
@@ -37,6 +43,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Deliberately no `faces` extra. mediapipe==0.10.21 hard-requires
+# opencv-contrib-python (the non-headless build, which needs system libGL) and
+# numpy<2, so `pip install ".[faces]"` installs a *second* cv2 provider on top of
+# the headless one and `import cv2` then fails with "libGL.so.1: cannot open
+# shared object file" — both distributions write into cv2/. Verified, not
+# assumed. Face detection is therefore opt-in through requirements-faces.txt,
+# which pins a set where cv2 has exactly one provider. See README.
 dev = [
     # Required by the suite and previously undeclared: the job-store tests use
     # the asyncio plugin, and fastapi.testclient now wants httpx2 (starlette
