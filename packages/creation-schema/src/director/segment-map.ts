@@ -31,6 +31,13 @@ export interface VideoSegment {
   readonly sportsMomentEvent?: SportsMomentEvent;
   readonly subjectIds?: readonly string[];
   readonly subjectContinuityScore?: number;
+  /**
+   * Verbatim speech in this segment, when a transcript exists (multicam
+   * Whisper artifacts today; ASR for single-source projects as it lands).
+   * Empty/absent means NO transcript — directors must not quote speech they
+   * were never given, and the plan funnel strips quote marks as unverified.
+   */
+  readonly transcript?: string;
 }
 
 export interface VideoSegmentMap {

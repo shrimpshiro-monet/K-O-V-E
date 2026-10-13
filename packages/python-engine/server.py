@@ -54,6 +54,26 @@ class VisionRequest(BaseModel):
     frames: list[FrameBatch]
 
 
+class TranscribeRequest(BaseModel):
+    """Start an ASR job (faster-whisper, word timestamps). The model is
+    downloaded from Hugging Face on first run on the host machine; model size
+    defaults to $KOVE_WHISPER_MODEL (small) at compute $KOVE_WHISPER_COMPUTE_TYPE
+    (int8) on $KOVE_WHISPER_DEVICE (cpu). Diarization only when KOVE_DIARIZE=1.
+
+    Source audio: exactly one of ``video_path`` (file on this machine) or
+    ``audio_data`` (base64 WAV produced by the browser host from the media
+    item — same upload pattern as /analyze-frames frames). The engine always
+    converts the source to 16 kHz mono through ffmpeg, for both the model and
+    the VAD pause pass."""
+
+    video_path: str | None = None
+    audio_data: str | None = None
+    sample_rate: int | None = None
+    start: float = 0.0
+    duration: float | None = None
+    model: str | None = None
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await job_store.init()
@@ -244,6 +264,80 @@ def _run_frame_analysis(req: VisionRequest) -> dict:
         }
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+@app.post("/transcribe")
+async def transcribe(req: TranscribeRequest, background_tasks: BackgroundTasks):
+    """Start a transcription job; returns {jobId} immediately.
+
+    Result (poll GET /jobs/{id}): segments with start/end/text and per-word
+    {word, start, end} timestamps, optional best-effort speaker labels, plus
+    the engine's VAD pauses for the same window — the pause data the editor
+    snaps cut frames with, reaching consumers for the first time.
+    """
+    if bool(req.video_path) == bool(req.audio_data):
+        return {
+            "error": "Provide exactly one of video_path or audio_data",
+            "status": "invalid_request",
+        }
+    job_id = _new_job_id()
+    await job_store.create(job_id, req.model_dump())
+    background_tasks.add_task(_run_transcribe_job, job_id, req)
+    return {"jobId": job_id, "status": "pending"}
+
+
+async def _run_transcribe_job(job_id: str, req: TranscribeRequest) -> None:
+    await job_store.set_status(job_id, "running")
+    upload_path: str | None = None
+    try:
+        import base64
+        import tempfile
+
+        from kove_engine.transcriber import Transcriber
+
+        source = req.video_path
+        if source is None and req.audio_data:
+            fd, upload_path = tempfile.mkstemp(suffix=".wav", prefix="kove_upload_")
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(base64.b64decode(req.audio_data, validate=True))
+            source = upload_path
+        if not source:
+            await job_store.set_status(
+                job_id, "failed", {"error": "Provide exactly one of video_path or audio_data"}
+            )
+            return
+
+        transcriber = Transcriber(model_size=req.model) if req.model else Transcriber()
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            transcriber.transcribe,
+            source,
+            req.start,
+            req.duration,
+        )
+        await job_store.set_status(job_id, "completed", result.model_dump())
+    except ValueError as exc:
+        await job_store.set_status(job_id, "failed", {"error": str(exc)})
+    except Exception as exc:  # noqa: BLE001 — job must always reach a terminal state
+        await job_store.set_status(
+            job_id,
+            "failed",
+            {
+                "error": str(exc),
+                "hint": (
+                    "faster-whisper is an optional dependency: run "
+                    '`pip install -e ".[asr]"` inside the engine venv; the '
+                    "whisper model downloads from Hugging Face on first use"
+                ),
+            },
+        )
+    finally:
+        if upload_path:
+            try:
+                os.unlink(upload_path)
+            except OSError:
+                pass
 
 
 @app.get("/jobs/{job_id}")

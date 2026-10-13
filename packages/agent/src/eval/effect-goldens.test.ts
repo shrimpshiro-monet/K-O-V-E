@@ -38,6 +38,18 @@ const WIDTH = 320;
 const HEIGHT = 240;
 const FPS = 30;
 
+// These goldens render real frames through ffmpeg + a headless browser — a
+// full local render stack that restricted environments (no ffmpeg binary)
+// don't have. Skip — don't fail — where the stack is absent.
+const HAS_FFMPEG = (() => {
+  try {
+    execFileSync("ffmpeg", ["-version"], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
 /**
  * A pixel counts as changed when any channel moves by more than 4/255 (~1.6%).
  * Frames are decoded twice from the same file at the same timestamp, so the
@@ -343,6 +355,7 @@ async function renderInBrowser(target: unknown, time: number): Promise<RenderedP
 }
 
 beforeAll(async () => {
+  if (!HAS_FFMPEG) return;
   workDir = mkdtempSync(join(tmpdir(), "kove-effect-goldens-"));
 
   ffmpeg(
@@ -460,7 +473,7 @@ afterAll(async () => {
   if (workDir) rmSync(workDir, { recursive: true, force: true });
 });
 
-describe("effect render goldens", () => {
+describe.skipIf(!HAS_FFMPEG)("effect render goldens", () => {
   it("baseline frame is non-empty", () => {
     expect(baseline).not.toBeNull();
     expect(baseline!.rgba).toHaveLength(WIDTH * HEIGHT * 4);
@@ -492,7 +505,7 @@ describe("effect render goldens", () => {
   }, 60_000);
 });
 
-describe("transition render goldens", () => {
+describe.skipIf(!HAS_FFMPEG)("transition render goldens", () => {
   it("transition baseline frame is non-empty", () => {
     expect(transitionBaseline).not.toBeNull();
     expect(transitionBaseline!.rgba).toHaveLength(WIDTH * HEIGHT * 4);

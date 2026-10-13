@@ -1,6 +1,15 @@
 import type { Action } from "@kove-advanced/core/types/actions";
 import { summarizeMeasureReport } from "@kove-advanced/core/qc/measure-export";
 import { listRegisteredActionTypes } from "@kove-advanced/core/actions/registry";
+import {
+  applyLegibilityDefaults,
+  clampToSafeArea,
+  type TextRole,
+} from "@kove-advanced/core/text/legibility";
+import {
+  segmentMapHasTranscript,
+  stripUnverifiedQuoteMarks,
+} from "./director/quote-guard";
 import { HISTORY_TOOLS } from "./tools-history";
 import { AUDIO_ANALYSIS_TOOLS } from "./tools-audio-analysis";
 import { VISION_TOOLS } from "./tools-vision";
@@ -2559,26 +2568,22 @@ async function materializeEditPlan(
   }
 
   const textIds: string[] = [];
+  const projectFrame = host.getProject().settings;
   for (const text of plan.textElements) {
     if (!host.createTextOverlay) continue;
     const textTemplate = resolveTextStyle(plan.captionTemplate, text);
+    const { style, position: textPosition } = buildTextOverlayStyle(
+      plan,
+      text,
+      { width: projectFrame.width, height: projectFrame.height },
+    );
     // Position is NORMALIZED 0-1 in title-engine units — pass through
     // unmultiplied (the renderer multiplies by canvas size on draw).
-    const textPosition = text.position ?? textTemplate.position;
     const overlay = await host.createTextOverlay({
       text: text.content,
       startSec: text.startTime,
       durationSec: text.duration,
-      style: {
-        ...(textTemplate.fontFamily ? { fontFamily: textTemplate.fontFamily } : {}),
-        ...(textTemplate.fontSize ? { fontSize: textTemplate.fontSize } : {}),
-        ...(textTemplate.fontWeight ? { fontWeight: textTemplate.fontWeight } : {}),
-        ...(textTemplate.color ? { color: textTemplate.color } : {}),
-        ...(textTemplate.backgroundColor ? { backgroundColor: textTemplate.backgroundColor } : {}),
-        ...(textTemplate.backgroundPadding !== undefined ? { backgroundPadding: textTemplate.backgroundPadding } : {}),
-        ...(textTemplate.backgroundRadius !== undefined ? { backgroundRadius: textTemplate.backgroundRadius } : {}),
-        ...(textTemplate.align ? { align: textTemplate.align } : {}),
-      },
+      style,
       ...(textPosition ? { position: { x: textPosition.x, y: textPosition.y } } : {}),
       animation: textTemplate.animation,
       animationInSec: textTemplate.animationInSec,
@@ -2796,6 +2801,52 @@ function resolveTextStyle<T extends { readonly templateOverride?: Partial<Captio
     animationInSec: element.animationInSec ?? override?.animationInSec ?? template?.animationInSec,
     animationOutSec: element.animationOutSec ?? override?.animationOutSec ?? template?.animationOutSec,
   };
+}
+
+/**
+ * Turn a resolved caption-template style + planned text element into the
+ * overlay style bag, with legibility minima filled for anything the plan
+ * left unset. Edit v1 shipped white unstroked text that was unreadable over
+ * its own footage; this is the one place plan-derived text is guaranteed to
+ * pass through, so it is where the minima apply. Explicit plan choices are
+ * never overridden (the font floor is the one deliberate exception — an
+ * explicit too-small caption is the failure itself).
+ */
+function buildTextOverlayStyle(
+  plan: EditPlan,
+  text: EditPlan["textElements"][number],
+  frame: { width: number; height: number },
+): { style: Record<string, unknown>; position?: { x: number; y: number } } {
+  const template = resolveTextStyle(plan.captionTemplate, text);
+  const role = (text.style ?? "caption") as TextRole;
+  const filled = applyLegibilityDefaults(
+    {
+      fontFamily: template.fontFamily,
+      fontSize: template.fontSize,
+      fontWeight: template.fontWeight,
+      color: template.color,
+      backgroundColor: template.backgroundColor,
+      backgroundPadding: template.backgroundPadding,
+      backgroundRadius: template.backgroundRadius,
+      strokeColor: template.strokeColor,
+      strokeWidth: template.strokeWidth,
+      shadowColor: template.shadowColor,
+      shadowBlur: template.shadowBlur,
+      shadowOffsetX: template.shadowOffsetX,
+      shadowOffsetY: template.shadowOffsetY,
+      align: template.align,
+    },
+    frame,
+    role,
+  ).style;
+
+  const style: Record<string, unknown> = {
+    ...filled,
+  };
+
+  const rawPosition = text.position ?? template.position;
+  const position = rawPosition ? clampToSafeArea(rawPosition, role) : undefined;
+  return { style, position };
 }
 
 function normalizeDirectorPlanInput(value: unknown): EditPlan {
@@ -33020,7 +33071,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "multicam",
     title: "Get multicam transcript",
     description:
-      "Read optional per-participant local Whisper transcript segments from the separate .orma artifact, for an optional range in SECONDS (startTime/endTime). Each segment keeps startMs/endMs and adds startTime/endTime in seconds. startMs/endMs inputs are deprecated millisecond aliases.",
+      "Read optional per-participant local Whisper transcript segments from the separate .orma artifact, for an optional range in SECONDS (startTime/endTime). Each segment keeps startMs/endMs and adds startTime/endTime in seconds. startMs/endMs inputs are deprecated millisecond aliases. MULTICAM ONLY — for single-source projects call transcribe_audio instead.",
     inputSchema: obj({
       groupId: str,
       startTime: { type: "number", minimum: 0, description: "Range start in seconds." },
@@ -33625,12 +33676,13 @@ const TOOLS: RegisteredTool[] = [
     domain: "ai",
     title: "Plan edit",
     description:
-      "Given the user's prompt, have the director produce a structured EditPlan and commit it as ONE timeline revision. mode=replace_plan (the default) replaces any previously committed plan's output — calling this again never stacks a second plan on top. Pass baseRevision (from the last plan_edit result) to reject stale commits, and idempotencyKey to make retried turns no-ops. Pass the source segmentMap and optional referenceAnalysis from extract_segments to reproduce a marked reference video's style on the user's own footage.",
+      "Given the user's prompt, have the director produce a structured EditPlan and commit it as ONE timeline revision. mode=replace_plan (the default) replaces any previously committed plan's output — calling this again never stacks a second plan on top. Pass baseRevision (from the last plan_edit result) to reject stale commits, and idempotencyKey to make retried turns no-ops. Pass the source segmentMap and optional referenceAnalysis from extract_segments to reproduce a marked reference video's style on the user's own footage. Pass `transcripts` from transcribe_audio (mediaId → [{start,end,text}]) so the director reads real speech — without it, quoted captions are stripped as fabricated.",
     inputSchema: obj(
       {
         prompt: str,
         genreId: str,
         segmentMap: { type: "object" },
+        transcripts: { type: "object", description: "From transcribe_audio: mediaId → [{start, end, text}] — words the director may quote and cut around." },
         referenceAnalysis: { type: "object" },
         mode: { type: "string", enum: ["replace_plan", "patch"] },
         baseRevision: { type: "integer" },
@@ -33679,37 +33731,68 @@ const TOOLS: RegisteredTool[] = [
       // Use provided segmentMap or build a fallback from project media
       const providedMap = args.segmentMap as SegmentMap | undefined;
       const providedReferenceAnalysis = args.referenceAnalysis as unknown;
+      // ASR words from transcribe_audio, keyed by media id: {start,end,text}[]. Merged
+      // onto the matching video segments by time so the director reads real
+      // speech and the quote-guard can stand down for transcribed projects.
+      const providedTranscripts = args.transcripts as
+        | Record<string, readonly { start: number; end: number; text: string }[]>
+        | undefined;
       let resolvedMap: SegmentMap;
+
+      const mergeTranscripts = (
+        videos: SegmentMap["videos"],
+      ): SegmentMap["videos"] =>
+        !providedTranscripts
+          ? videos
+          : videos.map((video) => {
+              const spoken = providedTranscripts[video.videoId];
+              if (!Array.isArray(spoken) || spoken.length === 0) return video;
+              return {
+                ...video,
+                segments: (Array.isArray(video.segments) ? video.segments : []).map((segment) => {
+                  const mid = (segment.startTime + segment.endTime) / 2;
+                  const lines = spoken
+                    .filter((line) => Number.isFinite(line.start) && Number.isFinite(line.end) && mid >= line.start && mid < line.end)
+                    .map((line) => line.text.trim())
+                    .filter((text) => text.length > 0);
+                  return lines.length > 0 ? { ...segment, transcript: lines.join(" ") } : segment;
+                }),
+              };
+            });
 
       if (providedMap && Array.isArray(providedMap.videos) && providedMap.videos.length > 0) {
         // Use the segmentMap from extract_segments (has real vision analysis)
         resolvedMap = {
-          videos: providedMap.videos.map((video) => ({
-            ...video,
-            segments: Array.isArray(video.segments) ? video.segments : [],
-          })),
+          videos: mergeTranscripts(
+            providedMap.videos.map((video) => ({
+              ...video,
+              segments: Array.isArray(video.segments) ? video.segments : [],
+            })),
+          ),
         };
       } else {
         // Fallback: build a basic SegmentMap from media metadata
         resolvedMap = {
-          videos: videoMedia.filter((m) => m.analysisRole !== "reference").map((m) => ({
-            videoId: m.id,
-            sourceFile: m.name ?? m.id,
-            duration: m.metadata.duration,
-            segments: [
-              {
-                id: `${m.id}-seg-0`,
-                startTime: 0,
-                endTime: m.metadata.duration,
-                sceneType: "b-roll" as const,
-                motionLevel: "medium" as const,
-                description: `${m.name ?? m.id} — ${m.metadata.duration.toFixed(1)}s`,
-                hasDialogue: false,
-                visualContent: m.name ?? m.id,
-                confidence: 0.5,
-              },
-            ],
-          })),
+          videos: mergeTranscripts(
+            videoMedia.filter((m) => m.analysisRole !== "reference").map((m) => ({
+              videoId: m.id,
+              sourceFile: m.name ?? m.id,
+              duration: m.metadata.duration,
+              segments: [
+                {
+                  id: `${m.id}-seg-0`,
+                  startTime: 0,
+                  endTime: m.metadata.duration,
+                  sceneType: "b-roll" as const,
+                  motionLevel: "medium" as const,
+                  description: `${m.name ?? m.id} — ${m.metadata.duration.toFixed(1)}s`,
+                  hasDialogue: false,
+                  visualContent: m.name ?? m.id,
+                  confidence: 0.5,
+                },
+              ],
+            })),
+          ),
         };
       }
 
@@ -33806,7 +33889,17 @@ const TOOLS: RegisteredTool[] = [
           },
           resolvedMap,
         );
-        return { plan: resolved, issues: validateEditPlan(resolved, resolvedMap) };
+        // Quote-guard: with no transcript source, quoted captions are
+        // fabricated speech — strip the marks, keep the text, warn (never
+        // block). Runs inside the shared funnel so initial plans, repairs,
+        // and review revisions all pass through it.
+        const guarded = stripUnverifiedQuoteMarks(resolved, {
+          transcriptAvailable: segmentMapHasTranscript(resolvedMap),
+        });
+        return {
+          plan: guarded.plan,
+          issues: [...validateEditPlan(guarded.plan, resolvedMap), ...guarded.warnings],
+        };
       };
 
       const formatIssues = (issues: readonly DirectorValidationIssue[]): string =>

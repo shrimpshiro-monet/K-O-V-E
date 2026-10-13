@@ -18,6 +18,11 @@ import {
 } from "./types";
 import { VideoEngine, getVideoEngine } from "../video/video-engine";
 import { AudioEngine, getAudioEngine } from "../audio/audio-engine";
+import {
+  formatMasteringReport,
+  masterAudioBuffer,
+  type MasteringReport,
+} from "../audio/loudness/loudness-master";
 import { titleEngine } from "../text/title-engine";
 import { graphicsEngine } from "../graphics/graphics-engine";
 import { UpscalingEngine, getUpscalingEngine } from "../video/upscaling";
@@ -33,6 +38,14 @@ import {
 
 export class ExportEngine {
   private static readonly AUDIO_EXPORT_CHUNK_DURATION_SECONDS = 15;
+  /**
+   * Timelines up to this duration are rendered as ONE mix, mastered, and
+   * handed to the backend in a single buffer. Beyond it, the legacy 15 s
+   * chunk loop runs instead (whole-programme mastering needs the whole
+   * programme in memory). 600 s of 48 kHz stereo float32 is ≈230 MB — past
+   * that the memory risk outweighs the loudness win. Logged when hit.
+   */
+  private static readonly SINGLE_BUFFER_MASTERING_MAX_SECONDS = 600;
   private mediabunny: typeof import("mediabunny") | null = null;
   private initialized = false;
   private videoEngine: VideoEngine | null = null;
@@ -214,9 +227,14 @@ export class ExportEngine {
 
       await backend.start(fullSettings, project, writableStream);
 
+      let loudnessReport: MasteringReport | null = null;
       if (backend.audioBeforeVideo) {
         try {
-          await this.encodeTimelineAudioToBackend(project, backend);
+          loudnessReport = await this.encodeTimelineAudioToBackend(
+            project,
+            backend,
+            fullSettings.audioSettings,
+          );
         } finally {
           this.audioEngine?.clearCache();
         }
@@ -313,7 +331,11 @@ export class ExportEngine {
 
       if (!backend.audioBeforeVideo) {
         try {
-          await this.encodeTimelineAudioToBackend(project, backend);
+          loudnessReport = await this.encodeTimelineAudioToBackend(
+            project,
+            backend,
+            fullSettings.audioSettings,
+          );
         } finally {
           this.audioEngine?.clearCache();
         }
@@ -348,7 +370,10 @@ export class ExportEngine {
 
       return {
         success: true,
-        stats: this.calculateStats(totalFrames, backend.getBytesWritten()),
+        stats: {
+          ...this.calculateStats(totalFrames, backend.getBytesWritten()),
+          ...(loudnessReport ? { loudness: loudnessReport } : {}),
+        },
       };
     } catch (error) {
       await backend.abort();
@@ -437,6 +462,17 @@ export class ExportEngine {
         );
       }
 
+      // Master the full programme (one uniform gain to target, peak-safe)
+      // before encode. Skips cleanly for silent/degenerate input.
+      let loudnessReport: MasteringReport | null = null;
+      if (fullSettings.loudnessNormalize !== false) {
+        loudnessReport = masterAudioBuffer(audioBuffer, {
+          targetLufs: fullSettings.targetLufs,
+          truePeakCeilingDbtp: fullSettings.truePeakCeilingDbtp,
+        });
+        console.info(formatMasteringReport("[export-audio]", loudnessReport));
+      }
+
       yield this.createProgress("encoding", 0.5, 1, 0, 0);
 
       // Encode based on format
@@ -460,6 +496,7 @@ export class ExportEngine {
           averageSpeed: 1,
           fileSize: blob.size,
           averageBitrate: (blob.size * 8) / timelineDuration,
+          ...(loudnessReport ? { loudness: loudnessReport } : {}),
         },
       };
     } catch (error) {
@@ -931,10 +968,40 @@ export class ExportEngine {
   private async encodeTimelineAudioToBackend(
     project: Project,
     backend: EncoderBackend,
-  ): Promise<void> {
+    audioSettings: AudioExportSettings,
+  ): Promise<MasteringReport | null> {
     const timelineDuration = this.calculateTimelineDuration(project.timeline);
     if (timelineDuration <= 0) {
-      return;
+      return null;
+    }
+
+    const masteringEnabled = audioSettings.loudnessNormalize !== false;
+
+    // Preferred path: render the full mix ONCE, master it, hand the backend a
+    // single buffer. Whole-programme mastering is only correct with the whole
+    // programme in memory, so very long timelines fall back to the legacy
+    // chunk loop (unchanged output, warning logged).
+    if (
+      masteringEnabled &&
+      timelineDuration <= ExportEngine.SINGLE_BUFFER_MASTERING_MAX_SECONDS
+    ) {
+      const audioBuffer = await this.renderTimelineAudio(project);
+      if (!audioBuffer) {
+        return null;
+      }
+      const report = masterAudioBuffer(audioBuffer, {
+        targetLufs: audioSettings.targetLufs,
+        truePeakCeilingDbtp: audioSettings.truePeakCeilingDbtp,
+      });
+      console.info(formatMasteringReport("[export]", report));
+      await backend.addAudioBuffer(audioBuffer);
+      return report;
+    }
+
+    if (masteringEnabled) {
+      console.warn(
+        `[export] timeline is ${timelineDuration.toFixed(0)}s — above the ${ExportEngine.SINGLE_BUFFER_MASTERING_MAX_SECONDS}s single-buffer mastering limit; exporting chunked audio WITHOUT loudness normalization`,
+      );
     }
 
     const chunkDuration = ExportEngine.AUDIO_EXPORT_CHUNK_DURATION_SECONDS;
@@ -972,6 +1039,7 @@ export class ExportEngine {
       // before the next long-running render starts.
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
+    return null;
   }
 
   private async encodeAudioWithMediaBunny(
