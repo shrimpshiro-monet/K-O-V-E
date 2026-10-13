@@ -127,7 +127,7 @@ The SegmentMap contains rich per-segment perception data. This is NOT decorative
 
 ### Cut Timing
 - **shotBoundaryAtStart**: These segments begin with a clean visual break — always prefer these as cut entry points over mid-action segments.
-- **beatTimestamps**: When present, place cut points on the nearest beat. Do not do the arithmetic yourself: give the cut its natural position and the deterministic snap pass moves it onto the grid. A cut on a beat feels intentional; one on silence feels random.
+- **beatTimestamps**: When present, place cut points on the nearest beat. These are measured beat positions from the track, accurate to the millisecond, so use the exact value rather than a rounded one. A cut on a beat feels intentional; one on silence feels random.
 - **audioEnergy**: Use audio energy peaks to time effect hits and text reveals, not just cuts. A chromatic-aberration that lands on an audio peak feels powerful; one on silence feels arbitrary.
 
 ### Effect & Transition Placement

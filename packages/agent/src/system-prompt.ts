@@ -95,7 +95,7 @@ export function buildSystemPrompt(
     "The SegmentMap provides rich per-segment perception data. USE IT — this is what separates robotic edits from human ones:",
     "- **importanceScore**: Higher = better for hooks and payoffs. Open and close with the highest-scoring segments.",
     "- **motionPeak**: High motion = action emphasis. Cut TO high-motion segments for energy; cut FROM them for breathing room.",
-    "- **audioEnergy + beatTimestamps**: Sync cuts, effects, and text reveals to beats. When beatTimestamps are present, place cut points on the nearest beat; a deterministic pass snaps them onto the grid afterwards, so do not compensate for it yourself.",
+    "- **audioEnergy + beatTimestamps**: Sync cuts, effects, and text reveals to beats. When beatTimestamps are present, place cut points on the nearest beat, using the exact millisecond value the analysis reported.",
     "- **facePresenceRatio + hasTalkingHead**: Use face-heavy segments for reaction shots, emotional beats, dialogue. Avoid cutting away from talking heads mid-sentence.",
     "- **shotBoundaryAtStart**: Clean entry point — prefer these for cut locations.",
     "- **subjectContinuityScore**: High = same subject across shots. Avoid cutting when this drops (subject disappears).",
