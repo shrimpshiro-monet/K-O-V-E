@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kove-craft-eval"
+version = "0.1.0"
+description = "kove-eval — measures how far Kove's edits are from a reference edit"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    # numpy/opencv headless/scipy match packages/python-engine's pins; the
+    # analyzers under test are imported from that package, so a second version
+    # matrix here would be measuring something else.
+    "numpy>=1.26.4,<3",
+    "opencv-python-headless>=4.11.0.86,<5",
+    "scipy==1.17.1",
+    "Pillow>=10.0",
+    # Bundles a static ffmpeg binary in the wheel. The sandbox this was built in
+    # has no system ffmpeg and cannot apt-get one, and the binary from
+    # ffmpeg-static's npm package lives on a host outside the network allowlist.
+    "imageio-ffmpeg>=0.5.1",
+    "av>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+kove-eval = "kove_eval.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["kove_eval"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+# The CIEDE2000 implementation uses the standard's own symbols (L1, C_bar, R_T,
+# S_H …) so the formula can be checked against the paper line by line. Lowercasing
+# them to satisfy a casing rule would make that review harder, not easier.
+"kove_eval/metrics.py" = ["N806"]
