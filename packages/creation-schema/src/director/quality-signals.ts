@@ -50,15 +50,27 @@ export function scoreSportsMoment(input: {
   return { score, event };
 }
 
+/**
+ * Move `time` onto the nearest beat, if one is close enough to be the
+ * intended target.
+ *
+ * `maxShiftSeconds` is deliberately much wider than the measurement tolerance
+ * in density.ts. Those answer different questions: the measurement asks
+ * "did this cut land on a beat?" and must be strict, while this asks "which
+ * beat was this cut reaching for?" and must tolerate the distance a planner
+ * or model actually misses by. Treating them as one number is why the
+ * measured on-beat ratio used to look healthy while cuts were nowhere near
+ * the beat.
+ */
 export function snapTimeToBeat(
   time: number,
   beatTimestamps: readonly number[],
-  tolerance = 0.2,
+  maxShiftSeconds = 0.2,
 ): number {
   const nearest = beatTimestamps.reduce<{ time: number; distance: number } | undefined>(
     (best, beat) => {
       const distance = Math.abs(beat - time);
-      return distance <= tolerance && (!best || distance < best.distance)
+      return distance <= maxShiftSeconds && (!best || distance < best.distance)
         ? { time: beat, distance }
         : best;
     },

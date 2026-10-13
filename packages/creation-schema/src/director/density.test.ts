@@ -36,10 +36,15 @@ const thinPlan: EditPlan = {
 
 /** A populated short-form edit: 12 shots, moves, hits, texts, sfx, escalation. */
 const densePlan: EditPlan = {
-  // Shot lengths alternate deliberately (contrast ≈ 5x) and the final third
-  // is faster and more heavily treated — the "evolution" the review looks for.
+  // Shot lengths alternate deliberately (contrast 5x) and the final third is
+  // faster and more heavily treated — the "evolution" the review looks for.
+  //
+  // Every duration is a multiple of the 0.5 s beat period so that the cuts
+  // land on beats. They once were not, and the old 0.2 s on-beat tolerance
+  // counted them as aligned anyway; the plan now has to earn the score it is
+  // asserted to get.
   segments: (() => {
-    const durations = [1.6, 0.4, 1.4, 0.5, 1.2, 0.45, 0.9, 0.35, 0.32, 0.3, 0.3, 0.28];
+    const durations = [2.5, 0.5, 1.5, 0.5, 1.5, 0.5, 1.0, 1.0, 0.5, 1.0, 0.5, 1.0];
     let cursor = 0;
     return durations.map((duration, index) => {
       const start = cursor;
@@ -119,7 +124,8 @@ const beatMap: SegmentMap = {
           hasDialogue: false,
           visualContent: "footage",
           confidence: 0.9,
-          beatTimestamps: [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6],
+          // 120 BPM across the whole 12 s timeline, so every cut is covered.
+          beatTimestamps: Array.from({ length: 24 }, (_, index) => (index + 1) * 0.5),
         },
       ],
     },

@@ -49,7 +49,7 @@ export interface EditDensityProfile {
   /** Shots that begin inside the hook window (first 2s, or 35% of short edits). */
   readonly hookShots: number;
   readonly hookWindow: number;
-  /** Fraction of cuts landing within 0.2s of a beat. null when no beat data. */
+  /** Fraction of cuts landing within {@link BEAT_TOLERANCE_SECONDS} of a beat. */
   readonly onBeatCutRatio: number | null;
   /** Treatments per 10s in each third of the edit. */
   readonly phaseIntensity: readonly [number, number, number];
@@ -100,7 +100,17 @@ export interface EditDensityReview {
 }
 
 const HOOK_WINDOW_SECONDS = 2;
-const BEAT_TOLERANCE_SECONDS = 0.2;
+/**
+ * How close a cut must be to a beat to count as "on the beat".
+ *
+ * This is a *measurement* threshold, not a snapping window. It was 0.2, which
+ * at 128 BPM (a 0.47 s beat) counted roughly the middle half of every beat as
+ * on-beat and made the metric meaningless. 40 ms is about one frame at 24 fps
+ * and slightly over two at 60 fps: tight enough that chance alignment is rare,
+ * loose enough for frame-quantised cuts. See snapTimeToBeat for the separate,
+ * much wider window used when *moving* a cut onto a beat.
+ */
+const BEAT_TOLERANCE_SECONDS = 0.04;
 /** Treatments counted as "energy" for the escalation measurement. */
 const PHASE_COUNT = 3;
 
@@ -690,8 +700,8 @@ export function compareEditDensity(
       target: target.minimumOnBeatCutRatio,
       directive:
         `${Math.round(profile.onBeatCutRatio * 100)}% of cuts land on a beat (want ≥` +
-        `${Math.round(target.minimumOnBeatCutRatio * 100)}%). Re-align cut points to the beatTimestamps ` +
-        `listed for each segment (±0.2s) and put effect hits on downbeats.`,
+        `${Math.round(target.minimumOnBeatCutRatio * 100)}%). Move each cut onto a ` +
+        `beatTimestamps entry from its own segment and put effect hits on downbeats.`,
       weight: 1.2,
     });
   }

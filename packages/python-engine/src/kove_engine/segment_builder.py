@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 
+from kove_engine.beat_grid import BeatGrid
 from kove_engine.types import (
     FrameDescription,
     VideoSegment,
@@ -14,9 +15,17 @@ class SegmentBuilder:
         self.time_gap_threshold = time_gap_threshold
 
     def build(
-        self, frames: list[FrameDescription], video_id: str, duration: float
+        self,
+        frames: list[FrameDescription],
+        video_id: str,
+        duration: float,
+        beat_grid: BeatGrid | None = None,
     ) -> VideoSegmentMap:
-        """Group consecutive frames into VideoSegments."""
+        """Group consecutive frames into VideoSegments.
+
+        `beat_grid` carries the measured beat positions for the whole track.
+        Without it, segments report no beats rather than guessing.
+        """
         if not frames:
             return VideoSegmentMap(video_id=video_id, duration=duration, segments=[])
 
@@ -32,7 +41,10 @@ class SegmentBuilder:
 
         groups.append(current_group)
 
-        segments = [self._group_to_segment(video_id, i, group) for i, group in enumerate(groups)]
+        segments = [
+            self._group_to_segment(video_id, i, group, beat_grid)
+            for i, group in enumerate(groups)
+        ]
 
         return VideoSegmentMap(video_id=video_id, duration=duration, segments=segments)
 
@@ -46,19 +58,33 @@ class SegmentBuilder:
         return False
 
     def _group_to_segment(
-        self, video_id: str, index: int, group: list[FrameDescription]
+        self,
+        video_id: str,
+        index: int,
+        group: list[FrameDescription],
+        beat_grid: BeatGrid | None = None,
     ) -> VideoSegment:
         descriptions = [f.description for f in group]
         scene_types = [f.scene_type for f in group]
         motion_levels = [f.motion_level for f in group]
         motion_scores = [f.motion_score for f in group]
         audio_energies = [f.audio_rms_energy for f in group]
-        bpm_values = [f.audio_bpm for f in group if f.audio_bpm is not None]
         face_frames = sum(1 for f in group if f.face_count > 0)
         face_presence_ratio = face_frames / len(group)
         motion_peak = max(motion_scores, default=0.0)
         audio_energy = sum(audio_energies) / len(audio_energies)
-        beat_timestamps = [f.timestamp for f in group if f.audio_bpm is not None and f.has_music]
+
+        start_time = group[0].timestamp
+        end_time = group[-1].timestamp
+
+        # Real beat positions inside this segment, from the whole-track grid.
+        # These used to be the timestamps of sampled frames that happened to
+        # contain music, which is when we looked, not when the music pulsed.
+        beat_timestamps = (
+            list(beat_grid.beats_between(start_time, end_time))
+            if beat_grid is not None
+            else []
+        )
         importance_score = min(
             1.0,
             0.5 * motion_peak
@@ -86,8 +112,8 @@ class SegmentBuilder:
 
         return VideoSegment(
             id=f"{video_id}-seg-{index}",
-            start_time=group[0].timestamp,
-            end_time=group[-1].timestamp,
+            start_time=start_time,
+            end_time=end_time,
             description=" | ".join(descriptions),
             scene_type=Counter(scene_types).most_common(1)[0][0],
             motion_level=Counter(motion_levels).most_common(1)[0][0],
@@ -96,7 +122,10 @@ class SegmentBuilder:
             confidence=sum(f.confidence for f in group) / len(group),
             motion_peak=motion_peak,
             audio_energy=audio_energy,
-            audio_bpm=sum(bpm_values) / len(bpm_values) if bpm_values else None,
+            # One tempo for the track, from the whole-track grid. This was the
+            # mean of per-chunk estimates taken from one-second windows, which
+            # cannot contain a tempo.
+            audio_bpm=beat_grid.bpm if beat_grid is not None and beat_grid.has_grid else None,
             beat_timestamps=beat_timestamps,
             face_presence_ratio=face_presence_ratio,
             has_talking_head=any(f.has_talking_head for f in group),

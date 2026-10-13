@@ -127,7 +127,7 @@ The SegmentMap contains rich per-segment perception data. This is NOT decorative
 
 ### Cut Timing
 - **shotBoundaryAtStart**: These segments begin with a clean visual break — always prefer these as cut entry points over mid-action segments.
-- **beatTimestamps**: When present, snap your cut points to the nearest beat within 0.2s tolerance. A cut on a beat feels intentional; one on silence feels random.
+- **beatTimestamps**: When present, place cut points on the nearest beat. Do not do the arithmetic yourself: give the cut its natural position and the deterministic snap pass moves it onto the grid. A cut on a beat feels intentional; one on silence feels random.
 - **audioEnergy**: Use audio energy peaks to time effect hits and text reveals, not just cuts. A chromatic-aberration that lands on an audio peak feels powerful; one on silence feels arbitrary.
 
 ### Effect & Transition Placement
@@ -367,7 +367,10 @@ function formatSegmentSignals(segment: VideoSegment): string {
     parts.push(`continuity=${segment.subjectContinuityScore.toFixed(2)}`);
   }
   if (segment.beatTimestamps && segment.beatTimestamps.length > 0) {
-    parts.push(`beats=[${segment.beatTimestamps.map((b) => b.toFixed(1)).join(",")}]`);
+    // Three decimals: one decimal is 100 ms of resolution, which is two and a
+    // half times the tolerance the cut is later measured against, so the model
+    // could not express an on-beat placement even if it wanted to.
+    parts.push(`beats=[${segment.beatTimestamps.map((b) => b.toFixed(3)).join(",")}]`);
   }
   if (segment.sportsMomentScore !== undefined) {
     parts.push(`sports=${segment.sportsMomentScore.toFixed(2)}(${segment.sportsMomentEvent})`);

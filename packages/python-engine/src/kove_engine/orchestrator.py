@@ -11,6 +11,7 @@ from kove_engine.analyzers.frame_sampler import FrameSampler
 from kove_engine.analyzers.motion_analyzer import MotionAnalyzer
 from kove_engine.analyzers.scene_detector import SceneDetector
 from kove_engine.analyzers.visual_analyzer import VisualAnalyzer
+from kove_engine.beat_grid import track_beat_grid_for_file
 from kove_engine.classifier import Classifier
 from kove_engine.segment_builder import SegmentBuilder
 from kove_engine.reference_analysis import analyze_reference_edit
@@ -70,8 +71,26 @@ class Orchestrator:
 
         frame_descriptions = self._analyze_frames(video_path, frame_paths, duration, scene_cuts)
 
+        # One pass over the whole audio track. Tempo is a property of the
+        # piece, so it cannot come from the per-frame one-second windows.
+        self._emit("tracking_beats", "Tracking beats...")
+        beat_grid = track_beat_grid_for_file(video_path)
+        if beat_grid.has_grid:
+            logger.info(
+                "Beat grid: %.1f BPM, %d beats, %d downbeats (confidence %.2f, first beat %sms)",
+                beat_grid.bpm,
+                len(beat_grid.beats),
+                len(beat_grid.downbeats),
+                beat_grid.confidence,
+                beat_grid.first_beat_ms,
+            )
+        else:
+            logger.info("No usable beat grid for %s", video_path)
+
         self._emit("building_segments", "Building segments...")
-        segment_map = self.segment_builder.build(frame_descriptions, video_id, duration)
+        segment_map = self.segment_builder.build(
+            frame_descriptions, video_id, duration, beat_grid=beat_grid
+        )
 
         self._emit("done", f"Analysis complete: {len(segment_map.segments)} segments")
         result = SegmentMap(videos=[segment_map])
@@ -85,6 +104,7 @@ class Orchestrator:
             frame_descriptions,
             audio_results,
             forensics=forensics,
+            beat_grid=beat_grid,
         )
 
     def _analyze_frames(

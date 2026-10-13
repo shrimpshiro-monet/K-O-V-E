@@ -145,8 +145,34 @@ describe("director prompt", () => {
 
     expect(prompt).toContain("## Footage Analysis");
     expect(prompt).toContain("importance=0.94");
-    expect(prompt).toContain("beats=[2.1,2.6]");
+    expect(prompt).toContain("beats=[2.100,2.600]");
     expect(prompt).toContain("segment-1");
     expect(prompt).toContain("high-energy action");
+  });
+
+  it("prints beat positions at millisecond resolution", () => {
+    // Beats were printed with one decimal, so 0.125 rendered as "0.1": 25 ms
+    // of error on a value the cut is later measured against with a 40 ms
+    // tolerance. Three decimals keeps the printed grid inside the tolerance.
+    const prompt = buildDirectorPrompt({
+      videos: [{
+        videoId: "video-1",
+        duration: 4,
+        segments: [{
+          id: "segment-1",
+          startTime: 0,
+          endTime: 4,
+          description: "music bed",
+          sceneType: "b-roll",
+          motionLevel: "low",
+          hasDialogue: false,
+          visualContent: "footage",
+          confidence: 0.9,
+          beatTimestamps: [0.125, 1.333],
+        }],
+      }],
+    }, "cut on the beat");
+
+    expect(prompt).toContain("beats=[0.125,1.333]");
   });
 });

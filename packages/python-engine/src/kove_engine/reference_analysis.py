@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from statistics import mean, median
 from typing import Any
 
+from kove_engine.beat_grid import BEAT_TOLERANCE_SECONDS, BeatGrid
 from kove_engine.types import AudioResult, FrameDescription, VideoSegmentMap
 
 
-ANALYSIS_VERSION = "1.1.0"
+ANALYSIS_VERSION = "1.2.0"
 STYLE_PROFILE_VERSION = "1.0.0"
 
 
@@ -22,12 +23,33 @@ def _round(value: float, digits: int = 3) -> float:
     return round(float(value), digits)
 
 
+def _cut_offsets_ms(
+    video: VideoSegmentMap, beat_grid: BeatGrid | None
+) -> list[float]:
+    """Signed offset from each cut to the nearest beat, in milliseconds.
+
+    Only cuts inside the measured grid are returned. Earlier and later cuts
+    are unknown rather than early, so they are excluded from the ratio instead
+    of counted as misses.
+    """
+    if beat_grid is None or not beat_grid.has_grid:
+        return []
+
+    offsets: list[float] = []
+    for boundary in video.segments[1:]:
+        offset = beat_grid.offset_ms(boundary.start_time)
+        if offset is not None:
+            offsets.append(offset)
+    return offsets
+
+
 def _style_profile(
     video: VideoSegmentMap,
     observations: list[dict[str, Any]],
     audio: list[AudioResult],
     pacing: str,
     forensics: dict[str, Any] | None,
+    beat_grid: BeatGrid | None = None,
 ) -> dict[str, Any]:
     durations = [item["duration"] for item in observations if item["duration"] > 0]
     cut_count = max(0, len(video.segments) - 1)
@@ -35,16 +57,17 @@ def _style_profile(
     effect_candidates = (forensics or {}).get("effectCandidates", [])
     overlay_candidates = (forensics or {}).get("overlayCandidates", [])
     transition_candidates = (forensics or {}).get("transitions", [])
-    bpm_values = [result.bpm for result in audio if result.bpm]
 
+    # Measured against the real beat grid. This previously assumed a beat at
+    # t=0 and tested `start_time % beat_period`, which is only correct when the
+    # first beat happens to land exactly on zero.
+    cut_offsets = _cut_offsets_ms(video, beat_grid)
     cut_on_beat_ratio: float | None = None
-    if bpm_values and video.segments[1:]:
-        beat_period = 60.0 / (sum(bpm_values) / len(bpm_values))
+    if cut_offsets:
         aligned = sum(
-            min((boundary.start_time % beat_period), beat_period - (boundary.start_time % beat_period)) <= 0.15
-            for boundary in video.segments[1:]
+            1 for offset in cut_offsets if abs(offset) <= BEAT_TOLERANCE_SECONDS * 1000.0
         )
-        cut_on_beat_ratio = aligned / len(video.segments[1:])
+        cut_on_beat_ratio = aligned / len(cut_offsets)
 
     return {
         "version": STYLE_PROFILE_VERSION,
@@ -52,6 +75,11 @@ def _style_profile(
         "cutsPerMinute": _round(cut_count / (video.duration / 60)) if video.duration > 0 else 0.0,
         "medianShotDuration": _round(median(durations)) if durations else 0.0,
         "cutOnBeatRatio": _round(cut_on_beat_ratio) if cut_on_beat_ratio is not None else None,
+        # Signed median offset: editors often cut a frame or two early so the
+        # change reads as landing on the beat. Recording the sign is what makes
+        # that reproducible.
+        "cutOffsetMs": _round(median(cut_offsets), 1) if cut_offsets else None,
+        "cutsInsideGrid": len(cut_offsets),
         "effectDensity": _round(len(effect_candidates) / (video.duration / 60)) if video.duration > 0 else 0.0,
         "transitionDensity": _round(len(transition_candidates) / (video.duration / 60)) if video.duration > 0 else 0.0,
         "textOverlayDensity": _round(len(overlay_candidates) / (video.duration / 60)) if video.duration > 0 else 0.0,
@@ -62,7 +90,12 @@ def _style_profile(
         "cutStyle": "mixed" if transition_candidates else "hard" if cut_count else "unknown",
         "effectPalette": sorted({candidate.get("type", "") for candidate in effect_candidates if candidate.get("type")}),
         "transitionPalette": sorted({candidate.get("type", "") for candidate in transition_candidates if candidate.get("type")}),
-        "detectedBpm": _round(sum(bpm_values) / len(bpm_values), 1) if bpm_values else None,
+        # The whole-track tempo, or null. Never the mean of per-chunk estimates:
+        # those came from one-second windows that cannot contain a tempo, so
+        # averaging them produced a confident-looking number with no meaning.
+        "detectedBpm": _round(beat_grid.bpm, 1)
+        if beat_grid is not None and beat_grid.has_grid and beat_grid.bpm is not None
+        else None,
         "dialogueRatio": _round(mean(1.0 if item["hasDialogue"] else 0.0 for item in observations)) if observations else 0.0,
         "musicRatio": _round(mean(1.0 if result.has_music else 0.0 for result in audio)) if audio else 0.0,
         "confidence": _round(mean(item["confidence"] for item in observations)) if observations else 0.0,
@@ -75,6 +108,7 @@ def analyze_reference_edit(
     audio: list[AudioResult],
     options: ReferenceAnalysisOptions | None = None,
     forensics: dict[str, Any] | None = None,
+    beat_grid: BeatGrid | None = None,
 ) -> dict[str, Any]:
     """Build edit-forensics evidence from sampled observations.
 
@@ -152,7 +186,7 @@ def analyze_reference_edit(
             "dominantMotionLevels": [name for name, _ in motion_levels.most_common()],
             "dialogueLed": dialogue_ratio >= 0.35,
         },
-        "styleProfile": _style_profile(video, observations, audio, pacing, forensics),
+        "styleProfile": _style_profile(video, observations, audio, pacing, forensics, beat_grid),
         "editPattern": {
             "cutStyle": "rapid montage" if pacing == "fast" else "coverage-led",
             "transitionEvidence": [{
@@ -172,9 +206,14 @@ def analyze_reference_edit(
             "dialogueRatio": _round(dialogue_ratio),
             "musicRatio": _round(mean(1.0 if result.has_music else 0.0 for result in audio)) if audio else 0.0,
             "silenceRatio": _round(mean(1.0 if result.is_silence else 0.0 for result in audio)) if audio else 0.0,
-            "detectedBpm": _round(mean([result.bpm for result in audio if result.bpm]), 1)
-            if any(result.bpm for result in audio) else None,
+            "detectedBpm": _round(beat_grid.bpm, 1)
+            if beat_grid is not None and beat_grid.has_grid and beat_grid.bpm is not None
+            else None,
         },
+        # Measured beat positions for the whole track. Downstream snapping uses
+        # these rather than a period assumption, and can see the phase via
+        # firstBeatMs and how much to trust the grid via confidence.
+        "beatGrid": beat_grid.to_dict() if beat_grid is not None else None,
         "timeline": cues,
         "observations": observations,
     }
