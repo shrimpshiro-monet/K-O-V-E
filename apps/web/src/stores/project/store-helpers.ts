@@ -241,8 +241,10 @@ export function createProjectStoreHelpers(
     for (const track of project.timeline.tracks) {
       for (const c of track.clips) {
         const sourceSpan = c.outPoint - c.inPoint;
-        speedEngine.setClipSpeed(c.id, c.speed ?? 1, sourceSpan);
-        speedEngine.setReverse(c.id, c.reversed ?? false, sourceSpan);
+        // Registration seam: render paths read speed exclusively through the
+        // speed engine — persist EVERY speed-shaped clip field, or ramps and
+        // freeze frames play as 1x straight-through.
+        speedEngine.syncFromClip(c.id, c, sourceSpan);
       }
     }
     const chromaClips = project.timeline.tracks

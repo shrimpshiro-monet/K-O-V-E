@@ -82,6 +82,7 @@ export type {
 } from "./style-profile";
 
 export { compareStyleProfile } from "./style-profile";
+export { promptDurationTarget, formatSeconds, type DurationTarget } from "./duration-target";
 export {
   scoreSportsMoment,
   snapTimeToBeat,
@@ -98,9 +99,12 @@ export {
   summarizeSegmentMap,
   summarizeEditPlan,
   computePlanPlacement,
+  sanitizeSpeedRamp,
+  canonicalMediaRefKey,
+  rekeyMediaRef,
 } from "./validate";
 
-export type { DirectorValidationIssue } from "./validate";
+export type { DirectorValidationIssue, PlanMediaCatalogItem, MediaRefResolution } from "./validate";
 
 export type { SignatureEffectDef } from "./shader-effects";
 

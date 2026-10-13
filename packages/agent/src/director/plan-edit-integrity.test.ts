@@ -6,6 +6,7 @@ import {
   pacingMatches,
 } from "@kove-advanced/creation-schema";
 import type { EditingHost, TextOverlayOptions, OverlayRef } from "../host";
+import type { ToolResult } from "../types";
 import { HeadlessHost } from "../headless-host";
 import { executeTool } from "../executor";
 import { MockLLMClient, type LLMClient, type LLMResponse } from "../llm";
@@ -357,6 +358,68 @@ describe("plan_edit integrity", () => {
     expect(h.llm.calls).toBe(2); // plan + exactly one repair attempt
   });
 
+  it("derives targetDuration from the brief when the plan omits it (no bad_target_duration self-wound)", async () => {
+    // The normalizer used to manufacture metadata.targetDuration = 0 whenever
+    // the field was missing/non-numeric, which validateEditPlan then rejected
+    // as bad_target_duration — an all-fail class measured on the live
+    // baseline (multi-01-detailed, multi-02-vague).
+    const plan = validPlan({
+      metadata: {
+        targetPlatform: "social",
+        genre: "hype",
+        pacing: "fast",
+        rationale: "the brief names the length",
+      },
+    });
+    const h = harness([planResponse(plan)]);
+    const result = await executeTool(
+      "plan_edit",
+      { prompt: "Cut a 14-second hype montage from my footage." },
+      h.host,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.data && (result.data as Record<string, unknown>).revision).toBe(1);
+    expect(timelineClips(h.project)).toHaveLength(2);
+  });
+
+  it("falls back to the plan's own structural duration when the brief names none", async () => {
+    const plan = validPlan({
+      metadata: {
+        targetDuration: 0, // even an explicit 0 is unusable — derive instead
+        targetPlatform: "social",
+        genre: "test",
+        pacing: "fast",
+        rationale: "no brief duration available",
+      },
+    });
+    const h = harness([planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, h.host);
+
+    expect(result.ok).toBe(true);
+    expect(result.data && (result.data as Record<string, unknown>).revision).toBe(1);
+    expect(timelineClips(h.project)).toHaveLength(2);
+  });
+
+  it("keeps bad_target_duration for a plan with no derivable duration at all", async () => {
+    const plan = validPlan({
+      segments: [],
+      metadata: {
+        targetPlatform: "social",
+        genre: "test",
+        pacing: "fast",
+        rationale: "empty plan, no duration anywhere",
+      },
+    });
+    const h = harness([planResponse(plan), planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as { issues: Array<{ code: string }> };
+    expect(data.issues.some((issue) => issue.code === "bad_target_duration")).toBe(true);
+  });
+
   it("repairs a rejected plan when the second attempt is valid", async () => {
     const bad = validPlan({
       segments: [
@@ -380,6 +443,196 @@ describe("plan_edit integrity", () => {
     expect(timelineClips(h.project)).toHaveLength(2);
     expect(h.llm.calls).toBe(3); // plan + one repair + one density revision
     expect(getDirectorPlanState(h.project).revision).toBe(1);
+  });
+
+  it("rejects a hallucinated audio id at validation instead of crashing apply", async () => {
+    // The exact failure family from the account-2 baseline: the model invents
+    // an audio id ("music_1") that is not in the media library. Before the
+    // membership gate this passed validation with issues: [] and crashed
+    // materializeEditPlan with full compensation (EDIT_PLAN_APPLY_FAILED).
+    const hallucinated = validPlan({
+      audioDecisions: [
+        {
+          type: "music",
+          sourceVideoId: "music_1",
+          sourceStartTime: 0,
+          sourceEndTime: 8,
+          startTime: 0,
+          duration: 8,
+          volume: 0.4,
+          rationale: "bed",
+        },
+      ],
+      metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+    });
+    // First attempt invalid; the bounded repair attempt repeats the bad ref.
+    const h = harness([planResponse(hallucinated), planResponse(hallucinated)]);
+    const result = await executeTool("plan_edit", { prompt: "music bed" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as { issues: Array<{ code: string; severity: string; message: string }> };
+    const audioIssue = data.issues.find((issue) => issue.code === "unknown_audio_media");
+    expect(audioIssue).toBeDefined();
+    expect(audioIssue!.severity).toBe("error");
+    // The rejection carries the available media so a repair can re-key.
+    expect(audioIssue!.message).toContain('"music_1"');
+    expect(audioIssue!.message).toContain("audio-1 (track.mp3)");
+    expect(audioIssue!.message).toContain("video-1 (footage.mp4)");
+    // Crucially: never reached materializeEditPlan — no APPLY_FAILED, no
+    // partial-then-compensated apply. The timeline was never touched.
+    expect(result.summary).not.toContain("EDIT_PLAN_APPLY_FAILED");
+    expect(timelineClips(h.project)).toHaveLength(0);
+    expect(getDirectorPlanState(h.project).revision).toBe(0);
+    expect(h.llm.calls).toBe(2); // plan + exactly one repair attempt
+  });
+
+  it("re-keys a hallucinated audio id when the repair attempt reuses a real media id", async () => {
+    const planWithMusic = (sourceVideoId: string): Record<string, unknown> =>
+      validPlan({
+        audioDecisions: [
+          {
+            type: "music",
+            sourceVideoId,
+            sourceStartTime: 0,
+            sourceEndTime: 8,
+            startTime: 0,
+            duration: 8,
+            volume: 0.4,
+            rationale: "bed",
+          },
+        ],
+        metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+      });
+    const h = harness([planResponse(planWithMusic("music_1")), planResponse(planWithMusic("audio-1"))]);
+    const result = await executeTool("plan_edit", { prompt: "music bed" }, h.host);
+
+    expect(result.ok).toBe(true);
+    const data = result.data as { audioCount: number };
+    expect(data.audioCount).toBe(1);
+    const audioClips = h.project.timeline.tracks
+      .filter((track) => track.type === "audio")
+      .flatMap((track) => track.clips);
+    expect(audioClips).toHaveLength(1);
+    expect(getDirectorPlanState(h.project).revision).toBe(1);
+    expect(h.llm.calls).toBe(3); // plan + one repair + one density revision
+    // The repair prompt that re-keyed it advertised the real catalog.
+    const repairPrompt = h.llm.systems[1] ?? "";
+    expect(repairPrompt).toContain("unknown_audio_media");
+    expect(repairPrompt).toContain("audio-1 (track.mp3)");
+  });
+
+  it("re-keys a near-miss audio ref deterministically — no repair round, warning is surfaced", async () => {
+    // Model fossilizes the file NAME it saw in the prompt instead of the media
+    // id, in upper case, with the extension dropped. Canonical re-keying must
+    // rewrite it BEFORE validation: the plan applies without an LLM repair.
+    const plan = validPlan({
+      audioDecisions: [
+        {
+          type: "music",
+          sourceVideoId: " TRACK.MP3 ", // trims + case-folds + ext-strips → canonical key "track" → audio-1 (track.mp3), unique
+          sourceStartTime: 0,
+          sourceEndTime: 8,
+          startTime: 0,
+          duration: 8,
+          volume: 0.4,
+          rationale: "bed",
+        },
+      ],
+      metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "music bed" }, h.host);
+
+    expect(result.ok).toBe(true);
+    const data = result.data as {
+      audioCount: number;
+      validationWarnings?: Array<{ code: string; message: string }>;
+    };
+    expect(data.audioCount).toBe(1);
+    const audioClip = h.project.timeline.tracks
+      .filter((track) => track.type === "audio")
+      .flatMap((track) => track.clips)[0];
+    expect(audioClip?.mediaId ?? (audioClip as unknown as { sourceId?: string })?.sourceId).toBeTruthy();
+    const rekeyed = (data.validationWarnings ?? []).find((issue) => issue.code === "audio_media_rekeyed");
+    expect(rekeyed).toBeDefined();
+    expect(rekeyed!.message).toContain('"TRACK.MP3"');
+    expect(rekeyed!.message).toContain('"audio-1"');
+    // Deterministically re-keyed: validation saw the real id, nothing to
+    // repair — no second planning call (density review may add one).
+    expect(h.llm.calls).toBeLessThanOrEqual(2);
+    const systems = h.llm.systems.join("\n");
+    expect(systems).not.toContain("unknown_audio_media");
+  });
+
+  it("accepts an extension-stem audio ref ('track' → track.mp3) via the same canonical ladder", async () => {
+    const plan = validPlan({
+      audioDecisions: [
+        {
+          type: "sfx",
+          sourceVideoId: "track",
+          sourceStartTime: 0,
+          sourceEndTime: 1,
+          startTime: 1,
+          duration: 1,
+          volume: 0.8,
+          rationale: "hit",
+        },
+      ],
+      metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "add a hit on the beat" }, h.host);
+
+    expect(result.ok).toBe(true);
+    expect((result.data as { audioCount: number }).audioCount).toBe(1);
+  });
+
+  it("refuses to guess on a canonical collision: ambiguous ref is an error with both candidates", async () => {
+    // Second library item whose canonical key collides with track.mp3.
+    // Inserted here (not in makeProject) so every OTHER test's catalog keeps
+    // unique canonical keys.
+    const planWithCollision = (sourceVideoId: string): Record<string, unknown> =>
+      validPlan({
+        audioDecisions: [
+          {
+            type: "music",
+            sourceVideoId,
+            sourceStartTime: 0,
+            sourceEndTime: 8,
+            startTime: 0,
+            duration: 8,
+            volume: 0.4,
+            rationale: "bed",
+          },
+        ],
+        metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+      });
+    const h = harness([
+      planResponse(planWithCollision("track")),
+      planResponse(planWithCollision("track")),
+    ]);
+    h.project.mediaLibrary.items.push({
+      id: "audio-2",
+      name: "track.m4a", // extension-strips to canonical key "track" — collides with track.mp3
+      type: "audio",
+      metadata: { duration: 20 },
+    } as unknown as Project["mediaLibrary"]["items"][number]);
+
+    const result = await executeTool("plan_edit", { prompt: "music bed" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as { issues: Array<{ code: string; severity: string; message: string }> };
+    const collision = data.issues.find((issue) => issue.code === "unknown_audio_media");
+    expect(collision).toBeDefined();
+    expect(collision!.severity).toBe("error");
+    expect(collision!.message).toContain("audio-1");
+    expect(collision!.message).toContain("audio-2");
+    expect(collision!.message).toContain("canonically matches multiple media items");
+    // Never reached apply: the timeline stayed empty, one repair attempt ran.
+    expect(timelineClips(h.project)).toHaveLength(0);
+    expect(h.llm.calls).toBe(2);
   });
 
   it("rejects a text position outside the normalized 0-1 range", async () => {
@@ -921,5 +1174,77 @@ describe("style review pacing equivalence", () => {
     expect(pacingMatches("medium", "medium")).toBe(true);
     expect(pacingMatches("fast", "slow")).toBe(false);
     expect(pacingMatches("unknown", "slow")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Failure payloads carry the plan for the eval harness, but never for the model.
+// `editPlan` is non-enumerable on the plan_edit fail() payloads: JSON.stringify
+// (which is what buildToolResultContent sends back to the model) skips it, while
+// direct property access keeps it readable for the baseline runner's sidecars.
+// ---------------------------------------------------------------------------
+
+describe("failure editPlan is programmatic-only", () => {
+  /** Byte-for-byte what buildToolResultContent serializes into the tool_result. */
+  const modelView = (result: ToolResult): string =>
+    JSON.stringify({
+      ok: result.ok,
+      summary: result.summary,
+      data: result.data,
+      error: result.error,
+      ...(result.warnings && result.warnings.length > 0 ? { warnings: result.warnings } : {}),
+    });
+
+  it("INVALID_EDIT_PLAN: readable directly, invisible to the model", async () => {
+    const bad = validPlan({
+      transitions: [{ afterSegmentIndex: 0, type: "star-wipe-9000", duration: 0.3, rationale: "flashy" }],
+    });
+    const h = harness([planResponse(bad), planResponse(bad)]);
+    const result = await executeTool("plan_edit", { prompt: "fancy transition" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as { editPlan?: { segments: unknown[] }; issues: unknown[] };
+    expect(data.editPlan).toBeDefined();
+    expect(data.editPlan?.segments.length).toBeGreaterThan(0);
+    expect(Array.isArray(data.issues)).toBe(true);
+    expect(modelView(result)).not.toContain('"editPlan"');
+    // The enumerable half of the payload still reaches the model.
+    expect(modelView(result)).toContain('"issues"');
+  });
+
+  it("EDIT_PLAN_APPLY_FAILED: readable directly, invisible to the model", async () => {
+    const h = harness([planResponse(validPlan())]);
+    h.failNextTextCreation(); // text engine throws after clips were added
+    const planWithText = validPlan({
+      textElements: [{ content: "boom", style: "title", startTime: 0, duration: 1, rationale: "x" }],
+    });
+    h.setLlm(planResponse(planWithText));
+    const result = await executeTool("plan_edit", { prompt: "gets interrupted" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("EDIT_PLAN_APPLY_FAILED");
+    const data = result.data as { editPlan?: { segments: unknown[] }; compensation?: unknown };
+    expect(data.editPlan).toBeDefined();
+    expect(data.editPlan?.segments.length).toBeGreaterThan(0);
+    expect(data.compensation).toBeDefined();
+    expect(modelView(result)).not.toContain('"editPlan"');
+    expect(modelView(result)).toContain('"compensation"');
+  });
+});
+
+describe("director prompt audio visibility", () => {
+  it("advertises the project's standalone audio media to the nested director turn", async () => {
+    const h = harness([planResponse(validPlan())]);
+    const result = await executeTool("plan_edit", { prompt: "hook with music" }, h.host);
+
+    expect(result.ok).toBe(true);
+    // The nested director call's system prompt is the one buildDirectorPrompt
+    // built — the hallucinated-id family came from this turn never seeing
+    // audio-1. It must now be listed by id, name and duration.
+    const directorPrompt = h.llm.systems[0] ?? "";
+    expect(directorPrompt).toContain("## Available audio");
+    expect(directorPrompt).toContain("- audio-1 (track.mp3, 30.0s)");
+    expect(directorPrompt).toContain("never invent an id");
   });
 });

@@ -614,6 +614,11 @@ export interface ProjectState {
   // Execute arbitrary action
   executeAction: (action: Action) => Promise<ActionResult>;
 
+  // Replay the whole project into the transition/effects render bridges.
+  // Call after bridge initialization: mutations landing while init was in
+  // flight are skipped by the isInitialized() gates in the sync helpers.
+  resyncRenderBridges: () => void;
+
   // Computed values
   getTimelineDuration: () => number;
 
@@ -2937,11 +2942,42 @@ export const useProjectStore = create<ProjectState>()(
             },
           };
         }
+        // The executor mutates `project` IN PLACE, so snapshot the track/clip
+        // id topology BEFORE executing — the render-bridge sync diffs use the
+        // previous ids only to clear stale entries.
+        const previousProject: Project = {
+          ...project,
+          timeline: {
+            ...project.timeline,
+            tracks: project.timeline.tracks.map((track) => ({
+              ...track,
+              clips: [...track.clips],
+            })),
+          },
+        };
         const result = await actionExecutor.execute(action, project);
         if (result.success) {
+          // Keep the preview render bridges in lockstep with every agent/UI
+          // mutation. Without this, executeAction-applied transitions and
+          // effects existed in the store but were INVISIBLE in the preview
+          // (hard cuts, missing glow) while UI-path-added ones rendered.
+          syncProjectEffectsBridge(project, previousProject);
+          syncProjectTransitionsBridge(project, previousProject);
+          // Same contract for engine-backed clip state: speed ramps / freeze
+          // frames applied via speed/setRampData (plan materialization incl.)
+          // must register in the speed engine, or video renders 1x straight-
+          // through. Also covers overlay engines via the existing sync.
+          syncOverlayEnginesFromProject();
           set({ project: { ...project } });
         }
         return result;
+      },
+
+      resyncRenderBridges: () => {
+        const { project } = get();
+        syncProjectEffectsBridge(project);
+        syncProjectTransitionsBridge(project);
+        syncOverlayEnginesFromProject();
       },
 
       // Computed values

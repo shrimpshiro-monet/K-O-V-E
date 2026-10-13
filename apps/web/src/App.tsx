@@ -5,6 +5,7 @@ import { SearchModal } from "./components/editor/SearchModal";
 import { MobileBlocker } from "./components/MobileBlocker";
 
 import { RecoveryDialog } from "./components/welcome/RecoveryDialog";
+import { KreateEntry } from "./components/welcome/KreateEntry";
 import { SharePage } from "./pages/SharePage";
 import { useUIStore } from "./stores/ui-store";
 import { useProjectStore } from "./stores/project-store";
@@ -104,7 +105,11 @@ function App() {
       navigate("editor");
     } else if (route === "editor") {
       hasHandledInitialRoute.current = true;
-    } else if (["welcome", "templates", "recent"].includes(route)) {
+    } else if (route === "welcome") {
+      // Chat-first entry: the welcome route renders KreateEntry itself;
+      // only the legacy surfaces bounce straight to the editor.
+      hasHandledInitialRoute.current = true;
+    } else if (["templates", "recent"].includes(route)) {
       hasHandledInitialRoute.current = true;
       navigate("editor");
     }
@@ -153,6 +158,8 @@ function App() {
         </Suspense>
       ) : isSharePage ? (
         <SharePage shareId={params.shareId!} />
+      ) : route === "welcome" ? (
+        <KreateEntry />
       ) : (
         <Suspense fallback={<LoadingSpinner message="Loading editor..." />}>
           <EditorInterface />

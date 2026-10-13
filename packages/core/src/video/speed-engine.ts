@@ -40,6 +40,62 @@ export class SpeedEngine {
     return data?.baseSpeed ?? 1;
   }
 
+  /**
+   * Replaces this clip's speed state from persisted clip fields. The project
+   * store syncs engines on every change, so this must be idempotent replace —
+   * never accumulate. Missing pieces default to their no-op values (base
+   * speed 1, no keyframes/freezes, pitch correction on).
+   *
+   * Without this seam, plan-authored speed ramps and freeze frames lived only
+   * on the clip record: the render path reads speed exclusively through this
+   * engine, so ramps/freezes silently played as 1x straight-through.
+   */
+  syncFromClip(
+    clipId: string,
+    clip: {
+      readonly speed?: number;
+      readonly reversed?: boolean;
+      readonly speedKeyframes?: readonly SpeedKeyframe[];
+      readonly freezeFrames?: readonly (Omit<FreezeFrame, "clipId"> & { clipId?: string })[];
+      readonly pitchCorrection?: boolean;
+    },
+    originalDuration: number,
+  ): void {
+    const rawKeyframes = Array.isArray(clip.speedKeyframes) ? clip.speedKeyframes : [];
+    const keyframes: SpeedKeyframe[] = rawKeyframes
+      .filter((k) => Number.isFinite(k.time) && Number.isFinite(k.speed))
+      .map((k) => ({
+        id: k.id,
+        time: Math.min(originalDuration, Math.max(0, k.time)),
+        speed: this.clampSpeed(k.speed),
+        easing: k.easing,
+      }))
+      .sort((a, b) => a.time - b.time);
+    const rawFreezes = Array.isArray(clip.freezeFrames) ? clip.freezeFrames : [];
+    const freezeFrames: FreezeFrame[] = rawFreezes
+      .filter(
+        (f) =>
+          Number.isFinite(f.sourceTime) && Number.isFinite(f.startTime) && Number.isFinite(f.duration),
+      )
+      .map((f) => ({
+        id: f.id,
+        clipId,
+        sourceTime: Math.min(originalDuration, Math.max(0, f.sourceTime)),
+        startTime: Math.max(0, f.startTime),
+        duration: Math.max(0.001, Math.min(f.duration, originalDuration)),
+      }))
+      .sort((a, b) => a.startTime - b.startTime);
+    this.clipSpeedData.set(clipId, {
+      clipId,
+      baseSpeed: this.clampSpeed(clip.speed ?? 1),
+      reverse: clip.reversed === true,
+      keyframes,
+      pitchCorrection: clip.pitchCorrection ?? true,
+      freezeFrames,
+      originalDuration,
+    });
+  }
+
   getEffectiveDuration(clipId: string): number {
     const data = this.clipSpeedData.get(clipId);
     if (!data) return 0;

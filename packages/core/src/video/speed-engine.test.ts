@@ -172,3 +172,68 @@ describe("SpeedEngine - Playback Time vs Media Time", () => {
     }
   });
 });
+
+describe("syncFromClip (persisted clip fields -> engine)", () => {
+  let engine: SpeedEngine;
+
+  beforeEach(() => {
+    engine = new SpeedEngine();
+  });
+
+  it("registers speed keyframes: playback time integrates the ramp, no-ramp math no longer holds", () => {
+    // Linear 1x -> 2x ramp over source [0,4]. Playback time for source 4:
+    // ∫0..4 ds/(1+0.25s) = 4·ln(2) ≈ 2.7726. A naive base-speed map would give 4.
+    engine.syncFromClip(
+      "c1",
+      {
+        speed: 1,
+        speedKeyframes: [
+          { id: "k0", time: 0, speed: 1, easing: "linear" },
+          { id: "k1", time: 4, speed: 2, easing: "linear" },
+        ],
+      },
+      8,
+    );
+    expect(engine.getSourceTimeAtPlaybackTime("c1", 4 * Math.LN2)).toBeCloseTo(4, 1);
+    // and motion within the ramp is monotonic: same playback delta, second window is faster
+    const a = engine.getSourceTimeAtPlaybackTime("c1", 0.5);
+    const b = engine.getSourceTimeAtPlaybackTime("c1", 1.0);
+    const c = engine.getSourceTimeAtPlaybackTime("c1", 1.5);
+    const d = engine.getSourceTimeAtPlaybackTime("c1", 2.0);
+    expect(b - a).toBeGreaterThan(0);
+    expect(d - c).toBeGreaterThan(b - a);
+  });
+
+  it("registers freeze frames: a playback window maps to one source time, and time after the freeze shifts back", () => {
+    engine.syncFromClip(
+      "c2",
+      {
+        speed: 1,
+        freezeFrames: [{ id: "f0", sourceTime: 2, startTime: 1, duration: 0.5 }],
+      },
+      8,
+    );
+    expect(engine.getSourceTimeAtPlaybackTime("c2", 0.9)).toBeCloseTo(0.9, 5);
+    expect(engine.getSourceTimeAtPlaybackTime("c2", 1.0)).toBeCloseTo(2, 5);
+    expect(engine.getSourceTimeAtPlaybackTime("c2", 1.4)).toBeCloseTo(2, 5);
+    // engine semantics: a freeze steals source time — after the window,
+    // playback resumes where the source left off (not where the freeze held).
+    // adjustedTime = playback − summed prior freezes → 1.5 − 0.5 = 1.0.
+    expect(engine.getSourceTimeAtPlaybackTime("c2", 1.5)).toBeCloseTo(1, 5);
+  });
+
+  it("is idempotent — re-syncs replace, never accumulate (the store syncs on every change)", () => {
+    const clip = {
+      speed: 1,
+      speedKeyframes: [
+        { id: "k0", time: 0, speed: 1, easing: "linear" as const },
+        { id: "k1", time: 4, speed: 2, easing: "linear" as const },
+      ],
+      freezeFrames: [{ id: "f0", clipId: "c3", sourceTime: 2, startTime: 1, duration: 0.5 }],
+    };
+    engine.syncFromClip("c3", clip, 8);
+    engine.syncFromClip("c3", clip, 8);
+    expect(engine.getSpeedKeyframes("c3")).toHaveLength(2);
+    expect(engine.getFreezeFrames("c3")).toHaveLength(1);
+  });
+});

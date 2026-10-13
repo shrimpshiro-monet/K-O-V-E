@@ -18,8 +18,8 @@ import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
-import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
-import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
+import { normalizeEditPlan, validateEditPlan, rekeyMediaRef, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, promptDurationTarget, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
+import type { DirectorValidationIssue, PlanMediaCatalogItem } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
   setDirectorPlanState,
@@ -2455,10 +2455,36 @@ async function materializeEditPlan(
       console.warn(`[plan_edit] skipping audio decision ${decision.type} — no sourceVideoId`);
       continue;
     }
-    const media = host.getProject().mediaLibrary.items.find((item) => item.id === decision.sourceVideoId)
-      ?? host.getProject().mediaLibrary.items.find((item) => item.name === decision.sourceVideoId);
+    const items = host.getProject().mediaLibrary.items;
+    const catalog: PlanMediaCatalogItem[] = items
+      .filter((item) => item.type === "audio" || item.type === "video")
+      .map((item) => ({
+        id: item.id,
+        name: item.name ?? item.id,
+        type: item.type as "audio" | "video",
+      }));
+    const dataResolution = rekeyMediaRef(decision.sourceVideoId, catalog);
+    if (dataResolution.kind === "ambiguous") {
+      const colliding = dataResolution.matches
+        .map((item) => `${item.id} (${item.name})`)
+        .join(", ");
+      throw new Error(
+        `Could not add planned ${decision.type}: "${decision.sourceVideoId}" canonically matches multiple media items: ${colliding}. Name one exact media id.`,
+      );
+    }
+    const resolvedMediaItemId = dataResolution.kind === "exact" || dataResolution.kind === "rekeyed"
+      ? dataResolution.item.id
+      : null;
+    if (dataResolution.kind === "rekeyed") {
+      console.warn(
+        `[plan_edit] ${decision.type}: canonicalized audio ref "${dataResolution.from}" → "${dataResolution.item.id}" (${dataResolution.item.name})`,
+      );
+    }
+    const media = resolvedMediaItemId !== null
+      ? items.find((item) => item.id === resolvedMediaItemId)
+      : undefined;
     if (!media) {
-      const available = host.getProject().mediaLibrary.items
+      const available = items
         .filter((item) => item.type === "audio" || item.type === "video")
         .map((item) => `${item.id} (${item.name})`)
         .join(", ") || "none";
@@ -2798,7 +2824,40 @@ function resolveTextStyle<T extends { readonly templateOverride?: Partial<Captio
   };
 }
 
-function normalizeDirectorPlanInput(value: unknown): EditPlan {
+/**
+ * Derive a usable metadata.targetDuration when the plan's own value is
+ * missing/non-finite/non-positive. Priority: the brief's declared length
+ * (same parser the duration-fidelity gate measures), then the plan's own
+ * structure, then 0 (validation reports bad_target_duration — nothing real
+ * to derive). Never override an explicit usable number.
+ */
+function derivePlanTargetDuration(segments: readonly unknown[], promptText?: string): number {
+  if (promptText) {
+    const fromBrief = promptDurationTarget(promptText).target;
+    if (fromBrief !== null && Number.isFinite(fromBrief) && fromBrief > 0) return fromBrief;
+  }
+  let maxEnd = 0;
+  for (const value of segments) {
+    const rec = asRecord(value);
+    if (!rec) continue;
+    const start =
+      typeof rec.sourceStartTime === "number" && Number.isFinite(rec.sourceStartTime)
+        ? Math.max(0, rec.sourceStartTime)
+        : 0;
+    const end =
+      typeof rec.sourceEndTime === "number" && Number.isFinite(rec.sourceEndTime)
+        ? rec.sourceEndTime
+        : 0;
+    const position =
+      typeof rec.targetPosition === "number" && Number.isFinite(rec.targetPosition)
+        ? Math.max(0, rec.targetPosition)
+        : 0;
+    maxEnd = Math.max(maxEnd, position + Math.max(0, end - start));
+  }
+  return maxEnd > 0 ? maxEnd : 0;
+}
+
+function normalizeDirectorPlanInput(value: unknown, opts?: { promptText?: string }): EditPlan {
   const raw = asRecord(value) ?? {};
   const rawSegments = Array.isArray(raw.segments) ? raw.segments : [];
   const rawTextElements = Array.isArray(raw.textElements) ? raw.textElements : [];
@@ -2806,6 +2865,10 @@ function normalizeDirectorPlanInput(value: unknown): EditPlan {
   const rawTransitions = Array.isArray(raw.transitions) ? raw.transitions : [];
   const rawAudioDecisions = Array.isArray(raw.audioDecisions) ? raw.audioDecisions : [];
   const metadata = asRecord(raw.metadata) ?? {};
+  const givenTarget =
+    typeof metadata.targetDuration === "number" && Number.isFinite(metadata.targetDuration) && metadata.targetDuration > 0
+      ? metadata.targetDuration
+      : undefined;
   const motionMoments = (Array.isArray(raw.motionMoments) ? raw.motionMoments : [])
     .map((value) => {
       const moment = asRecord(value);
@@ -2854,7 +2917,7 @@ function normalizeDirectorPlanInput(value: unknown): EditPlan {
     motionMoments,
     metadata: {
       ...metadata,
-      targetDuration: typeof metadata.targetDuration === "number" ? metadata.targetDuration : 0,
+      targetDuration: givenTarget ?? derivePlanTargetDuration(rawSegments, opts?.promptText),
       targetPlatform: typeof metadata.targetPlatform === "string" ? metadata.targetPlatform : "unknown",
       genre: typeof metadata.genre === "string" ? metadata.genre : "unknown",
       pacing: metadata.pacing === "fast" || metadata.pacing === "slow" ? metadata.pacing : "medium",
@@ -33674,6 +33737,13 @@ const TOOLS: RegisteredTool[] = [
         return fail("No video media in the project. Import at least one video first.", "NO_VIDEO_MEDIA");
       }
 
+      // Audio/video membership for validateEditPlan's audio gate. This is the
+      // same media set materializeEditPlan resolves sourceVideoId against, so
+      // a hallucinated audio id gets caught (and repaired) before apply.
+      const mediaCatalog: PlanMediaCatalogItem[] = allMedia
+        .filter((m) => m.type === "audio" || m.type === "video")
+        .map((m) => ({ id: m.id, name: m.name ?? m.id, type: m.type as "audio" | "video" }));
+
       const state = getDirectorPlanState(project);
 
       // Use provided segmentMap or build a fallback from project media
@@ -33748,7 +33818,12 @@ const TOOLS: RegisteredTool[] = [
         );
       }
 
-      const directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, providedReferenceAnalysis);
+      // Standalone audio for the director prompt: the model must see real
+      // media ids so audioDecisions[].sourceVideoId names a library item.
+      const directorAudio = allMedia
+        .filter((m) => m.type === "audio")
+        .map((m) => ({ id: m.id, name: m.name ?? m.id, duration: m.metadata?.duration }));
+      const directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, providedReferenceAnalysis, directorAudio);
 
       const planTools =
         host.llm.provider === "anthropic"
@@ -33794,7 +33869,7 @@ const TOOLS: RegisteredTool[] = [
       const preparePlan = (
         raw: unknown,
       ): { plan: EditPlan; issues: readonly DirectorValidationIssue[] } => {
-        const normalized = normalizeDirectorPlanInput(raw);
+        const normalized = normalizeDirectorPlanInput(raw, { promptText: prompt });
         const withVocabulary = canonicalizePlanTransitions(normalized);
         const resolved = normalizeEditPlan(
           {
@@ -33806,7 +33881,38 @@ const TOOLS: RegisteredTool[] = [
           },
           resolvedMap,
         );
-        return { plan: resolved, issues: validateEditPlan(resolved, resolvedMap) };
+        // Deterministic re-key BEFORE validation (and before apply): near-miss
+        // refs (case, separators, missing extension) resolve to the unique
+        // matching library item here, so the plan that runs through
+        // validation, sidecars, and materialization already names real media.
+        // Unknown/ambiguous refs stay verbatim — the membership gate reports
+        // those (and the repair round gets the collision list).
+        const rekeyWarnings: DirectorValidationIssue[] = [];
+        const audioRekeyed = resolved.audioDecisions.length > 0
+          ? {
+              ...resolved,
+              audioDecisions: resolved.audioDecisions.map((decision, index) => {
+                if (decision.type === "silence" || typeof decision.sourceVideoId !== "string") {
+                  return decision;
+                }
+                const resolution = rekeyMediaRef(decision.sourceVideoId.trim(), mediaCatalog);
+                if (resolution.kind !== "rekeyed") return decision;
+                // Visible in success payloads + eval sidecars: a re-keyed
+                // hallucination is a measurement signal, not silent help.
+                rekeyWarnings.push({
+                  severity: "warning",
+                  code: "audio_media_rekeyed",
+                  message: `Audio decision ${index} (${decision.type}) referenced "${resolution.from}", re-keyed deterministically to "${resolution.item.id}" (${resolution.item.name}).`,
+                  path: `audioDecisions.${index}.sourceVideoId`,
+                });
+                return { ...decision, sourceVideoId: resolution.item.id };
+              }),
+            }
+          : resolved;
+        return {
+          plan: audioRekeyed,
+          issues: [...validateEditPlan(audioRekeyed, resolvedMap, mediaCatalog), ...rekeyWarnings],
+        };
       };
 
       const formatIssues = (issues: readonly DirectorValidationIssue[]): string =>
@@ -33849,14 +33955,22 @@ const TOOLS: RegisteredTool[] = [
           // Fall through: report the original blocking issues below.
         }
         if (blocking.length > 0) {
+          const invalidPayload = {
+            issues: blocking,
+            warnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
+            repairAttempted,
+          };
+          // non-enumerable: keeps this out of JSON.stringify so the model's tool_result
+          // stays byte-identical; read it via direct property access
+          Object.defineProperty(invalidPayload, "editPlan", {
+            value: finalPlan,
+            enumerable: false,
+            configurable: true,
+          });
           return fail(
             `Director produced an invalid EditPlan${repairAttempted ? " (one repair attempt also failed)" : ""}: ${blocking.map((issue) => `[${issue.code}] ${issue.message}`).join("; ")}`,
             "INVALID_EDIT_PLAN",
-            {
-              issues: blocking,
-              warnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
-              repairAttempted,
-            },
+            invalidPayload,
           );
         }
       }
@@ -34000,10 +34114,18 @@ const TOOLS: RegisteredTool[] = [
         } catch {
           // Best effort — reported below.
         }
+        const applyPayload = { compensation };
+        // non-enumerable: keeps this out of JSON.stringify so the model's tool_result
+        // stays byte-identical; read it via direct property access
+        Object.defineProperty(applyPayload, "editPlan", {
+          value: finalPlan,
+          enumerable: false,
+          configurable: true,
+        });
         return fail(
           `EditPlan was valid but could not be applied: ${message}. The timeline was left at its previous revision (${compensation.removed} partial artifact(s) removed).`,
           "EDIT_PLAN_APPLY_FAILED",
-          { compensation },
+          applyPayload,
         );
       }
 
