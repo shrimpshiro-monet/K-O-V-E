@@ -71,10 +71,33 @@ class BeatAlignment:
         return asdict(self)
 
 
+BEAT_TOLERANCE_SECONDS = 0.04
+
+
+def beat_times(path: str | Path) -> list[float]:
+    """Beat times from the Python engine's tracker (librosa), for comparison.
+
+    This is the tracker the *scorecard's* grid comes from; it is not the tracker
+    the product uses (`BeatDetectionEngine` is, and it is measured through the
+    bridge). Reporting both side by side is the point — they disagree, and the
+    disagreement is a finding rather than a detail.
+    """
+    from . import repo
+
+    repo.ensure_engine_importable()
+    repo.ensure_tools_on_path()
+    from kove_engine.beat_grid import extract_audio_track, track_beat_grid
+
+    samples = extract_audio_track(str(path))
+    if samples is None:
+        return []
+    return [float(beat) for beat in track_beat_grid(samples).beats]
+
+
 def beat_alignment(
     cuts: list[float],
     beats: tuple[float, ...] | list[float],
-    tolerance_s: float = 0.04,
+    tolerance_s: float = BEAT_TOLERANCE_SECONDS,
 ) -> BeatAlignment:
     """Fraction of cuts landing on a beat, plus the signed median offset.
 
@@ -791,7 +814,15 @@ class Loudness:
 
 
 def integrated_loudness(path: str | Path) -> Loudness:
-    """EBU R128 integrated loudness and true peak, via ffmpeg's ebur128."""
+    """EBU R128 integrated loudness and true peak, via ffmpeg's ebur128.
+
+    **Take the last match, not the first.** ebur128 emits a progress line every
+    100 ms and the line at t=0 reports `I: -70.0 LUFS` — its silence floor, because
+    no audio has been measured yet. `re.search` returned that, so every file in the
+    first baseline scored exactly -70.0 LUFS, reference and output alike, and the
+    silence floor looked like agreement. The authoritative numbers are in the
+    summary block at the very end, which is also the last occurrence.
+    """
     import re
 
     from .ffmpeg import run
@@ -800,8 +831,8 @@ def integrated_loudness(path: str | Path) -> Loudness:
     text = result.stderr
 
     def grab(pattern: str) -> float | None:
-        match = re.search(pattern, text)
-        return float(match.group(1)) if match else None
+        matches = re.findall(pattern, text)
+        return float(matches[-1]) if matches else None
 
     return Loudness(
         integrated_lufs=grab(r"I:\s*(-?\d+(?:\.\d+)?)\s*LUFS"),

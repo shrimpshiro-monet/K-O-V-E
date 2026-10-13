@@ -411,7 +411,7 @@ def sensitivity(work_dir: Path) -> list[SensitivityCheck]:
     checks: list[SensitivityCheck] = []
 
     def make(name: str, *, grade: Grade | None = None, moves=None, captions=None,
-             cut: float = 1.0, duck: float = 0.0) -> Path:
+             cut: float = 1.0, duck: float = 0.0, music_gain_db: float = 0.0) -> Path:
         clips = []
         cursor = 0.0
         for index in range(8):
@@ -444,7 +444,7 @@ def sensitivity(work_dir: Path) -> list[SensitivityCheck]:
             fps=25.0,
             size=(640, 360),
             music=str(track),
-            music_gain=0.8,
+            music_gain=0.8 * (10.0 ** (music_gain_db / 20.0)),
             voice=str(voice) if voice else "",
             voice_gain=0.5 if voice else 0.0,
             speech_windows=[(0.3, 1.2)] if duck else [],
@@ -573,18 +573,37 @@ def sensitivity(work_dir: Path) -> list[SensitivityCheck]:
         )
     )
 
-    # -- loudness: a gain change must move LUFS --------------------------- #
-    quiet = make("sens-quiet", grade=Grade(l_offset=8.0))
+    # -- loudness: 12 dB of gain must move LUFS by 12 LU -------------------- #
+    #
+    # The perturbation is applied to the DECODED AUDIO, not to the renderer, and
+    # that is the whole point. Two earlier versions of this check were useless:
+    # the first compared two renders whose audio was byte-identical and passed on
+    # `is not None` (it reported -70.0 for both, ebur128's silence floor, and
+    # called it agreement). The second applied -12 dB of music gain and measured
+    # 0.20 LU of movement, because the renderer loudness-normalises its mix and
+    # simply undid the change. That is correct behaviour for a product and a
+    # useless experiment for a metric: this asks only "does ebur128 read 12 dB as
+    # 12 LU", which is the property the scorecard depends on.
     loud_lufs = metrics.integrated_loudness(clean).integrated_lufs
-    quiet_lufs = metrics.integrated_loudness(quiet).integrated_lufs
+    from .media import decode_audio, write_wav
+
+    samples, rate = decode_audio(clean, sample_rate=48000)
+    quiet_path = work_dir / "sens-quiet.wav"
+    write_wav((samples * (10.0 ** (-12.0 / 20.0))).astype("float32"), rate, quiet_path)
+    quiet_lufs = metrics.integrated_loudness(quiet_path).integrated_lufs
+    delta = None if loud_lufs is None or quiet_lufs is None else abs(loud_lufs - quiet_lufs)
     checks.append(
         SensitivityCheck(
             metric="lufs",
-            perturbation="different fixture (control for measurement stability)",
+            perturbation="music bed gain -12 dB",
             perturbed_value=round(float(quiet_lufs or 0.0), 3),
             control_value=round(float(loud_lufs or 0.0), 3),
-            separates=loud_lufs is not None and quiet_lufs is not None,
-            detail="ebur128 must return a finite integrated value for both",
+            separates=bool(delta is not None and 10.0 <= delta <= 14.0),
+            detail=(
+                f"12 dB of gain must read as ~12 LU; got {delta:.2f} LU"
+                if delta is not None
+                else "ebur128 returned nothing"
+            ),
         )
     )
 

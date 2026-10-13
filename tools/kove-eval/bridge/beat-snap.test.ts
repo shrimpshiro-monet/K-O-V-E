@@ -15,6 +15,8 @@
  *   measure — measureTimelineBeatAlignment(plan, grid, subdivisionBeats) → number|null
  *   grid    — resolveTimelineBeatGrid(plan, segmentMap, options) → TimelineBeatGrid|null
  *   align   — cut times against a beat list, using the shipped tolerance
+ *   detect-beats — run the product's own BeatDetectionEngine over a wav and
+ *             report its beats, intervals and offset from known-true beats
  *
  * Run with:
  *   cd packages/creation-schema
@@ -35,7 +37,7 @@ import type { EditPlan } from "../../../packages/creation-schema/src/director/ed
 import type { SegmentMap } from "../../../packages/creation-schema/src/director/segment-map";
 
 interface Job {
-  readonly op: "snap" | "measure" | "grid" | "align" | "points";
+  readonly op: "snap" | "measure" | "grid" | "align" | "points" | "detect-beats";
   readonly plan?: EditPlan;
   readonly segmentMap?: SegmentMap;
   readonly options?: {
@@ -47,6 +49,10 @@ interface Job {
   readonly cuts?: readonly number[];
   /** `measure`/`points`: an explicit grid to judge against. */
   readonly grid?: TimelineBeatGrid | null;
+  /** `detect-beats`: a 16-bit mono PCM wav to analyse. */
+  readonly wav?: string;
+  /** `detect-beats`: the true beat times, to measure the detector against. */
+  readonly truthBeats?: readonly number[];
 }
 
 /** Nearest grid distance and signed offset, mirroring the shipped tolerance. */
@@ -86,11 +92,113 @@ function judgeCuts(cuts: readonly number[], points: readonly number[]) {
   };
 }
 
+/**
+ * Read a 16-bit mono PCM wav into the Float32Array the detector expects.
+ *
+ * Chunks are walked rather than assumed at offset 44 — ffmpeg writes a LIST chunk
+ * for some encoders, and a blind 44-byte skip then decodes metadata as audio.
+ */
+function readWavMono(path: string): { samples: Float32Array; sampleRate: number } {
+  const buffer = readFileSync(path);
+  let offset = 12;
+  let sampleRate = 0;
+  let data: Buffer | null = null;
+  while (offset + 8 <= buffer.length) {
+    const id = buffer.toString("ascii", offset, offset + 4);
+    const size = buffer.readUInt32LE(offset + 4);
+    const body = offset + 8;
+    if (id === "fmt ") {
+      sampleRate = buffer.readUInt32LE(body + 4);
+      const channels = buffer.readUInt16LE(body + 2);
+      if (channels !== 1) throw new Error(`expected mono, got ${channels} channels`);
+    } else if (id === "data") {
+      data = buffer.subarray(body, Math.min(body + size, buffer.length));
+    }
+    offset = body + size + (size % 2);
+  }
+  if (!data) throw new Error(`no data chunk in ${path}`);
+  const count = Math.floor(data.length / 2);
+  const samples = new Float32Array(count);
+  for (let i = 0; i < count; i++) samples[i] = data.readInt16LE(i * 2) / 32768;
+  return { samples, sampleRate };
+}
+
+/**
+ * Run the PRODUCT's beat detector over a known-pulse track.
+ *
+ * The scorecard can measure the Python engine's tracker, but that is not the
+ * tracker the product uses. `BeatDetectionEngine` is, and until this op existed
+ * nobody had measured its phase error against a pulse that is known exactly. The
+ * engine wants an `AudioBuffer`; a channel array plus a sample rate is all the
+ * analysis path actually reads, so that is what it gets.
+ */
+async function detectBeats(wavPath: string, truthBeats: readonly number[]) {
+  const { samples, sampleRate } = readWavMono(wavPath);
+  const { BeatDetectionEngine } = await import(
+    "../../../packages/core/src/audio/beat-detection-engine"
+  );
+  const engine = new BeatDetectionEngine();
+  const fakeBuffer = {
+    getChannelData: () => samples,
+    sampleRate,
+    duration: samples.length / sampleRate,
+    length: samples.length,
+    numberOfChannels: 1,
+  } as unknown as AudioBuffer;
+  const result = await engine.analyzeAudioBuffer(fakeBuffer);
+
+  const detected = result.beats.map((beat) => beat.time);
+  const gaps: number[] = [];
+  for (let i = 1; i < detected.length; i++) gaps.push(detected[i]! - detected[i - 1]!);
+  const meanGap = gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0;
+  const sortedGaps = [...gaps].sort((a, b) => a - b);
+  const medianGap = sortedGaps.length ? sortedGaps[Math.floor(sortedGaps.length / 2)]! : 0;
+
+  // Phase: the distance from each detected beat to the nearest true beat. A
+  // correct tempo with a wrong phase shows up here and nowhere else.
+  let nearest: number[] = [];
+  if (truthBeats.length > 0) {
+    nearest = detected.map((time) => {
+      let best = Number.POSITIVE_INFINITY;
+      for (const truth of truthBeats) {
+        const distance = Math.abs(truth - time);
+        if (distance < best) best = distance;
+      }
+      return time - truthBeats.reduce((closest, truth) =>
+        Math.abs(truth - time) < Math.abs(closest - time) ? truth : closest,
+      truthBeats[0]!);
+    });
+  }
+  const sortedOffsets = [...nearest].sort((a, b) => a - b);
+  const medianOffset = sortedOffsets.length
+    ? sortedOffsets[Math.floor(sortedOffsets.length / 2)]!
+    : null;
+  const onTrueBeat = nearest.filter((o) => Math.abs(o) <= BEAT_TOLERANCE_SECONDS).length;
+
+  return {
+    detectedBpm: result.bpm,
+    confidence: result.confidence,
+    beatCount: detected.length,
+    meanIntervalSeconds: meanGap,
+    medianIntervalSeconds: medianGap,
+    bpmFromMeanInterval: meanGap > 0 ? 60 / meanGap : null,
+    bpmFromMedianInterval: medianGap > 0 ? 60 / medianGap : null,
+    firstBeats: detected.slice(0, 6),
+    truthBeatCount: truthBeats.length,
+    medianOffsetToTruthSeconds: medianOffset,
+    meanAbsOffsetToTruthSeconds: nearest.length
+      ? nearest.reduce((sum, o) => sum + Math.abs(o), 0) / nearest.length
+      : null,
+    onTrueBeatRatio: nearest.length ? onTrueBeat / nearest.length : null,
+    downbeats: result.downbeats.slice(0, 4),
+  };
+}
+
 describe("craft bridge", () => {
   const jobPath = process.env.KOVE_CRAFT_JOB;
   const outPath = process.env.KOVE_CRAFT_OUT;
 
-  it.runIf(Boolean(jobPath))("runs the requested operation", () => {
+  it.runIf(Boolean(jobPath))("runs the requested operation", async () => {
     expect(outPath, "KOVE_CRAFT_OUT must be set alongside KOVE_CRAFT_JOB").toBeTruthy();
     const job = JSON.parse(readFileSync(jobPath!, "utf8")) as Job;
     const options = job.options ?? {};
@@ -140,6 +248,10 @@ describe("craft bridge", () => {
         const grid = job.grid ?? null;
         const points = grid ? beatGridPoints(grid, options.subdivisionBeats ?? 1) : [];
         payload = judgeCuts(job.cuts ?? [], points);
+        break;
+      }
+      case "detect-beats": {
+        payload = await detectBeats(job.wav!, job.truthBeats ?? []);
         break;
       }
       default:

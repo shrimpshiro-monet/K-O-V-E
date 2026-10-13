@@ -186,12 +186,29 @@ def cmd_compare(args: argparse.Namespace) -> int:
     if not baseline_path.exists():
         print(f"no baseline at {baseline_path}", file=sys.stderr)
         return 2
-    current_path = (
-        Path(args.run) if args.run else _runs_root() / args.run_id / "scorecard.json"
-    )
+    if args.run:
+        current_path = Path(args.run)
+    elif args.run_id == "latest":
+        # "latest" means the most recently modified run that actually has a
+        # scorecard, rather than a literal `runs/latest` directory nobody creates.
+        candidates = sorted(
+            (
+                path
+                for path in _runs_root().glob("*/scorecard.json")
+                if path.parent.name != "baseline"
+            ),
+            key=lambda path: path.stat().st_mtime,
+        )
+        if not candidates:
+            print(f"no scored runs under {_runs_root()}", file=sys.stderr)
+            return 2
+        current_path = candidates[-1]
+    else:
+        current_path = _runs_root() / args.run_id / "scorecard.json"
     if not current_path.exists():
         print(f"no scorecard at {current_path}", file=sys.stderr)
         return 2
+    print(f"current run: {current_path.parent.name}")
 
     baseline = json.loads(baseline_path.read_text())
     current = json.loads(current_path.read_text())
@@ -324,6 +341,106 @@ def cmd_refstills(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_beats(args: argparse.Namespace) -> int:
+    """Measure the PRODUCT's beat detector against tracks with a known pulse.
+
+    `beat-snap.ts` snaps to whatever grid the analysis supplies, so the tracker's
+    accuracy is a first-order property of the edit — not a detail. This runs
+    `BeatDetectionEngine`, the class the product actually uses, over the golden
+    tracks through the bridge, and reports tempo, phase error and the fraction of
+    beats landing on the constructed kick.
+
+    The Python engine's librosa tracker is measured alongside it, because the
+    scorecard's own grid comes from there: the two disagreeing is itself a finding.
+    """
+    import wave
+    from pathlib import Path
+
+    from . import bridge, metrics
+
+    tracks = Path(args.root) / "tracks"
+    if not tracks.is_dir():
+        print(f"no tracks at {tracks}; run `kove-eval build` first")
+        return 1
+
+    rows: list[tuple[str, ...]] = []
+    failures = 0
+    specs = args.track or sorted(
+        (path.stem, _bpm_from_name(path.stem)) for path in tracks.glob("*.wav")
+    )
+    for name, bpm in specs:
+        path = tracks / f"{name}.wav"
+        if not path.exists() or bpm is None:
+            continue
+        with wave.open(str(path)) as handle:
+            duration = handle.getnframes() / handle.getframerate()
+        period = 60.0 / bpm
+        truth = [round(index * period, 6) for index in range(int(duration / period))]
+
+        product = bridge.call(
+            {"op": "detect-beats", "wav": str(path.resolve()), "truthBeats": truth}
+        )
+        python_beats = metrics.beat_times(str(path))
+        python_offset = None
+        python_on_beat = None
+        if python_beats:
+            offsets = [
+                time - min(truth, key=lambda candidate: abs(candidate - time))
+                for time in python_beats
+            ]
+            python_offset = sorted(offsets)[len(offsets) // 2] * 1000.0
+            python_on_beat = sum(
+                1 for offset in offsets if abs(offset) <= metrics.BEAT_TOLERANCE_SECONDS
+            ) / len(offsets)
+
+        detected_bpm = float(product["detectedBpm"])
+        octave = detected_bpm / bpm
+        off_octave = not (0.75 <= octave <= 1.33)
+        if off_octave or (product["onTrueBeatRatio"] or 0) < 0.5:
+            failures += 1
+        rows.append(
+            (
+                name,
+                f"{bpm:.1f}",
+                f"{detected_bpm:.1f}",
+                f"x{octave:.2f}" + (" OFF" if off_octave else ""),
+                f"{(product['medianOffsetToTruthSeconds'] or 0) * 1000:+.1f}",
+                f"{(product['onTrueBeatRatio'] or 0):.3f}",
+                f"{product['confidence']:.3f}",
+                "-" if python_offset is None else f"{python_offset:+.0f}",
+                "-" if python_on_beat is None else f"{python_on_beat:.3f}",
+            )
+        )
+
+    print("product detector = BeatDetectionEngine (what the product uses)")
+    print("python detector  = kove_engine.beat_grid (what the scorecard's grid comes from)")
+    print()
+    _print_beats_table(rows)
+    if failures:
+        print(f"\n{failures} track(s) mis-detected: octave error or <50% of beats on the kick")
+    return 1 if failures else 0
+
+
+def _bpm_from_name(stem: str) -> float | None:
+    tail = stem.rsplit("-", 1)[-1]
+    try:
+        return float(tail)
+    except ValueError:
+        return None
+
+
+def _print_beats_table(rows: list[tuple[str, ...]]) -> None:
+    header = (
+        "track", "true", "product", "ratio", "prod off(ms)",
+        "prod on-beat", "conf", "py off(ms)", "py on-beat",
+    )
+    widths = [max(len(header[i]), *(len(row[i]) for row in rows)) for i in range(len(header))]
+    print("  ".join(h.ljust(widths[i]) for i, h in enumerate(header)))
+    print("  ".join("-" * width for width in widths))
+    for row in rows:
+        print("  ".join(cell.ljust(widths[i]) for i, cell in enumerate(row)))
+
+
 def cmd_doctor(_args: argparse.Namespace) -> int:
     from .ffmpeg import FfmpegUnavailableError, ffmpeg_path
 
@@ -389,6 +506,19 @@ def main(argv: list[str] | None = None) -> int:
         "--compare", default=None, help="grid image or folder to compare against"
     )
     stills.set_defaults(func=cmd_refstills)
+
+    beats = sub.add_parser(
+        "beats", help="measure the product's beat detector against known-pulse tracks"
+    )
+    beats.add_argument("--root", default=str(DEFAULT_EVAL_ROOT))
+    beats.add_argument(
+        "--track",
+        nargs=2,
+        action="append",
+        metavar=("NAME", "BPM"),
+        help="measure a specific track (repeatable); default: every golden track",
+    )
+    beats.set_defaults(func=cmd_beats)
 
     doctor = sub.add_parser("doctor", help="check the environment")
     doctor.set_defaults(func=cmd_doctor)

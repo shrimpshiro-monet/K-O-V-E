@@ -208,12 +208,16 @@ def split_grid(image: np.ndarray, max_tiles: int = 60) -> tuple[list[np.ndarray]
     height, width = gray.shape
 
     def gutters(axis: int) -> list[int]:
-        # A gutter is a line whose variance along its length is tiny *and* whose
-        # level is uniform — content rarely satisfies both.
-        profile = gray.std(axis=axis)
-        level = gray.mean(axis=axis)
-        flat = (profile < 3.0) & (np.abs(level - np.median(level)) < 12.0)
-        return np.flatnonzero(flat).tolist()
+        """Lines that are flat along their whole length — the signature of a gutter.
+
+        Flatness alone, deliberately. An earlier version also required the line's
+        *level* to sit near the sheet's median level, which rejected every dark
+        gutter between bright tiles: a black separator has a level of 0 against a
+        content median of 130, so the one case gutters are most obviously for was
+        the one case it refused. Content lines are almost never flat over their
+        whole length, so flatness carries the decision on its own.
+        """
+        return np.flatnonzero(gray.std(axis=axis) < 3.0).tolist()
 
     def segments(blocked: list[int], extent: int) -> list[tuple[int, int]]:
         blocked_set = set(blocked)
@@ -268,43 +272,82 @@ def _seam_energy(gray: np.ndarray, axis: int) -> np.ndarray:
     return np.abs(np.diff(gray, axis=axis)).mean(axis=1 - axis)
 
 
-def _lattice_score(energy: np.ndarray, extent: int, tiles: int) -> tuple[float, list[int]]:
-    """How completely a `tiles`-way split is explained by strong seams.
+SEAM_RATIO_THRESHOLD = 1.4
+"""A real seam is a *discontinuity*; a line inside a frame is not.
 
-    Scored as the fraction of the expected internal seams that actually show a
-    local peak, which is what separates the true tile size from its submultiples:
-    at half the true size every real seam still aligns, so a count-based score
-    prefers the wrong answer, but only half of the *expected* seams exist there.
+The value was placed by measuring both distributions over generated grids and
+single frames:
+
+    genuine grid axis : weakest true seam 1.59, p10 1.66, median 17.62
+    single frame      : median 1.02, p90 1.11, **maximum 1.22**
+
+1.4 sits in that gap — 0.18 clear of the worst false positive, 0.19 below the
+weakest true seam.
+"""
+
+MIN_TILE_PIXELS = 64
+"""Below this a "tile" is a fragment, not a frame.
+
+The floor also closes a real hole: on a 120px image a three-way split puts its
+boundaries on the edges of whatever large shape happens to be there, and both
+score as seams (min ratio 1.70, above the threshold) on what is plainly one frame.
+"""
+
+
+def _boundary_ratio(gray: np.ndarray, axis: int, extent: int, tiles: int) -> float:
+    """The *weakest* expected seam, as a ratio to a typical line of the image.
+
+    `min(boundary energy) / median(all line energy)`. The minimum, not the mean or
+    the median — both were tried and both fail in the same direction:
+
+    * Seam strength is genuinely uneven. Two neighbouring frames that happen to be
+      similarly bright differ little where they meet, so a real seam can score
+      barely above an ordinary line while the next scores fifty times it.
+    * The *median* therefore overlaps with the false-positive distribution. On a
+      4-tile grid only two of three seams were strong (1.56, 1.67, 17.6 — median
+      1.67), while a single frame split three ways scored 1.70 by landing one
+      boundary on a shape edge. Median 1.67 against a false positive of 1.70 is no
+      margin at all.
+    * The *minimum* does not overlap: a false positive needs **every** boundary to
+      land on real structure, which happens only at the true tiling.
+
+    Taking the minimum is also the conservative direction. Failing to split returns
+    the sheet whole — one frame of visibly wrong aspect, which the caller can see.
+    Splitting a single frame invents tiles that never existed and corrupts colour,
+    bands, layout and pacing quietly.
     """
     if tiles < 2:
-        return 0.0, []
-    boundaries = [int(round(extent * k / tiles)) for k in range(1, tiles)]
-    window = max(2, int(extent * 0.01))
-    threshold = float(np.percentile(energy, 80))
-    found = []
-    for boundary in boundaries:
-        low = max(0, boundary - window)
-        high = min(energy.size, boundary + window + 1)
-        if high <= low:
-            continue
-        local = energy[low:high]
-        if float(local.max()) >= threshold:
-            found.append(boundary)
-    return len(found) / len(boundaries), found
+        return 0.0
+    energy = _seam_energy(gray, axis)
+    # `_seam_energy` is a diff, so entry `j` is the step from line `j` to line
+    # `j+1`. The seam between tile k-1 and tile k therefore sits at
+    # `k*extent/tiles - 1`. Sampling at `k*extent/tiles` instead reads the first
+    # step *inside* the next tile — an ordinary line — and every ratio collapses to
+    # ~1, so no grid ever splits. That off-by-one cost real time.
+    boundaries = [int(round(extent * k / tiles)) - 1 for k in range(1, tiles)]
+    median = float(np.median(energy))
+    if median <= 0.0:
+        return 0.0
+    values = [float(energy[min(max(index, 0), energy.size - 1)]) for index in boundaries]
+    return min(values) / median
 
 
 def _best_split(gray: np.ndarray, axis: int, extent: int, max_tiles: int = 12) -> int:
-    """Number of tiles along `axis`, or 1 when no split is convincing."""
-    energy = _seam_energy(gray, axis)
-    best_score, best_tiles = 0.0, 1
+    """Number of tiles along `axis`, or 1 when no split is convincing.
+
+    Prefers the **finest** split that passes. A grid finer than the true one puts
+    its boundaries *inside* tiles, where the ratio collapses to ~1, so
+    over-splitting is self-rejecting — which is what makes "finest" safe here. The
+    coarser direction is not self-rejecting: a third of a six-tile strip can land
+    on two genuine seams by luck and look like a valid, simpler grid.
+    """
+    best = 1
     for tiles in range(2, max_tiles + 1):
-        score, _found = _lattice_score(energy, extent, tiles)
-        # Require the split to be nearly fully explained, then prefer the
-        # coarsest split that qualifies — a finer one also aligns with a real grid
-        # by chance.
-        if score >= 0.75 and score > best_score + 1e-9:
-            best_score, best_tiles = score, tiles
-    return best_tiles if best_score >= 0.75 else 1
+        if extent / tiles < MIN_TILE_PIXELS:
+            break
+        if _boundary_ratio(gray, axis, extent, tiles) >= SEAM_RATIO_THRESHOLD:
+            best = tiles
+    return best
 
 
 def _split_by_period(

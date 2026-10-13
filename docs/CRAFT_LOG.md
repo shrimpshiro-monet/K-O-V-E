@@ -273,6 +273,233 @@ confirmed by observation rather than assumed. V3 and V4 are new: they are *plann
 problems (which footage, how it is framed), not effect problems, and neither has a
 metric yet. Recorded so they are not lost.
 
+### F10 — every loudness number was ebur128's silence floor (and the check that "proved" it worked could not fail)
+
+ffmpeg's `ebur128` filter emits a progress line every 100 ms, and the line at
+`t: 0` reports `I: -70.0 LUFS` — its floor, because no audio has been measured yet.
+`re.search` takes the **first** match, so every file scored exactly −70.0:
+
+```
+lufs   ref -70.0000   out -70.0000   distance 0.0000
+```
+
+Reference and output "agreed" perfectly, on the floor value, for all five
+references. The real measurement is at the end of the output, in the summary block:
+
+```
+I: -16.2 LUFS        LRA: 0.0 LU        Peak: -0.1 dBFS
+```
+
+**Fixed:** take the *last* match. Output and reference now differ meaningfully
+(pulse-fast: reference −16.2 LUFS / −0.1 dBFS, output −16.7 / −0.5).
+
+**And the check that was supposed to catch this could not fail.** It rendered a
+"quiet" fixture that varied only a *colour grade* — the audio was byte-identical —
+then asserted `loud_lufs is not None and quiet_lufs is not None`. Two identical
+inputs passed. It is now a real perturbation: −12 dB on the music bed, with the
+response required to land in 8–16 LU, because a check that cannot fail is not
+evidence.
+
+### F11 — the beat detector's `bpm` disagrees with its own beats by 3%, and the grid's phase is ~200 ms off
+
+Two separate defects, both found by measuring the tracker against a track whose
+pulse is known exactly.
+
+**The track.** `synth_track` puts a kick at exact multiples of `60/bpm` from 0.000
+(`pulse-140`: period 0.428571 s), plus a hi-hat at the half-beat.
+
+**Defect 1 — `bpm` is not derived from `beats`.** For that track the tracker
+returns 62 beats spanning 0.672 → 26.816 s. Mean interval **0.428590 s =
+139.994 BPM** against a constructed 140.000 — the *positions are right*. But
+`BeatGrid.bpm` reports **144.231**, because it comes from librosa's independent
+tempo estimate rather than from the beats it returns. The interval histogram
+explains the gap: intervals alternate 0.416 / 0.448 s around the true 0.4286,
+quantised to the analysis hop (512/22050 ≈ 23.2 ms); the *median* is 0.416 and
+the *mean* is 0.4286. Anything that reads `bpm` — or takes the median interval —
+inherits a 3% tempo error, i.e. a grid that drifts ~0.75 s over a 24 s edit.
+
+**Defect 2 — the phase is wrong.** Against the same track:
+
+| Grid | Offset from the true kicks |
+| --- | --- |
+| Tracked beat positions | ~243 ms |
+| Mean-fit lattice through those beats | ~243 ms |
+
+Both the tracked positions and a lattice fitted through them sit about a quarter
+of a second off the actual kicks, so it is a phase error, not drift. On a
+synthetic click track with a perfectly regular pulse that is the worst case to be
+wrong in: real music will not be better.
+
+**Consequence for the baseline, and why the metric is right to report it.**
+`on_beat_ratio_40ms` reads **0.0000 for the reference** and **0.5556 for the
+output** on `pulse-fast`. That looks backwards until you read it correctly: the
+output is snapped to *the product's grid*, so it agrees with the product's grid by
+construction; the reference is cut on the *true* beat. The scorecard is telling the
+truth — the product's grid is about 200 ms away from the music, and the output is
+faithfully locked to the wrong grid. `median_cut_offset_ms` shows it plainly:
+
+```
+median_cut_offset_ms   ref 196.0   out -8.0   distance 204.0
+```
+
+**This is step 1's work and it is now the single biggest measured craft defect.**
+The metric is not changed to make the number look better; it is defined as
+"agreement with the grid the product actually snaps to", which is the thing that
+has to become correct.
+
+**Which tracker matters.** The product does not use the Python tracker: it has its
+own detector in `packages/core/src/audio/beat-detection-engine.ts`, which fits a
+phase over one beat period and walks a fixed lattice — a better design than
+median-interval snapping, and not yet measured. `beat-snap.ts:174` and
+`reference-beats.ts:71` both take the **median** interval from beat times, which is
+the biased estimator from defect 1. The next measurement is the product's own
+detector against these ground-truth tracks through the bridge, before any of it is
+rewritten.
+
+### F12 — the product's own beat detector is accurate, but locks to half tempo on a 140 BPM track
+
+`beat-snap.ts` takes its beats from the analysis, so "which tracker" is not a
+detail. The scorecard's numbers come from the Python engine's librosa tracker
+(F11: ~243 ms phase error). The product uses `BeatDetectionEngine`
+(`packages/core/src/audio/beat-detection-engine.ts`), which until now had never
+been measured against a pulse that is known exactly. The bridge grew a
+`detect-beats` op that runs the real class over a wav and reports its beats,
+intervals, and offset from constructed truth:
+
+| track | true BPM | detected BPM | median offset from the true kick | beats within 40 ms | confidence |
+| --- | --- | --- | --- | --- | --- |
+| `pulse-140` | 140.000 | **69.824** | −6.9 ms | 0.971 | **0.096** |
+| `driving-120` | 120.000 | 120.000 | −8.4 ms | 0.961 | 0.940 |
+| `warm-100` | 100.000 | 101.695 | −6.4 ms | 0.976 | 0.920 |
+
+**The good news is large and was not previously known:** phase error is under
+10 ms and ≥96% of beats land on the true kick. That is a genuinely good detector,
+and it means the 243 ms error in F11 is the *librosa* path, not the product's.
+
+**The defect:** on `pulse-140` it reports 69.8 BPM — half tempo — at confidence
+0.096. The 140 BPM period is 0.4286 s; at half tempo it is 0.857 s, so every
+second kick is treated as a beat. Cuts snapped to that grid still land *on* kicks
+(which is why `on-true-beat` stays 0.97) but at **half the density**, and the
+"fast beat-locked cutting" style is precisely the one that asks for a cut per
+beat. The engine's own comment already names the hazard — half/double tempo are
+equally correlated — and the confidence collapsing to 0.096 is the signal that a
+fallback should have fired.
+
+**This is step 1's work**, and it has an unusually clean shape: the phase is fine,
+the octave is not, and the confidence already knows.
+
+### Where the baseline stands, and what it is still missing
+
+The first baseline was recorded and then discarded: its loudness numbers were the
+silence floor (F10) and its LUFS check could not fail. The instrument was fixed
+before the baseline that counts, which is the correct order — a baseline measured
+by a broken instrument would have every later delta measured against a bug.
+
+What the scorecard now shows, reference versus output, across the five references:
+
+- **Colour is the largest single gap.** ΔE mean 21–35 on every reference — 20 to 35
+  times the threshold of noticing. The output has no grade at all.
+- **Motion events are almost entirely absent.** `motion_event_f1` 0.00–0.33 against
+  a reference of 1.00, with 13–39 events missing and 11–43 spurious.
+- **Ducking is absent**: reference 5.3–10.9 dB, output ≈ 0 dB (and slightly
+  negative twice, which is measurement noise around no ducking at all).
+- **Captions are wrong in count and timing**: up to 8 too many or 2 missing, start
+  errors 100–700 ms, end errors up to 2200 ms.
+- **Cut counts are off by 1–10** and shot lengths are consistently short
+  (e.g. 2.02 → 1.78 beats; 7.89 → 6.25), which is the half-tempo and grid-phase
+  problem showing up structurally.
+- **`shot_length_emd_beats` reads `output 0.0000` on all five.** A
+  reference-versus-output EMD of exactly zero for five different pairs is not
+  credible; it is a defect in how the row is populated, and it is on the list.
+
+Two sensitivity checks **fail**, and per the mission's rule that means no gate:
+`motion_events` (a 0.18 punch-in produces no additional event; the detector reports
+`['pull-out', 'punch-out', 'pull-out', 'punch-out']` — it is misreading shot
+boundaries as motion) and `motion_event_magnitude` (0.3337 for both a 0.06 and a
+0.30 punch). **The motion metric cannot currently separate good from bad, so step 3
+cannot start until the metric itself is fixed.** That is a finding, not a delay.
+
+### F13 — the renderer loudness-normalises, so the loudness gate has to be measured on the file
+
+The repaired LUFS check then failed, correctly: −12 dB of music gain produced
+0.20 LU of movement. The cause is not the metric — the renderer normalises its mix,
+and every output in the baseline reads **exactly −16.7 LUFS** while the references
+range −15.8 to −17.5. A gain change upstream is simply undone downstream.
+
+That is right for a product and wrong for an experiment about a metric. The check
+now applies its gain to the **decoded audio** instead of the renderer, which asks
+only the question the scorecard depends on — does ebur128 read 12 dB as 12 LU — and
+it answers **12.00 LU**. It separates.
+
+**A finding that falls out of it, for step 6:** because the renderer normalises,
+output loudness is already within ~0.9 LU of every reference without any per-project
+work. The loudness half of step 6 may already be satisfied; the ducking half
+definitely is not (reference 5.3–10.9 dB, output ≈ 0).
+
+### Second contact sheet (`cinematic-slow`) — looked at directly
+
+| # | Visible in the sheet | Measurement |
+| --- | --- | --- |
+| V6 | **The material is shuffled relative to the reference.** At 18.7 s and 20.9 s the reference shows canopy and the output shows the skyline; at 25.3 s it is the other way round. The two edits contain the same shots but not in the same order or at the same times. | no metric yet — needs a per-timestamp source-match score |
+| V7 | **Colour is washed out and hue-shifted, and not uniformly.** The reference's night skyline is deep navy with a near-black silhouette; the output's is mid-daylight blue. The reference's portrait backgrounds are mauve at 9.9–14.3 s and near-black at 16.5 s; the output's are pink-olive and olive. | `color_delta_e_mean` 26.0; visible per tile |
+| V8 | **The reference's darkest shot has no counterpart.** At 16.5 s the reference is a near-black vignette with the subject lit; the output is a flat olive frame at normal exposure. | would appear in a per-shot L-histogram comparison |
+| V9 | **The output cuts more often than the reference at this pacing** — 9 cuts to 7, and the sheet's later tiles drift out of phase with the reference's shots. | `shot_length_median_beats` 7.895 → 6.250 |
+| V10 | Contact-sheet header prints `ref ???` for rows whose ideal is zero (ΔE and friends). It is the `_error_row` convention showing through and reads as a missing value; the header should say `target 0` instead. | cosmetic, but it made the first read of this sheet slower than it needed to be |
+
+V6 is the most important thing on this sheet and it is currently **unmeasurable**,
+which puts it in the same class as V3 from the first sheet. Two contact sheets,
+two sightings of the same defect, no metric for it. That makes "which source is on
+screen at time t" a prerequisite for evaluating the planner at all, ahead of several
+items that already have metrics.
+
+### F14 — the tile splitter was silently wrong three ways, and the tests found all three
+
+`refstills` existed but had no tests, which is how a splitter that returned one
+whole sheet as "one frame of aspect 3.556" shipped. Writing the tests found three
+separate defects, each of which produced plausible output rather than an error:
+
+1. **An off-by-one on the seam index.** `_seam_energy` is a `diff`, so the seam
+   between tile k-1 and tile k is at `k*extent/tiles - 1`. Sampling at
+   `k*extent/tiles` reads the first step *inside* the next tile — an ordinary line.
+   Every ratio collapsed to ≈1.0, so **no grid ever split**, and the "no split
+   found" path returned the sheet whole with no complaint.
+2. **The wrong statistic.** With the index fixed, a count-based score and then a
+   *median* boundary ratio both failed. The median is not just weak here, it
+   genuinely overlaps: on a 4-tile grid only two of three seams were strong (1.56,
+   1.67, 17.6 → median 1.67), while a single frame split three ways scored **1.70**
+   by landing one boundary on a shape edge. 1.67 against a false positive of 1.70
+   is not a margin. The *minimum* boundary ratio does not overlap, because a false
+   positive would need every boundary to land on real structure.
+3. **Gutter detection rejected the case it exists for.** It required a flat line
+   *and* a level near the sheet's median level, so a black gutter between bright
+   tiles (level 0 against a content median of 130) was rejected. Flatness alone
+   carries the decision: content lines are almost never flat over their full length.
+
+The threshold was then **placed by measurement** rather than taste — both
+distributions over 8 generated layouts and single frames:
+
+| | weakest / worst | typical |
+| --- | --- | --- |
+| genuine grid axis | 1.59 | median 17.62 |
+| single frame | **max 1.22** | median 1.02 |
+
+`SEAM_RATIO_THRESHOLD = 1.4` sits in that gap, 0.18 clear of the worst false
+positive and 0.19 below the weakest true seam. A floor of 64px per tile closes the
+one remaining hole (a 120px image split three ways scored 1.70 on shape edges
+alone), since a 40-pixel "tile" is a fragment, not a frame.
+
+**Result: 48/48 generated grids split correctly, single frames stay whole, and 33
+tests pass.** Two limits are real and now pinned by tests rather than hidden: a
+seam thicker than ~0.4% of the frame is not seen as a seam, and adjacent frames
+that are near-identical genuinely cannot be separated by content. A folder of
+frames remains the reliable input; a grid image is best-effort and the profile says
+which was used.
+
+**The lesson is the same one F8 taught, one layer down:** the first version of this
+file had no test, because it looked like a utility rather than a measurement. It is
+a measurement, and its failures were silent and plausible in exactly the way a
+scorecard's must not be.
+
 ## Baseline
 
 _Recorded once the golden set finishes building. The rule for every later step is
