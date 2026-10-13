@@ -108,6 +108,27 @@ In a development build (`import.meta.env.DEV`) `eco` falls back to
 `http://localhost:8000/analyze-frames` so contributors can run the engine
 locally with no configuration.
 
+### Access control
+
+Two variables, both optional, both read per request:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `KOVE_ENGINE_TOKEN` | unset | When set, **every** caller must send `Authorization: Bearer <token>`, including loopback — a reverse proxy on the same host makes remote callers look local. |
+| `KOVE_MEDIA_ROOTS` | the working directory | Comma-separated directories `POST /analyze` may read video files from. |
+
+With no token set, only loopback clients are served; a request from any other
+address gets `503` naming the missing variable. That keeps a local `uvicorn` run
+frictionless without leaving a network-reachable engine, which has no
+authentication of its own, open to the network.
+
+`POST /analyze` resolves every requested path with `realpath` and refuses
+anything outside `KOVE_MEDIA_ROOTS`, that is not a regular file, or whose
+extension is not a known media type. It previously accepted any path the process
+could read. Errors name the reason and never echo the resolved path; a failed job
+returns a generic message plus its job id, with the detail written to the engine
+log instead of the HTTP response.
+
 Production builds have no such fallback. A deployed app cannot reach a
 visitor's `localhost`, so an unconfigured `eco` mode fails with an explicit
 `ANALYSIS_UNAVAILABLE` message rather than a confusing network error, and an
