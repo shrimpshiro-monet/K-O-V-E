@@ -11560,13 +11560,101 @@ function overlayRemoveTool(
 
 // ---- Tool list -------------------------------------------------------------
 // ---- Director constants and helpers (Monet AI Director) --------------------
-const VISION_WORKER_URL =
-  (typeof process !== "undefined" && process.env.KOVE_VISION_WORKER_URL) ||
-  (import.meta as any).env?.VITE_VISION_WORKER_URL;
+//
+// Frame analysis runs on a remote endpoint. Both backends speak the same wire
+// protocol (POST the frames, then either take the result inline or poll a job),
+// so the analysis mode only decides *which* URL is used:
+//
+//   eco — the Python engine (`/analyze-frames`). Free, but it needs a host.
+//   ai  — the Cloudflare frame-worker, which calls Workers AI. Costs credits.
+//
+// Never point a production build at localhost. That URL resolves to the
+// *visitor's* machine, not the deployer's, so it can only ever work during
+// local development; gating it behind `import.meta.env.DEV` keeps it working
+// for contributors while making its absence explicit everywhere else.
+const DEV_ECO_WORKER_URL = "http://localhost:8000/analyze-frames";
 
 let _analysisMode: "eco" | "ai" = "eco";
 export function setAnalysisMode(mode: "eco" | "ai") { _analysisMode = mode; }
 export function getAnalysisMode() { return _analysisMode; }
+
+/** Treats unset and whitespace-only configuration the same way. */
+function normalizedConfigValue(value: string | undefined): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function readEnvValue(key: string): string | undefined {
+  const fromProcess =
+    typeof process !== "undefined" ? process.env?.[key] : undefined;
+  const fromVite = (import.meta as any).env?.[key];
+  return normalizedConfigValue(fromProcess) ?? normalizedConfigValue(fromVite);
+}
+
+/**
+ * Where configuration is read from. Injected so the resolution rules can be
+ * tested without depending on how the bundle happened to be built.
+ */
+export interface AnalysisEnvironment {
+  /** True in dev builds, the only place a locally running engine is reachable. */
+  readonly isDev: boolean;
+  /** A configuration value for a key, unset or blank when absent. */
+  readonly read: (key: string) => string | undefined;
+}
+
+export function runtimeAnalysisEnvironment(): AnalysisEnvironment {
+  return {
+    isDev: (import.meta as any).env?.DEV === true,
+    read: readEnvValue,
+  };
+}
+
+/**
+ * The analysis endpoint for a mode, or null when none is configured.
+ *
+ * `eco` prefers an explicitly deployed engine and falls back to the local one
+ * only in dev builds; `ai` requires the frame-worker URL to be configured.
+ */
+export function resolveAnalysisEndpoint(
+  mode: "eco" | "ai",
+  environment: AnalysisEnvironment = runtimeAnalysisEnvironment(),
+): string | null {
+  if (mode === "ai") {
+    return (
+      normalizedConfigValue(environment.read("KOVE_VISION_WORKER_URL")) ??
+      normalizedConfigValue(environment.read("VITE_VISION_WORKER_URL")) ??
+      null
+    );
+  }
+
+  const configured =
+    normalizedConfigValue(environment.read("KOVE_ECO_WORKER_URL")) ??
+    normalizedConfigValue(environment.read("VITE_ECO_WORKER_URL"));
+  if (configured) return configured;
+
+  return environment.isDev ? DEV_ECO_WORKER_URL : null;
+}
+
+/** Whether the given analysis mode can reach a backend in this build. */
+export function isAnalysisAvailable(mode: "eco" | "ai" = _analysisMode): boolean {
+  return resolveAnalysisEndpoint(mode) !== null;
+}
+
+/** Actionable guidance for whoever configured the deployment. */
+function analysisUnavailableMessage(mode: "eco" | "ai"): string {
+  if (mode === "eco") {
+    return (
+      "Frame analysis is unavailable: this build has no eco analysis endpoint. " +
+      "The Python engine is not deployed, and a deployed app cannot reach a " +
+      "visitor's localhost. Set VITE_ECO_WORKER_URL to a reachable engine, or " +
+      "switch the composer to AI analysis to use the Cloudflare vision worker."
+    );
+  }
+  return (
+    "Frame analysis is unavailable: no vision worker is configured. Set " +
+    "VITE_VISION_WORKER_URL (or KOVE_VISION_WORKER_URL) to the deployed " +
+    "frame-worker URL, or switch the composer to Eco analysis."
+  );
+}
 
 const BASELINE_INTERVAL_SEC = 1 / 1.5; // matches DEFAULT_SAMPLE_CONFIG.baselineFps
 
@@ -33295,9 +33383,17 @@ const TOOLS: RegisteredTool[] = [
         videoMediaIds = videoMediaItems.map((m) => m.id);
       }
 
-      // Eco mode uses the local Python analyzer. Only AI mode requires the
-      // configured Cloudflare vision worker.
-      if (_analysisMode === "ai" && !VISION_WORKER_URL) {
+      const workerUrl = resolveAnalysisEndpoint(_analysisMode);
+
+      // Eco mode cannot degrade: without a running engine there is no analysis
+      // to report, and silently returning a one-segment guess would look like a
+      // passing analysis downstream. Fail with something actionable instead.
+      if (workerUrl === null && _analysisMode !== "ai") {
+        return fail(analysisUnavailableMessage(_analysisMode), "ANALYSIS_UNAVAILABLE");
+      }
+
+      // AI mode without a configured worker falls back to metadata-only segments.
+      if (workerUrl === null) {
         // Fallback: build a basic SegmentMap from video metadata (no vision analysis)
         const mediaMap = new Map(videoMediaItems.map((m) => [m.id, m]));
         const referenceMediaIds = new Set(
@@ -33385,10 +33481,18 @@ const TOOLS: RegisteredTool[] = [
         videoInputs.push({ videoId: id, duration, frames });
       }
 
-      const workerUrl = _analysisMode === "eco"
-        ? "http://localhost:8000/analyze-frames"
-        : VISION_WORKER_URL!;
-      const result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl });
+      let result: Awaited<ReturnType<typeof runFrameWorkerPipeline>>;
+      try {
+        result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl });
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        return fail(
+          `Frame analysis failed: the endpoint at ${workerUrl} could not be reached ` +
+          `(${detail}). Confirm the analysis engine is running and allows this ` +
+          `origin, then retry.`,
+          "ANALYSIS_UNREACHABLE",
+        );
+      }
       const sourceIds = new Set(sourceMediaIds);
       const sourceSegmentMap = {
         videos: result.segmentMap.videos.filter((video) => sourceIds.has(video.videoId)),

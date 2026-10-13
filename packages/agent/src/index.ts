@@ -15,7 +15,14 @@ export {
   toCapabilityDoc,
 } from "./registry";
 export type { RegisteredTool, ToolHandler } from "./registry";
-export { setAnalysisMode, getAnalysisMode } from "./registry";
+export {
+  setAnalysisMode,
+  getAnalysisMode,
+  resolveAnalysisEndpoint,
+  isAnalysisAvailable,
+  runtimeAnalysisEnvironment,
+} from "./registry";
+export type { AnalysisEnvironment } from "./registry";
 export { executeTool, isDestructive, isExpensive } from "./executor";
 export * from "./llm";
 export { runTurn } from "./loop";
