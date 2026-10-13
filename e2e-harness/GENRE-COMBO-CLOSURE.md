@@ -87,14 +87,40 @@ re-keying canonicalizer addresses. The pipeline needs no genre-combo fix.
 - Live-stub report: written by the spec to
   `$KOVE_EVAL_STUB_REPORT` (default `/home/user/kove-e2e-harness/eval-live-stub-report.json`).
 
-## Follow-on: real-media local corpora
+## Follow-on: real-media replication (DONE — same conclusion)
 
-The closure above was proven against the synthetic in-repo corpus. A natural,
-stronger replication is a real-media corpus (real durations, real music,
-vaguer briefs). Both live specs honor `KOVE_EVAL_ROOT=<dir>` pointing at any
-directory holding a `projects.json` + its media — see
-`evaluation-files/README.md`. The genre detection in the per-combo analysis is
-prompt-**type** based, so overlays free to name prompts differently
-(`pod-01-genre` style) still get their genre combos asserted explicitly.
-Such corpora stay local-only (copyright + size); `.gitignore` covers the
-overlay paths.
+The closure above was first proven against the synthetic in-repo corpus. The
+stronger replication — a **real-media corpus** (real footage durations,
+real music beds, vaguer briefs like "make the best clip possible", new
+genres like `podcast-clips`) — has now been executed against
+`KOVE_EVAL_LIVE_STUB=1 KOVE_EVAL_ROOT=<local real-media root>` (the corpus is
+local-only: copyrighted footage, gitignored per `evaluation-files/README.md`):
+
+| Gate | k=3 mean | stdev | per-run |
+|---|---|---|---|
+| plan_validates | **100.0%** | 0.0% | 100/100/100 |
+| materializes | **100.0%** | 0.0% | 100/100/100 |
+| no_clip_overlaps | **100.0%** | 0.0% | 100/100/100 |
+| all_three | **100.0%** | 0.0% | 100/100/100 |
+
+81/81 valid, stable pass **27/27**, mixed **0**, genre combos asserted **9/27**
+(prompt-**type** detection holding on `pod-01-genre`-style ids — exactly the
+case the id-suffix heuristic would have silently skipped). **H1 confirmed on
+both corpora**: the pipeline is sound; live failures are model output.
+
+Two operational footnotes from that run, both worth remembering when reading
+gate rates:
+
+1. **A dead stub looks like 100% model failure.** One k=3 run recorded
+   plan_validates 0% across the board — the cause was the llm-stub having
+   been killed mid-run (fetch failures → plan_edit TOOL_ERROR per case), not
+   a real regression. Always `curl` the stub's health endpoint first, and
+   treat a perfectly uniform 0% with TOOL_ERROR failures as infrastructure,
+   not signal.
+2. The stub's generic short plans throw expected `duration_fidelity`
+   warnings against briefs like "45-second Short" — informational (stub
+   minimalism), not a gate.
+
+Hints from the run that are NOT the pipeline: the run is fast (~16 s for
+81 case-runs on real media) and deterministic by construction, so mixed-k
+under a dead network is the only realistic confound.
