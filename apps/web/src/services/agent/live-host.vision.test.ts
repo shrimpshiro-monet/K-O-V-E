@@ -268,3 +268,197 @@ describe("LiveEditorHost vision bridge", () => {
     expect(useProjectStore.getState().project.masks ?? []).toHaveLength(0);
   });
 });
+
+/**
+ * Three mask keyframes: the subject moves between the first two and is still
+ * for the last, so a motion-aware edge has something to react to.
+ */
+const maskWithMatte = (): Mask => ({
+  id: "mask-existing",
+  clipId: CLIP_ID,
+  type: "drawn",
+  path: { closed: true, points: [{ x: 0.1, y: 0.1 }] },
+  feathering: 4,
+  inverted: false,
+  expansion: 0,
+  opacity: 1,
+  keyframes: [
+    {
+      id: "kf-1",
+      time: 1,
+      path: {
+        closed: true,
+        points: [
+          { x: 0.1, y: 0.1 },
+          { x: 0.4, y: 0.1 },
+          { x: 0.4, y: 0.4 },
+          { x: 0.1, y: 0.4 },
+        ],
+      },
+      easing: "linear",
+    },
+    {
+      id: "kf-2",
+      time: 2,
+      path: {
+        closed: true,
+        points: [
+          { x: 0.5, y: 0.1 },
+          { x: 0.8, y: 0.1 },
+          { x: 0.8, y: 0.4 },
+          { x: 0.5, y: 0.4 },
+        ],
+      },
+      easing: "linear",
+    },
+    {
+      id: "kf-3",
+      time: 3,
+      path: {
+        closed: true,
+        points: [
+          { x: 0.5, y: 0.1 },
+          { x: 0.8, y: 0.1 },
+          { x: 0.8, y: 0.4 },
+          { x: 0.5, y: 0.4 },
+        ],
+      },
+      easing: "linear",
+    },
+  ],
+});
+
+describe("LiveEditorHost refineMatteEdges", () => {
+  const maskEngine = new MaskEngine({ width: 1920, height: 1080 });
+  const originalGetMaskEngine = useEngineStore.getState().getMaskEngine;
+  const originalExecuteAction = useProjectStore.getState().executeAction;
+
+  beforeEach(() => {
+    maskEngine.clearAllMasks();
+    useEngineStore.setState({ getMaskEngine: async () => maskEngine });
+    useProjectStore.setState({
+      hasOpenProject: true,
+      project: { ...projectWithClip(), masks: [maskWithMatte()] },
+      executeAction: vi.fn(async (action) => {
+        if (action.type === "mask/setAll") {
+          useProjectStore.setState((state) => ({
+            project: { ...state.project, masks: action.params.masks as Mask[] },
+          }));
+        }
+        return { success: true, id: action.id };
+      }),
+    });
+  });
+
+  afterEach(() => {
+    useEngineStore.setState({ getMaskEngine: originalGetMaskEngine });
+    useProjectStore.setState({ hasOpenProject: false, executeAction: originalExecuteAction });
+  });
+
+  const refine = (args: Record<string, unknown>) =>
+    executeTool(
+      "refine_matte_edges",
+      { clipId: CLIP_ID, maskId: "mask-existing", edge: { featherPx: 4 }, ...args },
+      new LiveEditorHost(),
+    );
+
+  it("is advertised as an available capability", () => {
+    expect(new LiveEditorHost().features().refineMatteEdges).toBe(true);
+  });
+
+  it("writes a per-keyframe feather that follows the shapes it already has", async () => {
+    const result = await refine({});
+
+    expect(result.ok).toBe(true);
+    const mask = useProjectStore.getState().project.masks![0];
+    const feathers = mask.keyframes.map((keyframe) => keyframe.feathering);
+
+    // All three are numbers now (a flat edge would leave them undefined)...
+    expect(feathers.every((value) => typeof value === "number")).toBe(true);
+    // ...and the settled keyframe (3) is tighter than the moving ones.
+    expect(feathers[2]!).toBeLessThan(feathers[0]!);
+    expect(feathers[2]).toBeCloseTo(4, 5);
+  });
+
+  it("does not re-run segmentation to do it", async () => {
+    visionMock.analyzeSubjectMatte.mockClear();
+    await refine({});
+    expect(visionMock.analyzeSubjectMatte).not.toHaveBeenCalled();
+  });
+
+  it("honours motionSensitivity 0 as a uniform feather", async () => {
+    await refine({ edge: { featherPx: 7, motionSensitivity: 0 } });
+
+    const mask = useProjectStore.getState().project.masks![0];
+    expect(mask.keyframes.map((keyframe) => keyframe.feathering)).toEqual([7, 7, 7]);
+  });
+
+  it("carries expansion, invert and opacity onto the mask", async () => {
+    const result = await refine({
+      edge: { featherPx: 5, expansionPx: -3, invert: true, opacity: 0.6 },
+    });
+
+    expect(result.ok).toBe(true);
+    const mask = useProjectStore.getState().project.masks![0];
+    expect(mask.expansion).toBe(-3);
+    expect(mask.inverted).toBe(true);
+    expect(mask.opacity).toBeCloseTo(0.6, 5);
+    expect(mask.keyframes.every((keyframe) => keyframe.expansion === -3)).toBe(true);
+  });
+
+  it("refines only the requested range and leaves the rest alone", async () => {
+    await refine({ edge: { featherPx: 9, motionSensitivity: 0 }, endTime: 2 });
+
+    const mask = useProjectStore.getState().project.masks![0];
+    expect(mask.keyframes[0].feathering).toBe(9);
+    expect(mask.keyframes[1].feathering).toBe(9);
+    // Outside the range: untouched, so no override was written.
+    expect(mask.keyframes[2].feathering).toBeUndefined();
+    expect(mask.keyframes[2].id).toBe("kf-3");
+  });
+
+  it("commits the refinement as one undoable action", async () => {
+    await refine({});
+
+    const actions = (useProjectStore.getState().executeAction as ReturnType<typeof vi.fn>).mock
+      .calls;
+    expect(actions.filter(([action]) => action.type === "mask/setAll")).toHaveLength(1);
+  });
+
+  it("keeps the live MaskEngine in sync so the preview updates immediately", async () => {
+    await refine({ edge: { featherPx: 6, motionSensitivity: 0 } });
+
+    expect(maskEngine.getMask("mask-existing")?.keyframes[0]?.feathering).toBe(6);
+  });
+
+  it("reports unsupported_host for an unknown mask or clip", async () => {
+    const host = new LiveEditorHost();
+    const missingMask = await host.refineMatteEdges({
+      clipId: CLIP_ID,
+      maskId: "nope",
+      edge: { featherPx: 4 },
+    });
+    expect("code" in missingMask).toBe(true);
+
+    const missingClip = await host.refineMatteEdges({
+      clipId: "nope",
+      maskId: "mask-existing",
+      edge: { featherPx: 4 },
+    });
+    expect("code" in missingClip).toBe(true);
+  });
+
+  it("reports unsupported_host when the range holds no keyframes", async () => {
+    const host = new LiveEditorHost();
+    const result = await host.refineMatteEdges({
+      clipId: CLIP_ID,
+      maskId: "mask-existing",
+      edge: { featherPx: 4 },
+      startTime: 50,
+      endTime: 60,
+    });
+
+    expect("code" in result).toBe(true);
+    if ("code" in result) expect(result.error).toContain("no keyframes");
+  });
+});

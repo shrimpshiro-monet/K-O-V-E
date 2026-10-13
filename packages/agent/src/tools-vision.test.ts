@@ -11,6 +11,9 @@ import type {
   AutoReframeRequest,
   FaceAnalysisResult,
   HostFeatures,
+  MatteEdgeResult,
+  RefineMatteEdgesRequest,
+  RefineMatteEdgesResult,
   SubjectMatteRequest,
   SubjectMatteResult,
   VisionSamplingRequest,
@@ -86,6 +89,19 @@ const REFRAME_RESULT: AutoReframeHostResult = {
   warnings: [],
 };
 
+const EDGE_RESULT: MatteEdgeResult = {
+  motion: [1, 0.5, 0],
+  minFeatherPx: 4,
+  maxFeatherPx: 11.2,
+};
+
+const REFINE_RESULT: RefineMatteEdgesResult = {
+  maskId: "mask-1",
+  keyframeCount: 3,
+  edge: EDGE_RESULT,
+  warnings: [],
+};
+
 const APPLY_RESULT: ApplySubjectMatteResult = {
   maskId: "mask-1",
   keyframeCount: 12,
@@ -101,7 +117,8 @@ class FakeVisionHost extends HeadlessHost {
     matte: SubjectMatteRequest[];
     apply: ApplySubjectMatteRequest[];
     reframe: AutoReframeRequest[];
-  } = { faces: [], matte: [], apply: [], reframe: [] };
+    refine: RefineMatteEdgesRequest[];
+  } = { faces: [], matte: [], apply: [], reframe: [], refine: [] };
 
   constructor(
     project: Project = projectWithMedia(),
@@ -110,6 +127,7 @@ class FakeVisionHost extends HeadlessHost {
       matte?: SubjectMatteResult | { code: "unsupported_host"; error: string };
       apply?: ApplySubjectMatteResult | { code: "unsupported_host"; error: string };
       reframe?: AutoReframeHostResult | { code: "unsupported_host"; error: string };
+      refine?: RefineMatteEdgesResult | { code: "unsupported_host"; error: string };
     } = {},
   ) {
     super(project);
@@ -122,6 +140,7 @@ class FakeVisionHost extends HeadlessHost {
       analyzeSubjectMatte: true,
       applySubjectMatte: true,
       autoReframe: true,
+      refineMatteEdges: true,
     };
   }
 
@@ -143,6 +162,11 @@ class FakeVisionHost extends HeadlessHost {
   async autoReframe(request: AutoReframeRequest) {
     this.requests.reframe.push(request);
     return this.overrides.reframe ?? REFRAME_RESULT;
+  }
+
+  async refineMatteEdges(request: RefineMatteEdgesRequest) {
+    this.requests.refine.push(request);
+    return this.overrides.refine ?? REFINE_RESULT;
   }
 }
 
@@ -498,5 +522,208 @@ describe("auto_reframe_clip", () => {
     expect(result.ok).toBe(true);
     expect(result.summary).toContain("subject detector");
     expect(result.warnings).toContain("face model unavailable");
+  });
+});
+
+describe("refine_matte_edges", () => {
+  it("is registered as a strict, destructive ai tool", () => {
+    const tool = getTool("refine_matte_edges")!;
+
+    expect(tool).toBeTruthy();
+    expect(tool.strict).toBe(true);
+    expect(tool.readOnly).toBe(false);
+    expect(tool.destructive).toBe(true);
+    expect(tool.domain).toBe("ai");
+    expect(tool.inputSchema.additionalProperties).toBe(false);
+    expect(tool.inputSchema.required as string[]).toEqual(["clipId", "maskId", "edge"]);
+  });
+
+  it("passes the edge knobs straight through to the host", async () => {
+    const host = new FakeVisionHost();
+    const result = await executeTool(
+      "refine_matte_edges",
+      {
+        clipId: "c1",
+        maskId: "mask-1",
+        edge: { featherPx: 4, expansionPx: -2, motionSensitivity: 0.8, maxFeatherPx: 18 },
+      },
+      host,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.requests.refine).toHaveLength(1);
+    expect(host.requests.refine[0].edge).toEqual({
+      featherPx: 4,
+      expansionPx: -2,
+      motionSensitivity: 0.8,
+      maxFeatherPx: 18,
+    });
+  });
+
+  it("reports the feather range it wrote, not a generic confirmation", async () => {
+    const host = new FakeVisionHost();
+    const result = await executeTool(
+      "refine_matte_edges",
+      { clipId: "c1", maskId: "mask-1", edge: { featherPx: 4 } },
+      host,
+    );
+
+    expect(result.ok).toBe(true);
+    // Feathers are rounded for display, so 4 is shown as "4", not "4.0".
+    expect(result.summary).toContain("4–11.2px");
+    expect(result.summary).toContain("keyframed with the subject's motion");
+    expect(result.summary).toContain("peak 100%");
+    expect((result.data as { motion: number[] }).motion).toEqual([1, 0.5, 0]);
+  });
+
+  it("says so plainly when the feather is uniform", async () => {
+    const host = new FakeVisionHost(projectWithMedia(), {
+      refine: {
+        ...REFINE_RESULT,
+        edge: { motion: [0, 0, 0], minFeatherPx: 6, maxFeatherPx: 6 },
+      },
+    });
+    const result = await executeTool(
+      "refine_matte_edges",
+      { clipId: "c1", maskId: "mask-1", edge: { featherPx: 6, motionSensitivity: 0 } },
+      host,
+    );
+
+    expect(result.summary).toContain("uniform");
+    expect(result.summary).not.toContain("keyframed");
+  });
+
+  it("requires edge.featherPx rather than guessing a value", async () => {
+    const host = new FakeVisionHost();
+    const result = await executeTool(
+      "refine_matte_edges",
+      { clipId: "c1", maskId: "mask-1", edge: { motionSensitivity: 0.5 } },
+      host,
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_PARAMS");
+    expect(host.requests.refine).toHaveLength(0);
+  });
+
+  it("rejects an inverted time range", async () => {
+    const host = new FakeVisionHost();
+    const result = await executeTool(
+      "refine_matte_edges",
+      {
+        clipId: "c1",
+        maskId: "mask-1",
+        edge: { featherPx: 4 },
+        startTime: 5,
+        endTime: 2,
+      },
+      host,
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_PARAMS");
+    expect(result.error?.message).toContain("endTime");
+    expect(host.requests.refine).toHaveLength(0);
+  });
+
+  it("forwards a partial range so only part of a shot is refined", async () => {
+    const host = new FakeVisionHost();
+    await executeTool(
+      "refine_matte_edges",
+      { clipId: "c1", maskId: "mask-1", edge: { featherPx: 4 }, startTime: 1, endTime: 3 },
+      host,
+    );
+
+    expect(host.requests.refine[0].startTime).toBe(1);
+    expect(host.requests.refine[0].endTime).toBe(3);
+  });
+
+  it("fails loudly with a NOT_FOUND fix when the mask has no keyframes there", async () => {
+    const host = new FakeVisionHost(projectWithMedia(), {
+      refine: { ...REFINE_RESULT, keyframeCount: 0 },
+    });
+    const result = await executeTool(
+      "refine_matte_edges",
+      { clipId: "c1", maskId: "mask-1", edge: { featherPx: 4 } },
+      host,
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("NOT_FOUND");
+    expect(result.error?.suggestedFix).toContain("apply_subject_matte");
+  });
+
+  it("reports UNSUPPORTED_HOST without retrying when the host cannot refine", async () => {
+    const host = new FakeVisionHost();
+    vi.spyOn(host, "features").mockReturnValue({
+      ...host.features(),
+      refineMatteEdges: false,
+    });
+    const result = await executeTool(
+      "refine_matte_edges",
+      { clipId: "c1", maskId: "mask-1", edge: { featherPx: 4 } },
+      host,
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("UNSUPPORTED_HOST");
+    expect(result.error?.suggestedFix).toContain("Do not retry");
+  });
+
+  it("surfaces host warnings", async () => {
+    const host = new FakeVisionHost(projectWithMedia(), {
+      refine: { ...REFINE_RESULT, warnings: ["inverted matte feathers inwards"] },
+    });
+    const result = await executeTool(
+      "refine_matte_edges",
+      { clipId: "c1", maskId: "mask-1", edge: { featherPx: 20, invert: true } },
+      host,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.warnings).toContain("inverted matte feathers inwards");
+  });
+});
+
+describe("apply_subject_matte edge refinement", () => {
+  it("forwards the edge block to the host when present", async () => {
+    const host = new FakeVisionHost();
+    await executeTool(
+      "apply_subject_matte",
+      {
+        clipId: "c1",
+        edge: { featherPx: 3, expansionPx: 1, motionSensitivity: 0.4, opacity: 0.9 },
+      },
+      host,
+    );
+
+    expect(host.requests.apply[0].edge).toEqual({
+      featherPx: 3,
+      expansionPx: 1,
+      motionSensitivity: 0.4,
+      opacity: 0.9,
+    });
+  });
+
+  it("omits edge entirely when the caller did not ask for refinement", async () => {
+    const host = new FakeVisionHost();
+    await executeTool("apply_subject_matte", { clipId: "c1", featherPx: 8 }, host);
+
+    expect(host.requests.apply[0].edge).toBeUndefined();
+    expect(host.requests.apply[0].featherPx).toBe(8);
+  });
+
+  it("reports the refined range in its summary", async () => {
+    const host = new FakeVisionHost(projectWithMedia(), {
+      apply: { ...APPLY_RESULT, edge: EDGE_RESULT },
+    });
+    const result = await executeTool(
+      "apply_subject_matte",
+      { clipId: "c1", edge: { featherPx: 4 } },
+      host,
+    );
+
+    expect(result.summary).toContain("4–11.2px");
+    expect((result.data as { edge?: unknown }).edge).toBeTruthy();
   });
 });

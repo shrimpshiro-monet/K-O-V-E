@@ -14,6 +14,7 @@ import {
   getFaceDetectionEngine,
   getPersonSegmentationEngine,
   initializeAutoReframeEngine,
+  planMatteEdgeRefinement,
   planRotoscope,
   reframePlanToTransformKeyframes,
   sampleFrameTimes,
@@ -28,6 +29,8 @@ import {
   type FaceDetectionBackend,
   type Keyframe,
   type Mask,
+  type MaskKeyframe,
+  type MatteEdgeSettings,
   type ReframeCropKeyframe,
   type ReframeFitMode,
   type ReframeSettings,
@@ -114,6 +117,154 @@ export interface SubjectMatteDeps {
 const DEFAULT_INTERVAL_MS = 500;
 const DEFAULT_MAX_FRAMES = 60;
 const ANALYSIS_MAX_DIMENSION = 960;
+
+/** Share of the frame budget held back for motion-adaptive refinement. */
+export const ADAPTIVE_REFINEMENT_RATIO = 0.5;
+/** Refinement never splits an interval narrower than this (ms). */
+export const ADAPTIVE_MIN_INTERVAL_MS = 90;
+
+/**
+ * One score per interval between consecutive base samples, in any consistent
+ * unit — only the *relative* shape matters, so a raw pixel-difference sum works.
+ */
+export type FrameMotionMeasurer = (frames: readonly DecodedFrame[]) => number[];
+
+export interface AdaptiveSamplingOptions {
+  /** Total decode budget, base grid included. Defaults to `DEFAULT_MAX_FRAMES`. */
+  maxFrames?: number;
+  /** Never split an interval narrower than this (ms). */
+  minIntervalMs?: number;
+}
+
+export interface AdaptiveSamplingPlan {
+  /** Base grid plus refinement, ascending and de-duplicated. */
+  timesMs: number[];
+  /** Times added by refinement — the ones still needing a decode. */
+  refinedTimesMs: number[];
+}
+
+/**
+ * Spends the spare decode budget where the picture actually moves.
+ *
+ * The engine sees one crop decision per sampled frame, so a fixed grid has to
+ * pick between wasting decodes on a locked-off shot and under-sampling a fast
+ * one. This bisects the busiest intervals instead: motion is treated as
+ * spread evenly across an interval, so splitting halves each child's score and
+ * leaves its density unchanged — the greedy pass therefore keeps subdividing
+ * the same busy region until it hits `minIntervalMs` or the budget runs out,
+ * and leaves quiet stretches on the coarse grid.
+ *
+ * Pure: no decoding, no canvas.
+ */
+export function planAdaptiveSampleTimes(
+  baseTimesMs: readonly number[],
+  motion: readonly number[],
+  options: AdaptiveSamplingOptions = {},
+): AdaptiveSamplingPlan {
+  if (baseTimesMs.length < 2) {
+    return { timesMs: [...baseTimesMs], refinedTimesMs: [] };
+  }
+
+  const maxFrames = Math.max(2, Math.floor(options.maxFrames ?? DEFAULT_MAX_FRAMES));
+  const minIntervalMs = Math.max(1, options.minIntervalMs ?? ADAPTIVE_MIN_INTERVAL_MS);
+
+  // Normalize so the caller's units cannot skew the split order.
+  const peak = motion.reduce((max, value) => Math.max(max, Number.isFinite(value) ? value : 0), 0);
+  const normalized =
+    peak > 0 ? motion.map((value) => (Number.isFinite(value) ? Math.max(0, value) / peak : 0)) : motion.map(() => 0);
+
+  const segments = baseTimesMs.slice(0, -1).map((start, index) => ({
+    start,
+    score: normalized[index] ?? 0,
+  }));
+  const end = baseTimesMs[baseTimesMs.length - 1];
+
+  let budget = maxFrames - baseTimesMs.length;
+  while (budget > 0) {
+    let best = -1;
+    let bestDensity = -1;
+    for (let index = 0; index < segments.length; index += 1) {
+      const segmentStart = segments[index].start;
+      const segmentEnd = segments[index + 1]?.start ?? end;
+      const length = segmentEnd - segmentStart;
+      // Halving would drop below the floor; this interval is done.
+      if (length / 2 < minIntervalMs) continue;
+      const density = length > 0 ? segments[index].score / length : 0;
+      if (density > bestDensity) {
+        bestDensity = density;
+        best = index;
+      }
+    }
+    // Everything is either already at the floor or motionless.
+    if (best < 0 || bestDensity <= 0) break;
+
+    const split = segments[best];
+    const segmentEnd = segments[best + 1]?.start ?? end;
+    const midpoint = (split.start + segmentEnd) / 2;
+    segments.splice(best + 1, 0, { start: midpoint, score: split.score / 2 });
+    split.score /= 2;
+    budget -= 1;
+  }
+
+  const timesMs = [...segments.map((segment) => segment.start), end];
+  const base = new Set(baseTimesMs);
+  return {
+    timesMs,
+    refinedTimesMs: timesMs.filter((time) => !base.has(time)),
+  };
+}
+
+/**
+ * Mean luma change between consecutive frames, one score per interval.
+ *
+ * Frames are drawn into a thumbnail first: the motion that should drive
+ * sampling is the subject crossing the frame, not sensor noise at full
+ * resolution. Returns an empty array when pixels cannot be read (no DOM, or a
+ * decoder that handed back placeholder bitmaps), which leaves the caller on its
+ * base grid rather than failing the analysis.
+ */
+export const measureFrameMotion: FrameMotionMeasurer = (frames) => {
+  if (typeof document === "undefined" || frames.length < 2) return [];
+  const width = 48;
+  const height = 27;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return [];
+
+  const thumbnails: Uint8ClampedArray[] = [];
+  for (const frame of frames) {
+    context.clearRect(0, 0, width, height);
+    try {
+      context.drawImage(frame.bitmap, 0, 0, width, height);
+    } catch {
+      return [];
+    }
+    let data: Uint8ClampedArray;
+    try {
+      data = context.getImageData(0, 0, width, height).data;
+    } catch {
+      return [];
+    }
+    thumbnails.push(data);
+  }
+
+  const scores: number[] = [];
+  for (let index = 1; index < thumbnails.length; index += 1) {
+    const previous = thumbnails[index - 1];
+    const current = thumbnails[index];
+    let total = 0;
+    for (let pixel = 0; pixel < current.length; pixel += 4) {
+      total +=
+        Math.abs(current[pixel] - previous[pixel]) +
+        Math.abs(current[pixel + 1] - previous[pixel + 1]) +
+        Math.abs(current[pixel + 2] - previous[pixel + 2]);
+    }
+    scores.push(total / (width * height * 3));
+  }
+  return scores;
+};
 
 /** Resolves the sampling window in milliseconds, clamped to the media. */
 export function resolveSamplingWindow(
@@ -358,6 +509,12 @@ export interface WriteMatteRequest {
   featherPx?: number;
   expansionPx?: number;
   invertMask?: boolean;
+  /**
+   * Edge refinement. When set, feather/expansion are written *per keyframe*
+   * (widening where the subject moves) and the mask-level values become the
+   * defaults a keyframe inherits. Omitting it keeps the legacy uniform edge.
+   */
+  edge?: MatteEdgeSettings;
   createId: () => string;
 }
 
@@ -368,6 +525,16 @@ export interface WriteMatteResult {
   firstTimeSeconds: number | null;
   lastTimeSeconds: number | null;
   warnings: string[];
+  /**
+   * Per-keyframe motion scores (0..1) and the feather range actually written,
+   * present only when edge refinement ran. Surfaced so the UI and the agent can
+   * report what the edge does instead of leaving it invisible.
+   */
+  edge?: {
+    motion: number[];
+    minFeatherPx: number;
+    maxFeatherPx: number;
+  };
 }
 
 /**
@@ -393,8 +560,15 @@ export function writeMatteToMasks(request: WriteMatteRequest): WriteMatteResult 
   let first: number | null = null;
   let last: number | null = null;
 
+  // Edge refinement is derived from the same plan the paths come from, so the
+  // per-keyframe feather lines up with the keyframe it describes (same order).
+  const edgePlan = request.edge
+    ? planMatteEdgeRefinement(request.plan.keyframes, request.edge)
+    : null;
+  if (edgePlan) warnings.push(...edgePlan.warnings);
+
   const originMs = 0;
-  for (const keyframe of request.plan.keyframes) {
+  for (const [index, keyframe] of request.plan.keyframes.entries()) {
     const timeSeconds = applyRotoscopeKeyframeTime(keyframe.timeMs - originMs, request.timeMapping);
     const path: BezierPath = keyframe.path;
     // Replace any keyframe at the same instant so re-running the tool does not
@@ -402,7 +576,17 @@ export function writeMatteToMasks(request: WriteMatteRequest): WriteMatteResult 
     const duplicateIndex = keyframes.findIndex(
       (entry) => Math.abs(entry.time - timeSeconds) < 1e-3,
     );
-    const entry = { id: request.createId(), time: timeSeconds, path, easing: "linear" as const };
+    const edgeValues = edgePlan?.keyframes[index];
+    const entry: MaskKeyframe = {
+      id: request.createId(),
+      time: timeSeconds,
+      path,
+      easing: "linear" as const,
+      // Per-keyframe overrides; the renderer blends these between keyframes.
+      ...(edgeValues
+        ? { feathering: edgeValues.featherPx, expansion: edgeValues.expansionPx }
+        : {}),
+    };
     if (duplicateIndex >= 0) keyframes[duplicateIndex] = entry;
     else keyframes.push(entry);
     written += 1;
@@ -421,24 +605,52 @@ export function writeMatteToMasks(request: WriteMatteRequest): WriteMatteResult 
     ],
   };
 
+  // With edge refinement the mask-level values are the *defaults* a keyframe
+  // inherits; the per-keyframe overrides above are what the renderer blends.
+  // Without it, the legacy flat feather/expansion behaviour is preserved.
+  // An existing mask only has its edge overwritten where the caller actually
+  // asked, so re-writing paths never silently resets a hand-tuned feather.
+  const edgeDefaults: Partial<Pick<Mask, "feathering" | "expansion" | "inverted" | "opacity">> =
+    request.edge
+      ? {
+          feathering: Math.max(0, request.edge.featherPx),
+          expansion: Math.max(-100, Math.min(100, request.edge.expansionPx)),
+          inverted: request.edge.invert ?? false,
+          opacity: Math.max(0, Math.min(1, request.edge.opacity ?? 1)),
+        }
+      : {
+          ...(request.featherPx !== undefined ? { feathering: request.featherPx } : {}),
+          ...(request.expansionPx !== undefined ? { expansion: request.expansionPx } : {}),
+          ...(request.invertMask !== undefined ? { inverted: request.invertMask } : {}),
+        };
+
+  const freshEdge = request.edge
+    ? {
+        feathering: Math.max(0, request.edge.featherPx),
+        expansion: Math.max(-100, Math.min(100, request.edge.expansionPx)),
+        inverted: request.edge.invert ?? false,
+        opacity: Math.max(0, Math.min(1, request.edge.opacity ?? 1)),
+      }
+    : {
+        feathering: request.featherPx ?? 4,
+        expansion: request.expansionPx ?? 0,
+        inverted: request.invertMask ?? false,
+        opacity: 1,
+      };
+
   const mask: Mask = existing
     ? {
         ...existing,
         path: keyframes[0]?.path ?? existing.path,
         keyframes,
-        ...(request.featherPx !== undefined ? { feathering: request.featherPx } : {}),
-        ...(request.expansionPx !== undefined ? { expansion: request.expansionPx } : {}),
-        ...(request.invertMask !== undefined ? { inverted: request.invertMask } : {}),
+        ...edgeDefaults,
       }
     : {
         id: request.createId(),
         clipId: request.clipId,
         type: "drawn",
         path: fallbackPath,
-        feathering: request.featherPx ?? 4,
-        inverted: request.invertMask ?? false,
-        expansion: request.expansionPx ?? 0,
-        opacity: 1,
+        ...freshEdge,
         keyframes,
       };
 
@@ -452,6 +664,8 @@ export function writeMatteToMasks(request: WriteMatteRequest): WriteMatteResult 
     ? request.masks.map((entry) => (entry.id === mask.id ? mask : entry))
     : [...request.masks, mask];
 
+  const feathers = edgePlan?.keyframes.map((keyframe) => keyframe.featherPx) ?? [];
+
   return {
     masks,
     maskId: mask.id,
@@ -459,6 +673,15 @@ export function writeMatteToMasks(request: WriteMatteRequest): WriteMatteResult 
     firstTimeSeconds: first,
     lastTimeSeconds: last,
     warnings,
+    ...(edgePlan && feathers.length > 0
+      ? {
+          edge: {
+            motion: edgePlan.motion,
+            minFeatherPx: Math.min(...feathers),
+            maxFeatherPx: Math.max(...feathers),
+          },
+        }
+      : {}),
   };
 }
 
@@ -490,6 +713,13 @@ export interface AutoReframeDeps {
   /** Source→timeline mapping so keyframes land on the clip-local clock. */
   timeMapping?: ClipTimeMapping;
   decode?: VideoFrameDecoder;
+  /**
+   * Scores the motion between consecutive base samples. Defaults to
+   * `measureFrameMotion`; inject it to drive refinement from a known curve.
+   */
+  measureMotion?: FrameMotionMeasurer;
+  /** Floor for motion-adaptive refinement, in ms. */
+  minIntervalMs?: number;
   /** Engine used for the crop plan. Defaults to the shared auto-reframe engine. */
   engine?: AutoReframeEngine;
   onProgress?: (progress: number, message: string) => void;
@@ -500,11 +730,24 @@ export interface AutoReframeAnalysis {
   keyframes: Keyframe[];
   /** Sampled frames that drove the decision. */
   sampledFrames: number;
+  /**
+   * Samples added on top of the base grid because the picture moved there.
+   * Present only when motion-adaptive sampling ran and had something to add.
+   */
+  refinedFrames?: number;
   keyframeSamples: number;
   outputWidth: number;
   outputHeight: number;
   /** True when the real face detector (not the skin-tone fallback) steered it. */
   usedFaceBackend: boolean;
+  /**
+   * Largest gap between the fitted camera curve and the polyline the renderer
+   * draws, in source pixels — how closely the emitted keyframes follow the
+   * smooth path they were fitted to.
+   */
+  pathDeviationPx?: number;
+  /** Fastest camera motion, in crop-widths per second. */
+  peakSpeedCropRatios?: number;
   warnings: string[];
 }
 
@@ -522,7 +765,19 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
   const engine = deps.engine ?? initializeAutoReframeEngine();
   const warnings: string[] = [];
 
-  const { timesMs, startMs, endMs } = resolveSamplingWindow(deps.durationSeconds, deps.request);
+  // `intervalMs`/`maxFrames` describe the grid and the budget, not a veto: the
+  // base pass takes its share and refinement spends the rest. Only an explicit
+  // `adaptive: false` pins the old single-pass grid.
+  const adaptive = deps.request.adaptive !== false;
+  const budget = Math.max(2, Math.floor(deps.request.maxFrames ?? DEFAULT_MAX_FRAMES));
+  const baseBudget = adaptive
+    ? Math.max(2, Math.ceil(budget * (1 - ADAPTIVE_REFINEMENT_RATIO)))
+    : budget;
+
+  const { timesMs, startMs, endMs } = resolveSamplingWindow(deps.durationSeconds, {
+    ...deps.request,
+    maxFrames: baseBudget,
+  });
   if (timesMs.length === 0) {
     throw new Error("No frames to analyze in this range.");
   }
@@ -530,6 +785,32 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
   const frames = await decode(deps.blob, timesMs);
   if (frames.length === 0) {
     throw new Error("Could not decode this video for reframing.");
+  }
+
+  // Second pass: spend what is left of the budget where the picture moves.
+  let analyzedFrames = frames;
+  let refinedFrames: number | undefined;
+  let sampleTimes: number[] | undefined;
+  if (adaptive && frames.length >= 2) {
+    const motion = (deps.measureMotion ?? measureFrameMotion)(frames);
+    const plan = planAdaptiveSampleTimes(
+      frames.map((frame) => frame.timeMs),
+      motion,
+      {
+        maxFrames: budget,
+        ...(deps.minIntervalMs !== undefined ? { minIntervalMs: deps.minIntervalMs } : {}),
+      },
+    );
+    if (plan.refinedTimesMs.length > 0) {
+      const extra = await decode(deps.blob, plan.refinedTimesMs);
+      if (extra.length > 0) {
+        analyzedFrames = [...frames, ...extra].sort((a, b) => a.timeMs - b.timeMs);
+        refinedFrames = extra.length;
+        // The grid is no longer uniform, so stamp every crop with its own time
+        // instead of letting the engine derive one from the frame index.
+        sampleTimes = analyzedFrames.map((frame) => (frame.timeMs - startMs) / 1000);
+      }
+    }
   }
 
   await engine.initialize();
@@ -541,14 +822,18 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
   }
 
   // Frames are sampled on a fixed grid, so the sampling rate is the frame rate
-  // the engine should assume when it stamps crop times.
+  // the engine should assume when it stamps crop times. Adaptive sampling hands
+  // it explicit times instead and this stays as the uniform-grid fallback.
   const spacingMs =
-    frames.length > 1 ? Math.max(1, frames[1].timeMs - frames[0].timeMs) : Math.max(1, endMs - startMs);
+    analyzedFrames.length > 1
+      ? Math.max(1, analyzedFrames[1].timeMs - analyzedFrames[0].timeMs)
+      : Math.max(1, endMs - startMs);
   const plan = await engine.analyzeClip(
-    frames.map((frame) => frame.bitmap),
+    analyzedFrames.map((frame) => frame.bitmap),
     1000 / spacingMs,
     deps.settings,
     (progress, message) => deps.onProgress?.(progress, message),
+    sampleTimes,
   );
 
   if (!plan.success) {
@@ -558,8 +843,8 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
   // The engine reports crops in the analyzed frame's pixel space (cropWidth =
   // frameHeight * targetRatio), so normalize by that frame before mapping —
   // the result is then resolution-independent, like the transform it feeds.
-  const frameWidth = Math.max(1, frames[0].bitmap.width);
-  const frameHeight = Math.max(1, frames[0].bitmap.height);
+  const frameWidth = Math.max(1, analyzedFrames[0].bitmap.width);
+  const frameHeight = Math.max(1, analyzedFrames[0].bitmap.height);
   const cropKeyframes: ReframeCropKeyframe[] = plan.keyframes.map((keyframe) => ({
     // The engine stamps `time` from frame index / sampling rate: source seconds
     // measured from the start of the analyzed window.
@@ -596,14 +881,20 @@ export async function analyzeAutoReframe(deps: AutoReframeDeps): Promise<AutoRef
       "The face model was unavailable, so the crop was steered by the built-in subject detector.",
     );
   }
+  warnings.push(...(plan.warnings ?? []));
 
   return {
     keyframes,
-    sampledFrames: frames.length,
+    sampledFrames: analyzedFrames.length,
+    ...(refinedFrames !== undefined ? { refinedFrames } : {}),
     keyframeSamples,
     outputWidth: plan.outputWidth,
     outputHeight: plan.outputHeight,
     usedFaceBackend: engine.usesFaceBackend(),
+    ...(plan.pathDeviationPx !== undefined ? { pathDeviationPx: plan.pathDeviationPx } : {}),
+    ...(plan.peakSpeedCropRatios !== undefined
+      ? { peakSpeedCropRatios: plan.peakSpeedCropRatios }
+      : {}),
     warnings,
   };
 }

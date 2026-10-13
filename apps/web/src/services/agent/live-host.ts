@@ -42,16 +42,32 @@ import type {
   ApplySubjectMatteResult,
   AutoReframeRequest,
   AutoReframeHostResult,
+  RefineMatteEdgesRequest,
+  RefineMatteEdgesResult,
+  MatteEdgeRequest,
 } from "@kove-advanced/agent";
 import type { TextStyle, TextAnimationPreset } from "@kove-advanced/core/text/types";
 import type { ShapeStyle, ShapeType } from "@kove-advanced/core/graphics/types";
 import type { Transform } from "@kove-advanced/core/types/timeline";
 import { CAPABILITY_MANIFEST } from "@kove-advanced/core/capabilities/manifest";
 import type { Action } from "@kove-advanced/core/types/actions";
+import type { Mask, MatteEdgeSettings } from "@kove-advanced/core";
 import type { Project } from "@kove-advanced/core/types/project";
 import type { CapabilityManifest } from "@kove-advanced/core/capabilities/manifest";
 import { HistoryLedger, fingerprintProject } from "@kove-advanced/agent";
 import type { HistoryBackend } from "@kove-advanced/agent";
+/** Map the agent's optional-field edge request onto core's concrete settings. */
+function edgeSettings(edge: MatteEdgeRequest): MatteEdgeSettings {
+  return {
+    featherPx: edge.featherPx,
+    expansionPx: edge.expansionPx ?? 0,
+    ...(edge.motionSensitivity !== undefined ? { motionSensitivity: edge.motionSensitivity } : {}),
+    ...(edge.maxFeatherPx !== undefined ? { maxFeatherPx: edge.maxFeatherPx } : {}),
+    ...(edge.invert !== undefined ? { invert: edge.invert } : {}),
+    ...(edge.opacity !== undefined ? { opacity: edge.opacity } : {}),
+  };
+}
+
 import { useProjectStore } from "../../stores/project-store";
 import { insertTimelineOverlay } from "../../stores/project/insert-timeline-overlay";
 import { checkForRecovery } from "../auto-save";
@@ -322,6 +338,7 @@ export class LiveEditorHost implements EditingHost {
       analyzeSubjectMatte: hasVision,
       applySubjectMatte: hasVision,
       autoReframe: hasVision,
+      refineMatteEdges: true,
     };
   }
 
@@ -381,6 +398,7 @@ export class LiveEditorHost implements EditingHost {
         ...(request.endTime !== undefined ? { endTime: request.endTime } : {}),
         ...(request.intervalMs !== undefined ? { intervalMs: request.intervalMs } : {}),
         ...(request.maxFrames !== undefined ? { maxFrames: request.maxFrames } : {}),
+        ...(request.adaptive !== undefined ? { adaptive: request.adaptive } : {}),
       },
       settings,
       mediaWidth: size.width,
@@ -469,9 +487,16 @@ export class LiveEditorHost implements EditingHost {
       keyframesWritten: analysis.keyframes.length,
       keyframeSamples: analysis.keyframeSamples,
       sampledFrames: analysis.sampledFrames,
+      ...(analysis.refinedFrames !== undefined ? { refinedFrames: analysis.refinedFrames } : {}),
       outputWidth: targetConfig.width,
       outputHeight: targetConfig.height,
       usedFaceBackend: analysis.usedFaceBackend,
+      ...(analysis.pathDeviationPx !== undefined
+        ? { pathDeviationPx: analysis.pathDeviationPx }
+        : {}),
+      ...(analysis.peakSpeedCropRatios !== undefined
+        ? { peakSpeedCropRatios: analysis.peakSpeedCropRatios }
+        : {}),
       warnings: [...analysis.warnings],
     };
   }
@@ -562,6 +587,7 @@ export class LiveEditorHost implements EditingHost {
       ...(request.featherPx !== undefined ? { featherPx: request.featherPx } : {}),
       ...(request.expansionPx !== undefined ? { expansionPx: request.expansionPx } : {}),
       ...(request.invertMask !== undefined ? { invertMask: request.invertMask } : {}),
+      ...(request.edge ? { edge: edgeSettings(request.edge) } : {}),
       createId,
     });
 
@@ -635,6 +661,105 @@ export class LiveEditorHost implements EditingHost {
       lastTimeSeconds: written.lastTimeSeconds,
       separationApplied,
       warnings,
+      ...(written.edge ? { edge: written.edge } : {}),
+    };
+  }
+
+/**
+ * Refine the edge of a matte that already exists on a mask.
+   *
+   * Unlike `applySubjectMatte` this does not re-run segmentation: it reads the
+   * mask's committed keyframes, recovers each silhouette's centre and area from
+   * its path, and rewrites the per-keyframe feather/expansion. That makes it
+   * cheap to iterate on an edge and keeps the existing shapes intact.
+   */
+  async refineMatteEdges(
+    request: RefineMatteEdgesRequest,
+  ): Promise<RefineMatteEdgesResult | { readonly code: "unsupported_host"; readonly error: string }> {
+    const { planMatteEdgeRefinement, shapeSamplesFromPaths } = await import("@kove-advanced/core");
+    const project = this.getProject();
+    const masks = project.masks ?? [];
+    const mask = masks.find((entry) => entry.id === request.maskId);
+    if (!mask) {
+      return { code: "unsupported_host", error: `Mask not found: ${request.maskId}` };
+    }
+    const clip = project.timeline.tracks
+      .flatMap((track) => track.clips)
+      .find((entry) => entry.id === request.clipId);
+    if (!clip) {
+      return { code: "unsupported_host", error: `Clip not found: ${request.clipId}` };
+    }
+
+    const inRange = mask.keyframes.filter(
+      (keyframe) =>
+        (request.startTime === undefined || keyframe.time >= request.startTime) &&
+        (request.endTime === undefined || keyframe.time <= request.endTime),
+    );
+    if (inRange.length === 0) {
+      return {
+        code: "unsupported_host",
+        error: `Mask ${request.maskId} has no keyframes${
+          request.startTime !== undefined || request.endTime !== undefined
+            ? " in the requested range"
+            : ""
+        }.`,
+      };
+    }
+
+    const settings = edgeSettings(request.edge);
+    const plan = planMatteEdgeRefinement(shapeSamplesFromPaths(inRange), settings);
+
+    // Keyframes outside the range keep the edge they already had, so refining
+    // part of a shot does not reset the rest of it.
+    const byTime = new Map(inRange.map((keyframe, index) => [keyframe.time, index]));
+    const keyframes = mask.keyframes.map((keyframe) => {
+      const index = byTime.get(keyframe.time);
+      if (index === undefined) return keyframe;
+      const values = plan.keyframes[index];
+      return {
+        ...keyframe,
+        feathering: values.featherPx,
+        expansion: values.expansionPx,
+      };
+    });
+
+    const nextMask: Mask = {
+      ...mask,
+      feathering: Math.max(0, settings.featherPx),
+      expansion: Math.max(-100, Math.min(100, settings.expansionPx)),
+      inverted: settings.invert ?? false,
+      opacity: Math.max(0, Math.min(1, settings.opacity ?? 1)),
+      keyframes,
+    };
+    const nextMasks = masks.map((entry) => (entry.id === nextMask.id ? nextMask : entry));
+
+    const createId = (): string => crypto.randomUUID();
+    const actionResult = await this.applyAction({
+      type: "mask/setAll",
+      id: createId(),
+      timestamp: Date.now(),
+      params: { masks: nextMasks },
+    } as Action);
+    if (!actionResult.success) {
+      return {
+        code: "unsupported_host",
+        error: `Mask could not be saved: ${actionResult.error ?? "unknown error"}`,
+      };
+    }
+
+    const { useEngineStore } = await import("../../stores/engine-store");
+    const maskEngine = await useEngineStore.getState().getMaskEngine();
+    maskEngine.loadMasks([...nextMasks]);
+
+    return {
+      maskId: nextMask.id,
+      keyframeCount: inRange.length,
+      edge: {
+        motion: plan.motion,
+        minFeatherPx: Math.min(...plan.keyframes.map((keyframe) => keyframe.featherPx)),
+        maxFeatherPx: Math.max(...plan.keyframes.map((keyframe) => keyframe.featherPx)),
+      },
+      warnings: [...plan.warnings],
     };
   }
 

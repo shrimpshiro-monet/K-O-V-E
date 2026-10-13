@@ -28,6 +28,7 @@ import { useEngineStore } from "../../../stores/engine-store";
 import { useProjectStore } from "../../../stores/project-store";
 import type { BezierPath, Mask, MaskShape } from "@kove-advanced/core";
 import { boundsPathFromTransform } from "@kove-advanced/core";
+import { MaskKeyframeEdges, type MaskKeyframeEdgeOverride } from "./MaskKeyframeEdges";
 
 interface MaskSectionProps {
   clipId: string;
@@ -65,6 +66,7 @@ const MaskItem: React.FC<{
     sourceClipId: string,
     matteSource: "alpha" | "luminance" | "bounds",
   ) => void;
+  onKeyframeEdgeChange: (keyframeId: string, edge: MaskKeyframeEdgeOverride) => void;
 }> = ({
   mask,
   isSelected,
@@ -81,6 +83,7 @@ const MaskItem: React.FC<{
   onToggleInvert,
   onUpdatePath,
   onSetMatteSource,
+  onKeyframeEdgeChange,
 }) => {
   const maskTypeIcon =
     mask.type === "shape"
@@ -358,6 +361,8 @@ const MaskItem: React.FC<{
             formatValue={(value) => `${Math.round(value)}%`}
           />
 
+          <MaskKeyframeEdges mask={mask} onEdgeChange={onKeyframeEdgeChange} />
+
           <div className="flex items-center gap-2 pt-2 border-t border-border">
             <Button
               label={mask.inverted ? "Inverted" : "Invert"}
@@ -599,6 +604,18 @@ export const MaskSection: React.FC<MaskSectionProps> = ({ clipId }) => {
     [maskEngine, triggerRefresh],
   );
 
+  const handleKeyframeEdgeChange = useCallback(
+    (maskId: string, keyframeId: string, edge: MaskKeyframeEdgeOverride) => {
+      if (!maskEngine) return;
+      // `undefined` is the "inherit the mask's value again" signal, so every
+      // field is passed through whether or not it was edited — setKeyframeEdge
+      // only touches the keys the object actually has.
+      maskEngine.setKeyframeEdge(maskId, keyframeId, edge);
+      triggerRefresh();
+    },
+    [maskEngine, triggerRefresh],
+  );
+
   const handleUpdatePath = useCallback(
     (maskId: string, path: BezierPath) => {
       if (!maskEngine || path.points.length < 3) return;
@@ -793,6 +810,9 @@ export const MaskSection: React.FC<MaskSectionProps> = ({ clipId }) => {
                 onUpdatePath={(path) => handleUpdatePath(mask.id, path)}
                 onSetMatteSource={(srcId, channel) =>
                   handleSetMatteSource(mask.id, srcId, channel)
+                }
+                onKeyframeEdgeChange={(keyframeId, edge) =>
+                  handleKeyframeEdgeChange(mask.id, keyframeId, edge)
                 }
               />
             ))}

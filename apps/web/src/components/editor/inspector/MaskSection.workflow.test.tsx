@@ -122,4 +122,38 @@ describe("MaskSection professional workflow", () => {
       expect(useProjectStore.getState().project.masks).toHaveLength(2);
     });
   });
+  it("hand-edits one keyframe's edge and persists it as project state", async () => {
+    const created = engine.createShapeMask(CLIP_ID, {
+      type: "ellipse",
+      cx: 0.5,
+      cy: 0.5,
+      rx: 0.25,
+      ry: 0.25,
+    });
+    engine.addMaskKeyframe(created.id, 0, created.path);
+    engine.addMaskKeyframe(created.id, 1, created.path);
+
+    render(<MaskSection clipId={CLIP_ID} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Expand mask" }));
+    fireEvent.click(screen.getByRole("button", { name: /expand keyframe edges/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Select keyframe 2" }));
+    fireEvent.change(screen.getByLabelText("Keyframe 2 feather px"), {
+      target: { value: "12" },
+    });
+
+    await waitFor(() => {
+      const keyframes = engine.getMasksForClip(CLIP_ID)[0]?.keyframes ?? [];
+      expect(keyframes).toHaveLength(2);
+      // Only the keyframe that was edited carries an override; the other keeps
+      // inheriting the mask's own feather.
+      expect(keyframes[1]?.feathering).toBe(12);
+      expect(keyframes[0]?.feathering).toBeUndefined();
+    });
+    await waitFor(() => {
+      const persisted = useProjectStore.getState().project.masks?.[0]?.keyframes ?? [];
+      expect(persisted[1]?.feathering).toBe(12);
+      expect(persisted[0]?.feathering).toBeUndefined();
+    });
+  });
 });
