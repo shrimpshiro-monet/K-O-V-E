@@ -389,11 +389,14 @@ function formatFootageGraph(videos: readonly VideoSegmentMap[]): string {
     const duration = Number.isFinite(video.duration) ? video.duration.toFixed(1) : "?";
     lines.push(`\n### ${video.videoId} (${duration}s, ${segments.length} segments)`);
 
-    for (const seg of segments) {
-      const timeRange = `${seg.startTime.toFixed(1)}s-${seg.endTime.toFixed(1)}s`;
-      const signals = formatSegmentSignals(seg);
-      lines.push(`  [${seg.id}] ${timeRange} — ${seg.description} (${seg.sceneType}, ${seg.motionLevel} motion, conf=${seg.confidence.toFixed(2)})${signals}`);
+  for (const seg of segments) {
+    const timeRange = `${seg.startTime.toFixed(1)}s-${seg.endTime.toFixed(1)}s`;
+    const signals = formatSegmentSignals(seg);
+    lines.push(`  [${seg.id}] ${timeRange} — ${seg.description} (${seg.sceneType}, ${seg.motionLevel} motion, conf=${seg.confidence.toFixed(2)})${signals}`);
+    if (typeof seg.transcript === "string" && seg.transcript.trim().length > 0) {
+      lines.push(`    transcript: "${seg.transcript.trim()}"`);
     }
+  }
 
     // Summarize beat data at video level if present
     const allBeats = segments.flatMap((s) => s.beatTimestamps ?? []);
@@ -500,6 +503,18 @@ export function buildDirectorPrompt(
 
   const densityContract = buildDensityContract(prompt, genre);
 
+  // Quote-guard directive: mirror of the enforcement in the plan funnel.
+  // When no segment carries transcript words, quoted captions would be
+  // invented speech — forbid them up front, strip them in enforcement.
+  const hasTranscript = videos.some((video) =>
+    (Array.isArray(video.segments) ? video.segments : []).some(
+      (segment: VideoSegment) => typeof segment.transcript === "string" && segment.transcript.trim().length > 0,
+    ),
+  );
+  const quoteGuardBlock = hasTranscript
+    ? "\n\n## Quotes and spoken words\nTranscripts ARE available in the footage analysis above. You may quote speech, but only word-for-word from transcript text — never paraphrase inside quote marks."
+    : "\n\n## Quotes and spoken words (MANDATORY)\nNo transcript exists for this footage: you have ZERO words of what anyone said. Do NOT fabricate speech. In textElements content:\n- NEVER wrap text in quote marks (\"…\", “…”, '…', '…') — quotes imply verbatim speech nobody verified. The plan funnel strips them and warns.\n- Write declarative captions only (\"The comeback starts here\", not \"I'm just getting started\").\n- Text may describe, tease, or frame what the FOOTAGE shows — it may not put words in anyone's mouth.";
+
   return [
     DIRECTOR_SYSTEM_PROMPT,
     "",
@@ -523,6 +538,7 @@ export function buildDirectorPrompt(
       : "\nNote: This footage only has metadata-level analysis. Scene descriptions are placeholders — review the user's prompt to infer content.",
     genreInfo,
     referenceInfo,
+    quoteGuardBlock,
     "",
     "Analyze the segments using perception-driven editing principles and create an EditPlan that fulfills this request.",
   ].join("\n");
