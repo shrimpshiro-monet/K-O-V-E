@@ -500,6 +500,54 @@ file had no test, because it looked like a utility rather than a measurement. It
 a measurement, and its failures were silent and plausible in exactly the way a
 scorecard's must not be.
 
+### F15 — the product's beat detector returns **zero onsets at 22050 Hz**, and nothing says so
+
+Found while wiring the product's detector into the harness. The same audio, three
+sample rates, one result each:
+
+| input | rate | onsets | beats | reported BPM | confidence |
+| --- | --- | --- | --- | --- | --- |
+| `pulse-140.wav` | 44100 | 63 | 34 | 69.82 | 0.096 |
+| `pulse-140.wav` | **22050** | **0** | 57 | 120.00 | **0.000** |
+| `pulse-140.wav` | 48000 | 63 | 67 | **139.58** | — |
+| reference mix | 44100 | 55 | 57 | **139.63** | **0.984** |
+| reference mix | 22050 | **0** | 49 | 120.00 | **0.000** |
+
+At 22050 Hz `detectOnsets` returns an empty array. `calculateBpm` then returns its
+`{ bpm: 120, confidence: 0 }` default, and `generateBeats` — which has an explicit
+`if (onsets.length === 0)` branch — lays a **fixed 120 BPM metronome from t=0**.
+The beats look completely regular, which is exactly what a correct detection looks
+like, and the only thing that would reveal it is the confidence, which nothing
+downstream reads.
+
+The likely mechanism is the rise test in `detectOnsets`: `riseLookback` is
+`0.035 s * sampleRate / hopSize` frames, which at 22050 Hz and `hopSize = 512`
+collapses to **1 frame** — the smoothed envelope's step over a single frame is
+never 25% of the adaptive threshold, so nothing ever qualifies as an onset. At
+44100 Hz the same expression gives 3 frames and detection works. Whatever the
+exact cause, the observable is unambiguous and reproducible.
+
+**Two consequences, and the second is the one that matters:**
+
+1. A rate-sensitive total failure with a silent, plausible fallback. Any pipeline
+   path that hands this detector 22.05 kHz audio — a resampled upload, a mono
+   podcast source, and notably the engine's own `extract_audio_track(sr=22050)`
+   default on the Python side — gets a metronome. Worth a guard in the detector
+   itself: if the onset count is a small fraction of the expected beats, say so
+   instead of returning a grid.
+2. **My harness made this mistake first.** `audio_wav()` extracted at 22050 Hz, so
+   the "product detector" grid I had just wired in *was* the metronome — a
+   measurement of a bug in my own plumbing that looked exactly like a product
+   finding. The extraction now uses 44100 Hz and says why. This is the second time
+   in this file that a wrong assumption upstream produced confident nonsense rather
+   than an error (F8 was the first), which is the argument for measuring the
+   detector against known ground truth rather than trusting a plausible grid.
+
+**With the rate fixed, the product's detector is good:** on the reference mix it
+reports 139.63 BPM at confidence 0.984 against a constructed 140.000, and on the
+golden tracks it is within 10 ms of every true kick. `kove-eval beats` now prints
+it beside the engine's tracker, which is what made the difference visible.
+
 ## Baseline
 
 `evaluation-files/craft/baseline.json`, run `baseline`, recorded 2026-10-13 15:25:35

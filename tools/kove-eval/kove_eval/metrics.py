@@ -74,6 +74,37 @@ class BeatAlignment:
 BEAT_TOLERANCE_SECONDS = 0.04
 
 
+def audio_wav(path: str | Path, sample_rate: int = 44100) -> Path | None:
+    """Extract a file's audio to a temporary mono wav, or None.
+
+    The bridge runs in Node, so it needs a file rather than samples. Callers are
+    responsible for deleting it — hence the returned Path rather than a context
+    manager, so the temp file lives exactly as long as the job needs it.
+
+    **The rate is not a detail: 22050 Hz produces zero onsets.** The product's
+    `BeatDetectionEngine` analyses a 140 BPM track correctly at 44100 Hz (63
+    onsets) and at 48000 Hz, and finds *no onsets at all* at 22050 Hz on the same
+    audio, silently falling back to a fixed 120 BPM metronome at confidence 0.
+    Extracting at 22050 made this harness hand the detector material it cannot
+    read, and then believe the metronome it got back. See F15.
+    """
+    import tempfile
+
+    from .ffmpeg import run
+
+    handle = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    handle.close()
+    output = Path(handle.name)
+    result = run(
+        ["-i", str(path), "-vn", "-acodec", "pcm_s16le", "-ar", str(sample_rate),
+         "-ac", "1", "-y", str(output)]
+    )
+    if result.returncode != 0 or not output.exists() or output.stat().st_size <= 44:
+        output.unlink(missing_ok=True)
+        return None
+    return output
+
+
 def beat_times(path: str | Path) -> list[float]:
     """Beat times from the Python engine's tracker (librosa), for comparison.
 

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -43,6 +44,7 @@ class MeasuredStyle:
     shot_lengths_beats: list[float]
     bpm: float | None
     beats: list[float]
+    beat_source: str
     beat_offset_seconds: float
     on_beat_ratio: float | None
     motion_events: list[dict]
@@ -60,6 +62,9 @@ class MeasuredStyle:
         if not self.shot_lengths_beats:
             return 4.0
         return float(np.median(self.shot_lengths_beats))
+
+
+logger = logging.getLogger(__name__)
 
 
 def _cache_path(cache_dir: Path, kind: str, path: str, extra: str = "") -> Path:
@@ -91,10 +96,36 @@ def analyze_reference(
     cuts = metrics.cut_times(boundaries)
     lengths = [duration for _start, duration in boundaries]
 
-    samples = extract_audio_track(str(reference_path))
-    grid = track_beat_grid(samples) if samples is not None else None
-    beats = list(grid.beats) if grid and grid.has_grid else []
-    bpm = grid.bpm if grid and grid.has_grid else None
+    # Beats come from the PRODUCT's detector, through the bridge.
+    #
+    # The engine's librosa tracker reads 179-264 ms out of phase with a known
+    # pulse and puts 0.000 of its beats on the true kick, while the product's own
+    # `BeatDetectionEngine` is within 10 ms (both measured; see F11/F12 in the
+    # craft log). Snapping a plan to the librosa grid therefore reproduced a
+    # 200 ms phase error that the product does not have, and the scorecard charged
+    # it to the edit. Measuring the wrong grid is not measuring the edit.
+    beats: list[float] = []
+    if wav := metrics.audio_wav(reference_path):
+        try:
+            detected = bridge.call({"op": "detect-beats", "wav": str(wav)})
+            beats = [float(beat) for beat in detected.get("beats", [])]
+        except Exception as exc:  # bridge unavailable: fall back, but say so
+            logger.warning("product beat detector unavailable (%s); using the engine", exc)
+        finally:
+            wav.unlink(missing_ok=True)
+
+    beat_source = "product-detector"
+    if not beats:
+        beat_source = "engine-librosa"
+        samples = extract_audio_track(str(reference_path))
+        grid = track_beat_grid(samples) if samples is not None else None
+        beats = list(grid.beats) if grid and grid.has_grid else []
+
+    # The tempo scalar is derived from the beats rather than taken from the
+    # tracker's own estimate: librosa reports 144.23 BPM for a track whose beat
+    # positions average 139.994 (the median interval is biased by hop
+    # quantisation), and the two disagreeing is a trap for anything downstream.
+    bpm = 60.0 / ((beats[-1] - beats[0]) / (len(beats) - 1)) if len(beats) >= 2 else None
 
     alignment = metrics.beat_alignment(cuts, beats) if beats else None
 
@@ -138,6 +169,7 @@ def analyze_reference(
         ),
         bpm=bpm,
         beats=[round(beat, 4) for beat in beats],
+        beat_source=beat_source,
         beat_offset_seconds=round(alignment.median_offset_ms / 1000.0, 4)
         if alignment and alignment.median_offset_ms is not None
         else 0.0,

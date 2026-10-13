@@ -145,6 +145,24 @@ async function detectBeats(wavPath: string, truthBeats: readonly number[]) {
     length: samples.length,
     numberOfChannels: 1,
   } as unknown as AudioBuffer;
+  // Reach into the private onset detector. It is the layer where a silent
+  // failure actually happens: `analyzeAudioBuffer` returns a confident-looking
+  // grid whether it found 200 onsets or none, because `generateBeats` falls back
+  // to a fixed 120 BPM metronome when there are no onsets at all. Reporting the
+  // count is the difference between measuring that and guessing at it.
+  const internal = engine as unknown as {
+    detectOnsets: (data: Float32Array, rate: number) => number[];
+    config: { windowSize: number; hopSize: number; sensitivity: number };
+  };
+  let onsetCount: number | null = null;
+  let onsets: number[] = [];
+  try {
+    onsets = internal.detectOnsets(samples, sampleRate);
+    onsetCount = onsets.length;
+  } catch {
+    onsetCount = null;
+  }
+
   const result = await engine.analyzeAudioBuffer(fakeBuffer);
 
   const detected = result.beats.map((beat) => beat.time);
@@ -178,7 +196,11 @@ async function detectBeats(wavPath: string, truthBeats: readonly number[]) {
   return {
     detectedBpm: result.bpm,
     confidence: result.confidence,
+    beats: detected,
     beatCount: detected.length,
+    onsetCount,
+    firstOnsets: onsets.slice(0, 6),
+    config: internal.config,
     meanIntervalSeconds: meanGap,
     medianIntervalSeconds: medianGap,
     bpmFromMeanInterval: meanGap > 0 ? 60 / meanGap : null,
