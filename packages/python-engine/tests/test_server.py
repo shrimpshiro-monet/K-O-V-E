@@ -2,14 +2,15 @@
 
 `/analyze` used to accept any path the process could read, serve anyone who
 could reach the port, hand out 32-bit job ids, and return raw exception text.
-These cover the current behaviour.
+`/jobs/{id}` was readable by anyone who could reach the port. These cover the
+current behaviour.
 """
 
 import re
 
 from fastapi.testclient import TestClient
 
-from server import app, authorize_request
+from server import app, authorize_request, bind_address
 
 # The default TestClient client host is "testclient", which the server treats as
 # loopback. Tests that need a network caller pass an explicit client address.
@@ -166,6 +167,53 @@ class TestNetworkAccess:
         assert authorize_request(Request(scope)) is None
 
 
+    def test_a_remote_caller_cannot_read_a_job_without_a_token(self, monkeypatch):
+        """A job id is a capability, but it leaks through logs and screenshots."""
+        monkeypatch.delenv("KOVE_ENGINE_TOKEN", raising=False)
+        with TestClient(app, client=REMOTE) as client:
+            response = client.get("/jobs/whatever")
+
+        assert response.status_code == 503
+
+    def test_a_remote_caller_with_the_token_can_read_a_job(self, monkeypatch):
+        monkeypatch.setenv("KOVE_ENGINE_TOKEN", "tok")
+        with TestClient(app, client=REMOTE) as client:
+            response = client.get(
+                "/jobs/whatever", headers={"Authorization": "Bearer tok"}
+            )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "unknown"
+
+    def test_a_wrong_token_cannot_read_a_job(self, monkeypatch):
+        monkeypatch.setenv("KOVE_ENGINE_TOKEN", "tok")
+        with TestClient(app, client=REMOTE) as client:
+            response = client.get(
+                "/jobs/whatever", headers={"Authorization": "Bearer nope"}
+            )
+
+        assert response.status_code == 401
+
+    def test_loopback_needs_the_token_to_read_a_job_once_one_is_configured(
+        self, monkeypatch
+    ):
+        monkeypatch.setenv("KOVE_ENGINE_TOKEN", "tok")
+        with TestClient(app) as client:
+            assert client.get("/jobs/whatever").status_code == 401
+
+    def test_the_poll_endpoint_still_works_for_an_allowed_caller(self, monkeypatch):
+        monkeypatch.delenv("KOVE_ENGINE_TOKEN", raising=False)
+        with TestClient(app) as client:
+            job_id = client.post(
+                "/analyze-frames",
+                json={"videoId": "clip", "totalDuration": 0, "frames": []},
+            ).json()["jobId"]
+            job = client.get(f"/jobs/{job_id}")
+
+        assert job.status_code == 200
+        assert job.json()["status"] == "completed"
+
+
 class TestVideoPathRestriction:
     def _media(self, tmp_path, monkeypatch, name="clip.mp4"):
         monkeypatch.setenv("KOVE_MEDIA_ROOTS", str(tmp_path))
@@ -244,3 +292,34 @@ class TestVideoPathRestriction:
         assert str(tmp_path) not in error
         assert "ffprobe" not in error
         assert "Traceback" not in error
+
+
+class TestBindAddress:
+    """A direct `python server.py` run must not listen on the network by default.
+
+    Authorization already refuses network callers when no token is configured,
+    but a socket that is never opened is a stronger default than one that is
+    guarded: a deployment that wants network reach asks for it explicitly.
+    """
+
+    def test_defaults_to_loopback(self, monkeypatch):
+        monkeypatch.delenv("KOVE_ENGINE_HOST", raising=False)
+        monkeypatch.delenv("KOVE_ENGINE_PORT", raising=False)
+
+        assert bind_address() == ("127.0.0.1", 8000)
+
+    def test_honours_an_explicit_host_and_port(self, monkeypatch):
+        monkeypatch.setenv("KOVE_ENGINE_HOST", "0.0.0.0")
+        monkeypatch.setenv("KOVE_ENGINE_PORT", "9000")
+
+        assert bind_address() == ("0.0.0.0", 9000)
+
+    def test_a_blank_host_falls_back_to_loopback(self, monkeypatch):
+        monkeypatch.setenv("KOVE_ENGINE_HOST", "   ")
+
+        assert bind_address()[0] == "127.0.0.1"
+
+    def test_an_unparseable_port_falls_back_instead_of_crashing(self, monkeypatch):
+        monkeypatch.setenv("KOVE_ENGINE_PORT", "not-a-port")
+
+        assert bind_address()[1] == 8000

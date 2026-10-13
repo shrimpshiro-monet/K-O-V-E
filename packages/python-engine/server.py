@@ -373,15 +373,40 @@ def _run_frame_analysis(req: VisionRequest) -> dict:
 
 
 @app.get("/jobs/{job_id}")
-async def get_job(job_id: str):
-    """Poll target: {status, result|null}. Terminal statuses: completed/failed."""
+async def get_job(job_id: str, request: Request):
+    """Poll target: {status, result|null}. Terminal statuses: completed/failed.
+
+    Authorized like the submit endpoints: a job id is a capability, but it also
+    travels through logs, screenshots and bug reports, so a network caller that
+    cannot submit should not be able to read someone else's result either.
+    """
+    denied = authorize_request(request)
+    if denied is not None:
+        return denied
     job = await job_store.get(job_id)
     if job is None:
         return {"status": "unknown", "error": "job not found"}
     return {"status": job["status"], "result": job["result"]}
 
 
+def bind_address() -> tuple[str, int]:
+    """Host and port for a direct ``python server.py`` run.
+
+    Loopback by default. Authorization already refuses network callers when no
+    token is set, but not listening on the world at all is the stronger default:
+    a deployment that needs network reach opts in explicitly with
+    ``KOVE_ENGINE_HOST=0.0.0.0`` and should set ``KOVE_ENGINE_TOKEN`` with it.
+    """
+    host = (os.environ.get("KOVE_ENGINE_HOST") or "").strip() or "127.0.0.1"
+    try:
+        port = int(os.environ.get("KOVE_ENGINE_PORT", "8000"))
+    except ValueError:
+        port = 8000
+    return host, port
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    _host, _port = bind_address()
+    uvicorn.run(app, host=_host, port=_port)

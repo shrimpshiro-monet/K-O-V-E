@@ -115,17 +115,22 @@ endpoint that cannot be reached reports `ANALYSIS_UNREACHABLE`.
 
 ### Access control
 
-Two server-side variables, both optional, both read per request:
+Four server-side variables, all optional, all read per request:
 
 | Variable | Default | Effect |
 | --- | --- | --- |
 | `KOVE_ENGINE_TOKEN` | unset | When set, **every** caller must send `Authorization: Bearer <token>`, including loopback — a reverse proxy on the same host makes remote callers look local. |
 | `KOVE_MEDIA_ROOTS` | the working directory | Comma-separated directories `POST /analyze` may read video files from. |
+| `KOVE_ENGINE_HOST` | `127.0.0.1` | Interface a direct `python server.py` run binds. A container or a host that must be reachable sets `0.0.0.0` — and should set a token with it. |
+| `KOVE_ENGINE_PORT` | `8000` | Port for the same. |
 
-With no token set, only loopback clients are served; a request from any other
-address gets `503` naming the missing variable. That keeps a local `uvicorn` run
-frictionless without leaving a network-reachable engine, which has no
-authentication of its own, open to the network.
+The server does not listen on the network at all unless asked: `python server.py`
+binds loopback, so an accidental `uvicorn` run is not reachable from anywhere
+else. When a network caller does arrive — because someone bound `0.0.0.0`, or
+through a container port mapping — and no token is configured, it gets `503`
+naming the missing variable rather than being served. `/analyze`, `/analyze-frames`
+and `/jobs/{job_id}` are all gated; only `/health` answers unauthenticated, so a
+supervisor can probe it.
 
 **The client has to send that token.** The app reads it from
 `VITE_ECO_WORKER_TOKEN` (or `KOVE_ECO_WORKER_TOKEN`) and puts it on every
