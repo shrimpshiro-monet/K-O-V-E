@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { makeClientFromSend } from "../llm";
 import { CORPUS_PATH, runBaseline } from "./baseline";
@@ -21,11 +22,15 @@ import { loadCorpus } from "./corpus";
  *   KOVE_EVAL_LIVE_STUB=1 pnpm vitest run src/eval/live-stub.test.ts
  *
  * Optional: KOVE_EVAL_STUB_URL (default http://127.0.0.1:8799/v1/chat/completions),
- * KOVE_EVAL_K (default 3).
+ * KOVE_EVAL_K (default 3), KOVE_EVAL_ROOT — a directory holding a corpus
+ * `projects.json` + its media (e.g. a local real-media corpus that must never
+ * be committed; see evaluation-files/README.md).
  */
 const LIVE = process.env.KOVE_EVAL_LIVE_STUB === "1";
 const STUB = process.env.KOVE_EVAL_STUB_URL ?? "http://127.0.0.1:8799/v1/chat/completions";
 const K = Number(process.env.KOVE_EVAL_K ?? "3") || 3;
+const EVAL_ROOT = process.env.KOVE_EVAL_ROOT;
+const CORPUS_FILE = EVAL_ROOT ? join(EVAL_ROOT, "projects.json") : CORPUS_PATH;
 
 describe.skipIf(!LIVE)("baseline genre-combo via local llm-stub (pipeline-controlled live rerun)", () => {
   it(
@@ -53,6 +58,7 @@ describe.skipIf(!LIVE)("baseline genre-combo via local llm-stub (pipeline-contro
         runsPerCombo: K,
         concurrency: 1,
         client,
+        ...(EVAL_ROOT ? { root: EVAL_ROOT } : {}),
         reportPath: process.env.KOVE_EVAL_STUB_REPORT ?? "/home/user/kove-e2e-harness/eval-live-stub-report.json",
         onCase: (result) => {
           const gateLabel = [
@@ -72,7 +78,7 @@ describe.skipIf(!LIVE)("baseline genre-combo via local llm-stub (pipeline-contro
       });
 
       // Same harness correctness assertions as the live spec.
-      const corpusSize = loadCorpus(CORPUS_PATH).flatMap(p => p.prompts).length;
+      const corpusSize = loadCorpus(CORPUS_FILE).flatMap(p => p.prompts).length;
       expect(summary.cases).toBe(corpusSize);
       expect(summary.runsPerCombo).toBe(K);
       expect(summary.total).toBe(corpusSize * K);
@@ -111,14 +117,17 @@ describe.skipIf(!LIVE)("baseline genre-combo via local llm-stub (pipeline-contro
           (summary.determinism.mixedIds.length ? ` → ${summary.determinism.mixedIds.join(", ")}` : ""),
       );
 
+      // Prompt-type aware rows: detect genre combos by the corpus' declared
+      // prompt type, not the prompt-id suffix — a corpus may name prompts
+      // `pod-01-genre` instead of `genre` (a local real-media corpus does).
       const rows = [...valid.reduce((map, r) => {
-        const row = map.get(r.id) ?? { pass: 0, total: 0, failures: [] as string[] };
+        const row = map.get(r.id) ?? { pass: 0, total: 0, promptType: r.promptType, failures: [] as string[] };
         row.total += 1;
         if (r.ok) row.pass += 1;
         else row.failures.push(...r.failures);
         map.set(r.id, row);
         return map;
-      }, new Map<string, { pass: number; total: number; failures: string[] }>()).entries()];
+      }, new Map<string, { pass: number; total: number; promptType: string; failures: string[] }>()).entries()];
       const failedCombos: string[] = [];
       console.log("[live-stub] per-combo gate rates:");
       for (const [id, row] of rows) {
@@ -138,7 +147,8 @@ describe.skipIf(!LIVE)("baseline genre-combo via local llm-stub (pipeline-contro
       // The measurement: with a controlled-correct model, genre combos must
       // gate green too. A red genre combo here is a pipeline bug — report it,
       // don't paper over it.
-      const genreCombos = rows.filter(([id]) => id.endsWith("/genre"));
+      const genreCombos = rows.filter(([, row]) => row.promptType === "genre");
+      console.log(`[live-stub] genre combos asserted: ${genreCombos.length}/${rows.length}`);
       for (const [id, row] of genreCombos) {
         expect(row.pass, `genre combo ${id} failed with a controlled model: ${row.failures.join(" | ")}`).toBe(row.total);
       }

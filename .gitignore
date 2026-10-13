@@ -110,3 +110,15 @@ evaluation-files/baseline-*.json*
 apps/web/e2e/.assets/
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Local eval-corpus overlays + real-media evaluation assets — these are
+# per-machine (KOVE_EVAL_ROOT; see evaluation-files/README.md). Copyrighted
+# footage and multi-hundred-MB media must never enter git history.
+/evaluation-files/*.local.json
+/evaluation-files/*.mp4
+/evaluation-files/audio/
+
+# Local toolchain + session scratch (never source)
+**/.venv/
+session-*.md
+tree.md

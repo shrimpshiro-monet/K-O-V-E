@@ -46,6 +46,14 @@ const INCLUDE = (process.env.KOVE_EVAL_INCLUDE ?? "")
   .filter(Boolean);
 /** Repeats per combination (k). k >= 3 so gate rates carry a spread. */
 const RUNS = Number(process.env.KOVE_EVAL_RUNS ?? "3") || 3;
+/**
+ * Corpus-root override: a directory holding `projects.json` plus the media
+ * the corpus references (e.g. a local real-media evaluation set that must
+ * never be committed — see evaluation-files/README.md). runBaseline already
+ * resolves both the corpus and its assets from a root; this just surfaces it.
+ */
+const EVAL_ROOT = process.env.KOVE_EVAL_ROOT;
+const LIVE_CORPUS_PATH = EVAL_ROOT ? join(EVAL_ROOT, "projects.json") : CORPUS_PATH;
 const selection = INCLUDE.length > 0 ? `include-${INCLUDE.length}` : OFFSET ? `offset-${OFFSET}` : undefined;
 const reportPath = selection
   ? new URL(`../../../../evaluation-files/baseline-r${RUNS}-${selection}.json`, import.meta.url).pathname
@@ -616,6 +624,7 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
         includeIds: INCLUDE.length > 0 ? INCLUDE : undefined,
         runsPerCombo: RUNS,
         reportPath,
+        ...(EVAL_ROOT ? { root: EVAL_ROOT } : {}),
         concurrency: 3,
         onCase: result => {
           const gateLabel = [
@@ -638,7 +647,7 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
       // recomputed from the actual selection, so after any corpus growth the
       // spec measured the report against a phantom size. Derive from the
       // corpus file instead.
-      const corpusSize = loadCorpus(CORPUS_PATH).flatMap(p => p.prompts).length;
+      const corpusSize = loadCorpus(LIVE_CORPUS_PATH).flatMap(p => p.prompts).length;
       const cases = INCLUDE.length > 0
         ? INCLUDE.length
         : Math.max(0, Math.min(LIMIT ?? corpusSize, corpusSize - (OFFSET ?? 0)));

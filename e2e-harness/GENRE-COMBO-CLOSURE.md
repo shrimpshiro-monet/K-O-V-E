@@ -86,3 +86,15 @@ re-keying canonicalizer addresses. The pipeline needs no genre-combo fix.
 - Stub: `e2e-harness/llm-stub.mjs` (eval branch + browser-harness branches).
 - Live-stub report: written by the spec to
   `$KOVE_EVAL_STUB_REPORT` (default `/home/user/kove-e2e-harness/eval-live-stub-report.json`).
+
+## Follow-on: real-media local corpora
+
+The closure above was proven against the synthetic in-repo corpus. A natural,
+stronger replication is a real-media corpus (real durations, real music,
+vaguer briefs). Both live specs honor `KOVE_EVAL_ROOT=<dir>` pointing at any
+directory holding a `projects.json` + its media — see
+`evaluation-files/README.md`. The genre detection in the per-combo analysis is
+prompt-**type** based, so overlays free to name prompts differently
+(`pod-01-genre` style) still get their genre combos asserted explicitly.
+Such corpora stay local-only (copyright + size); `.gitignore` covers the
+overlay paths.
