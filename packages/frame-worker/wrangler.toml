@@ -4,3 +4,30 @@ compatibility_date = "2024-01-01"
 
 [vars]
 CF_AI_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct"
+
+# Browser origins allowed to call this worker, comma-separated, or "*" to allow
+# any origin. UNSET MEANS NO CROSS-ORIGIN ACCESS: browsers are blocked, and
+# server-side callers still need the bearer token. This replaces a blanket
+# `Access-Control-Allow-Origin: *`, which let any page on the internet spend this
+# account's AI quota from a visitor's browser.
+#
+#   ALLOWED_ORIGINS = "https://app.example.com"
+#
+# Per-request limits. Every frame is one billable model call, so these are the
+# difference between a bounded cost and an open tap. Defaults shown.
+#
+#   MAX_FRAMES_PER_REQUEST = "40"
+#   MAX_FRAMES_PER_BATCH = "8"
+#   MAX_FRAME_BYTES = "2000000"
+#   MAX_REQUESTS_PER_MINUTE = "20"
+#
+# Secrets — set these with `wrangler secret put`, never in this file:
+#
+#   WORKER_AUTH_TOKEN      required; requests must send `Authorization: Bearer <token>`
+#   CLOUDFLARE_ACCOUNT_ID  required; vision model calls
+#   CLOUDFLARE_API_TOKEN   required; vision model calls
+#
+# Without WORKER_AUTH_TOKEN the worker returns 503 and serves nothing rather than
+# running unauthenticated. MAX_REQUESTS_PER_MINUTE is best-effort: it counts per
+# worker isolate, so it is a speed bump rather than a global quota — use
+# Cloudflare Rate Limiting rules or the account's AI gateway limits for a real one.
