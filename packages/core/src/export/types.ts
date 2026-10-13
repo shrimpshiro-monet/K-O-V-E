@@ -36,6 +36,15 @@ export interface AudioExportSettings {
   bitDepth: 16 | 24 | 32;
   bitrate: number;
   channels: 1 | 2;
+  /**
+   * Master the rendered programme to `targetLufs` with one uniform gain,
+   * clamped so the oversampled true peak stays under
+   * `truePeakCeilingDbtp`. On by default (−14 LUFS / −1 dBTP, the numbers
+   * social platforms normalize to); set false to export the mix untouched.
+   */
+  loudnessNormalize?: boolean;
+  targetLufs?: number;
+  truePeakCeilingDbtp?: number;
 }
 
 export interface ImageExportSettings {
@@ -107,6 +116,13 @@ export interface ExportStats {
   averageSpeed: number;
   fileSize: number;
   averageBitrate: number;
+  /**
+   * Measured effect of the loudness-mastering stage on the exported
+   * programme (before/after integrated LUFS and true peak, gain applied,
+   * whether the peak ceiling clamped the gain). Present whenever the
+   * programme had audio and mastering ran or was measured.
+   */
+  loudness?: import("../audio/loudness/loudness-master").MasteringReport;
 }
 
 export const DEFAULT_VIDEO_SETTINGS: VideoExportSettings = {
@@ -135,6 +151,9 @@ export const DEFAULT_AUDIO_SETTINGS: AudioExportSettings = {
   bitDepth: 16,
   bitrate: 320,
   channels: 2,
+  loudnessNormalize: true,
+  targetLufs: -14,
+  truePeakCeilingDbtp: -1,
 };
 
 export const DEFAULT_IMAGE_SETTINGS: ImageExportSettings = {

@@ -489,7 +489,15 @@ describe("ExportEngine", () => {
 
       const generator = exportEngine.exportVideo(
         project,
-        { ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360 },
+        {
+          ...DEFAULT_VIDEO_SETTINGS,
+          frameRate: 1,
+          width: 640,
+          height: 360,
+          // Mastering needs the WHOLE programme in one buffer; this test pins
+          // the legacy chunk fallback (loudnessNormalize: false forces it).
+          audioSettings: { ...DEFAULT_VIDEO_SETTINGS.audioSettings, loudnessNormalize: false },
+        },
         writableStream,
       );
 
@@ -504,6 +512,67 @@ describe("ExportEngine", () => {
       expect(mockRenderAudio).toHaveBeenNthCalledWith(3, project, 30, 10);
       expect(mockAudioSourceAdd).toHaveBeenCalledTimes(3);
       expect(mockAudioEngine.clearCache).toHaveBeenCalled();
+    });
+
+    it("masters the full mix in one pass when loudnessNormalize is on", async () => {
+      const sampleRate = 48000;
+      const seconds = 2;
+      const length = sampleRate * seconds;
+      const channel = new Float32Array(length).fill(0.25);
+      mockRenderAudio.mockResolvedValue({
+        buffer: {
+          sampleRate,
+          numberOfChannels: 2,
+          length,
+          getChannelData: (c: number) => (c === 0 ? channel : Float32Array.from(channel)),
+        },
+      });
+
+      const project = createMockProject({
+        timeline: createMockTimeline({
+          tracks: [
+            createMockTrack({
+              clips: [createMockClip({ duration: seconds, outPoint: seconds })],
+            }),
+          ],
+          duration: seconds,
+        }),
+      });
+
+      await exportEngine.initialize();
+
+      const writableStream = {
+        seek: vi.fn().mockResolvedValue(undefined),
+        write: vi.fn().mockResolvedValue(undefined),
+        close: vi.fn().mockResolvedValue(undefined),
+        abort: vi.fn().mockResolvedValue(undefined),
+      } as unknown as FileSystemWritableFileStream;
+
+      const generator = exportEngine.exportVideo(
+        project,
+        { ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360 },
+        writableStream,
+      );
+
+      let result: unknown;
+      while (true) {
+        const next = await generator.next();
+        if (next.done) {
+          result = next.value;
+          break;
+        }
+      }
+
+      // ONE render of the whole programme, ONE mastered buffer handed over.
+      expect(mockRenderAudio).toHaveBeenCalledTimes(1);
+      expect(mockRenderAudio).toHaveBeenCalledWith(project, 0, seconds);
+      expect(mockAudioSourceAdd).toHaveBeenCalledTimes(1);
+
+      const stats = (
+        result as { stats?: { loudness?: { gainAppliedDb: number } } }
+      ).stats;
+      expect(stats?.loudness).toBeDefined();
+      expect(Number.isFinite(stats!.loudness!.gainAppliedDb)).toBe(true);
     });
 
     it("prefers hardware WebCodecs for the default browser backend", async () => {
