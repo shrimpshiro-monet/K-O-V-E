@@ -502,5 +502,50 @@ scorecard's must not be.
 
 ## Baseline
 
-_Recorded once the golden set finishes building. The rule for every later step is
-that its scorecard delta is written here before the next step starts._
+`evaluation-files/craft/baseline.json`, run `baseline`, recorded 2026-10-13 15:25:35
+UTC. Five references, eight sensitivity checks, two of them failing.
+
+| reference | shot len (ref→out) | cuts | on-beat (ref→out) | cut offset ms | ΔE | motion F1 | caption err |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| pulse-fast | 2.02 → 1.78 | 39 → 38 | 0.00 → 0.56 | 196 → −8 | 30.9 | 1.00 → 0.33 | 8 |
+| cinematic-slow | 7.89 → 6.25 | 7 → 9 | 0.33 → 0.57 | 256 → −8 | 26.0 | 1.00 → 0.33 | 1 |
+| doc-natural | 5.21 → 4.25 | 10 → 13 | 0.11 → 0.00 | 184 → 192 | 21.3 | 1.00 → 0.24 | 2 |
+| social-vertical | 0.96 → 1.06 | 60 → 50 | 0.00 → 0.48 | 192 → −4 | 35.1 | 1.00 → 0.00 | 5 |
+| text-forward | 2.50 → 2.00 | 20 → 21 | 0.05 → 0.11 | 136 → −96 | 31.5 | 1.00 → 0.07 | 3 |
+
+Also measured: `lufs` reference −15.8…−17.5 against output −16.7 everywhere (the
+renderer normalises, F13); `true_peak_dbfs` −0.1…−0.4 → −0.5;
+`lab_histogram_distance` 0.083–0.148; `transition_mix_tv_distance` 0.026 on
+`pulse-fast` and 0.000 on the other four; `caption_missing` 0–2 with end errors up
+to 2200 ms; `ducking_depth_db` 5.3–10.9 → ≈0 (F13).
+
+**Read the on-beat column knowing what F11 established:** the scorecard's grid comes
+from the Python tracker, which is 179–264 ms out of phase with the actual music. The
+reference scores *lower* than the output because the reference is cut on the true
+beat and the output is snapped to the product's grid. The number is measuring the
+gap correctly; it just needs reading in that direction.
+
+### What has to be true before each step can start
+
+The mission's rule is to stop a step when it stops moving the score, and not to ship
+a gate that cannot separate. Two of the eight sensitivity checks fail, which rules
+out one step until the metric is repaired:
+
+| Step | Ready? |
+| --- | --- |
+| 1. rhythm on the rendered output | yes — and it is the largest measured defect (F11, F12) |
+| 2. colour | yes — `color_delta_e_mean` separates (12.74 vs 0) and the gap is 21–35 ΔE |
+| 3. motion | **no** — both motion checks fail. A punch-in produces no event and magnitude does not scale. Fix the metric first; do not ship a motion gate |
+| 4. transitions and effects | yes — `transition_mix_tv_distance` separates, though four of five references are already 0.000 |
+| 5. captions | yes — `caption_windows` separates (3 vs 2) |
+| 6. audio | partially — `lufs` separates and is already within ~0.9 LU; `ducking_depth_db` separates (9.868 vs −0.065) and the gap is the whole 5–11 dB |
+| 7. StyleProfile 2.0 | grows from the above |
+
+### Known instrument gaps, restated so they are not mistaken for product gaps
+
+- The compositor **cannot render split/PiP layouts** the product compiles (F7), so a
+  plan using them scores unfairly. Not yet triggered by a golden reference.
+- **"Which source is on screen at time t" has no metric** (V3, V6) — two contact
+  sheets have now shown material in the wrong place, and nothing measures it. This
+  is a prerequisite for judging the planner at all.
+- The renderer is the Python compositor, not the browser one (F2).

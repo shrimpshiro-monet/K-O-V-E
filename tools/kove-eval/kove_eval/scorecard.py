@@ -144,13 +144,18 @@ def score_pair(
             metrics.shot_lengths_in_beats(ref_boundaries, bpm),
             metrics.shot_lengths_in_beats(out_boundaries, bpm),
         )
+        # EMD is already a distance, so it goes through `_error_row`: `reference`
+        # stays None (printing 0.000 there would read as "the reference measured
+        # zero") and the unit says what zero means. An earlier version put the
+        # distance in the reference slot and hardcoded `output = 0.0` so the
+        # subtraction worked out, which made the table say the output scored a
+        # perfect zero on all five references — a claim no measurement supported.
         rows.append(
-            _row(
+            _error_row(
                 "shot_length_emd_beats",
                 "beats",
                 dist["emd"] if dist else None,
-                0.0,
-                note="earth-mover distance between the two shot-length distributions",
+                note="earth-mover distance between the shot-length distributions; 0 is ideal",
             )
         )
         rows.append(

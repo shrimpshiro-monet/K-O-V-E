@@ -1,0 +1,2764 @@
+{
+  "craftVersion": "0.1.0",
+  "runId": "baseline",
+  "createdAt": "2026-10-13T15:25:35+0000",
+  "provenance": {
+    "renderer": "edl-python (kove-eval compositor)",
+    "rendererNote": "The product renders in the browser (WebGPU/WebCodecs + mediabunny); no browser is available in this environment, so craft output is rendered by kove-eval's Python compositor from the same EditPlan. Plan-level work (beat snapping) runs through the real production code via the vitest bridge. Rendered-vs-planned checks below measure what this renderer actually produced.",
+    "beatSnap": "packages/creation-schema/src/director/beat-snap.ts (via bridge)",
+    "analyzers": "packages/python-engine (SceneDetector, beat_grid) + kove-eval metrics",
+    "ffmpeg": "ffmpeg version 7.0.2-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2024 the FFmpeg developers",
+    "python": "3.11.2"
+  },
+  "references": [
+    {
+      "reference_id": "pulse-fast",
+      "label": "Fast beat-locked cutting, warm punchy grade, punch-ins on the beat",
+      "output": "/home/user/K-O-V-E/evaluation-files/craft/runs/baseline/outputs/pulse-fast.mp4",
+      "metrics": [
+        {
+          "name": "shot_length_emd_beats",
+          "unit": "beats",
+          "reference": 0.14176173086521954,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 0.14176173086521954,
+          "separates": null,
+          "note": "earth-mover distance between the two shot-length distributions"
+        },
+        {
+          "name": "shot_length_median_beats",
+          "unit": "beats",
+          "reference": 2.0192307692307687,
+          "output": 1.7788461538461542,
+          "higher_is_better": false,
+          "distance": 0.24038461538461453,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "shot_length_p90_beats",
+          "unit": "beats",
+          "reference": 2.115384615384615,
+          "output": 2.115384615384615,
+          "higher_is_better": false,
+          "distance": 0.0,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "cut_count",
+          "unit": "cuts",
+          "reference": 39.0,
+          "output": 38.0,
+          "higher_is_better": false,
+          "distance": 1.0,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "on_beat_ratio_40ms",
+          "unit": "ratio",
+          "reference": 0.0,
+          "output": 0.5555555555555556,
+          "higher_is_better": true,
+          "distance": 0.5555555555555556,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "median_cut_offset_ms",
+          "unit": "ms",
+          "reference": 196.0,
+          "output": -7.999999999999119,
+          "higher_is_better": false,
+          "distance": 203.99999999999912,
+          "separates": null,
+          "note": "signed: negative is early"
+        },
+        {
+          "name": "mean_abs_cut_offset_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 100.66666666666663,
+          "higher_is_better": false,
+          "distance": null,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "color_delta_e_mean",
+          "unit": "dE",
+          "reference": null,
+          "output": 30.924930572509766,
+          "higher_is_better": false,
+          "distance": 30.924930572509766,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "color_delta_e_p95",
+          "unit": "dE",
+          "reference": null,
+          "output": 52.93121337890625,
+          "higher_is_better": false,
+          "distance": 52.93121337890625,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "color_delta_e_non_skin",
+          "unit": "dE",
+          "reference": null,
+          "output": 29.602184295654297,
+          "higher_is_better": false,
+          "distance": 29.602184295654297,
+          "separates": null,
+          "note": "grade error away from skin; a widening gap to the mean means the grade is eating faces"
+        },
+        {
+          "name": "lab_histogram_distance",
+          "unit": "emd",
+          "reference": null,
+          "output": 0.1306676754814458,
+          "higher_is_better": false,
+          "distance": 0.1306676754814458,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "motion_event_f1",
+          "unit": "f1",
+          "reference": 1.0,
+          "output": 0.3333333333333333,
+          "higher_is_better": true,
+          "distance": 0.6666666666666667,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "motion_events_missing",
+          "unit": "events",
+          "reference": null,
+          "output": 15.0,
+          "higher_is_better": false,
+          "distance": 15.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "motion_events_spurious",
+          "unit": "events",
+          "reference": null,
+          "output": 13.0,
+          "higher_is_better": false,
+          "distance": 13.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "transition_mix_tv_distance",
+          "unit": "tv",
+          "reference": null,
+          "output": 0.026315789473684195,
+          "higher_is_better": false,
+          "distance": 0.026315789473684195,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_count_error",
+          "unit": "captions",
+          "reference": null,
+          "output": 8.0,
+          "higher_is_better": false,
+          "distance": 8.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_missing",
+          "unit": "captions",
+          "reference": null,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 0.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_start_error_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 466.6666666666675,
+          "higher_is_better": false,
+          "distance": 466.6666666666675,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_end_error_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 283.33333333333366,
+          "higher_is_better": false,
+          "distance": 283.33333333333366,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "lufs",
+          "unit": "LUFS",
+          "reference": -16.2,
+          "output": -16.7,
+          "higher_is_better": false,
+          "distance": 0.5,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "true_peak_dbfs",
+          "unit": "dBFS",
+          "reference": -0.1,
+          "output": -0.5,
+          "higher_is_better": false,
+          "distance": 0.4,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "ducking_depth_db",
+          "unit": "dB",
+          "reference": null,
+          "output": null,
+          "higher_is_better": false,
+          "distance": null,
+          "separates": null,
+          "note": ""
+        }
+      ],
+      "extras": {
+        "ref_alignment": {
+          "evaluated": 54,
+          "on_beat": 54,
+          "on_beat_ratio": 1.0,
+          "median_offset_ms": 0.0,
+          "mean_abs_offset_ms": 0.0,
+          "tolerance_ms": 40
+        },
+        "output_alignment": {
+          "evaluated": 36,
+          "on_beat": 20,
+          "on_beat_ratio": 0.5555555555555556,
+          "median_offset_ms": -7.999999999999119,
+          "mean_abs_offset_ms": 100.66666666666663,
+          "tolerance_ms": 40
+        },
+        "color": {
+          "delta_e_mean": 30.924930572509766,
+          "delta_e_median": 30.735431671142578,
+          "delta_e_p95": 52.93121337890625,
+          "delta_e_non_skin": 29.602184295654297,
+          "skin_fraction": 0.3076117621527778,
+          "lab_hist_distance": 0.1306676754814458,
+          "lab_mean_delta": {
+            "L": -0.9291968196630478,
+            "a": -0.46166011691093445,
+            "b": -4.972361326217651
+          }
+        },
+        "color_mean_delta_lab": {
+          "L": -0.9291968196630478,
+          "a": -0.46166011691093445,
+          "b": -4.972361326217651
+        },
+        "motion": {
+          "reference_events": 22,
+          "output_events": [
+            {
+              "time": 0.08,
+              "kind": "punch-out",
+              "magnitude": 0.33443644527002186
+            },
+            {
+              "time": 0.96,
+              "kind": "punch-out",
+              "magnitude": 0.4006913903208638
+            },
+            {
+              "time": 2.24,
+              "kind": "punch-out",
+              "magnitude": 0.3355507747192565
+            },
+            {
+              "time": 3.3200000000000003,
+              "kind": "punch-out",
+              "magnitude": 0.3336688906335732
+            },
+            {
+              "time": 4.6,
+              "kind": "punch-out",
+              "magnitude": 0.359652962179873
+            },
+            {
+              "time": 5.88,
+              "kind": "punch-out",
+              "magnitude": 0.33491135886827916
+            },
+            {
+              "time": 6.76,
+              "kind": "punch-out",
+              "magnitude": 0.4159277828413392
+            },
+            {
+              "time": 8.04,
+              "kind": "punch-out",
+              "magnitude": 0.3359046182014486
+            },
+            {
+              "time": 9.68,
+              "kind": "punch-out",
+              "magnitude": 0.33424542752044695
+            },
+            {
+              "time": 10.4,
+              "kind": "punch-out",
+              "magnitude": 0.3882317345630316
+            },
+            {
+              "time": 11.68,
+              "kind": "punch-out",
+              "magnitude": 0.33552826187769086
+            },
+            {
+              "time": 12.56,
+              "kind": "punch-out",
+              "magnitude": 0.39617889532086603
+            },
+            {
+              "time": 14.24,
+              "kind": "punch-out",
+              "magnitude": 0.39965518685536217
+            },
+            {
+              "time": 15.56,
+              "kind": "punch-out",
+              "magnitude": 0.3353212447052987
+            },
+            {
+              "time": 16.4,
+              "kind": "punch-out",
+              "magnitude": 0.37851726318762474
+            },
+            {
+              "time": 17.88,
+              "kind": "punch-out",
+              "magnitude": 0.39538571297112823
+            },
+            {
+              "time": 18.759999999999998,
+              "kind": "punch-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 20.04,
+              "kind": "punch-out",
+              "magnitude": 0.4086047906672092
+            },
+            {
+              "time": 21.319999999999997,
+              "kind": "punch-out",
+              "magnitude": 0.33487430975412374
+            },
+            {
+              "time": 22.599999999999998,
+              "kind": "punch-out",
+              "magnitude": 0.3336670591402978
+            }
+          ],
+          "matched": 7,
+          "precision": 0.35,
+          "recall": 0.3181818181818182,
+          "f1": 0.3333333333333333
+        },
+        "transitions": {
+          "reference": {
+            "cut": 37,
+            "dissolve": 1,
+            "dip": 0,
+            "total": 38,
+            "proportions": {
+              "cut": 0.9736842105263158,
+              "dissolve": 0.02631578947368421,
+              "dip": 0.0
+            }
+          },
+          "output": {
+            "cut": 37,
+            "dissolve": 0,
+            "dip": 0,
+            "total": 37,
+            "proportions": {
+              "cut": 1.0,
+              "dissolve": 0.0,
+              "dip": 0.0
+            }
+          }
+        },
+        "captions": {
+          "reference_count": 6,
+          "output_count": 14,
+          "matched": 6,
+          "missing": 0,
+          "spurious": 8,
+          "mean_abs_start_error_ms": 466.6666666666675,
+          "mean_abs_end_error_ms": 283.33333333333366,
+          "median_start_error_ms": -400.0000000000057,
+          "output_windows": [
+            [
+              0.0,
+              0.9
+            ],
+            [
+              2.2,
+              3.1
+            ],
+            [
+              4.1,
+              4.6
+            ],
+            [
+              5.8,
+              6.7
+            ],
+            [
+              8.0,
+              8.8
+            ],
+            [
+              9.3,
+              10.4
+            ],
+            [
+              11.6,
+              12.5
+            ],
+            [
+              13.8,
+              14.2
+            ],
+            [
+              15.5,
+              16.4
+            ],
+            [
+              17.6,
+              17.8
+            ],
+            [
+              19.5,
+              20.0
+            ],
+            [
+              20.8,
+              22.1
+            ],
+            [
+              22.5,
+              23.2
+            ],
+            [
+              23.4,
+              23.8
+            ]
+          ]
+        },
+        "loudness": {
+          "reference": {
+            "integrated_lufs": -16.2,
+            "lra_lu": 0.0,
+            "true_peak_dbfs": -0.1
+          },
+          "output": {
+            "integrated_lufs": -16.7,
+            "lra_lu": 0.2,
+            "true_peak_dbfs": -0.5
+          }
+        },
+        "ducking": {
+          "reference_db": null,
+          "output_db": null,
+          "speech_windows": []
+        }
+      },
+      "notes": [
+        "production beat snap moved 37/37 cuts (grid=music-bed, step=0.208s)"
+      ]
+    },
+    {
+      "reference_id": "cinematic-slow",
+      "label": "Long takes, slow push, teal-orange split tone, no captions",
+      "output": "/home/user/K-O-V-E/evaluation-files/craft/runs/baseline/outputs/cinematic-slow.mp4",
+      "metrics": [
+        {
+          "name": "shot_length_emd_beats",
+          "unit": "beats",
+          "reference": 1.5826217533396443,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 1.5826217533396443,
+          "separates": null,
+          "note": "earth-mover distance between the two shot-length distributions"
+        },
+        {
+          "name": "shot_length_median_beats",
+          "unit": "beats",
+          "reference": 7.894736842105258,
+          "output": 6.250000000000001,
+          "higher_is_better": false,
+          "distance": 1.6447368421052575,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "shot_length_p90_beats",
+          "unit": "beats",
+          "reference": 9.315789473684212,
+          "output": 7.894736842105263,
+          "higher_is_better": false,
+          "distance": 1.4210526315789496,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "cut_count",
+          "unit": "cuts",
+          "reference": 7.0,
+          "output": 9.0,
+          "higher_is_better": false,
+          "distance": 2.0,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "on_beat_ratio_40ms",
+          "unit": "ratio",
+          "reference": 0.3333333333333333,
+          "output": 0.5714285714285714,
+          "higher_is_better": true,
+          "distance": 0.23809523809523808,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "median_cut_offset_ms",
+          "unit": "ms",
+          "reference": 256.0,
+          "output": -7.999999999999119,
+          "higher_is_better": false,
+          "distance": 263.9999999999991,
+          "separates": null,
+          "note": "signed: negative is early"
+        },
+        {
+          "name": "mean_abs_cut_offset_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 94.85714285714282,
+          "higher_is_better": false,
+          "distance": null,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "color_delta_e_mean",
+          "unit": "dE",
+          "reference": null,
+          "output": 26.00439453125,
+          "higher_is_better": false,
+          "distance": 26.00439453125,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "color_delta_e_p95",
+          "unit": "dE",
+          "reference": null,
+          "output": 53.41176986694336,
+          "higher_is_better": false,
+          "distance": 53.41176986694336,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "color_delta_e_non_skin",
+          "unit": "dE",
+          "reference": null,
+          "output": 24.212587356567383,
+          "higher_is_better": false,
+          "distance": 24.212587356567383,
+          "separates": null,
+          "note": "grade error away from skin; a widening gap to the mean means the grade is eating faces"
+        },
+        {
+          "name": "lab_histogram_distance",
+          "unit": "emd",
+          "reference": null,
+          "output": 0.11894325538917827,
+          "higher_is_better": false,
+          "distance": 0.11894325538917827,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "motion_event_f1",
+          "unit": "f1",
+          "reference": 1.0,
+          "output": 0.33333333333333337,
+          "higher_is_better": true,
+          "distance": 0.6666666666666666,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "motion_events_missing",
+          "unit": "events",
+          "reference": null,
+          "output": 14.0,
+          "higher_is_better": false,
+          "distance": 14.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "motion_events_spurious",
+          "unit": "events",
+          "reference": null,
+          "output": 18.0,
+          "higher_is_better": false,
+          "distance": 18.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "transition_mix_tv_distance",
+          "unit": "tv",
+          "reference": null,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 0.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_count_error",
+          "unit": "captions",
+          "reference": null,
+          "output": 1.0,
+          "higher_is_better": false,
+          "distance": 1.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_missing",
+          "unit": "captions",
+          "reference": null,
+          "output": 1.0,
+          "higher_is_better": false,
+          "distance": 1.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_start_error_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 100.00000000000142,
+          "higher_is_better": false,
+          "distance": 100.00000000000142,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_end_error_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 2200.0000000000314,
+          "higher_is_better": false,
+          "distance": 2200.0000000000314,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "lufs",
+          "unit": "LUFS",
+          "reference": -17.4,
+          "output": -16.7,
+          "higher_is_better": false,
+          "distance": 0.6999999999999993,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "true_peak_dbfs",
+          "unit": "dBFS",
+          "reference": -0.2,
+          "output": -0.5,
+          "higher_is_better": false,
+          "distance": 0.3,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "ducking_depth_db",
+          "unit": "dB",
+          "reference": null,
+          "output": null,
+          "higher_is_better": false,
+          "distance": null,
+          "separates": null,
+          "note": ""
+        }
+      ],
+      "extras": {
+        "ref_alignment": {
+          "evaluated": 40,
+          "on_beat": 40,
+          "on_beat_ratio": 1.0,
+          "median_offset_ms": 0.0,
+          "mean_abs_offset_ms": 0.0,
+          "tolerance_ms": 40
+        },
+        "output_alignment": {
+          "evaluated": 7,
+          "on_beat": 4,
+          "on_beat_ratio": 0.5714285714285714,
+          "median_offset_ms": -7.999999999999119,
+          "mean_abs_offset_ms": 94.85714285714282,
+          "tolerance_ms": 40
+        },
+        "color": {
+          "delta_e_mean": 26.00439453125,
+          "delta_e_median": 21.154422760009766,
+          "delta_e_p95": 53.41176986694336,
+          "delta_e_non_skin": 24.212587356567383,
+          "skin_fraction": 0.026145833333333333,
+          "lab_hist_distance": 0.11894325538917827,
+          "lab_mean_delta": {
+            "L": 10.266478452831507,
+            "a": -3.894234910607338,
+            "b": 7.793100088834763
+          }
+        },
+        "color_mean_delta_lab": {
+          "L": 10.266478452831507,
+          "a": -3.894234910607338,
+          "b": 7.793100088834763
+        },
+        "motion": {
+          "reference_events": 22,
+          "output_events": [
+            {
+              "time": 0.0,
+              "kind": "pull-out",
+              "magnitude": 0.334428768384249
+            },
+            {
+              "time": 0.0,
+              "kind": "punch-out",
+              "magnitude": 0.3344287683842369
+            },
+            {
+              "time": 0.08,
+              "kind": "pull-out",
+              "magnitude": 0.33443644527002186
+            },
+            {
+              "time": 0.08,
+              "kind": "punch-out",
+              "magnitude": 0.3344364452700218
+            },
+            {
+              "time": 4.8,
+              "kind": "pull-out",
+              "magnitude": 0.4200485813795681
+            },
+            {
+              "time": 4.8,
+              "kind": "punch-out",
+              "magnitude": 0.4200355606187327
+            },
+            {
+              "time": 4.88,
+              "kind": "pull-out",
+              "magnitude": 0.43434482587119877
+            },
+            {
+              "time": 4.88,
+              "kind": "punch-out",
+              "magnitude": 0.43434277274996896
+            },
+            {
+              "time": 4.96,
+              "kind": "pull-out",
+              "magnitude": 0.10338725387940524
+            },
+            {
+              "time": 4.96,
+              "kind": "punch-out",
+              "magnitude": 0.10338692557427656
+            },
+            {
+              "time": 9.6,
+              "kind": "pull-out",
+              "magnitude": 0.33366666666666667
+            },
+            {
+              "time": 9.6,
+              "kind": "punch-out",
+              "magnitude": 0.3336666666666665
+            },
+            {
+              "time": 9.68,
+              "kind": "pull-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 9.68,
+              "kind": "punch-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 14.2,
+              "kind": "pull-out",
+              "magnitude": 0.3337644576941999
+            },
+            {
+              "time": 14.2,
+              "kind": "punch-out",
+              "magnitude": 0.3337644576941999
+            },
+            {
+              "time": 14.28,
+              "kind": "pull-out",
+              "magnitude": 0.3337654404304717
+            },
+            {
+              "time": 14.28,
+              "kind": "punch-out",
+              "magnitude": 0.3337654404304717
+            },
+            {
+              "time": 17.12,
+              "kind": "pull-out",
+              "magnitude": 0.3814355160653
+            },
+            {
+              "time": 17.12,
+              "kind": "punch-out",
+              "magnitude": 0.38143420385867616
+            },
+            {
+              "time": 17.2,
+              "kind": "pull-out",
+              "magnitude": 0.3888704743908126
+            },
+            {
+              "time": 17.2,
+              "kind": "punch-out",
+              "magnitude": 0.38887024322993696
+            },
+            {
+              "time": 22.52,
+              "kind": "pull-out",
+              "magnitude": 0.33546448749273083
+            },
+            {
+              "time": 22.52,
+              "kind": "punch-out",
+              "magnitude": 0.33546448749273067
+            },
+            {
+              "time": 22.599999999999998,
+              "kind": "pull-out",
+              "magnitude": 0.33547554844279087
+            },
+            {
+              "time": 22.599999999999998,
+              "kind": "punch-out",
+              "magnitude": 0.33547554844279087
+            }
+          ],
+          "matched": 8,
+          "precision": 0.3076923076923077,
+          "recall": 0.36363636363636365,
+          "f1": 0.33333333333333337
+        },
+        "transitions": {
+          "reference": {
+            "cut": 6,
+            "dissolve": 0,
+            "dip": 0,
+            "total": 6,
+            "proportions": {
+              "cut": 1.0,
+              "dissolve": 0.0,
+              "dip": 0.0
+            }
+          },
+          "output": {
+            "cut": 8,
+            "dissolve": 0,
+            "dip": 0,
+            "total": 8,
+            "proportions": {
+              "cut": 1.0,
+              "dissolve": 0.0,
+              "dip": 0.0
+            }
+          }
+        },
+        "captions": {
+          "reference_count": 3,
+          "output_count": 4,
+          "matched": 2,
+          "missing": 1,
+          "spurious": 2,
+          "mean_abs_start_error_ms": 100.00000000000142,
+          "mean_abs_end_error_ms": 2200.0000000000314,
+          "median_start_error_ms": -100.00000000000142,
+          "output_windows": [
+            [
+              0.0,
+              4.8
+            ],
+            [
+              11.7,
+              12.4
+            ],
+            [
+              16.6,
+              17.2
+            ],
+            [
+              22.5,
+              26.4
+            ]
+          ]
+        },
+        "loudness": {
+          "reference": {
+            "integrated_lufs": -17.4,
+            "lra_lu": 0.5,
+            "true_peak_dbfs": -0.2
+          },
+          "output": {
+            "integrated_lufs": -16.7,
+            "lra_lu": 0.2,
+            "true_peak_dbfs": -0.5
+          }
+        },
+        "ducking": {
+          "reference_db": null,
+          "output_db": null,
+          "speech_windows": []
+        }
+      },
+      "notes": [
+        "production beat snap moved 6/6 cuts (grid=music-bed, step=0.304s)"
+      ]
+    },
+    {
+      "reference_id": "doc-natural",
+      "label": "Natural colour, speech under a light bed, dusted with captions",
+      "output": "/home/user/K-O-V-E/evaluation-files/craft/runs/baseline/outputs/doc-natural.mp4",
+      "metrics": [
+        {
+          "name": "shot_length_emd_beats",
+          "unit": "beats",
+          "reference": 1.4655652566611477,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 1.4655652566611477,
+          "separates": null,
+          "note": "earth-mover distance between the two shot-length distributions"
+        },
+        {
+          "name": "shot_length_median_beats",
+          "unit": "beats",
+          "reference": 5.208333333333334,
+          "output": 4.25,
+          "higher_is_better": false,
+          "distance": 0.9583333333333339,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "shot_length_p90_beats",
+          "unit": "beats",
+          "reference": 8.333333333333334,
+          "output": 6.066666666666666,
+          "higher_is_better": false,
+          "distance": 2.2666666666666675,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "cut_count",
+          "unit": "cuts",
+          "reference": 10.0,
+          "output": 13.0,
+          "higher_is_better": false,
+          "distance": 3.0,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "on_beat_ratio_40ms",
+          "unit": "ratio",
+          "reference": 0.1111111111111111,
+          "output": 0.0,
+          "higher_is_better": true,
+          "distance": 0.1111111111111111,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "median_cut_offset_ms",
+          "unit": "ms",
+          "reference": 184.0,
+          "output": 192.00000000000017,
+          "higher_is_better": false,
+          "distance": 8.00000000000017,
+          "separates": null,
+          "note": "signed: negative is early"
+        },
+        {
+          "name": "mean_abs_cut_offset_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 191.9999999999996,
+          "higher_is_better": false,
+          "distance": null,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "color_delta_e_mean",
+          "unit": "dE",
+          "reference": null,
+          "output": 21.298341751098633,
+          "higher_is_better": false,
+          "distance": 21.298341751098633,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "color_delta_e_p95",
+          "unit": "dE",
+          "reference": null,
+          "output": 46.741336822509766,
+          "higher_is_better": false,
+          "distance": 46.741336822509766,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "color_delta_e_non_skin",
+          "unit": "dE",
+          "reference": null,
+          "output": 16.826921463012695,
+          "higher_is_better": false,
+          "distance": 16.826921463012695,
+          "separates": null,
+          "note": "grade error away from skin; a widening gap to the mean means the grade is eating faces"
+        },
+        {
+          "name": "lab_histogram_distance",
+          "unit": "emd",
+          "reference": null,
+          "output": 0.0833773238570602,
+          "higher_is_better": false,
+          "distance": 0.0833773238570602,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "motion_event_f1",
+          "unit": "f1",
+          "reference": 1.0,
+          "output": 0.23809523809523808,
+          "higher_is_better": true,
+          "distance": 0.7619047619047619,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "motion_events_missing",
+          "unit": "events",
+          "reference": null,
+          "output": 30.0,
+          "higher_is_better": false,
+          "distance": 30.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "motion_events_spurious",
+          "unit": "events",
+          "reference": null,
+          "output": 34.0,
+          "higher_is_better": false,
+          "distance": 34.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "transition_mix_tv_distance",
+          "unit": "tv",
+          "reference": null,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 0.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_count_error",
+          "unit": "captions",
+          "reference": null,
+          "output": 2.0,
+          "higher_is_better": false,
+          "distance": 2.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_missing",
+          "unit": "captions",
+          "reference": null,
+          "output": 1.0,
+          "higher_is_better": false,
+          "distance": 1.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_start_error_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 200.0,
+          "higher_is_better": false,
+          "distance": 200.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_end_error_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 199.99999999999994,
+          "higher_is_better": false,
+          "distance": 199.99999999999994,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "lufs",
+          "unit": "LUFS",
+          "reference": -15.8,
+          "output": -16.7,
+          "higher_is_better": false,
+          "distance": 0.8999999999999986,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "true_peak_dbfs",
+          "unit": "dBFS",
+          "reference": -0.4,
+          "output": -0.5,
+          "higher_is_better": false,
+          "distance": 0.09999999999999998,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "ducking_depth_db",
+          "unit": "dB",
+          "reference": 10.875525447998609,
+          "output": -0.06412227262935133,
+          "higher_is_better": false,
+          "distance": 10.93964772062796,
+          "separates": null,
+          "note": ""
+        }
+      ],
+      "extras": {
+        "ref_alignment": {
+          "evaluated": 51,
+          "on_beat": 51,
+          "on_beat_ratio": 1.0,
+          "median_offset_ms": 0.0,
+          "mean_abs_offset_ms": 0.0,
+          "tolerance_ms": 40
+        },
+        "output_alignment": {
+          "evaluated": 11,
+          "on_beat": 0,
+          "on_beat_ratio": 0.0,
+          "median_offset_ms": 192.00000000000017,
+          "mean_abs_offset_ms": 191.9999999999996,
+          "tolerance_ms": 40
+        },
+        "color": {
+          "delta_e_mean": 21.298341751098633,
+          "delta_e_median": 18.451128005981445,
+          "delta_e_p95": 46.741336822509766,
+          "delta_e_non_skin": 16.826921463012695,
+          "skin_fraction": 0.19353190104166668,
+          "lab_hist_distance": 0.0833773238570602,
+          "lab_mean_delta": {
+            "L": -1.2755638556554914,
+            "a": -0.14990436006337404,
+            "b": 1.8640809615608305
+          }
+        },
+        "color_mean_delta_lab": {
+          "L": -1.2755638556554914,
+          "a": -0.14990436006337404,
+          "b": 1.8640809615608305
+        },
+        "motion": {
+          "reference_events": 40,
+          "output_events": [
+            {
+              "time": 0.0,
+              "kind": "pull-out",
+              "magnitude": 0.334428768384249
+            },
+            {
+              "time": 0.0,
+              "kind": "punch-out",
+              "magnitude": 0.3344287683842369
+            },
+            {
+              "time": 0.08,
+              "kind": "pull-out",
+              "magnitude": 0.33443644527002186
+            },
+            {
+              "time": 0.08,
+              "kind": "punch-out",
+              "magnitude": 0.3344364452700218
+            },
+            {
+              "time": 2.04,
+              "kind": "pull-out",
+              "magnitude": 0.4200457142869807
+            },
+            {
+              "time": 2.04,
+              "kind": "punch-out",
+              "magnitude": 0.42003269375953267
+            },
+            {
+              "time": 2.12,
+              "kind": "pull-out",
+              "magnitude": 0.4343417016944786
+            },
+            {
+              "time": 2.12,
+              "kind": "punch-out",
+              "magnitude": 0.43433964861001617
+            },
+            {
+              "time": 2.2,
+              "kind": "pull-out",
+              "magnitude": 0.10338408695191557
+            },
+            {
+              "time": 2.2,
+              "kind": "punch-out",
+              "magnitude": 0.10338375865267649
+            },
+            {
+              "time": 4.96,
+              "kind": "pull-out",
+              "magnitude": 0.33366666666666667
+            },
+            {
+              "time": 4.96,
+              "kind": "punch-out",
+              "magnitude": 0.3336666666666665
+            },
+            {
+              "time": 5.04,
+              "kind": "pull-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 5.04,
+              "kind": "punch-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 6.52,
+              "kind": "pull-out",
+              "magnitude": 0.3358876858162104
+            },
+            {
+              "time": 6.52,
+              "kind": "punch-out",
+              "magnitude": 0.3358876858161986
+            },
+            {
+              "time": 6.6,
+              "kind": "pull-out",
+              "magnitude": 0.33590076738823055
+            },
+            {
+              "time": 6.6,
+              "kind": "punch-out",
+              "magnitude": 0.3359007673882305
+            },
+            {
+              "time": 9.48,
+              "kind": "punch-out",
+              "magnitude": 0.3341237697433364
+            },
+            {
+              "time": 10.36,
+              "kind": "pull-out",
+              "magnitude": 0.3814355160653
+            },
+            {
+              "time": 10.36,
+              "kind": "punch-out",
+              "magnitude": 0.38142800688126277
+            },
+            {
+              "time": 10.44,
+              "kind": "pull-out",
+              "magnitude": 0.3888704743908126
+            },
+            {
+              "time": 10.44,
+              "kind": "punch-out",
+              "magnitude": 0.38886916217935896
+            },
+            {
+              "time": 12.6,
+              "kind": "pull-out",
+              "magnitude": 0.33366666666666667
+            },
+            {
+              "time": 12.6,
+              "kind": "punch-out",
+              "magnitude": 0.33366666666666317
+            },
+            {
+              "time": 12.68,
+              "kind": "pull-out",
+              "magnitude": 0.33366889060368
+            },
+            {
+              "time": 12.68,
+              "kind": "punch-out",
+              "magnitude": 0.33366889060368
+            },
+            {
+              "time": 15.48,
+              "kind": "pull-out",
+              "magnitude": 0.33546448749273083
+            },
+            {
+              "time": 15.48,
+              "kind": "punch-out",
+              "magnitude": 0.33546448749273067
+            },
+            {
+              "time": 15.56,
+              "kind": "pull-out",
+              "magnitude": 0.33547554844279087
+            },
+            {
+              "time": 15.56,
+              "kind": "punch-out",
+              "magnitude": 0.33547554844279087
+            },
+            {
+              "time": 17.52,
+              "kind": "pull-out",
+              "magnitude": 0.35792226102763225
+            },
+            {
+              "time": 17.52,
+              "kind": "punch-out",
+              "magnitude": 0.35792225291741964
+            },
+            {
+              "time": 17.599999999999998,
+              "kind": "pull-out",
+              "magnitude": 0.35965297030477156
+            },
+            {
+              "time": 17.599999999999998,
+              "kind": "punch-out",
+              "magnitude": 0.35965296945754577
+            },
+            {
+              "time": 20.0,
+              "kind": "pull-out",
+              "magnitude": 0.3338032672623401
+            },
+            {
+              "time": 20.0,
+              "kind": "punch-out",
+              "magnitude": 0.3338032672623401
+            },
+            {
+              "time": 20.08,
+              "kind": "pull-out",
+              "magnitude": 0.3338046408231248
+            },
+            {
+              "time": 20.08,
+              "kind": "punch-out",
+              "magnitude": 0.3338046408231248
+            },
+            {
+              "time": 22.0,
+              "kind": "pull-out",
+              "magnitude": 0.3346879367591306
+            },
+            {
+              "time": 22.0,
+              "kind": "punch-out",
+              "magnitude": 0.3346879367591306
+            },
+            {
+              "time": 22.08,
+              "kind": "pull-out",
+              "magnitude": 0.3346956174108941
+            },
+            {
+              "time": 22.08,
+              "kind": "punch-out",
+              "magnitude": 0.3346956174108941
+            },
+            {
+              "time": 25.119999999999997,
+              "kind": "punch-out",
+              "magnitude": 0.41589146782200154
+            }
+          ],
+          "matched": 10,
+          "precision": 0.22727272727272727,
+          "recall": 0.25,
+          "f1": 0.23809523809523808
+        },
+        "transitions": {
+          "reference": {
+            "cut": 9,
+            "dissolve": 0,
+            "dip": 0,
+            "total": 9,
+            "proportions": {
+              "cut": 1.0,
+              "dissolve": 0.0,
+              "dip": 0.0
+            }
+          },
+          "output": {
+            "cut": 12,
+            "dissolve": 0,
+            "dip": 0,
+            "total": 12,
+            "proportions": {
+              "cut": 1.0,
+              "dissolve": 0.0,
+              "dip": 0.0
+            }
+          }
+        },
+        "captions": {
+          "reference_count": 2,
+          "output_count": 4,
+          "matched": 1,
+          "missing": 1,
+          "spurious": 3,
+          "mean_abs_start_error_ms": 200.0,
+          "mean_abs_end_error_ms": 199.99999999999994,
+          "median_start_error_ms": -200.0,
+          "output_windows": [
+            [
+              0.0,
+              2.1
+            ],
+            [
+              6.6,
+              10.4
+            ],
+            [
+              15.5,
+              17.6
+            ],
+            [
+              22.0,
+              25.1
+            ]
+          ]
+        },
+        "loudness": {
+          "reference": {
+            "integrated_lufs": -15.8,
+            "lra_lu": 1.1,
+            "true_peak_dbfs": -0.4
+          },
+          "output": {
+            "integrated_lufs": -16.7,
+            "lra_lu": 0.2,
+            "true_peak_dbfs": -0.5
+          }
+        },
+        "ducking": {
+          "reference_db": 10.875525447998609,
+          "output_db": -0.06412227262935133,
+          "speech_windows": [
+            [
+              0.9,
+              1.9
+            ],
+            [
+              3.35,
+              4.85
+            ],
+            [
+              5.9,
+              6.9
+            ],
+            [
+              8.8,
+              10.8
+            ],
+            [
+              11.9,
+              12.9
+            ],
+            [
+              14.35,
+              15.85
+            ],
+            [
+              16.9,
+              17.9
+            ],
+            [
+              19.35,
+              20.85
+            ],
+            [
+              21.9,
+              22.9
+            ],
+            [
+              24.8,
+              26.8
+            ]
+          ]
+        }
+      },
+      "notes": [
+        "production beat snap moved 10/10 cuts (grid=music-bed, step=0.480s)"
+      ]
+    },
+    {
+      "reference_id": "social-vertical",
+      "label": "Vertical, one-beat cuts, snap zooms, heavy caption load",
+      "output": "/home/user/K-O-V-E/evaluation-files/craft/runs/baseline/outputs/social-vertical.mp4",
+      "metrics": [
+        {
+          "name": "shot_length_emd_beats",
+          "unit": "beats",
+          "reference": 0.20511064278187652,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 0.20511064278187652,
+          "separates": null,
+          "note": "earth-mover distance between the two shot-length distributions"
+        },
+        {
+          "name": "shot_length_median_beats",
+          "unit": "beats",
+          "reference": 0.9615384615384623,
+          "output": 1.0576923076923064,
+          "higher_is_better": false,
+          "distance": 0.09615384615384404,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "shot_length_p90_beats",
+          "unit": "beats",
+          "reference": 2.0192307692307687,
+          "output": 2.0288461538461533,
+          "higher_is_better": false,
+          "distance": 0.009615384615384581,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "cut_count",
+          "unit": "cuts",
+          "reference": 60.0,
+          "output": 50.0,
+          "higher_is_better": false,
+          "distance": 10.0,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "on_beat_ratio_40ms",
+          "unit": "ratio",
+          "reference": 0.0,
+          "output": 0.4791666666666667,
+          "higher_is_better": true,
+          "distance": 0.4791666666666667,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "median_cut_offset_ms",
+          "unit": "ms",
+          "reference": 192.0,
+          "output": -3.9999999999995595,
+          "higher_is_better": false,
+          "distance": 195.99999999999955,
+          "separates": null,
+          "note": "signed: negative is early"
+        },
+        {
+          "name": "mean_abs_cut_offset_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 96.66666666666664,
+          "higher_is_better": false,
+          "distance": null,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "color_delta_e_mean",
+          "unit": "dE",
+          "reference": null,
+          "output": 35.076107025146484,
+          "higher_is_better": false,
+          "distance": 35.076107025146484,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "color_delta_e_p95",
+          "unit": "dE",
+          "reference": null,
+          "output": 55.40821838378906,
+          "higher_is_better": false,
+          "distance": 55.40821838378906,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "color_delta_e_non_skin",
+          "unit": "dE",
+          "reference": null,
+          "output": 32.3742790222168,
+          "higher_is_better": false,
+          "distance": 32.3742790222168,
+          "separates": null,
+          "note": "grade error away from skin; a widening gap to the mean means the grade is eating faces"
+        },
+        {
+          "name": "lab_histogram_distance",
+          "unit": "emd",
+          "reference": null,
+          "output": 0.14745917673613546,
+          "higher_is_better": false,
+          "distance": 0.14745917673613546,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "motion_event_f1",
+          "unit": "f1",
+          "reference": 1.0,
+          "output": 0.0,
+          "higher_is_better": true,
+          "distance": 1.0,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "motion_events_missing",
+          "unit": "events",
+          "reference": null,
+          "output": 13.0,
+          "higher_is_better": false,
+          "distance": 13.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "motion_events_spurious",
+          "unit": "events",
+          "reference": null,
+          "output": 11.0,
+          "higher_is_better": false,
+          "distance": 11.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "transition_mix_tv_distance",
+          "unit": "tv",
+          "reference": null,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 0.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_count_error",
+          "unit": "captions",
+          "reference": null,
+          "output": 5.0,
+          "higher_is_better": false,
+          "distance": 5.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_missing",
+          "unit": "captions",
+          "reference": null,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 0.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_start_error_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": null,
+          "higher_is_better": false,
+          "distance": null,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_end_error_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": null,
+          "higher_is_better": false,
+          "distance": null,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "lufs",
+          "unit": "LUFS",
+          "reference": -16.7,
+          "output": -16.7,
+          "higher_is_better": false,
+          "distance": 0.0,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "true_peak_dbfs",
+          "unit": "dBFS",
+          "reference": -0.1,
+          "output": -0.5,
+          "higher_is_better": false,
+          "distance": 0.4,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "ducking_depth_db",
+          "unit": "dB",
+          "reference": 5.288015087426233,
+          "output": 0.13908198493777135,
+          "higher_is_better": false,
+          "distance": 5.148933102488462,
+          "separates": null,
+          "note": ""
+        }
+      ],
+      "extras": {
+        "ref_alignment": {
+          "evaluated": 56,
+          "on_beat": 56,
+          "on_beat_ratio": 1.0,
+          "median_offset_ms": 0.0,
+          "mean_abs_offset_ms": 0.0,
+          "tolerance_ms": 40
+        },
+        "output_alignment": {
+          "evaluated": 48,
+          "on_beat": 23,
+          "on_beat_ratio": 0.4791666666666667,
+          "median_offset_ms": -3.9999999999995595,
+          "mean_abs_offset_ms": 96.66666666666664,
+          "tolerance_ms": 40
+        },
+        "color": {
+          "delta_e_mean": 35.076107025146484,
+          "delta_e_median": 34.94632339477539,
+          "delta_e_p95": 55.40821838378906,
+          "delta_e_non_skin": 32.3742790222168,
+          "skin_fraction": 0.19783474297012302,
+          "lab_hist_distance": 0.14745917673613546,
+          "lab_mean_delta": {
+            "L": 3.261861003935337,
+            "a": 13.334350317716599,
+            "b": 2.837316082790494
+          }
+        },
+        "color_mean_delta_lab": {
+          "L": 3.261861003935337,
+          "a": 13.334350317716599,
+          "b": 2.837316082790494
+        },
+        "motion": {
+          "reference_events": 13,
+          "output_events": [
+            {
+              "time": 0.08,
+              "kind": "punch-out",
+              "magnitude": 0.335161896802751
+            },
+            {
+              "time": 1.1600000000000001,
+              "kind": "punch-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 3.7600000000000002,
+              "kind": "punch-out",
+              "magnitude": 0.3336683170050934
+            },
+            {
+              "time": 5.88,
+              "kind": "punch-out",
+              "magnitude": 0.338049254039951
+            },
+            {
+              "time": 8.48,
+              "kind": "punch-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 10.4,
+              "kind": "punch-out",
+              "magnitude": 0.3360674917789021
+            },
+            {
+              "time": 12.96,
+              "kind": "punch-out",
+              "magnitude": 0.3340128464806433
+            },
+            {
+              "time": 15.52,
+              "kind": "punch-out",
+              "magnitude": 0.3605413317987177
+            },
+            {
+              "time": 18.319999999999997,
+              "kind": "punch-out",
+              "magnitude": 0.3551344112382023
+            },
+            {
+              "time": 20.479999999999997,
+              "kind": "punch-out",
+              "magnitude": 0.33390251720520403
+            },
+            {
+              "time": 23.04,
+              "kind": "punch-out",
+              "magnitude": 0.3424726164419624
+            }
+          ],
+          "matched": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "transitions": {
+          "reference": {
+            "cut": 59,
+            "dissolve": 0,
+            "dip": 0,
+            "total": 59,
+            "proportions": {
+              "cut": 1.0,
+              "dissolve": 0.0,
+              "dip": 0.0
+            }
+          },
+          "output": {
+            "cut": 49,
+            "dissolve": 0,
+            "dip": 0,
+            "total": 49,
+            "proportions": {
+              "cut": 1.0,
+              "dissolve": 0.0,
+              "dip": 0.0
+            }
+          }
+        },
+        "captions": {
+          "reference_count": 0,
+          "output_count": 5,
+          "matched": 0,
+          "missing": 0,
+          "spurious": 5,
+          "mean_abs_start_error_ms": null,
+          "mean_abs_end_error_ms": null,
+          "median_start_error_ms": null,
+          "output_windows": [
+            [
+              5.4,
+              5.8
+            ],
+            [
+              7.2,
+              7.6
+            ],
+            [
+              8.7,
+              9.3
+            ],
+            [
+              16.4,
+              16.8
+            ],
+            [
+              17.6,
+              17.8
+            ]
+          ]
+        },
+        "loudness": {
+          "reference": {
+            "integrated_lufs": -16.7,
+            "lra_lu": 0.4,
+            "true_peak_dbfs": -0.1
+          },
+          "output": {
+            "integrated_lufs": -16.7,
+            "lra_lu": 0.2,
+            "true_peak_dbfs": -0.5
+          }
+        },
+        "ducking": {
+          "reference_db": 5.288015087426233,
+          "output_db": 0.13908198493777135,
+          "speech_windows": [
+            [
+              1.243,
+              1.614
+            ],
+            [
+              3.386,
+              3.757
+            ],
+            [
+              5.1,
+              5.471
+            ],
+            [
+              7.243,
+              7.614
+            ],
+            [
+              8.957,
+              9.329
+            ],
+            [
+              11.1,
+              11.471
+            ],
+            [
+              12.814,
+              13.186
+            ],
+            [
+              14.957,
+              15.329
+            ],
+            [
+              16.671,
+              17.043
+            ],
+            [
+              18.814,
+              19.186
+            ],
+            [
+              20.529,
+              20.9
+            ],
+            [
+              22.671,
+              23.043
+            ],
+            [
+              24.386,
+              24.757
+            ]
+          ]
+        }
+      },
+      "notes": [
+        "production beat snap moved 49/49 cuts (grid=music-bed, step=0.208s)"
+      ]
+    },
+    {
+      "reference_id": "text-forward",
+      "label": "Bright flat grade, caption-led, medium cuts",
+      "output": "/home/user/K-O-V-E/evaluation-files/craft/runs/baseline/outputs/text-forward.mp4",
+      "metrics": [
+        {
+          "name": "shot_length_emd_beats",
+          "unit": "beats",
+          "reference": 0.5588161634516822,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 0.5588161634516822,
+          "separates": null,
+          "note": "earth-mover distance between the two shot-length distributions"
+        },
+        {
+          "name": "shot_length_median_beats",
+          "unit": "beats",
+          "reference": 2.5000000000000013,
+          "output": 2.0000000000000018,
+          "higher_is_better": false,
+          "distance": 0.49999999999999956,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "shot_length_p90_beats",
+          "unit": "beats",
+          "reference": 4.999999999999998,
+          "output": 4.083333333333336,
+          "higher_is_better": false,
+          "distance": 0.9166666666666625,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "cut_count",
+          "unit": "cuts",
+          "reference": 20.0,
+          "output": 21.0,
+          "higher_is_better": false,
+          "distance": 1.0,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "on_beat_ratio_40ms",
+          "unit": "ratio",
+          "reference": 0.05263157894736842,
+          "output": 0.10526315789473684,
+          "higher_is_better": true,
+          "distance": 0.05263157894736842,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "median_cut_offset_ms",
+          "unit": "ms",
+          "reference": 136.0,
+          "output": -96.00000000000009,
+          "higher_is_better": false,
+          "distance": 232.00000000000009,
+          "separates": null,
+          "note": "signed: negative is early"
+        },
+        {
+          "name": "mean_abs_cut_offset_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 99.36842105263148,
+          "higher_is_better": false,
+          "distance": null,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "color_delta_e_mean",
+          "unit": "dE",
+          "reference": null,
+          "output": 31.501670837402344,
+          "higher_is_better": false,
+          "distance": 31.501670837402344,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "color_delta_e_p95",
+          "unit": "dE",
+          "reference": null,
+          "output": 54.37087631225586,
+          "higher_is_better": false,
+          "distance": 54.37087631225586,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "color_delta_e_non_skin",
+          "unit": "dE",
+          "reference": null,
+          "output": 25.983657836914062,
+          "higher_is_better": false,
+          "distance": 25.983657836914062,
+          "separates": null,
+          "note": "grade error away from skin; a widening gap to the mean means the grade is eating faces"
+        },
+        {
+          "name": "lab_histogram_distance",
+          "unit": "emd",
+          "reference": null,
+          "output": 0.1442144549334491,
+          "higher_is_better": false,
+          "distance": 0.1442144549334491,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "motion_event_f1",
+          "unit": "f1",
+          "reference": 1.0,
+          "output": 0.06818181818181818,
+          "higher_is_better": true,
+          "distance": 0.9318181818181819,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "motion_events_missing",
+          "unit": "events",
+          "reference": null,
+          "output": 39.0,
+          "higher_is_better": false,
+          "distance": 39.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "motion_events_spurious",
+          "unit": "events",
+          "reference": null,
+          "output": 43.0,
+          "higher_is_better": false,
+          "distance": 43.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "transition_mix_tv_distance",
+          "unit": "tv",
+          "reference": null,
+          "output": 0.0,
+          "higher_is_better": false,
+          "distance": 0.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_count_error",
+          "unit": "captions",
+          "reference": null,
+          "output": 3.0,
+          "higher_is_better": false,
+          "distance": 3.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_missing",
+          "unit": "captions",
+          "reference": null,
+          "output": 2.0,
+          "higher_is_better": false,
+          "distance": 2.0,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_start_error_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 700.0000000000017,
+          "higher_is_better": false,
+          "distance": 700.0000000000017,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "caption_end_error_ms",
+          "unit": "ms",
+          "reference": null,
+          "output": 1175.000000000001,
+          "higher_is_better": false,
+          "distance": 1175.000000000001,
+          "separates": null,
+          "note": "0 is ideal"
+        },
+        {
+          "name": "lufs",
+          "unit": "LUFS",
+          "reference": -17.5,
+          "output": -16.7,
+          "higher_is_better": false,
+          "distance": 0.8000000000000007,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "true_peak_dbfs",
+          "unit": "dBFS",
+          "reference": -0.2,
+          "output": -0.5,
+          "higher_is_better": false,
+          "distance": 0.3,
+          "separates": null,
+          "note": ""
+        },
+        {
+          "name": "ducking_depth_db",
+          "unit": "dB",
+          "reference": 5.799245036706935,
+          "output": -0.0637179326898707,
+          "higher_is_better": false,
+          "distance": 5.862962969396806,
+          "separates": null,
+          "note": ""
+        }
+      ],
+      "extras": {
+        "ref_alignment": {
+          "evaluated": 50,
+          "on_beat": 50,
+          "on_beat_ratio": 1.0,
+          "median_offset_ms": 0.0,
+          "mean_abs_offset_ms": 0.0,
+          "tolerance_ms": 40
+        },
+        "output_alignment": {
+          "evaluated": 19,
+          "on_beat": 2,
+          "on_beat_ratio": 0.10526315789473684,
+          "median_offset_ms": -96.00000000000009,
+          "mean_abs_offset_ms": 99.36842105263148,
+          "tolerance_ms": 40
+        },
+        "color": {
+          "delta_e_mean": 31.501670837402344,
+          "delta_e_median": 31.33889389038086,
+          "delta_e_p95": 54.37087631225586,
+          "delta_e_non_skin": 25.983657836914062,
+          "skin_fraction": 0.07976019965277778,
+          "lab_hist_distance": 0.1442144549334491,
+          "lab_mean_delta": {
+            "L": -4.212546658702195,
+            "a": 4.7421365566551685,
+            "b": -0.1486630216240883
+          }
+        },
+        "color_mean_delta_lab": {
+          "L": -4.212546658702195,
+          "a": 4.7421365566551685,
+          "b": -0.1486630216240883
+        },
+        "motion": {
+          "reference_events": 42,
+          "output_events": [
+            {
+              "time": 0.08,
+              "kind": "punch-out",
+              "magnitude": 0.33443644527002186
+            },
+            {
+              "time": 0.96,
+              "kind": "pull-out",
+              "magnitude": 0.39117739426072645
+            },
+            {
+              "time": 0.96,
+              "kind": "punch-out",
+              "magnitude": 0.3911687262368186
+            },
+            {
+              "time": 1.04,
+              "kind": "pull-out",
+              "magnitude": 0.40069923033583
+            },
+            {
+              "time": 1.04,
+              "kind": "punch-out",
+              "magnitude": 0.4006978629428123
+            },
+            {
+              "time": 1.12,
+              "kind": "pull-out",
+              "magnitude": 0.06894407105928936
+            },
+            {
+              "time": 1.12,
+              "kind": "punch-out",
+              "magnitude": 0.0689438525766198
+            },
+            {
+              "time": 3.52,
+              "kind": "punch-out",
+              "magnitude": 0.3919013761301162
+            },
+            {
+              "time": 4.2,
+              "kind": "pull-out",
+              "magnitude": 0.33545535686768857
+            },
+            {
+              "time": 4.2,
+              "kind": "punch-out",
+              "magnitude": 0.335455356867667
+            },
+            {
+              "time": 4.28,
+              "kind": "pull-out",
+              "magnitude": 0.3354688310282941
+            },
+            {
+              "time": 4.28,
+              "kind": "punch-out",
+              "magnitude": 0.335468831028294
+            },
+            {
+              "time": 6.84,
+              "kind": "pull-out",
+              "magnitude": 0.33518066306478456
+            },
+            {
+              "time": 6.84,
+              "kind": "punch-out",
+              "magnitude": 0.33518066306476163
+            },
+            {
+              "time": 6.92,
+              "kind": "pull-out",
+              "magnitude": 0.33519017428129705
+            },
+            {
+              "time": 6.92,
+              "kind": "punch-out",
+              "magnitude": 0.33519017428129694
+            },
+            {
+              "time": 8.8,
+              "kind": "punch-out",
+              "magnitude": 0.359652962179279
+            },
+            {
+              "time": 9.68,
+              "kind": "punch-out",
+              "magnitude": 0.3338046408231248
+            },
+            {
+              "time": 10.56,
+              "kind": "pull-out",
+              "magnitude": 0.3346879367591306
+            },
+            {
+              "time": 10.56,
+              "kind": "punch-out",
+              "magnitude": 0.33468793675912734
+            },
+            {
+              "time": 10.64,
+              "kind": "pull-out",
+              "magnitude": 0.3346956174108941
+            },
+            {
+              "time": 10.64,
+              "kind": "punch-out",
+              "magnitude": 0.3346956174108941
+            },
+            {
+              "time": 13.12,
+              "kind": "punch-out",
+              "magnitude": 0.3356442170152084
+            },
+            {
+              "time": 14.04,
+              "kind": "pull-out",
+              "magnitude": 0.41296419067741336
+            },
+            {
+              "time": 14.04,
+              "kind": "punch-out",
+              "magnitude": 0.4129511833693935
+            },
+            {
+              "time": 14.12,
+              "kind": "pull-out",
+              "magnitude": 0.425574937429137
+            },
+            {
+              "time": 14.12,
+              "kind": "punch-out",
+              "magnitude": 0.4255726235200952
+            },
+            {
+              "time": 14.2,
+              "kind": "pull-out",
+              "magnitude": 0.09430206665576142
+            },
+            {
+              "time": 14.2,
+              "kind": "punch-out",
+              "magnitude": 0.09430164269623972
+            },
+            {
+              "time": 16.44,
+              "kind": "pull-out",
+              "magnitude": 0.33366666666666667
+            },
+            {
+              "time": 16.44,
+              "kind": "punch-out",
+              "magnitude": 0.33366666666666667
+            },
+            {
+              "time": 16.52,
+              "kind": "pull-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 16.52,
+              "kind": "punch-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 18.4,
+              "kind": "punch-out",
+              "magnitude": 0.3342062035999985
+            },
+            {
+              "time": 19.279999999999998,
+              "kind": "punch-out",
+              "magnitude": 0.38823220618613086
+            },
+            {
+              "time": 20.16,
+              "kind": "pull-out",
+              "magnitude": 0.33366666666666667
+            },
+            {
+              "time": 20.16,
+              "kind": "punch-out",
+              "magnitude": 0.33366666666666667
+            },
+            {
+              "time": 20.24,
+              "kind": "pull-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 20.24,
+              "kind": "punch-out",
+              "magnitude": 0.333667
+            },
+            {
+              "time": 22.2,
+              "kind": "punch-out",
+              "magnitude": 0.3355282618776911
+            },
+            {
+              "time": 23.16,
+              "kind": "pull-out",
+              "magnitude": 0.38649642443773163
+            },
+            {
+              "time": 23.16,
+              "kind": "punch-out",
+              "magnitude": 0.3864950972691018
+            },
+            {
+              "time": 23.24,
+              "kind": "pull-out",
+              "magnitude": 0.39925273038614323
+            },
+            {
+              "time": 23.24,
+              "kind": "punch-out",
+              "magnitude": 0.3992525307363481
+            },
+            {
+              "time": 23.319999999999997,
+              "kind": "pull-out",
+              "magnitude": 0.06791046355582088
+            },
+            {
+              "time": 23.319999999999997,
+              "kind": "punch-out",
+              "magnitude": 0.06791043333376819
+            }
+          ],
+          "matched": 3,
+          "precision": 0.06521739130434782,
+          "recall": 0.07142857142857142,
+          "f1": 0.06818181818181818
+        },
+        "transitions": {
+          "reference": {
+            "cut": 19,
+            "dissolve": 0,
+            "dip": 0,
+            "total": 19,
+            "proportions": {
+              "cut": 1.0,
+              "dissolve": 0.0,
+              "dip": 0.0
+            }
+          },
+          "output": {
+            "cut": 20,
+            "dissolve": 0,
+            "dip": 0,
+            "total": 20,
+            "proportions": {
+              "cut": 1.0,
+              "dissolve": 0.0,
+              "dip": 0.0
+            }
+          }
+        },
+        "captions": {
+          "reference_count": 6,
+          "output_count": 9,
+          "matched": 4,
+          "missing": 2,
+          "spurious": 5,
+          "mean_abs_start_error_ms": 700.0000000000017,
+          "mean_abs_end_error_ms": 1175.000000000001,
+          "median_start_error_ms": -549.9999999999984,
+          "output_windows": [
+            [
+              0.0,
+              1.0
+            ],
+            [
+              2.9,
+              3.5
+            ],
+            [
+              6.9,
+              8.8
+            ],
+            [
+              10.6,
+              12.1
+            ],
+            [
+              13.1,
+              14.1
+            ],
+            [
+              16.5,
+              16.9
+            ],
+            [
+              18.4,
+              19.2
+            ],
+            [
+              20.7,
+              21.5
+            ],
+            [
+              22.1,
+              23.2
+            ]
+          ]
+        },
+        "loudness": {
+          "reference": {
+            "integrated_lufs": -17.5,
+            "lra_lu": 0.4,
+            "true_peak_dbfs": -0.2
+          },
+          "output": {
+            "integrated_lufs": -16.7,
+            "lra_lu": 0.2,
+            "true_peak_dbfs": -0.5
+          }
+        },
+        "ducking": {
+          "reference_db": 5.799245036706935,
+          "output_db": -0.0637179326898707,
+          "speech_windows": [
+            [
+              0.54,
+              1.1
+            ],
+            [
+              2.01,
+              2.9
+            ],
+            [
+              3.54,
+              4.1
+            ],
+            [
+              5.28,
+              6.48
+            ],
+            [
+              7.41,
+              8.3
+            ],
+            [
+              8.94,
+              9.5
+            ],
+            [
+              10.14,
+              10.7
+            ],
+            [
+              11.61,
+              12.5
+            ],
+            [
+              13.14,
+              13.7
+            ],
+            [
+              14.88,
+              16.08
+            ],
+            [
+              17.01,
+              17.9
+            ],
+            [
+              18.54,
+              19.1
+            ],
+            [
+              19.74,
+              20.3
+            ],
+            [
+              21.21,
+              22.1
+            ],
+            [
+              22.74,
+              23.3
+            ],
+            [
+              24.48,
+              25.68
+            ]
+          ]
+        }
+      },
+      "notes": [
+        "production beat snap moved 20/20 cuts (grid=music-bed, step=0.240s)"
+      ]
+    }
+  ],
+  "sensitivity": [
+    {
+      "metric": "color_delta_e_mean",
+      "perturbation": "L +12, b +14, saturation \u00d71.3",
+      "perturbed_value": 12.742971420288086,
+      "control_value": 0.0,
+      "separates": true,
+      "detail": "a visible grade must register as several \u0394E"
+    },
+    {
+      "metric": "motion_events",
+      "perturbation": "0.18 punch-in inside shot 3",
+      "perturbed_value": 4.0,
+      "control_value": 4.0,
+      "separates": false,
+      "detail": "detected: ['pull-out', 'punch-out', 'pull-out', 'punch-out']"
+    },
+    {
+      "metric": "motion_event_magnitude",
+      "perturbation": "punch intensity 0.06 \u2192 0.30",
+      "perturbed_value": 0.3337,
+      "control_value": 0.3337,
+      "separates": false,
+      "detail": "magnitude must scale with the applied move"
+    },
+    {
+      "metric": "caption_windows",
+      "perturbation": "one caption rendered over shot 3",
+      "perturbed_value": 3.0,
+      "control_value": 2.0,
+      "separates": true,
+      "detail": "windows: [(0.16666666666666666, 0.9166666666666667), (1.0, 1.4166666666666663), (2.166666666666666, 2.9166666666666674)]"
+    },
+    {
+      "metric": "on_beat_ratio_40ms",
+      "perturbation": "every cut moved 200ms off the beat",
+      "perturbed_value": 0.0,
+      "control_value": 1.0,
+      "separates": true,
+      "detail": "40ms tolerance must reject 200ms offsets"
+    },
+    {
+      "metric": "shot_length_emd_beats",
+      "perturbation": "shot length 1.0 \u2192 2.0 (constant)",
+      "perturbed_value": 0.9990215264187867,
+      "control_value": 0.0,
+      "separates": true,
+      "detail": "EMD of constant 1-beat vs constant 2-beat shots must be \u22481"
+    },
+    {
+      "metric": "ducking_depth_db",
+      "perturbation": "music bed ducked 10dB under the voice",
+      "perturbed_value": 9.868,
+      "control_value": -0.065,
+      "separates": true,
+      "detail": "a 10dB duck must read as a positive depth"
+    },
+    {
+      "metric": "lufs",
+      "perturbation": "music bed gain -12 dB",
+      "perturbed_value": -29.0,
+      "control_value": -17.0,
+      "separates": true,
+      "detail": "12 dB of gain must read as ~12 LU; got 12.00 LU"
+    }
+  ],
+  "sensitivityFailures": [
+    "motion_events",
+    "motion_event_magnitude"
+  ],
+  "isBaseline": true
+}

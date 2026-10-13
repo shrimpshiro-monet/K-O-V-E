@@ -1,0 +1,128 @@
+{
+  "id": "cinematic-slow",
+  "label": "Long takes, slow push, teal-orange split tone, no captions",
+  "pack_ids": [
+    "canopy",
+    "city",
+    "portrait"
+  ],
+  "track_id": "warm-100",
+  "bpm": 100.0,
+  "beats": [
+    0.0,
+    0.6,
+    1.2,
+    1.8,
+    2.4,
+    3.0,
+    3.6,
+    4.2,
+    4.8,
+    5.4,
+    6.0,
+    6.6,
+    7.2,
+    7.8,
+    8.4,
+    9.0,
+    9.6,
+    10.2,
+    10.8,
+    11.4,
+    12.0,
+    12.6,
+    13.2,
+    13.8,
+    14.4,
+    15.0,
+    15.6,
+    16.2,
+    16.8,
+    17.4,
+    18.0,
+    18.6,
+    19.2,
+    19.8,
+    20.4,
+    21.0,
+    21.6,
+    22.2,
+    22.8,
+    23.4
+  ],
+  "cuts": [
+    4.8,
+    9.6,
+    16.8,
+    21.6
+  ],
+  "shot_lengths_beats": [
+    8.0,
+    8.0,
+    12.0,
+    8.0,
+    8.0
+  ],
+  "motion_events": [
+    {
+      "time": 0.0,
+      "kind": "punch-in",
+      "magnitude": 0.07
+    },
+    {
+      "time": 4.8,
+      "kind": "punch-in",
+      "magnitude": 0.07
+    },
+    {
+      "time": 9.6,
+      "kind": "punch-in",
+      "magnitude": 0.07
+    },
+    {
+      "time": 16.8,
+      "kind": "punch-in",
+      "magnitude": 0.07
+    },
+    {
+      "time": 21.6,
+      "kind": "punch-in",
+      "magnitude": 0.07
+    }
+  ],
+  "caption_windows": [],
+  "speech_windows": [],
+  "transitions": [
+    {
+      "time": 4.8,
+      "type": "cut"
+    },
+    {
+      "time": 9.6,
+      "type": "dissolve"
+    },
+    {
+      "time": 16.8,
+      "type": "dip"
+    },
+    {
+      "time": 21.6,
+      "type": "cut"
+    }
+  ],
+  "duck_db": 0.0,
+  "grade": {
+    "lab_l": -6.0,
+    "lab_a": 4.0,
+    "lab_b": -7.0,
+    "saturation": 0.92,
+    "contrast": 1.18
+  },
+  "duration": 26.4,
+  "size": [
+    1280,
+    720
+  ],
+  "video": "/home/user/K-O-V-E/evaluation-files/craft/references/cinematic-slow.mp4",
+  "music": "/home/user/K-O-V-E/evaluation-files/craft/tracks/warm-100.wav"
+}
