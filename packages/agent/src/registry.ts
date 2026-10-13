@@ -17,7 +17,8 @@ import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
-import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
+import { referenceBeatTargets } from "./director/reference-beats";
+import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, snapPlanToBeatGrid, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
 import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
@@ -33894,6 +33895,12 @@ const TOOLS: RegisteredTool[] = [
         );
       }
 
+      // Rhythmic targets from the reference, read once: how fine its cutting is
+      // in beats, and how far off the beat it sits.
+      const referenceBeats = referenceBeatTargets(providedReferenceAnalysis);
+
+      let lastBeatSnap: ReturnType<typeof snapPlanToBeatGrid>["report"] | null = null;
+
       const preparePlan = (
         raw: unknown,
       ): { plan: EditPlan; issues: readonly DirectorValidationIssue[] } => {
@@ -33909,7 +33916,31 @@ const TOOLS: RegisteredTool[] = [
           },
           resolvedMap,
         );
-        return { plan: resolved, issues: validateEditPlan(resolved, resolvedMap) };
+        // Deterministic snap, after validation: the director chose the content
+        // and the order, and this decides where the cuts land. It runs before
+        // the density review so the review measures the plan that will actually
+        // be committed rather than one that is about to move.
+        //
+        // Loud on failure: if this throws, the plan is returned unsnapped and the
+        // report below says so, rather than silently committing unquantised cuts.
+        let plan = resolved;
+        try {
+          const snapped = snapPlanToBeatGrid(resolved, resolvedMap, {
+            cutOffsetSeconds: referenceBeats.cutOffsetSeconds,
+            referenceShotLengthsInBeats: referenceBeats.shotLengthsInBeats,
+          });
+          lastBeatSnap = snapped.report;
+          // Re-validate: the pass trims and substitutes source spans, and a span
+          // it lengthened can now overlap another shot's.
+          return {
+            plan: snapped.plan,
+            issues: validateEditPlan(snapped.plan, resolvedMap),
+          };
+        } catch (error) {
+          lastBeatSnap = null;
+          console.warn("[plan_edit] beat snap pass failed; committing unquantised cuts", error);
+        }
+        return { plan, issues: validateEditPlan(plan, resolvedMap) };
       };
 
       const formatIssues = (issues: readonly DirectorValidationIssue[]): string =>
@@ -34146,6 +34177,9 @@ const TOOLS: RegisteredTool[] = [
           : null,
         cleanupWarnings: cleanup.warnings,
         validationWarnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
+        // What the deterministic pass did to the cut points, or null when it
+        // could not run. Never a synthetic score.
+        beatSnap: lastBeatSnap,
         planReview: {
           score: planReview.score,
           deviations: planReview.deviations,

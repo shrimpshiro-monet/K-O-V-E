@@ -1,6 +1,7 @@
 import type { EditPlan, Pacing, PlannedSegment } from "./edit-plan";
 import type { SegmentMap } from "./segment-map";
 import { collectCameraMoveIds } from "./camera-moves";
+import { measureTimelineBeatAlignment, resolveTimelineBeatGrid } from "./beat-snap";
 import { computePlanPlacement } from "./validate";
 
 /**
@@ -103,14 +104,10 @@ const HOOK_WINDOW_SECONDS = 2;
 /**
  * How close a cut must be to a beat to count as "on the beat".
  *
- * This is a *measurement* threshold, not a snapping window. It was 0.2, which
- * at 128 BPM (a 0.47 s beat) counted roughly the middle half of every beat as
- * on-beat and made the metric meaningless. 40 ms is about one frame at 24 fps
- * and slightly over two at 60 fps: tight enough that chance alignment is rare,
- * loose enough for frame-quantised cuts. See snapTimeToBeat for the separate,
- * much wider window used when *moving* a cut onto a beat.
+ * Defined in beat-snap.ts, next to the grid it measures against, and re-exported
+ * here because this is where the density profile documents it.
  */
-const BEAT_TOLERANCE_SECONDS = 0.04;
+export { BEAT_TOLERANCE_SECONDS } from "./beat-snap";
 /** Treatments counted as "energy" for the escalation measurement. */
 const PHASE_COUNT = 3;
 
@@ -241,10 +238,14 @@ export function measureEditDensity(
     if (region && region !== "fullscreen") layouts.add(region);
   }
 
-  const beats = beatTimeline(segmentMap);
-  const onBeatCutRatio = beats
-    ? onBeatRatio(segments, positions, beats)
-    : null;
+  // Measured on the timeline, against the same grid a snap pass targets: the
+  // cut's position on the timeline is what the viewer hears against the music,
+  // and measuring source in/out points instead was how the metric and the edit
+  // came to disagree.
+  const onBeatCutRatio = measureTimelineBeatAlignment(
+    plan,
+    resolveTimelineBeatGrid(plan, segmentMap),
+  );
 
   const hookWindow = Math.min(HOOK_WINDOW_SECONDS, targetDuration * 0.35);
   const hookShots = segments.filter((_, index) => (positions[index] ?? 0) <= hookWindow).length;
@@ -354,50 +355,6 @@ function isTreated(segment: PlannedSegment): boolean {
     Boolean(segment.speedRamp) ||
     Boolean(segment.layout && segment.layout.region !== "fullscreen")
   );
-}
-
-function beatTimeline(segmentMap?: SegmentMap): Map<string, number[]> | null {
-  const videos = segmentMap?.videos;
-  if (!videos || videos.length === 0) return null;
-  const byVideo = new Map<string, number[]>();
-  let any = false;
-  for (const video of videos) {
-    const beats = [...new Set(
-      (video.segments ?? []).flatMap((segment) => segment.beatTimestamps ?? []),
-    )].sort((left, right) => left - right);
-    if (beats.length > 0) any = true;
-    byVideo.set(video.videoId, beats);
-  }
-  return any ? byVideo : null;
-}
-
-function onBeatRatio(
-  segments: readonly PlannedSegment[],
-  positions: readonly number[],
-  beats: ReadonlyMap<string, number[]>,
-): number | null {
-  if (segments.length < 2) return null;
-  let cuts = 0;
-  let onBeat = 0;
-  for (let index = 1; index < segments.length; index += 1) {
-    const segment = segments[index]!;
-    const previous = segments[index - 1]!;
-    // Overlapping (multi-track) segments are layered, not cuts.
-    if ((positions[index] ?? 0) < (positions[index - 1] ?? 0)) continue;
-    cuts += 1;
-    const candidates = [
-      ...(beats.get(segment.sourceVideoId) ?? []),
-      ...(beats.get(previous.sourceVideoId) ?? []),
-    ];
-    const hit = candidates.some(
-      (beat) =>
-        Math.abs(beat - segment.sourceStartTime) <= BEAT_TOLERANCE_SECONDS ||
-        Math.abs(beat - previous.sourceEndTime) <= BEAT_TOLERANCE_SECONDS,
-    );
-    if (hit) onBeat += 1;
-  }
-  if (cuts === 0) return null;
-  return onBeat / cuts;
 }
 
 /** Treatments per 10 seconds of timeline in each third of the edit. */

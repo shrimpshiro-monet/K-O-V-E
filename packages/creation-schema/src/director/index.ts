@@ -64,6 +64,27 @@ export {
   formatDensityBrief,
 } from "./density";
 
+export {
+  BEAT_SUBDIVISIONS,
+  BEAT_TOLERANCE_SECONDS,
+  beatGridPoints,
+  inferSubdivisionBeats,
+  measureTimelineBeatAlignment,
+  resolveTimelineBeatGrid,
+  snapPlanToBeatGrid,
+} from "./beat-snap";
+
+export type {
+  BeatGridSource,
+  BeatSnapIssue,
+  BeatSnapIssueCode,
+  BeatSnapOptions,
+  BeatSnapReport,
+  BeatSnapResult,
+  BeatSubdivision,
+  TimelineBeatGrid,
+} from "./beat-snap";
+
 export type {
   CutStyle,
   MusicRole,
