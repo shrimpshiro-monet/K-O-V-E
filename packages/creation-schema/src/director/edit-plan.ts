@@ -155,6 +155,17 @@ export interface CaptionStyleTemplate {
   readonly backgroundColor?: string;
   readonly backgroundPadding?: number;
   readonly backgroundRadius?: number;
+  /**
+   * Legibility styling. The materializer fills legibility minima for any of
+   * these left unset (stroke scaling with font size, soft shadow, frame-
+   * relative font floor, safe-area positions) — explicit values always win.
+   */
+  readonly strokeColor?: string;
+  readonly strokeWidth?: number;
+  readonly shadowColor?: string;
+  readonly shadowBlur?: number;
+  readonly shadowOffsetX?: number;
+  readonly shadowOffsetY?: number;
   readonly position?: { readonly x: number; readonly y: number };
   readonly align?: "left" | "center" | "right";
   readonly animation?: string;
