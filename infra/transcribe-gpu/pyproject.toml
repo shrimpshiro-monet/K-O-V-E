@@ -1,0 +1,13 @@
+# Lint configuration only — this service is deployed as a plain directory of
+# files (see Dockerfile / setup.sh), not built as a package.
+#
+# Without this file the directory inherits no configuration at all, so `ruff
+# check` applies its own defaults rather than the project's: the same code then
+# reports a different set of findings depending on which directory it lives in.
+# This mirrors packages/python-engine/pyproject.toml.
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]

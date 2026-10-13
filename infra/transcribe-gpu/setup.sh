@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+cd "$(dirname "$0")"
+
 echo "=== Kove Advanced GPU Transcription Setup ==="
 
 if ! command -v nvidia-smi &> /dev/null; then
@@ -29,6 +31,21 @@ if ! dpkg -l | grep -q nvidia-container-toolkit; then
     sudo apt-get install -y nvidia-container-toolkit
     sudo nvidia-ctk runtime configure --runtime=docker
     sudo systemctl restart docker
+fi
+
+# The API requires a bearer token. Generate one on first run rather than letting
+# an open GPU endpoint come up on a public IP — this host bills by the second and
+# anything that reaches port 8000 would have been able to spend it.
+if [ -z "${KOVE_TRANSCRIBE_TOKEN:-}" ] && ! grep -qs '^KOVE_TRANSCRIBE_TOKEN=' .env; then
+    TOKEN="$(openssl rand -hex 32)"
+    printf 'KOVE_TRANSCRIBE_TOKEN=%s\n' "$TOKEN" > .env
+    chmod 600 .env
+    echo ""
+    echo "Generated an API token and wrote it to $(pwd)/.env (gitignored)."
+    echo "Give the same value to the client, which sends it as:"
+    echo ""
+    echo "    Authorization: Bearer $TOKEN"
+    echo ""
 fi
 
 echo "Building and starting transcription service..."
