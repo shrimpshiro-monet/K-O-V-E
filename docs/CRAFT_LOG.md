@@ -1239,3 +1239,53 @@ the honest target is **the reference's own on-beat at the same phase** — which
   without `fps`, so the browser renderer keeps its old behaviour until the tool
   is given the project's `settings.frameRate`. The scorecard cannot see that gap;
   a product-side test will have to.
+
+## V12 — the analysis-engine design, read against the repo and against its own debug sheet
+
+The media-graph design (`Analyzer`/`TrackItem`, one contract, query layer) arrived
+with a prototype and a debug sheet from a TikTok-format reference. The sheet was
+looked at tile by tile; the design was reconciled with the repo. Full review in
+`/home/user/analysis-engine-reconciliation.txt`; what belongs in the log:
+
+**The sheet's verdict on the prototype.** 8 of 19 tiles carry a wrong label. The
+misses are *biased* — Haar fails on the dark, profiled, helmeted shots, which are
+the hero shots — so `find_shots({face_min})` would systematically reject the best
+footage, which is worse than having no face track. OCR reads facial texture as
+words (#11/#12), polluting the caption track and the overlay-persistence
+classifier at once. The TikTok logo is in 100% of tiles and is never flagged,
+because it is a graphic and the classifier only sees OCR'd words; the end card
+and two near-black fade frames are counted as shots. And `no_face_detected` is a
+detector state wearing an editorial role's name — #8/#9 are legitimately faceless
+while #10/#13 are detector failures, and the vocabulary cannot tell them apart.
+
+**What the repo already has.** `analyzers/` is 623 lines total, six files, no
+shared contract (`__init__.py` is empty), and `reference_analysis.py` already
+emits a style profile. Three facts matter:
+
+1. **The face track is dead by default and says nothing.** `face_analyzer.py`
+   needs mediapipe (absent, and its 1.x API dropped the Solutions API the file
+   targets), so `analyze()` returns `face_count=0` forever. That is F15's shape
+   again: a silent zero that reads as a measurement.
+2. The motion track is a 64×64 absdiff mean quantised to four levels. The
+   prototype's flow decomposition is a real upgrade, and craft Step 3 needs it,
+   but its own docstring admits the sign conventions are unverified.
+3. kove-eval already *is* the design's §7 reference diff (22 rows, a sensitivity
+   self-test, contact sheets) — but it records nothing about which clip each
+   output shot used, so V3/V6 is still unmeasurable.
+
+**Verified environment (this is the finding that saves a session):**
+`cv2.FaceDetectorYN` exists in the installed OpenCV 4.14 and needs no new
+dependency — no torch, no onnxruntime, no mediapipe — reading a ~230 KB ONNX
+from opencv_zoo, and github.com is reachable. That replaces both the prototype's
+Haar and the product's dead mediapipe path. Conversely **the text track cannot
+run here at all** (no tesseract, no pytesseract, no torch), so OCR — the
+design's §10 item 2 and craft Step 5 — is a server-side decision, not an
+in-sandbox task. Everything in the model table that needs torch is out of scope
+for this box.
+
+**Proposed slices** (full reasoning in the review file): (1) the `TrackItem`
+contract wrapping the existing analyzers unchanged, witnessed by graph
+determinism; (2) provenance on the render path, which is V3/V6 and needs no new
+model; (3) YuNet for faces with an accuracy test built from this sheet's tiles;
+(4) flow decomposition with signs verified; (5) chrome/overlay detection so
+watermarks stop polluting metrics; (6) only then the tracks that need a GPU.
