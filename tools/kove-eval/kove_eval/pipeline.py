@@ -397,6 +397,25 @@ def build_output(
     )
 
 
+def plan_cut_times(plan: dict) -> list[float]:
+    """The cut times a plan asks for: the end of each shot, in timeline seconds.
+
+    This is what `_apply_snapped_positions` places the render's clips at, so it is
+    the right-hand side of every render-timing comparison. It is a running sum of
+    the snapped durations — the same arithmetic the renderer receives, rather than
+    a re-derivation that could disagree with it.
+    """
+    cursor = 0.0
+    cuts: list[float] = []
+    segments = plan.get("segments") or []
+    for segment in segments:
+        duration = float(segment["sourceEndTime"]) - float(segment["sourceStartTime"])
+        cursor = round(cursor + duration, 6)
+        cuts.append(cursor)
+    # The last entry is the end of the timeline, not a cut.
+    return cuts[:-1]
+
+
 def _apply_snapped_positions(timeline: Timeline, plan: dict) -> Timeline:
     """Move the render's clips to the positions the snapper chose.
 

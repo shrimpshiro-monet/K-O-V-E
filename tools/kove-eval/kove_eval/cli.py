@@ -5,6 +5,7 @@
     kove-eval baseline   score, then store the run as the baseline to beat
     kove-eval compare    diff a run against the stored baseline
     kove-eval selftest   prove each metric separates good from bad
+    kove-eval cuts       where the cuts actually are, without a scene detector
 
 Every run writes `scorecard.json` plus one contact sheet per reference.
 """
@@ -441,6 +442,142 @@ def _print_beats_table(rows: list[tuple[str, ...]]) -> None:
         print("  ".join(cell.ljust(widths[i]) for i, cell in enumerate(row)))
 
 
+def _print_cut_table(readings, time_column: str) -> None:
+    """One row per cut: where it was asked for, where it is, and what the grid explains."""
+    header = f"{'cut':>4} {time_column:>9} {'measured s':>11} {'delta ms':>9} " + \
+        f"{'frame':>6} {'grid ms':>8} {'residual ms':>12} {'conf':>6}"
+    print(header)
+    for row in readings:
+        entry = row.as_dict()
+        print(
+            f"{entry['cut_id']:>4} {entry['plan_time']:>9.3f} {entry['measured_time']:>11.3f} "
+            f"{entry['delta_ms']:>9.1f} {entry['frame_index']:>6} "
+            f"{entry['predicted_quantisation_ms']:>8.1f} {entry['residual_ms']:>12.1f} "
+            f"{entry['confidence']:>6.2f}"
+        )
+
+
+def cmd_cuts(args: argparse.Namespace) -> int:
+    """Measure where the cuts are in a file, given where they were supposed to be.
+
+    Two tables: the reference measured against its own known cut times (pure
+    instrument calibration — no renderer in the path) and the render measured
+    against the plan's cut times (instrument + renderer). The difference between
+    the two medians is the renderer's contribution, which is what Step 3 needs to
+    decide whether to compensate.
+
+    No scene detector is involved in either. `read_cuts` is given the times and
+    reports the nearest actual change, so it cannot invent cuts and cannot
+    smear a boundary the way segmentation did (F18).
+    """
+    from pathlib import Path
+
+    from . import bridge, cutreader, pipeline
+    from .build import _golden_media_paths
+
+    root = Path(args.root)
+    if not (root / "golden-set.json").exists():
+        print(f"no golden set at {root}; run `kove-eval build` first", file=sys.stderr)
+        return 2
+
+    # Same resolution as `compare`: "latest" is the newest run that has a
+    # scorecard, not a literal `runs/latest` directory nobody creates.
+    if args.run_id == "latest":
+        candidates = sorted(
+            (
+                path
+                for path in _runs_root().glob("*/scorecard.json")
+                if path.parent.name != "baseline"
+            ),
+            key=lambda path: path.stat().st_mtime,
+        )
+        if not candidates:
+            print(f"no scored runs under {_runs_root()}", file=sys.stderr)
+            return 2
+        run_dir = candidates[-1].parent
+    else:
+        run_dir = _runs_root() / args.run_id
+    if not (run_dir / "scorecard.json").exists():
+        print(f"no scorecard in {run_dir}", file=sys.stderr)
+        return 2
+    print(f"run: {run_dir.name}")
+
+    references = json.loads((root / "golden-set.json").read_text())["references"]
+    if args.reference:
+        references = [entry for entry in references if entry["id"] == args.reference]
+    if not references:
+        print(f"no reference matches {args.reference!r}", file=sys.stderr)
+        return 2
+
+    payload: dict[str, dict] = {}
+    for entry in references:
+        reference_id = entry["id"]
+        out_path = run_dir / "outputs" / f"{reference_id}.mp4"
+        if not out_path.exists():
+            print(f"[{reference_id}] no render in {run_dir.name}, skipping")
+            continue
+
+        style = pipeline.analyze_reference(
+            Path(entry["video"]), cache_dir=run_dir / ".cache", force=False
+        )
+        _timeline, plan = pipeline.feed_for_style(style)
+        packs, track, _voice = _golden_media_paths()
+        snap = bridge.snap_plan(
+            plan,
+            pipeline.segment_map_for(style, track, sorted(packs)),
+            cut_offset_seconds=style.beat_offset_seconds,
+            reference_shot_lengths_in_beats=style.shot_lengths_beats or None,
+        )
+        plan_cuts = pipeline.plan_cut_times(snap["plan"])
+
+        known_cuts = [float(value) for value in entry["cuts"]]
+        reference_readings = cutreader.read_cuts(entry["video"], known_cuts)
+        output_readings = cutreader.read_cuts(out_path, plan_cuts)
+
+        reference_summary = cutreader.summarise(reference_readings)
+        output_summary = cutreader.summarise(output_readings)
+        renderer_delta = None
+        if reference_summary["count"] and output_summary["count"]:
+            renderer_delta = round(
+                output_summary["residual_median_ms"] - reference_summary["residual_median_ms"], 3
+            )
+
+        payload[reference_id] = {
+            "reference": {
+                "summary": reference_summary,
+                "cuts": [row.as_dict() for row in reference_readings],
+            },
+            "output": {
+                "summary": output_summary,
+                "cuts": [row.as_dict() for row in output_readings],
+            },
+            "renderer_contribution_ms": renderer_delta,
+        }
+
+        print(f"\n{reference_id} — reference (known cut times, instrument only)")
+        _print_cut_table(reference_readings, "known s")
+        print(f"  median delta {reference_summary['delta_median_ms']:.1f} ms · "
+              f"grid predicts {reference_summary['predicted_median_ms']:.1f} ms · "
+              f"residual {reference_summary['residual_median_ms']:.1f} ms")
+
+        print(f"\n{reference_id} — output (plan cut times, instrument + renderer)")
+        _print_cut_table(output_readings, "plan s")
+        print(f"  median delta {output_summary['delta_median_ms']:.1f} ms · "
+              f"grid predicts {output_summary['predicted_median_ms']:.1f} ms · "
+              f"residual {output_summary['residual_median_ms']:.1f} ms · "
+              f"spread {output_summary['residual_spread_ms']:.1f} ms")
+        if renderer_delta is not None:
+            print(
+                "  renderer contribution (output residual - reference residual): "
+                f"{renderer_delta:+.1f} ms"
+            )
+
+    artifact = run_dir / "cut-table.json"
+    artifact.write_text(json.dumps(payload, indent=2) + "\n")
+    print(f"\nwrote {artifact}")
+    return 0
+
+
 def cmd_doctor(_args: argparse.Namespace) -> int:
     from .ffmpeg import FfmpegUnavailableError, ffmpeg_path
 
@@ -519,6 +656,16 @@ def main(argv: list[str] | None = None) -> int:
         help="measure a specific track (repeatable); default: every golden track",
     )
     beats.set_defaults(func=cmd_beats)
+
+    cuts = sub.add_parser(
+        "cuts",
+        help="where the cuts are in a file, without a scene detector",
+        description="Locate the cut nearest each known time by raw frame difference.",
+    )
+    cuts.add_argument("--root", default=str(DEFAULT_EVAL_ROOT), help="golden-set root")
+    cuts.add_argument("--run-id", default="latest", help="run to read renders from")
+    cuts.add_argument("--reference", default=None, help="one reference id (default: all)")
+    cuts.set_defaults(func=cmd_cuts)
 
     doctor = sub.add_parser("doctor", help="check the environment")
     doctor.set_defaults(func=cmd_doctor)

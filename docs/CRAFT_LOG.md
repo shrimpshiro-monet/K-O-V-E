@@ -947,3 +947,75 @@ because that reference is being measured against a grid that is ~18% wrong. Its 
 grid step is 0.106 s — a quarter of a 0.424 s period — so its shot lengths are counted
 in beats of the wrong size, which is upstream of the planner. The fix is in the tempo
 estimate; the metric must not be adjusted to accommodate it.
+
+## Sub-step 3a — a cut-time reader that does not segment
+
+`kove_eval/cutreader.py`. Given a list of times that *should* be cuts, it reports
+where the nearest actual cut is, by raw frame-to-frame difference searched in a
+±200 ms window. It does not decide how many cuts there are, does not classify, and
+does not segment — so it cannot smear a boundary the way `shot_boundaries` did.
+
+Convention, stated because the whole sub-step turns on it: a frame difference at
+index `i` is the change between frame `i-1` and frame `i`, so the cut is reported at
+`i / fps`. With `t = i / fps` sampling, the earliest frame that can *show* a cut
+planned at `T` is `ceil(T * fps)`, so a faithful renderer still reports a delta in
+`[0, 1/fps)` — up to 40 ms at 25 fps. The reader reports that prediction per cut, and
+the **residual** (`delta − prediction`), which is the part the frame grid does not
+explain. Proven before use: 7 tests covering a cut on a frame, one frame late, one
+frame early, inside a moving shot, and the quantisation case, plus the summary's
+ability to separate the grid from the residual.
+
+## Sub-step 3b — what the number means: **no compensation**
+
+`pulse-fast`, 36 cuts, plan times from the shipped snapper, measured against the
+rendered file:
+
+| | |
+| --- | --- |
+| median delta | **22.4 ms** |
+| frame grid predicts | **22.4 ms** |
+| median residual | **0.0 ms** |
+| residual spread | **0.0 ms** |
+| **renderer contribution** | **+0.0 ms** |
+
+**The renderer places every cut exactly where the plan says.** Residual is 0.0 ms on
+all 36 cuts, spread 0.0 ms. The whole 22.4 ms is the frame grid: a cut planned at a
+time between frames can only first appear on the next frame.
+
+All five references agree — renderer contribution **+0.0 ms** every time (pulse-fast
+22.4 ms delta, cinematic-slow 7.2, doc-natural 20.0, social-vertical 19.4,
+text-forward 9.4; residual median 0.0 in each case).
+
+Five of 158 cuts deviate from the prediction, and neither cause is the renderer:
+
+- `text-forward` cut 18, residual −120 ms, **confidence 0.25** — the window has no
+  clear peak, so the reader is reporting that it cannot find the cut. That is the
+  confidence field working, not a defect.
+- `social-vertical` cut 16, planned at 8.600 s = frame 215 **exactly**, residual
+  +40 ms. The frame that starts exactly at a cut time belongs to the outgoing shot,
+  so the new shot's first frame is 216. The **reference file does the same thing** at
+  its own exact-boundary cuts (pulse-fast 3.000, 9.000, 12.000, 21.000 s all read
+  +40 ms). A convention shared with the reference is not a renderer defect.
+
+**So the +52.9 ms file-level offset decomposes exactly**: style offset +30.6 ms
+(the reference cuts there; the plan reproduces it) + frame-grid quantisation
++22.4 ms = +53.0 ms, against the scorecard's measured +52.9 ms.
+
+### Correction to F18
+
+F18 said the scene detector "reads cuts ~17 ms late" and called it instrument bias.
+That was wrong. The cut reader — which does not segment — measures the same
+reference's cuts at +22.9 ms median with **residual 0.0 ms** against the grid
+prediction of +17.1 ms. There is no detector bias: the reference's own cuts sit
+17–23 ms after their nominal times **because the file's cuts are frame-quantised**.
+The scene detector was reading that correctly. What F18 recorded as an instrument
+error was the thing 3a was built to measure, and it is a property of the file, not
+of the reader.
+
+This matters for item 4: with no detector bias to remove, the file-level on-beat
+column is not measuring two errors. It is measuring one — the plan's cuts are not
+frame-aligned, and at 25 fps that costs a median **22.4 ms**, over half the 40 ms
+tolerance. An edit that is perfect at plan level but not frame-aligned therefore
+cannot exceed about 0.5 on-beat in the file, which is what `pulse-fast` (0.333) and
+`social-vertical` (0.250) are showing. That is 3c's frame-quantised branch, and it
+is the indicated next action — but the metric stays untouched until 3d.
