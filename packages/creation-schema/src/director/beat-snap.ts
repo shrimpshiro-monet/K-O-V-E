@@ -73,15 +73,34 @@ export interface BeatSnapIssue {
 export interface BeatSnapReport {
   readonly gridSource: BeatGridSource | null;
   readonly beatPeriodSeconds: number;
+  /** The unit the reference's own cutting implies (the requested unit). */
   readonly subdivisionBeats: number;
-  /** Seconds per grid step: `beatPeriodSeconds * subdivisionBeats`. */
+  /** Seconds per step of that unit: `beatPeriodSeconds * subdivisionBeats`. */
   readonly gridStepSeconds: number;
+  /**
+   * The finest unit any cut actually needed, or null when every cut was
+   * expressible in `subdivisionBeats`.
+   *
+   * Refinement is per cut: a shot too short to hold the requested step pulls
+   * only the cuts on either side of it onto a finer lattice.
+   */
+  readonly refinedSubdivisionBeats: number | null;
+  /** How many cuts used a finer lattice than `subdivisionBeats`. */
+  readonly refinedCuts: number;
   readonly offsetSeconds: number;
   readonly totalCuts: number;
   readonly snappedCuts: number;
   readonly meanAbsShiftSeconds: number;
   readonly maxAbsShiftSeconds: number;
-  /** Cuts within {@link BEAT_TOLERANCE_SECONDS} of the grid, before and after. */
+  /**
+   * Cuts within {@link BEAT_TOLERANCE_SECONDS} of the unit the *reference*
+   * implies, before and after — not of whatever lattice this pass happened to
+   * place them on.
+   *
+   * Measuring against the lattice the pass chose makes the ratio an identity:
+   * cuts placed on quarter beats measure as 100% on-grid even when the
+   * reference, and every other metric, cut on the beat.
+   */
   readonly onBeatRatioBefore: number | null;
   readonly onBeatRatioAfter: number | null;
   readonly substitutedMoments: number;
@@ -418,6 +437,8 @@ export function snapPlanToBeatGrid(
         beatPeriodSeconds: 0,
         subdivisionBeats: requestedUnit,
         gridStepSeconds: 0,
+        refinedSubdivisionBeats: null,
+        refinedCuts: 0,
         offsetSeconds: options.cutOffsetSeconds ?? 0,
         totalCuts: Math.max(0, plan.segments.length - 1),
         snappedCuts: 0,
@@ -432,27 +453,35 @@ export function snapPlanToBeatGrid(
   }
 
   const beatPeriod = grid.beatPeriodSeconds;
-  const shortest = durations.length > 0 ? Math.min(...durations) : 0;
 
-  // Refine the unit while the shortest shot cannot hold one grid step. Going
-  // finer never moves a cut off the grid — the grid keeps every coarser point —
-  // so the only cost is that cuts may land on the off-beat, which is why the
-  // unit is not simply always a quarter beat.
-  let unit: number = BEAT_SUBDIVISIONS[BEAT_SUBDIVISIONS.length - 1]!;
-  if (beatPeriod > 0) {
+  // The unit is chosen **per cut**, from the two shots it joins, rather than
+  // once for the whole plan. Chosen globally it was decided by the *shortest*
+  // span anywhere in the plan, so one anomalous sliver — 0.03s against a 0.86s
+  // median shot — dropped every cut in a 24s edit onto quarter beats, and an
+  // edit whose reference cuts on the beat went out cutting on the nearest
+  // 16th. A cut needs the finer lattice only when its own shots are too short
+  // to hold a coarser step; otherwise going finer is pure harm, because every
+  // coarse point is still on the finer lattice and the nearest-point search
+  // will happily prefer the off-beat one.
+  const unitForShot = (shotDuration: number): number => {
+    if (!(beatPeriod > 0)) return requestedUnit;
     for (const candidate of BEAT_SUBDIVISIONS) {
       if (candidate > requestedUnit) continue;
-      if (beatPeriod * candidate <= shortest + 1e-9) {
-        unit = candidate;
-        break;
-      }
+      if (beatPeriod * candidate <= shotDuration + 1e-9) return candidate;
     }
-  } else {
-    unit = requestedUnit;
-  }
-
-  const gridPoints = beatGridPoints(grid, unit);
-  const step = beatPeriod * unit;
+    return BEAT_SUBDIVISIONS[BEAT_SUBDIVISIONS.length - 1]!;
+  };
+  const pointsByUnit = new Map<number, number[]>();
+  const pointsForUnit = (unitValue: number): number[] => {
+    const cached = pointsByUnit.get(unitValue);
+    if (cached) return cached;
+    const points = beatGridPoints(grid, unitValue);
+    pointsByUnit.set(unitValue, points);
+    return points;
+  };
+  // Tracked so the report can say the plan was refined, and by how much.
+  let refinedUnit: number | null = null;
+  let refinedCuts = 0;
 
   const positions = computePlanPlacement(plan);
   let ideal = positions[0] ?? 0;
@@ -524,10 +553,25 @@ export function snapPlanToBeatGrid(
     plannedEnd = planned + duration;
     const boundary = positions[index + 1] ?? planned + duration;
 
-    let target = nearestGridPoint(gridPoints, ideal);
+    // The next shot constrains this cut only when it continues the chain: a
+    // layer or an anchored segment starts wherever the director put it, so its
+    // length says nothing about where this cut belongs.
+    const nextPlanned = positions[index + 1];
+    const nextDuration =
+      nextPlanned !== undefined && Math.abs(nextPlanned - plannedEnd) <= 1e-6
+        ? (durations[index + 1] ?? duration)
+        : duration;
+    const localUnit = Math.min(unitForShot(duration), unitForShot(nextDuration));
+    const localPoints = pointsForUnit(localUnit);
+    if (localUnit < requestedUnit) {
+      refinedCuts += 1;
+      refinedUnit = refinedUnit === null ? localUnit : Math.min(refinedUnit, localUnit);
+    }
+
+    let target = nearestGridPoint(localPoints, ideal);
     // Keep the shot positive; a snap may not collapse it.
     if (target <= cursor + 1e-6) {
-      target = gridPoints.find((point) => point > cursor + 1e-6) ?? target;
+      target = localPoints.find((point) => point > cursor + 1e-6) ?? target;
     }
     const snappedDuration = round(target - cursor);
 
@@ -535,7 +579,7 @@ export function snapPlanToBeatGrid(
       issues.push({
         segmentIndex: index,
         code: "short_of_one_subdivision",
-        message: `Shot ${index} is shorter than one grid step (${step.toFixed(3)}s), so its cut was left where it was.`,
+        message: `Shot ${index} is shorter than one grid step (${(beatPeriod * localUnit).toFixed(3)}s), so its cut was left where it was.`,
       });
       snappedSegments[index] = segment;
       cursor = boundary;
@@ -603,15 +647,19 @@ export function snapPlanToBeatGrid(
     report: {
       gridSource: grid.source,
       beatPeriodSeconds: beatPeriod,
-      subdivisionBeats: unit,
-      gridStepSeconds: step,
+      subdivisionBeats: requestedUnit,
+      gridStepSeconds: beatPeriod * requestedUnit,
+      refinedSubdivisionBeats: refinedUnit,
+      refinedCuts,
       offsetSeconds: grid.offsetSeconds,
       totalCuts,
       snappedCuts,
       meanAbsShiftSeconds: snappedCuts > 0 ? totalShift / snappedCuts : 0,
       maxAbsShiftSeconds: maxShift,
       onBeatRatioBefore,
-      onBeatRatioAfter: measureTimelineBeatAlignment(snappedPlan, grid, unit),
+      // Measured at the reference's unit, not at whatever lattice a short shot
+      // forced this cut onto — otherwise the number is a tautology.
+      onBeatRatioAfter: measureTimelineBeatAlignment(snappedPlan, grid, requestedUnit),
       substitutedMoments,
       issues,
     },

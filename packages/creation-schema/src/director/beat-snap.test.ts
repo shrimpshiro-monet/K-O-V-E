@@ -234,18 +234,25 @@ describe("snapping cuts onto the beat grid", () => {
 
     expect(before).toBe(0);
     expect(report.gridSource).toBe("source-footage");
-    expect(report.onBeatRatioAfter).toBe(1);
 
-    // Every cut sits on a grid point of the grid the pass targeted. A 0.44s shot
-    // cannot hold a whole-beat step, so the unit refines to half beats and the
-    // cuts legitimately land on the off-beat.
+    // Every cut sits on the lattice its own two shots allow, and a cut whose
+    // shots can hold a whole beat is on a beat: only the 0.44s shot needs the
+    // half-beat lattice, and it pulls only the cuts on either side of it.
+    expect(report.subdivisionBeats).toBe(1);
+    expect(report.refinedSubdivisionBeats).toBe(0.5);
+    expect(report.refinedCuts).toBe(2);
     const grid = resolveTimelineBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)))!;
-    const points = beatGridPoints(grid, report.subdivisionBeats);
     const positions = computePlanPlacement(snapped);
+    const halfBeatPoints = beatGridPoints(grid, 0.5);
     for (const position of positions.slice(1)) {
-      const nearest = Math.min(...points.map((point) => Math.abs(point - position)));
+      const nearest = Math.min(...halfBeatPoints.map((point) => Math.abs(point - position)));
       expect(nearest).toBeLessThanOrEqual(BEAT_TOLERANCE_SECONDS);
     }
+    // Cut 0's shots are 0.62s and 1.24s: both hold a whole beat, so it lands on
+    // one. Measuring against the lattice actually chosen would call this 100%
+    // on-grid whatever it did.
+    expect(positions[1]!).toBeCloseTo(0.5, 6);
+    expect(report.onBeatRatioAfter).toBeCloseTo(1 / 3, 6);
   });
 
   it("does not let rounding error accumulate across many cuts", () => {
@@ -307,12 +314,41 @@ describe("snapping cuts onto the beat grid", () => {
   it("refines the unit rather than stretching a short shot onto a coarse grid", () => {
     const p = chainedPlan([0.53, 0.13, 0.53]);
 
-    const { report } = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)));
+    const { plan: snapped, report } = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)));
 
     // One beat is 0.5s and the middle shot is 0.13s, so a whole-beat grid could
-    // only express it by stretching it fourfold.
-    expect(report.subdivisionBeats).toBe(0.25);
-    expect(report.onBeatRatioAfter).toBe(1);
+    // only express it by stretching it fourfold. The short shot keeps its own
+    // share of the timeline: 0.125s is the closest the 16th lattice comes.
+    const positions = computePlanPlacement(snapped);
+    expect(positions[2]! - positions[1]!).toBeCloseTo(0.125, 6);
+    // The refinement is reported as refinement, not as the plan's unit: the
+    // reference for this plan is nothing but the one-beat default.
+    expect(report.subdivisionBeats).toBe(1);
+    expect(report.gridStepSeconds).toBe(0.5);
+    expect(report.refinedSubdivisionBeats).toBe(0.25);
+    expect(report.refinedCuts).toBe(2);
+    // Both cuts here touch the short shot, so neither can be promised a beat.
+    expect(report.onBeatRatioAfter).toBeCloseTo(0.5, 6);
+  });
+
+  it("does not let one short shot drag the whole plan off the beat", () => {
+    // The shape that shipped: 1.06s shots against a 0.5s beat, and one 0.03s
+    // sliver. Chosen globally, the unit came from the sliver, so the 1.06s cut
+    // went to 1.0625 — 2.5ms from the plan and 62.5ms off the beat.
+    const p = chainedPlan([1.06, 1.0, 0.03, 1.0, 1.0]);
+
+    const { plan: snapped, report } = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)));
+
+    const positions = computePlanPlacement(snapped);
+    expect(positions[1]!).toBeCloseTo(1.0, 6);
+    expect(positions[4]!).toBeCloseTo(3.0, 6);
+    // The sliver's own two cuts took the finer lattice; the other two did not.
+    expect(report.refinedCuts).toBe(2);
+    expect(report.subdivisionBeats).toBe(1);
+    // Honest measurement: the one cut the sliver forced onto a 16th (2.125s) is
+    // reported as off the beat, instead of all four reading 100% on-grid because
+    // the pass graded itself against the lattice it had just chosen.
+    expect(report.onBeatRatioAfter).toBeCloseTo(0.75, 6);
   });
 });
 
