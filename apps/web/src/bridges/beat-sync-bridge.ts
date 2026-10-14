@@ -102,6 +102,8 @@ class BeatSyncBridge {
         bpm: result.bpm,
         confidence: result.confidence,
         sourceClipId,
+        analysisSampleRate: result.analysisSampleRate,
+        tempoFallback: result.tempoFallback,
         analyzedAt: Date.now(),
       };
 
@@ -150,6 +152,8 @@ class BeatSyncBridge {
         bpm: result.bpm,
         confidence: result.confidence,
         sourceClipId,
+        analysisSampleRate: result.analysisSampleRate,
+        tempoFallback: result.tempoFallback,
         analyzedAt: Date.now(),
       };
 
@@ -198,6 +202,8 @@ class BeatSyncBridge {
         bpm: result.bpm,
         confidence: result.confidence,
         sourceClipId,
+        analysisSampleRate: result.analysisSampleRate,
+        tempoFallback: result.tempoFallback,
         analyzedAt: Date.now(),
       };
 

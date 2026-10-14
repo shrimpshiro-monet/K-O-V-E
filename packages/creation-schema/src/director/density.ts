@@ -1,6 +1,7 @@
 import type { EditPlan, Pacing, PlannedSegment } from "./edit-plan";
 import type { SegmentMap } from "./segment-map";
 import { collectCameraMoveIds } from "./camera-moves";
+import { measureTimelineBeatAlignment, resolveTimelineBeatGrid } from "./beat-snap";
 import { computePlanPlacement } from "./validate";
 
 /**
@@ -49,7 +50,7 @@ export interface EditDensityProfile {
   /** Shots that begin inside the hook window (first 2s, or 35% of short edits). */
   readonly hookShots: number;
   readonly hookWindow: number;
-  /** Fraction of cuts landing within 0.2s of a beat. null when no beat data. */
+  /** Fraction of cuts landing within {@link BEAT_TOLERANCE_SECONDS} of a beat. */
   readonly onBeatCutRatio: number | null;
   /** Treatments per 10s in each third of the edit. */
   readonly phaseIntensity: readonly [number, number, number];
@@ -100,7 +101,13 @@ export interface EditDensityReview {
 }
 
 const HOOK_WINDOW_SECONDS = 2;
-const BEAT_TOLERANCE_SECONDS = 0.2;
+/**
+ * How close a cut must be to a beat to count as "on the beat".
+ *
+ * Defined in beat-snap.ts, next to the grid it measures against, and re-exported
+ * here because this is where the density profile documents it.
+ */
+export { BEAT_TOLERANCE_SECONDS } from "./beat-snap";
 /** Treatments counted as "energy" for the escalation measurement. */
 const PHASE_COUNT = 3;
 
@@ -231,10 +238,14 @@ export function measureEditDensity(
     if (region && region !== "fullscreen") layouts.add(region);
   }
 
-  const beats = beatTimeline(segmentMap);
-  const onBeatCutRatio = beats
-    ? onBeatRatio(segments, positions, beats)
-    : null;
+  // Measured on the timeline, against the same grid a snap pass targets: the
+  // cut's position on the timeline is what the viewer hears against the music,
+  // and measuring source in/out points instead was how the metric and the edit
+  // came to disagree.
+  const onBeatCutRatio = measureTimelineBeatAlignment(
+    plan,
+    resolveTimelineBeatGrid(plan, segmentMap),
+  );
 
   const hookWindow = Math.min(HOOK_WINDOW_SECONDS, targetDuration * 0.35);
   const hookShots = segments.filter((_, index) => (positions[index] ?? 0) <= hookWindow).length;
@@ -344,50 +355,6 @@ function isTreated(segment: PlannedSegment): boolean {
     Boolean(segment.speedRamp) ||
     Boolean(segment.layout && segment.layout.region !== "fullscreen")
   );
-}
-
-function beatTimeline(segmentMap?: SegmentMap): Map<string, number[]> | null {
-  const videos = segmentMap?.videos;
-  if (!videos || videos.length === 0) return null;
-  const byVideo = new Map<string, number[]>();
-  let any = false;
-  for (const video of videos) {
-    const beats = [...new Set(
-      (video.segments ?? []).flatMap((segment) => segment.beatTimestamps ?? []),
-    )].sort((left, right) => left - right);
-    if (beats.length > 0) any = true;
-    byVideo.set(video.videoId, beats);
-  }
-  return any ? byVideo : null;
-}
-
-function onBeatRatio(
-  segments: readonly PlannedSegment[],
-  positions: readonly number[],
-  beats: ReadonlyMap<string, number[]>,
-): number | null {
-  if (segments.length < 2) return null;
-  let cuts = 0;
-  let onBeat = 0;
-  for (let index = 1; index < segments.length; index += 1) {
-    const segment = segments[index]!;
-    const previous = segments[index - 1]!;
-    // Overlapping (multi-track) segments are layered, not cuts.
-    if ((positions[index] ?? 0) < (positions[index - 1] ?? 0)) continue;
-    cuts += 1;
-    const candidates = [
-      ...(beats.get(segment.sourceVideoId) ?? []),
-      ...(beats.get(previous.sourceVideoId) ?? []),
-    ];
-    const hit = candidates.some(
-      (beat) =>
-        Math.abs(beat - segment.sourceStartTime) <= BEAT_TOLERANCE_SECONDS ||
-        Math.abs(beat - previous.sourceEndTime) <= BEAT_TOLERANCE_SECONDS,
-    );
-    if (hit) onBeat += 1;
-  }
-  if (cuts === 0) return null;
-  return onBeat / cuts;
 }
 
 /** Treatments per 10 seconds of timeline in each third of the edit. */
@@ -690,8 +657,8 @@ export function compareEditDensity(
       target: target.minimumOnBeatCutRatio,
       directive:
         `${Math.round(profile.onBeatCutRatio * 100)}% of cuts land on a beat (want ≥` +
-        `${Math.round(target.minimumOnBeatCutRatio * 100)}%). Re-align cut points to the beatTimestamps ` +
-        `listed for each segment (±0.2s) and put effect hits on downbeats.`,
+        `${Math.round(target.minimumOnBeatCutRatio * 100)}%). Move each cut onto a ` +
+        `beatTimestamps entry from its own segment and put effect hits on downbeats.`,
       weight: 1.2,
     });
   }

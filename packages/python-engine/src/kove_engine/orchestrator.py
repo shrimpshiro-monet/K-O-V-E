@@ -11,6 +11,7 @@ from kove_engine.analyzers.frame_sampler import FrameSampler
 from kove_engine.analyzers.motion_analyzer import MotionAnalyzer
 from kove_engine.analyzers.scene_detector import SceneDetector
 from kove_engine.analyzers.visual_analyzer import VisualAnalyzer
+from kove_engine.beat_grid import track_beat_grid_for_file
 from kove_engine.classifier import Classifier
 from kove_engine.segment_builder import SegmentBuilder
 from kove_engine.reference_analysis import analyze_reference_edit
@@ -30,10 +31,10 @@ class Orchestrator:
         self,
         baseline_fps: float = 1.5,
         burst_fps: float = 10.0,
-        scene_threshold: float = 0.3,
+        scene_adaptive_threshold: float = 3.0,
         on_progress: Callable[[dict], None] | None = None,
     ) -> None:
-        self.scene_detector = SceneDetector(threshold=scene_threshold)
+        self.scene_detector = SceneDetector(adaptive_threshold=scene_adaptive_threshold)
         self.frame_sampler = FrameSampler(baseline_fps=baseline_fps, burst_fps=burst_fps)
         self.motion_analyzer = MotionAnalyzer()
         self.audio_analyzer = AudioAnalyzer()
@@ -57,8 +58,13 @@ class Orchestrator:
         video_id = Path(video_path).stem
         logger.info("Analyzing video: %s", video_path)
 
+        # Duration is read first because the detector needs it to close the final
+        # scene: boundaries alone cannot say where the last shot ends, and the
+        # detector used to guess a flat +10s instead.
+        duration = self._get_duration(video_path)
+
         self._emit("scene_detecting", "Detecting scene cuts...")
-        scene_cuts = self.scene_detector.detect(video_path)
+        scene_cuts = self.scene_detector.detect(video_path, duration)
         logger.info("Detected %d scenes", len(scene_cuts))
 
         self._emit("extracting_frames", "Extracting frames...")
@@ -66,12 +72,28 @@ class Orchestrator:
         logger.info("Extracted %d frames", len(frame_paths))
         self._emit("extracting_frames", f"Extracted {len(frame_paths)} frames", total=len(frame_paths))
 
-        duration = self._get_duration(video_path)
-
         frame_descriptions = self._analyze_frames(video_path, frame_paths, duration, scene_cuts)
 
+        # One pass over the whole audio track. Tempo is a property of the
+        # piece, so it cannot come from the per-frame one-second windows.
+        self._emit("tracking_beats", "Tracking beats...")
+        beat_grid = track_beat_grid_for_file(video_path)
+        if beat_grid.has_grid:
+            logger.info(
+                "Beat grid: %.1f BPM, %d beats, %d downbeats (confidence %.2f, first beat %sms)",
+                beat_grid.bpm,
+                len(beat_grid.beats),
+                len(beat_grid.downbeats),
+                beat_grid.confidence,
+                beat_grid.first_beat_ms,
+            )
+        else:
+            logger.info("No usable beat grid for %s", video_path)
+
         self._emit("building_segments", "Building segments...")
-        segment_map = self.segment_builder.build(frame_descriptions, video_id, duration)
+        segment_map = self.segment_builder.build(
+            frame_descriptions, video_id, duration, beat_grid=beat_grid
+        )
 
         self._emit("done", f"Analysis complete: {len(segment_map.segments)} segments")
         result = SegmentMap(videos=[segment_map])
@@ -85,6 +107,7 @@ class Orchestrator:
             frame_descriptions,
             audio_results,
             forensics=forensics,
+            beat_grid=beat_grid,
         )
 
     def _analyze_frames(

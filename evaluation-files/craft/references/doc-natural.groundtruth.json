@@ -1,0 +1,194 @@
+{
+  "id": "doc-natural",
+  "label": "Natural colour, speech under a light bed, dusted with captions",
+  "pack_ids": [
+    "canopy",
+    "city",
+    "portrait"
+  ],
+  "track_id": "driving-120",
+  "bpm": 120.0,
+  "beats": [
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0,
+    3.5,
+    4.0,
+    4.5,
+    5.0,
+    5.5,
+    6.0,
+    6.5,
+    7.0,
+    7.5,
+    8.0,
+    8.5,
+    9.0,
+    9.5,
+    10.0,
+    10.5,
+    11.0,
+    11.5,
+    12.0,
+    12.5,
+    13.0,
+    13.5,
+    14.0,
+    14.5,
+    15.0,
+    15.5,
+    16.0,
+    16.5,
+    17.0,
+    17.5,
+    18.0,
+    18.5,
+    19.0,
+    19.5,
+    20.0,
+    20.5,
+    21.0,
+    21.5,
+    22.0,
+    22.5,
+    23.0,
+    23.5
+  ],
+  "cuts": [
+    2.0,
+    5.0,
+    7.0,
+    11.0,
+    13.0,
+    16.0,
+    18.0,
+    21.0,
+    23.0
+  ],
+  "shot_lengths_beats": [
+    4.0,
+    6.0,
+    4.0,
+    8.0,
+    4.0,
+    6.0,
+    4.0,
+    6.0,
+    4.0,
+    8.0
+  ],
+  "motion_events": [],
+  "caption_windows": [
+    [
+      0.15,
+      1.85
+    ],
+    [
+      11.15,
+      12.85
+    ],
+    [
+      21.15,
+      22.85
+    ]
+  ],
+  "speech_windows": [
+    [
+      0.9,
+      1.9
+    ],
+    [
+      3.35,
+      4.85
+    ],
+    [
+      5.9,
+      6.9
+    ],
+    [
+      8.8,
+      10.8
+    ],
+    [
+      11.9,
+      12.9
+    ],
+    [
+      14.35,
+      15.85
+    ],
+    [
+      16.9,
+      17.9
+    ],
+    [
+      19.35,
+      20.85
+    ],
+    [
+      21.9,
+      22.9
+    ],
+    [
+      24.8,
+      26.8
+    ]
+  ],
+  "transitions": [
+    {
+      "time": 2.0,
+      "type": "cut"
+    },
+    {
+      "time": 5.0,
+      "type": "cut"
+    },
+    {
+      "time": 7.0,
+      "type": "cut"
+    },
+    {
+      "time": 11.0,
+      "type": "cut"
+    },
+    {
+      "time": 13.0,
+      "type": "cut"
+    },
+    {
+      "time": 16.0,
+      "type": "cut"
+    },
+    {
+      "time": 18.0,
+      "type": "cut"
+    },
+    {
+      "time": 21.0,
+      "type": "cut"
+    },
+    {
+      "time": 23.0,
+      "type": "cut"
+    }
+  ],
+  "duck_db": 11.0,
+  "grade": {
+    "lab_l": 1.5,
+    "lab_a": 0.0,
+    "lab_b": 0.0,
+    "saturation": 1.0,
+    "contrast": 1.02
+  },
+  "duration": 27.0,
+  "size": [
+    1280,
+    720
+  ],
+  "video": "/home/user/K-O-V-E/evaluation-files/craft/references/doc-natural.mp4",
+  "music": "/home/user/K-O-V-E/evaluation-files/craft/tracks/driving-120.wav"
+}

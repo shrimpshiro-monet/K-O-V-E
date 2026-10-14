@@ -22,6 +22,12 @@ export { DEFAULT_SAMPLE_CONFIG, batchFrames } from "./frame-extraction";
 export interface ExtractSegmentsInput {
   readonly videos: readonly VideoInput[];
   readonly workerUrl: string;
+  /**
+   * Shared secret for a hardened backend. The engine and the worker both refuse
+   * tokenless requests once they are configured with one, so this has to reach
+   * every request the pipeline makes — including the job polls.
+   */
+  readonly authToken?: string;
   readonly sampleConfig?: AdaptiveSampleConfig;
 }
 
@@ -110,6 +116,7 @@ export async function extractSegments(
       video.videoId,
       video.duration,
       batches,
+      { authToken: input.authToken },
     );
 
     allDescriptions.push({

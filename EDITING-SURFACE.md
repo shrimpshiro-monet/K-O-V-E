@@ -843,6 +843,12 @@ python3 -m py_compile $(find . -name '*.py' -not -path '*/node_modules/*')
 
 - No GPU and no browser, so shaders are verified structurally and through mock
   canvas assertions; the editor previews compile but cannot be rendered here.
-- No `ffmpeg`, no Playwright, no `mediapipe` wheel → the eval corpus tests and
-  six Python analyser modules (face/motion/visual/orchestrator/server/forensics)
-  cannot be collected.
+- No `ffmpeg`, no Playwright → the eval corpus tests and the end-to-end vision
+  specs cannot be collected, and the one Python test that needs a real video
+  file skips.
+- The six Python analyser modules (face/motion/visual/orchestrator/server/
+  forensics) **can** be collected as of the `opencv-python-headless` pin: they
+  were previously blocked by `libGL.so.1`, which the non-headless OpenCV build
+  needs and this sandbox does not have. 131 pass here. Face detection itself
+  still degrades to zero faces in the default install — `mediapipe` is an
+  opt-in, see `packages/python-engine/requirements-faces.txt`.

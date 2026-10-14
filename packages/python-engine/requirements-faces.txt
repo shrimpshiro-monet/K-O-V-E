@@ -1,0 +1,22 @@
+# Optional face detection.
+#
+# Installing this is a deliberate *replacement* of the headless OpenCV that the
+# core install uses, not an addition to it. mediapipe==0.10.21 requires both
+# `opencv-contrib-python` (the non-headless build) and `numpy<2`, and cv2 must
+# have exactly one provider: if `opencv-python-headless` is still installed, both
+# distributions write into `cv2/` and `import cv2` fails.
+#
+# Use a fresh virtualenv. Installing this over an environment that already has
+# opencv-python-headless leaves files behind even after `pip uninstall`, because
+# both distributions ship the same paths inside cv2/.
+#
+# Requires the system OpenGL library: apt-get install -y libgl1
+#
+# Follow the recipe in README.md rather than installing this file on its own,
+# and install it BEFORE `-e ".[dev]"` so pip resolves numpy below 2.
+#
+# The real fix is migrating face_analyzer.py to the mediapipe Tasks API, which
+# has no OpenCV or numpy constraint; until then this is the price of faces.
+mediapipe==0.10.21
+numpy==1.26.4
+opencv-contrib-python==4.11.0.86

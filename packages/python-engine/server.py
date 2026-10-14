@@ -10,14 +10,121 @@ dead AnalysisProgressCard frontend consumer.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
-import uuid
+import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI
+from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
+
+# Media the engine will open. The path allowlist and the realpath containment
+# check are the actual defence; this stops the obvious mistakes.
+MEDIA_EXTENSIONS = frozenset(
+    {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".mpg", ".mpeg", ".wmv", ".flv", ".ts", ".m2ts"}
+)
+
+LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost", "testclient"})
+
+
+def _auth_token() -> str | None:
+    token = os.environ.get("KOVE_ENGINE_TOKEN", "").strip()
+    return token or None
+
+
+def _media_roots() -> list[Path]:
+    """Directories /analyze may read from. Default: the working directory.
+
+    Unset means *only* the working directory, not the whole filesystem. Set
+    KOVE_MEDIA_ROOTS to a comma-separated list to widen it deliberately.
+    """
+    configured = os.environ.get("KOVE_MEDIA_ROOTS", "").strip()
+    raw = [item for item in configured.split(",") if item.strip()] if configured else [os.getcwd()]
+    roots: list[Path] = []
+    for item in raw:
+        try:
+            roots.append(Path(item.strip()).expanduser().resolve())
+        except OSError:  # pragma: no cover - defensive
+            continue
+    return roots
+
+
+def _is_loopback(request: Request) -> bool:
+    client = request.client
+    return client is not None and client.host in LOOPBACK_HOSTS
+
+
+def authorize_request(request: Request) -> JSONResponse | None:
+    """Return an error response when the caller may not use this engine.
+
+    With no token configured the engine serves loopback callers only, so a local
+    ``uvicorn`` run keeps working while anything reaching it over the network does
+    not. With a token configured every caller must present it — including
+    loopback, because a reverse proxy on the same host makes remote callers look
+    local.
+    """
+    token = _auth_token()
+    presented = ""
+    header = request.headers.get("authorization") or ""
+    if header.lower().startswith("bearer "):
+        presented = header[7:].strip()
+
+    if token is None:
+        if _is_loopback(request):
+            return None
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": (
+                    "This engine is not configured for network access: KOVE_ENGINE_TOKEN "
+                    "is unset, so only loopback clients are served."
+                )
+            },
+        )
+
+    if not presented or not secrets.compare_digest(presented, token):
+        return JSONResponse(status_code=401, content={"error": "Invalid or missing token."})
+    return None
+
+
+def _safe_client_error(exc: Exception, job_id: str) -> dict:
+    """A terminal-state payload that does not leak the filesystem or internals.
+
+    Tracebacks and exception strings name absolute paths and library internals.
+    The detail goes to the log, correlated by job id; the client gets the id.
+    """
+    logger.exception("job %s failed", job_id)
+    return {"error": "Analysis failed. See engine logs for details.", "jobId": job_id}
+
+
+def _resolve_video_path(candidate: str) -> tuple[Path | None, str | None]:
+    """Resolve a requested path against the media roots. Returns (path, error)."""
+    if not candidate or candidate.strip() == "":
+        return None, "Empty video path."
+
+    try:
+        resolved = Path(candidate).expanduser().resolve(strict=True)
+    except (OSError, RuntimeError):
+        return None, "Video path does not exist or is not readable."
+
+    # Containment before extension: a file outside the roots should be refused
+    # for that reason, not for whatever extension it happens to have.
+    roots = _media_roots()
+    if not any(resolved == root or root in resolved.parents for root in roots):
+        return None, "Video path is outside the configured media roots."
+
+    if resolved.suffix.lower() not in MEDIA_EXTENSIONS:
+        return None, f"Unsupported media extension: {resolved.suffix or '(none)'}."
+
+    if not resolved.is_file():
+        return None, "Video path is not a regular file."
+
+    return resolved, None
 
 from kove_engine.job_store import JobStore
 from kove_engine.orchestrator import Orchestrator
@@ -33,7 +140,7 @@ class AnalyzeRequest(BaseModel):
     video_paths: list[str]
     baseline_fps: float = 1.5
     burst_fps: float = 10.0
-    scene_threshold: float = 0.3
+    scene_adaptive_threshold: float = 3.0
 
 
 class FrameData(BaseModel):
@@ -77,15 +184,34 @@ async def health():
 
 
 def _new_job_id() -> str:
-    return uuid.uuid4().hex[:8]
+    """An unguessable job id.
+
+    This was ``uuid4().hex[:8]`` — 32 bits. A job id is the only thing protecting
+    a job's result, so a short one is both enumerable and collidable.
+    """
+    return secrets.token_urlsafe(24)
 
 
 @app.post("/analyze")
-async def analyze(req: AnalyzeRequest, background_tasks: BackgroundTasks):
+async def analyze(req: AnalyzeRequest, request: Request, background_tasks: BackgroundTasks):
     """Start a video-path analysis job; returns immediately with {jobId}."""
+    denied = authorize_request(request)
+    if denied is not None:
+        return denied
+
+    resolved: list[str] = []
+    for candidate in req.video_paths:
+        path, error = _resolve_video_path(candidate)
+        if error is not None:
+            # The message names the reason, never the resolved absolute path.
+            return JSONResponse(status_code=400, content={"error": error})
+        resolved.append(str(path))
+
     job_id = _new_job_id()
-    await job_store.create(job_id, req.model_dump())
-    background_tasks.add_task(_run_analysis_job, job_id, req)
+    await job_store.create(job_id, {**req.model_dump(), "video_paths": resolved})
+    background_tasks.add_task(
+        _run_analysis_job, job_id, req.model_copy(update={"video_paths": resolved})
+    )
     return {"jobId": job_id, "status": "pending"}
 
 
@@ -95,7 +221,7 @@ async def _run_analysis_job(job_id: str, req: AnalyzeRequest) -> None:
         orchestrator = Orchestrator(
             baseline_fps=req.baseline_fps,
             burst_fps=req.burst_fps,
-            scene_threshold=req.scene_threshold,
+            scene_adaptive_threshold=req.scene_adaptive_threshold,
         )
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
@@ -103,7 +229,7 @@ async def _run_analysis_job(job_id: str, req: AnalyzeRequest) -> None:
         )
         await job_store.set_status(job_id, "completed", result)
     except Exception as exc:  # noqa: BLE001 — job must always reach a terminal state
-        await job_store.set_status(job_id, "failed", {"error": str(exc)})
+        await job_store.set_status(job_id, "failed", _safe_client_error(exc, job_id))
 
 
 def _run_analysis(orchestrator: Orchestrator, video_paths: list[str]) -> dict:
@@ -137,12 +263,16 @@ def _run_analysis(orchestrator: Orchestrator, video_paths: list[str]) -> dict:
 
 
 @app.post("/analyze-frames")
-async def analyze_frames(req: VisionRequest, background_tasks: BackgroundTasks):
+async def analyze_frames(req: VisionRequest, request: Request, background_tasks: BackgroundTasks):
     """Accept base64 frames (same as Cloudflare Worker), run local analysis.
 
     Returns {jobId} immediately; poll GET /jobs/{jobId}. Every call first
     sweeps jobs older than the TTL (sweep-on-request; no background scheduler).
     """
+    denied = authorize_request(request)
+    if denied is not None:
+        return denied
+
     await job_store.sweep_expired()
 
     job_id = _new_job_id()
@@ -162,12 +292,8 @@ async def _run_frame_analysis_job(job_id: str, req: VisionRequest) -> None:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, _run_frame_analysis, req)
         await job_store.set_status(job_id, "completed", result)
-    except (ValueError, OSError) as exc:
-        await job_store.set_status(
-            job_id, "failed", {"error": f"Frame analysis failed: {exc}"}
-        )
     except Exception as exc:  # noqa: BLE001 — job must always reach a terminal state
-        await job_store.set_status(job_id, "failed", {"error": str(exc)})
+        await job_store.set_status(job_id, "failed", _safe_client_error(exc, job_id))
 
 
 def _run_frame_analysis(req: VisionRequest) -> dict:
@@ -247,15 +373,40 @@ def _run_frame_analysis(req: VisionRequest) -> dict:
 
 
 @app.get("/jobs/{job_id}")
-async def get_job(job_id: str):
-    """Poll target: {status, result|null}. Terminal statuses: completed/failed."""
+async def get_job(job_id: str, request: Request):
+    """Poll target: {status, result|null}. Terminal statuses: completed/failed.
+
+    Authorized like the submit endpoints: a job id is a capability, but it also
+    travels through logs, screenshots and bug reports, so a network caller that
+    cannot submit should not be able to read someone else's result either.
+    """
+    denied = authorize_request(request)
+    if denied is not None:
+        return denied
     job = await job_store.get(job_id)
     if job is None:
         return {"status": "unknown", "error": "job not found"}
     return {"status": job["status"], "result": job["result"]}
 
 
+def bind_address() -> tuple[str, int]:
+    """Host and port for a direct ``python server.py`` run.
+
+    Loopback by default. Authorization already refuses network callers when no
+    token is set, but not listening on the world at all is the stronger default:
+    a deployment that needs network reach opts in explicitly with
+    ``KOVE_ENGINE_HOST=0.0.0.0`` and should set ``KOVE_ENGINE_TOKEN`` with it.
+    """
+    host = (os.environ.get("KOVE_ENGINE_HOST") or "").strip() or "127.0.0.1"
+    try:
+        port = int(os.environ.get("KOVE_ENGINE_PORT", "8000"))
+    except ValueError:
+        port = 8000
+    return host, port
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    _host, _port = bind_address()
+    uvicorn.run(app, host=_host, port=_port)

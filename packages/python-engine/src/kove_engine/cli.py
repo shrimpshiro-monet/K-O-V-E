@@ -20,8 +20,11 @@ def main() -> None:
         help="Burst sampling rate around scene cuts",
     )
     parser.add_argument(
-        "--scene-threshold", type=float, default=0.3,
-        help="Scene change detection threshold",
+        "--scene-adaptive-threshold", type=float, default=3.0,
+        help=(
+            "How many times its own rolling average a frame's content change must "
+            "exceed to count as a cut (default: 3.0)"
+        ),
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging")
 
@@ -35,7 +38,7 @@ def main() -> None:
     orchestrator = Orchestrator(
         baseline_fps=args.baseline_fps,
         burst_fps=args.burst_fps,
-        scene_threshold=args.scene_threshold,
+        scene_adaptive_threshold=args.scene_adaptive_threshold,
     )
 
     try:

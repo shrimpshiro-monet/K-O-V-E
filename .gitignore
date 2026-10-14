@@ -53,6 +53,9 @@ coverage/
 docs/*
 !docs/android-port/
 !docs/AGENT-*.md
+# The craft log is evidence, not generated output: it holds the scorecard deltas
+# and the negative results that later sessions must not repeat.
+!docs/CRAFT_LOG.md
 .worktrees/
 # Project-specific
 /public/projects/
@@ -109,3 +112,15 @@ evaluation-files/baseline-*.json
 apps/web/e2e/.assets/
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Craft-eval golden media: generated from seeds by `kove-eval build`, ~100MB and
+# reproducible, so it stays out of the tree. What IS committed is the scorecard:
+# baseline.json holds the numbers every later step has to beat, and the
+# groundtruth.json files record what each fixture was constructed to contain.
+evaluation-files/craft/packs/
+evaluation-files/craft/tracks/
+evaluation-files/craft/references/*.mp4
+evaluation-files/craft/references/*-voice.wav
+evaluation-files/craft/runs/
+evaluation-files/craft/.cache/
+evaluation-files/craft/**/sensitivity/

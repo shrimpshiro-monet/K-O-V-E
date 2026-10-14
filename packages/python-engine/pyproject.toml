@@ -6,26 +6,59 @@ build-backend = "hatchling.build"
 name = "kove-engine"
 version = "0.1.0"
 description = "Local video analysis engine for K.O.V.E."
-requires-python = ">=3.11"
+# Upper bound follows the `faces` extra rather than the core install: mediapipe
+# dropped the `mp.solutions` API used by the face analyzer in 1.0, and the last
+# release that still has it (0.10.21) ships wheels only for CPython 3.9-3.12.
+# Core has no upper bound of its own, but one version matrix that everything has
+# been verified against is worth more than an untested 3.13 core.
+requires-python = ">=3.11,<3.13"
 dependencies = [
-    "pydantic>=2.0",
-    "opencv-python>=4.8",
-    "numpy>=1.24",
-    "librosa>=0.10",
-    "scipy>=1.11",
-    "webrtcvad>=2.0.10",
-    "mediapipe>=0.10",
-    "scikit-learn>=1.3",
-    "fastapi>=0.104",
-    "uvicorn>=0.24",
-    "aiosqlite>=0.19",
+    # Exact pins, resolved on CPython 3.11 and verified by running the test
+    # suite (see README). Move them deliberately, not implicitly.
+    #
+    # numpy and opencv are ranges rather than exact pins because the optional
+    # `faces` extra has to be able to resolve against this same set: mediapipe
+    # requires numpy<2 and a pre-4.12 OpenCV, so a fixed numpy>=2 floor here
+    # would make `.[faces]` unsatisfiable. requirements.lock records the exact
+    # verified closure of the default (headless) install.
+    #
+    # opencv-python-headless, not opencv-contrib-python or plain opencv-python:
+    # it needs no system libGL, which is what the engine's deployment target
+    # lacks. Do not add a second OpenCV distribution — cv2 would then be
+    # provided by two packages at once.
+    "numpy>=1.26.4,<3",
+    "opencv-python-headless>=4.11.0.86,<5",
+    "scipy==1.17.1",
+    "librosa==0.11.0",
+    # The maintained fork of webrtcvad. The original is sdist-only and imports
+    # pkg_resources, which is absent from a clean venv, so `import webrtcvad`
+    # fails there. This fork ships prebuilt wheels for cp310-cp314 and drops
+    # that dependency; the import name is unchanged.
+    "webrtcvad-wheels==2.0.14.post1",
+    "scikit-learn==1.9.1",
+    "pydantic==2.14.1",
+    "fastapi==0.143.0",
+    "uvicorn==0.54.0",
+    "aiosqlite==0.22.1",
 ]
 
 [project.optional-dependencies]
+# Deliberately no `faces` extra. mediapipe==0.10.21 hard-requires
+# opencv-contrib-python (the non-headless build, which needs system libGL) and
+# numpy<2, so `pip install ".[faces]"` installs a *second* cv2 provider on top of
+# the headless one and `import cv2` then fails with "libGL.so.1: cannot open
+# shared object file" — both distributions write into cv2/. Verified, not
+# assumed. Face detection is therefore opt-in through requirements-faces.txt,
+# which pins a set where cv2 has exactly one provider. See README.
 dev = [
-    "pytest>=7.0",
-    "pytest-cov",
-    "ruff",
+    # Required by the suite and previously undeclared: the job-store tests use
+    # the asyncio plugin, and fastapi.testclient now wants httpx2 (starlette
+    # emits a DeprecationWarning when only the older `httpx` is installed).
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "httpx2==2.13.1",
+    "pytest-cov==7.1.0",
+    "ruff==0.17.0",
 ]
 
 [project.scripts]

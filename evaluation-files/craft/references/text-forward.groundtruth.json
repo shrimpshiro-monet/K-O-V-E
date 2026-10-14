@@ -1,0 +1,379 @@
+{
+  "id": "text-forward",
+  "label": "Bright flat grade, caption-led, medium cuts",
+  "pack_ids": [
+    "canopy",
+    "city",
+    "portrait"
+  ],
+  "track_id": "warm-100",
+  "bpm": 100.0,
+  "beats": [
+    0.0,
+    0.6,
+    1.2,
+    1.8,
+    2.4,
+    3.0,
+    3.6,
+    4.2,
+    4.8,
+    5.4,
+    6.0,
+    6.6,
+    7.2,
+    7.8,
+    8.4,
+    9.0,
+    9.6,
+    10.2,
+    10.8,
+    11.4,
+    12.0,
+    12.6,
+    13.2,
+    13.8,
+    14.4,
+    15.0,
+    15.6,
+    16.2,
+    16.8,
+    17.4,
+    18.0,
+    18.6,
+    19.2,
+    19.8,
+    20.4,
+    21.0,
+    21.6,
+    22.2,
+    22.8,
+    23.4
+  ],
+  "cuts": [
+    1.2,
+    3.0,
+    4.2,
+    6.6,
+    8.4,
+    9.6,
+    10.8,
+    12.6,
+    13.8,
+    16.2,
+    18.0,
+    19.2,
+    20.4,
+    22.2,
+    23.4
+  ],
+  "shot_lengths_beats": [
+    2.0,
+    3.0,
+    2.0,
+    4.0,
+    3.0,
+    2.0,
+    2.0,
+    3.0,
+    2.0,
+    4.0,
+    3.0,
+    2.0,
+    2.0,
+    3.0,
+    2.0,
+    4.0
+  ],
+  "motion_events": [
+    {
+      "time": 0.0,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 1.2,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 3.0,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 4.2,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 6.6,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 8.4,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 9.6,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 10.8,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 12.6,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 13.8,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 16.2,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 18.0,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 19.2,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 20.4,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 22.2,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    },
+    {
+      "time": 23.4,
+      "kind": "punch-in",
+      "magnitude": 0.05
+    }
+  ],
+  "caption_windows": [
+    [
+      0.12,
+      1.05
+    ],
+    [
+      1.35,
+      2.85
+    ],
+    [
+      3.12,
+      4.05
+    ],
+    [
+      4.35,
+      6.45
+    ],
+    [
+      6.75,
+      8.25
+    ],
+    [
+      8.52,
+      9.45
+    ],
+    [
+      9.72,
+      10.65
+    ],
+    [
+      10.95,
+      12.45
+    ],
+    [
+      12.72,
+      13.65
+    ],
+    [
+      13.95,
+      16.05
+    ],
+    [
+      16.35,
+      17.85
+    ],
+    [
+      18.12,
+      19.05
+    ],
+    [
+      19.32,
+      20.25
+    ],
+    [
+      20.55,
+      22.05
+    ],
+    [
+      22.32,
+      23.25
+    ],
+    [
+      23.55,
+      25.65
+    ]
+  ],
+  "speech_windows": [
+    [
+      0.54,
+      1.1
+    ],
+    [
+      2.01,
+      2.9
+    ],
+    [
+      3.54,
+      4.1
+    ],
+    [
+      5.28,
+      6.48
+    ],
+    [
+      7.41,
+      8.3
+    ],
+    [
+      8.94,
+      9.5
+    ],
+    [
+      10.14,
+      10.7
+    ],
+    [
+      11.61,
+      12.5
+    ],
+    [
+      13.14,
+      13.7
+    ],
+    [
+      14.88,
+      16.08
+    ],
+    [
+      17.01,
+      17.9
+    ],
+    [
+      18.54,
+      19.1
+    ],
+    [
+      19.74,
+      20.3
+    ],
+    [
+      21.21,
+      22.1
+    ],
+    [
+      22.74,
+      23.3
+    ],
+    [
+      24.48,
+      25.68
+    ]
+  ],
+  "transitions": [
+    {
+      "time": 1.2,
+      "type": "cut"
+    },
+    {
+      "time": 3.0,
+      "type": "dissolve"
+    },
+    {
+      "time": 4.2,
+      "type": "cut"
+    },
+    {
+      "time": 6.6,
+      "type": "dissolve"
+    },
+    {
+      "time": 8.4,
+      "type": "cut"
+    },
+    {
+      "time": 9.6,
+      "type": "dissolve"
+    },
+    {
+      "time": 10.8,
+      "type": "cut"
+    },
+    {
+      "time": 12.6,
+      "type": "dissolve"
+    },
+    {
+      "time": 13.8,
+      "type": "cut"
+    },
+    {
+      "time": 16.2,
+      "type": "cut"
+    },
+    {
+      "time": 18.0,
+      "type": "cut"
+    },
+    {
+      "time": 19.2,
+      "type": "cut"
+    },
+    {
+      "time": 20.4,
+      "type": "cut"
+    },
+    {
+      "time": 22.2,
+      "type": "cut"
+    },
+    {
+      "time": 23.4,
+      "type": "cut"
+    }
+  ],
+  "duck_db": 6.0,
+  "grade": {
+    "lab_l": 9.0,
+    "lab_a": -2.0,
+    "lab_b": 3.0,
+    "saturation": 1.06,
+    "contrast": 0.96
+  },
+  "duration": 25.8,
+  "size": [
+    1280,
+    720
+  ],
+  "video": "/home/user/K-O-V-E/evaluation-files/craft/references/text-forward.mp4",
+  "music": "/home/user/K-O-V-E/evaluation-files/craft/tracks/warm-100.wav"
+}
