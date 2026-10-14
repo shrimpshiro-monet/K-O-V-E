@@ -354,6 +354,7 @@ def build_output(
     cache_dir: Path | None = None,
     force_analysis: bool = False,
     apply_snap: bool = True,
+    frame_align: bool = True,
 ) -> PlannedOutput:
     """Reference + raw footage -> a rendered attempt."""
     from .build import _golden_media_paths
@@ -371,14 +372,24 @@ def build_output(
             segment_map,
             cut_offset_seconds=style.beat_offset_seconds,
             reference_shot_lengths_in_beats=style.shot_lengths_beats or None,
+            # The rate this timeline will actually render at, so the snapper can
+            # put the cuts on the frames the file will have. `frame_align=False`
+            # is the A/B control: the same plan, left for the renderer to round.
+            fps=timeline.fps if frame_align else None,
         )
         snap_report = result["report"]
         plan = result["plan"]
         timeline = _apply_snapped_positions(timeline, plan)
+        frame_note = (
+            f", frames={snap_report['frameAlignedCuts']} cuts at {snap_report['fps']}fps "
+            f"(max {snap_report['maxAbsFrameShiftSeconds'] * 1000:.1f}ms)"
+            if snap_report.get("fps")
+            else ""
+        )
         notes.append(
             f"production beat snap moved {snap_report['snappedCuts']}/"
             f"{snap_report['totalCuts']} cuts (grid={snap_report['gridSource']}, "
-            f"step={snap_report['gridStepSeconds']:.3f}s)"
+            f"step={snap_report['gridStepSeconds']:.3f}s{frame_note})"
         )
     elif apply_snap:
         notes.append("no beat grid measured on the reference track; cuts left where planned")

@@ -1070,3 +1070,172 @@ The experiment is committed as `tools/kove-eval/experiments/same_source_delta_e.
 so the number above is reproducible from a clean checkout. It is an experiment,
 not a shipping subcommand — when footage selection is built it becomes a
 `kove-eval sources` subcommand with a real test.
+
+## Sub-step 3c — the fix: put the cuts on the frames the file has
+
+3b said the renderer is exact and the plan was rounding. 3c is the fix, and where
+it lives is the whole argument.
+
+**The frame grid goes in `BeatSnapOptions.fps`, not in `EditPlan.metadata.fps`.**
+A frame rate is a property of the render target, not of the edit: the same plan
+cut down to 9:16 at 60 fps is the same edit, and a rate stored on the plan would
+be a lie the moment it is re-rendered. It also has to be *supplied* — the snapper
+cannot guess it, and guessing 30 for a 25 fps render would move every cut half a
+frame in the wrong direction. So `snapPlanToBeatGrid(plan, map, { fps })`:
+omitted means today's behaviour exactly (no frame grid, the renderer rounds), and
+callers that know the rate pass it. The harness passes `timeline.fps`, the rate it
+is about to render at. **This answers the open question from 3a/3b** — option (a),
+`BeatSnapOptions.fps`. If it should move to the plan later, the two lines that
+pass it (`pipeline.build_output`, `cli cmd_cuts`, plus the registry call site) are
+the only places that change.
+
+**What the plan has to guarantee** is stricter than "on a frame boundary". The
+renderer serves the clip whose `start <= index/fps`, and the plan's cut times are
+a *running sum* of `sourceEndTime - sourceStartTime`, so:
+
+* a cut **below** the boundary is served by its frame (correct);
+* a cut **exactly on** the boundary is at the mercy of floating-point summation —
+  five whole-frame shots at 25 fps add up to `1.6000000000000003`, one ulp above
+  frame 40, and the cut is served by frame 41: **40 ms late from arithmetic alone**;
+* a cut **above** it is a frame late, every time.
+
+So aligned cuts are planted `FRAME_GUARD_SECONDS = 1e-6` below their boundary —
+0.0025% of a frame, invisible, and large enough to survive the summation and the
+harness's own rounding of clip starts to microseconds. Aligned spans are also
+stored at *full precision* (the old `round(x, 6)` would have fed the drift
+straight back in), and the cascade advances by the geometry the renderer will
+actually walk rather than the position the pass meant to reach.
+
+The frame grid never overrides the beat grid: it is the *nearest* frame to the
+beat the lattice already chose, at most half a frame away (20 ms at 25 fps, inside
+the 40 ms tolerance). Flooring instead of rounding would push every cut early and
+inflate the on-beat number by gaming the phase — it would make the output cut
+*differently* from the reference, which is the opposite of the job.
+
+### Proof at the file level, before spending a golden run
+
+`tests/test_frame_landing.py` renders the cases and reads the frames back:
+
+| plan asks for | first frame showing the new shot |
+| --- | --- |
+| 40/25 exactly | frame 40 |
+| 41/25 | frame 41 (the reader's +40 ms, reproduced) |
+| 40.5/25 | frame 41 — half a frame of plan, a whole frame of file |
+| five whole-frame shots summing to 1.6 | frame **41** — one ulp above the boundary |
+| the same sum, 1 µs under the boundary | frame 40 |
+| that value rounded to 6 decimals | frame 40 |
+
+`tests/test_snap_frame_grid.py` drives the *production snapper through the real
+bridge* and requires every cut to land on its frame — with a control asserting
+that the same snap without `fps` really does miss frames, so the test cannot pass
+on a plan that never needed aligning. Both are cheap; the 30-minute A/B below is
+not, and it should not have been the first evidence.
+
+The unit tests were checked for sharpness the same way: setting the guard to 0
+fails four of them, on the assertion that a cut sits *below* its boundary.
+
+### 3d — the golden re-run, before and after, one variable
+
+Media was wiped by the sandbox, so the golden set was rebuilt (279 s) and both
+arms were run in this session: control `--no-frame-grid` then treatment, same run
+directory, same cached analysis. 17 min for the control, 11 for the treatment.
+
+**The control reproduces the pre-3c run exactly** — pulse 0.278/+52.95, cinematic
+0.714/+9.6, doc 0.273/+39.1, social 0.250/+51.2, text 0.833/+14.85, all identical
+to `step1-detector`. The A/B is therefore one variable, with no drift to explain.
+
+Cut table (`kove-eval cuts`, plan time vs the file, all 118 output cuts):
+
+| reference | side | cuts | delta median | delta max | residual median | residual spread |
+| --- | --- | --- | --- | --- | --- | --- |
+| pulse-fast | reference | 33 | +22.9 ms | +40.0 | 0.0 | 40.0 |
+| pulse-fast | **output** | 36 | **+0.001 ms** | +0.001 | 0.0 | **0.0** |
+| cinematic-slow | reference | 4 | 0.0 | 0.0 | 0.0 | 0.0 |
+| cinematic-slow | **output** | 6 | **+0.001 ms** | +0.001 | 0.0 | **0.0** |
+| doc-natural | reference | 9 | 0.0 | 0.0 | 0.0 | 0.0 |
+| doc-natural | **output** | 9 | **+0.001 ms** | +0.001 | 0.0 | **0.0** |
+| social-vertical | reference | 44 | +25.8 ms | +62.9 | 0.0 | 40.0 |
+| social-vertical | **output** | 48 | **+0.001 ms** | +0.001 | 0.0 | **0.0** |
+| text-forward | reference | 15 | 0.0 | +40.0 | 0.0 | 40.0 |
+| text-forward | **output** | 19 | **+0.001 ms** | +0.001 | 0.0 | **0.0** |
+
+Every cut lands on the frame the plan names (the residual 0.001 ms is the 1 µs
+guard showing through, and 0.0 is what the instrument reports). The output is now
+*more* frame-exact than the references, which carry up to 40 ms of their own
+quantisation.
+
+Rhythm, output side, control → treatment (reference in brackets):
+
+| reference | on-beat | median offset | mean abs offset |
+| --- | --- | --- | --- |
+| pulse-fast | 0.278 → **0.861** (0.737) | +52.95 → **+28.05** (+30.6) | 50.56 → **27.23** |
+| cinematic-slow | 0.714 → **0.857** (0.667) | +9.6 → **+8.3** (+2.7) | 40.47 → **34.76** |
+| doc-natural | 0.273 → **0.455** (0.111) | +39.1 → **+5.9** (−80.3) | 51.42 → **47.78** |
+| social-vertical | 0.250 → **0.729** (0.712) | +51.2 → **+32.1** (+31.8) | 51.37 → **32.20** |
+| text-forward | 0.833 → **1.000** (0.737) | +14.85 → **+9.6** (+4.6) | 19.99 → **10.17** |
+
+The offset is the headline: the output used to cut **+22 ms later than the
+reference** and now cuts within **2.5 ms of it on pulse and 0.3 ms on social**.
+That is the difference between "on the beat somewhere" and "cut where the
+reference cuts", and it is what a viewer hears.
+
+Everything else is flat: colour moves by ≤0.4 dE (doc +0.38, rest ≤0.002),
+loudness/ducking/true peak bit-identical, transitions unchanged, motion F1
+unchanged, captions same or one better (cinematic start error 50 → 0 ms, social
+count error 8 → 7).
+
+### What regressed (there is always something)
+
+Small and mechanical: a cut moves up to half a frame, so the span the snapper
+trims from its source changes by up to 20 ms, and at that timestamp the output
+shows a slightly different piece of footage.
+
+* doc-natural: colour 20.18 → 20.57 dE (+0.38), `shot_length_median_beats`
+  5.02 → 4.93, `lab_histogram_distance` 0.0676 → 0.0725.
+* social-vertical: `shot_length_emd_beats` 0.234 → 0.240 (+0.006).
+* cinematic-slow: `shot_length_emd_beats` 1.348 → 1.360 (+0.012).
+* pulse-fast: `color_delta_e_p95` +0.01 dE.
+
+All of it is inside the noise of *which* footage a shot uses, and none of it is
+visible in the contact sheet — which is the point: a half-frame change cannot be
+seen, and it is worth 0.6 of on-beat.
+
+### The on-beat metric now punishes beating the reference — flagging, not fixing
+
+`distance = abs(output - reference)`, and after 3c the output is *more* on-beat
+than the reference on three of five references (text 1.000 vs 0.737, cinematic
+0.857 vs 0.667, doc 0.455 vs 0.111). For a higher-is-better ratio that shape is
+wrong: it says cutting more on the beat than the reference is a failure, which no
+editor would sign off. Mean on-beat distance still improved (0.245 → 0.188)
+because pulse and social moved from 0.46 to 0.12 and 0.02, but the metric should
+be one-sided — penalise `output < reference`, not `|output - reference|`.
+
+That is a change to a frozen metric, so it is *not* in this commit. It needs a
+decision and a re-baseline, because it re-reads every historical number. The
+quantisation-corrected target falls out of the same discussion: on-beat has a
+hard ceiling that depends on where the beat grid sits relative to the frame grid
+(half a frame of rounding, plus the style offset, against a 40 ms tolerance), and
+the honest target is **the reference's own on-beat at the same phase** — which is
+0.74 for pulse-fast and what we now hit at 0.86, not 1.0 by construction.
+
+### Still visibly different (contact sheet, `pulse-fast`, looked at)
+
+* Content: the output shows the city pack at 11 of 12 timestamps where the
+  reference shows canopy/macro foliage and a character shot at 23 s. V6, and the
+  largest visible gap. Nothing about 3c changed it; the footage-selection metric
+  is what will.
+* Captions: solid yellow blocks (the compositor has no text renderer — timing is
+  the only judgeable part).
+* Colour: the output's city is cooler/bluer than the reference's palette
+  (V11: ~19 dE same-pack, ~40 dE wrong-pack).
+* Rhythm: not distinguishable by eye, which is correct — the fix is 22 ms.
+
+### Known gaps this sub-step did not close
+
+* **Grid-less plans are untouched.** Frame alignment rides with the beat snap, so
+  a plan with no music bed still gets the renderer's rounding. Same as before, not
+  worse, and worth its own change.
+* **The product does not pass a frame rate yet.** `plan_edit` calls the snapper
+  without `fps`, so the browser renderer keeps its old behaviour until the tool
+  is given the project's `settings.frameRate`. The scorecard cannot see that gap;
+  a product-side test will have to.

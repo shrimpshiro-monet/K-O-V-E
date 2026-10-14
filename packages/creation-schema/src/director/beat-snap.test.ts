@@ -602,3 +602,176 @@ describe("report honesty", () => {
     expect(report.onBeatRatioAfter).toBeNull();
   });
 });
+
+describe("frame alignment", () => {
+  /** The frame the renderer serves for a time, using the renderer's own test. */
+  const frameServing = (time: number, fps: number): number => {
+    // Exactly the compositor's rule — the clip whose `timelineStart <= index/fps`
+    // is running — rather than `ceil(time * fps)`, which rounds up for frame
+    // indices where `(k/fps) * fps > k` (7 and 14 at 25 fps, for instance). The
+    // test has to measure the convention the file uses, not a model of it.
+    let index = 0;
+    while (index / fps < time) index += 1;
+    return index;
+  };
+
+  /** Cut positions as the renderer walks them: the running sum of the spans. */
+  const cutPositions = (snapped: EditPlan): number[] => {
+    let cursor = 0;
+    const positions: number[] = [];
+    snapped.segments.forEach((item, index) => {
+      cursor += Math.max(0, item.sourceEndTime - item.sourceStartTime);
+      if (index < snapped.segments.length - 1) positions.push(cursor);
+    });
+    return positions;
+  };
+
+  const expectEveryCutOnItsFrame = (snapped: EditPlan, fps: number): void => {
+    const positions = cutPositions(snapped);
+    expect(positions.length).toBeGreaterThan(0);
+    for (const position of positions) {
+      // The frame the file plays this cut on is the frame the plan rounded to,
+      // not the one after it.
+      expect(frameServing(position, fps)).toBe(Math.round(position * fps));
+      // And it is *below* the boundary, not on it: a sum one ulp above would be
+      // served by the next frame, which is the 40ms error this exists to stop.
+      const boundary = Math.round(position * fps) / fps;
+      expect(boundary - position).toBeGreaterThan(0);
+    }
+  };
+
+  it("puts every cut on the frame the renderer will play it on", () => {
+    const durations = Array.from({ length: 24 }, () => 0.53);
+    const p = chainedPlan(durations);
+
+    const { plan: snapped, report } = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 200)), {
+      fps: 25,
+    });
+
+    expect(report.fps).toBe(25);
+    expect(report.frameAlignedCuts).toBe(23);
+    expectEveryCutOnItsFrame(snapped, 25);
+    // Half a frame at 25 fps is 20ms, inside the 40ms tolerance, so aligning to
+    // frames cannot cost the plan its beats.
+    expect(report.onBeatRatioAfter).toBe(1);
+  });
+
+  it("does the same at 30 and 60 fps", () => {
+    const p = chainedPlan(Array.from({ length: 16 }, () => 0.47));
+
+    for (const fps of [24, 30, 60]) {
+      const { plan: snapped } = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 200)), { fps });
+      expectEveryCutOnItsFrame(snapped, fps);
+    }
+  });
+
+  it("never moves a cut more than half a frame", () => {
+    const p = chainedPlan([1.03, 0.62, 1.24, 0.44, 1.3, 0.51]);
+
+    for (const fps of [25, 30]) {
+      const withoutFrames = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)));
+      const withFrames = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)), { fps });
+      const before = cutPositions(withoutFrames.plan);
+      const after = cutPositions(withFrames.plan);
+
+      expect(after.length).toBe(before.length);
+      before.forEach((position, index) => {
+        expect(Math.abs(after[index]! - position)).toBeLessThanOrEqual(0.5 / fps + 1e-4);
+      });
+    }
+  });
+
+  it("keeps the reference's offset, at the frame nearest to it", () => {
+    const p = chainedPlan([1.03, 1.03, 1.03]);
+
+    const { plan: snapped, report } = snapPlanToBeatGrid(
+      p,
+      analysis("video-1", beatsEvery(0.5, 40)),
+      { cutOffsetSeconds: -0.03, fps: 25 },
+    );
+
+    expect(report.offsetSeconds).toBe(-0.03);
+    expectEveryCutOnItsFrame(snapped, 25);
+    // The style's -30ms grid point, on the frame nearest it: 0.97s is frame
+    // 24.25, so 24 (0.96s) — 10ms early, rather than the 30ms late that letting
+    // the renderer quantise would have cost. It sits one microsecond under the
+    // boundary on purpose; that is the guard.
+    const positions = cutPositions(snapped);
+    expect(Math.abs(positions[0]! - 0.96)).toBeLessThanOrEqual(2e-6);
+    expect(Math.abs(positions[0]! - 0.97)).toBeLessThanOrEqual(0.5 / 25);
+  });
+
+  it("reports what the frame grid moved", () => {
+    // Beats every 0.5s land on frames at 25 fps and the frame grid moves
+    // nothing; the reference's 30ms-late grid does not, and the report has to
+    // say how far the frame grid then had to move a cut.
+    const p = chainedPlan([1.03, 1.03, 1.03]);
+
+    const onFrames = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)), { fps: 25 });
+    expect(onFrames.report.frameAlignedCuts).toBe(2);
+    expect(onFrames.report.maxAbsFrameShiftSeconds).toBe(0);
+
+    const offsetGrid = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)), {
+      fps: 25,
+      cutOffsetSeconds: -0.03,
+    });
+    expect(offsetGrid.report.fps).toBe(25);
+    expect(offsetGrid.report.frameAlignedCuts).toBe(2);
+    expect(offsetGrid.report.maxAbsFrameShiftSeconds).toBeCloseTo(0.01, 4);
+    expect(offsetGrid.report.meanAbsFrameShiftSeconds).toBeCloseTo(0.01, 4);
+    expect(offsetGrid.report.maxAbsFrameShiftSeconds).toBeLessThanOrEqual(0.5 / 25);
+  });
+
+  it("changes nothing at all when it was not told a frame rate", () => {
+    const p = chainedPlan([1.03, 0.62, 1.24]);
+
+    const plain = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)));
+    const explicit = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)), {});
+
+    expect(JSON.stringify(explicit.plan)).toBe(JSON.stringify(plain.plan));
+    expect(plain.report.fps).toBeNull();
+    expect(plain.report.frameAlignedCuts).toBe(0);
+    expect(plain.report.meanAbsFrameShiftSeconds).toBe(0);
+  });
+
+  it("ignores a frame rate that cannot be one", () => {
+    const p = chainedPlan([1.03, 0.62]);
+
+    for (const fps of [0, -24, Number.NaN, 5000]) {
+      const { plan: snapped, report } = snapPlanToBeatGrid(
+        p,
+        analysis("video-1", beatsEvery(0.5, 40)),
+        { fps },
+      );
+      const plain = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)));
+      expect(report.fps).toBeNull();
+      expect(JSON.stringify(snapped)).toBe(JSON.stringify(plain.plan));
+    }
+  });
+
+  it("does not collapse a shot that would render as no frames", () => {
+    // An anchored segment can end anywhere, including a fraction of a
+    // microsecond before a frame boundary. The cut after it has to move to a
+    // boundary that leaves a shot behind it — one frame, not zero.
+    const p = plan([
+      segment({ sourceStartTime: 0, sourceEndTime: 2 }),
+      segment({ sourceStartTime: 2, sourceEndTime: 3.2, targetPosition: 2 }),
+      segment({ sourceStartTime: 3.2, sourceEndTime: 4.2 }),
+    ]);
+
+    const { plan: snapped, report } = snapPlanToBeatGrid(p, analysis("video-1", beatsEvery(0.5, 40)), {
+      fps: 25,
+    });
+
+    const durations = snapped.segments.map(
+      (item) => item.sourceEndTime - item.sourceStartTime,
+    );
+    for (const duration of durations) expect(duration).toBeGreaterThan(0);
+    // Segment 1 is anchored, so segment 2 starts at 3.2s and is cut on the
+    // frame nearest its beat — the point is that it is a whole number of frames
+    // and the anchored segment was left alone.
+    expect(snapped.segments[1]!.targetPosition).toBe(2);
+    expectEveryCutOnItsFrame(snapped, 25);
+    expect(report.issues.some((issue) => issue.code === "short_of_one_subdivision")).toBe(false);
+  });
+});

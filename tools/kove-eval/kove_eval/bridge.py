@@ -72,9 +72,18 @@ def snap_plan(
     cut_offset_seconds: float | None = None,
     subdivision_beats: int | None = None,
     reference_shot_lengths_in_beats: list[float] | None = None,
+    fps: float | None = None,
 ) -> dict:
-    """Run the shipped `snapPlanToBeatGrid` over a plan."""
+    """Run the shipped `snapPlanToBeatGrid` over a plan.
+
+    `fps` is the rate the caller will render at; the snapper puts cuts on that
+    frame grid. It is passed in rather than stored on the plan because the frame
+    rate belongs to the render target, not to the edit — the same plan cut down
+    to 9:16 at 60fps is the same edit.
+    """
     options: dict = {}
+    if fps is not None:
+        options["fps"] = fps
     if cut_offset_seconds is not None:
         options["cutOffsetSeconds"] = cut_offset_seconds
     if subdivision_beats is not None:

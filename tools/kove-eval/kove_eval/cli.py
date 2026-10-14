@@ -95,6 +95,7 @@ def cmd_score(args: argparse.Namespace) -> int:
             cache_dir=run_dir / ".cache",
             force_analysis=args.force_analysis,
             apply_snap=not args.no_snap,
+            frame_align=not args.no_frame_grid,
         )
         print(
             f"[{entry['id']}] rendered {reference_path.name} -> {output_path.name} "
@@ -527,6 +528,9 @@ def cmd_cuts(args: argparse.Namespace) -> int:
             pipeline.segment_map_for(style, track, sorted(packs)),
             cut_offset_seconds=style.beat_offset_seconds,
             reference_shot_lengths_in_beats=style.shot_lengths_beats or None,
+            # Same rate the run rendered at, so the plan side of this table is
+            # the plan that produced the file.
+            fps=_timeline.fps,
         )
         plan_cuts = pipeline.plan_cut_times(snap["plan"])
 
@@ -610,6 +614,11 @@ def main(argv: list[str] | None = None) -> int:
         score.add_argument("--run-id", default=None)
         score.add_argument("--only", nargs="*", default=None)
         score.add_argument("--no-snap", action="store_true", help="skip production beat snap")
+        score.add_argument(
+            "--no-frame-grid",
+            action="store_true",
+            help="A/B control: snap to beats but let the renderer round the cuts",
+        )
         score.add_argument("--force-analysis", action="store_true")
         score.add_argument("--sensitivity", action="store_true", default=True)
         score.set_defaults(func=func)

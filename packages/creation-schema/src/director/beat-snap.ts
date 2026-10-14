@@ -56,6 +56,21 @@ export interface BeatSnapOptions {
   readonly subdivisionBeats?: number;
   /** Reference shot lengths in beats, used to choose the unit. */
   readonly referenceShotLengthsInBeats?: readonly number[];
+  /**
+   * The frame rate this plan will be rendered at, when the caller knows it.
+   *
+   * A cut cannot reach the file between frames: the renderer shows frame `k` for
+   * every time in `[k/fps, (k+1)/fps)`, so a cut planned at an arbitrary instant
+   * is served by the *next* frame — up to a whole frame late, median half a
+   * frame (22 ms at 25 fps, which is over half the 40 ms tolerance the edit is
+   * measured with). Supplying the rate here puts each cut on the nearest frame
+   * boundary instead, so the file plays when the plan says it does.
+   *
+   * Omitted means no frame grid is applied and cuts keep the behaviour they had.
+   * There is deliberately no default: guessing 30 fps for a 25 fps render would
+   * move every cut in the wrong direction, silently.
+   */
+  readonly fps?: number;
 }
 
 export type BeatSnapIssueCode =
@@ -104,6 +119,20 @@ export interface BeatSnapReport {
   readonly onBeatRatioBefore: number | null;
   readonly onBeatRatioAfter: number | null;
   readonly substitutedMoments: number;
+  /**
+   * The frame rate the cuts were aligned to, or null when no frame grid was
+   * applied — because none was supplied, or because there was no beat grid to
+   * snap onto in the first place.
+   */
+  readonly fps: number | null;
+  /** Cuts this pass placed on a frame boundary. */
+  readonly frameAlignedCuts: number;
+  /**
+   * How far the frame boundary moved a cut, on top of the beat snap, in seconds.
+   * At most half a frame; the point of the number is that it is visible.
+   */
+  readonly meanAbsFrameShiftSeconds: number;
+  readonly maxAbsFrameShiftSeconds: number;
   readonly issues: readonly BeatSnapIssue[];
 }
 
@@ -114,6 +143,34 @@ export interface BeatSnapResult {
 
 function round(value: number): number {
   return Math.round(value * 1e6) / 1e6;
+}
+
+/**
+ * How far *below* a frame boundary a cut is planted.
+ *
+ * The renderer starts a clip at the first frame whose time reaches the cut
+ * (`start <= k/fps`), so a cut placed exactly *on* the boundary is at the mercy
+ * of floating-point summation: the plan's cut positions are the running sum of
+ * `sourceEndTime - sourceStartTime`, and a sum one ulp above the boundary costs
+ * a whole frame — 40 ms at 25 fps. One microsecond below is invisible (0.0025%
+ * of a frame at 25 fps), and it survives both that summation and any downstream
+ * rounding to microseconds. So the frame a cut is planned on is the frame the
+ * viewer sees it on, whatever the renderer's tie-breaking convention is.
+ *
+ * The guards add up: cut k sits (k x 1us) early, which is 0.06 ms by the
+ * hundredth cut. Below the noise floor of every metric here.
+ */
+const FRAME_GUARD_SECONDS = 1e-6;
+
+/**
+ * A frame rate worth aligning to, or null when the caller gave us nothing usable.
+ *
+ * Bounded at 1000 fps so a units mix-up (24000 for ms-per-frame, say) cannot
+ * quietly move every cut.
+ */
+function resolveFrameRate(fps: number | undefined): number | null {
+  if (fps === undefined || !Number.isFinite(fps) || fps <= 0 || fps > 1000) return null;
+  return fps;
 }
 
 /**
@@ -405,6 +462,13 @@ function nearestGridPoint(grid: readonly number[], value: number): number {
  * that gives up 30 ms to reach the grid does not push every later cut 30 ms late;
  * the next shot absorbs the difference. Quantising each duration in turn would do
  * exactly that, and drift.
+ *
+ * With `options.fps` set, each cut is then placed on the nearest frame boundary,
+ * because a cut planned between frames is played by the *next* one. The frame
+ * grid never overrides the beat grid: half a frame is the most it can move a cut
+ * (20 ms at 25 fps, inside the 40 ms tolerance the plan is measured with), so
+ * which beat a cut lands on is decided above, and this only decides the exact
+ * instant within it.
  */
 export function snapPlanToBeatGrid(
   plan: EditPlan,
@@ -413,6 +477,7 @@ export function snapPlanToBeatGrid(
 ): BeatSnapResult {
   const issues: BeatSnapIssue[] = [];
   const grid = resolveTimelineBeatGrid(plan, segmentMap, options);
+  const frameFps = resolveFrameRate(options.fps);
   const requestedUnit = inferSubdivisionBeats(
     options.referenceShotLengthsInBeats ?? [],
     options.subdivisionBeats ?? 1,
@@ -447,6 +512,13 @@ export function snapPlanToBeatGrid(
         onBeatRatioBefore,
         onBeatRatioAfter: onBeatRatioBefore,
         substitutedMoments: 0,
+        // No grid means no cut was moved, so there is nothing for a frame grid to
+        // align either. Frame alignment rides with the beat snap: a plan with no
+        // beats is left exactly as the director wrote it.
+        fps: null,
+        frameAlignedCuts: 0,
+        meanAbsFrameShiftSeconds: 0,
+        maxAbsFrameShiftSeconds: 0,
         issues,
       },
     };
@@ -496,6 +568,9 @@ export function snapPlanToBeatGrid(
   let totalShift = 0;
   let maxShift = 0;
   let totalCuts = 0;
+  let frameAlignedCuts = 0;
+  let frameShiftTotal = 0;
+  let frameShiftMax = 0;
 
   const snappedSegments: PlannedSegment[] = new Array(plan.segments.length);
   // Shift applied to the cut at each boundary, keyed by the boundary's planned
@@ -573,7 +648,30 @@ export function snapPlanToBeatGrid(
     if (target <= cursor + 1e-6) {
       target = localPoints.find((point) => point > cursor + 1e-6) ?? target;
     }
-    const snappedDuration = round(target - cursor);
+
+    // The beat lattice decides *which* beat; the frame grid decides the exact
+    // instant within it. Half a frame is the most this can move a cut — 20 ms at
+    // 25 fps, inside the 40 ms tolerance the plan is measured with — so it
+    // refines the decision above rather than replacing it.
+    let frameShift = 0;
+    if (frameFps !== null) {
+      const beatTarget = target;
+      let frameTarget = Math.round(beatTarget * frameFps) / frameFps;
+      if (frameTarget <= cursor + FRAME_GUARD_SECONDS) {
+        // That frame is too close to the previous cut to leave a shot between
+        // them. The next boundary that does leave one wins: a one-frame shot
+        // renders, a zero-frame shot does not.
+        frameTarget = Math.ceil((cursor + FRAME_GUARD_SECONDS) * frameFps + 1e-9) / frameFps;
+      }
+      frameShift = Math.abs(frameTarget - beatTarget);
+      target = frameTarget;
+    }
+
+    // Aligned cuts are stored at full precision on purpose: the guard above is
+    // worth nothing if the span it lives in gets rounded to the nearest
+    // microsecond afterwards.
+    const snappedDuration =
+      frameFps === null ? round(target - cursor) : target - cursor - FRAME_GUARD_SECONDS;
 
     if (!(snappedDuration > 1e-6)) {
       issues.push({
@@ -620,12 +718,30 @@ export function snapPlanToBeatGrid(
     snappedCuts += 1;
     shiftByBoundary.set(round(boundary), shift);
 
-    snappedSegments[index] = {
-      ...segment,
-      sourceStartTime: round(choice.startTime),
-      sourceEndTime: round(choice.endTime),
-    };
-    cursor = target;
+    if (frameFps !== null) {
+      frameAlignedCuts += 1;
+      frameShiftTotal += frameShift;
+      frameShiftMax = Math.max(frameShiftMax, frameShift);
+      snappedSegments[index] = {
+        ...segment,
+        sourceStartTime: choice.startTime,
+        sourceEndTime: choice.endTime,
+      };
+      // Advance by the geometry the renderer will actually walk — the running
+      // sum of `sourceEndTime - sourceStartTime` — not by the position this pass
+      // meant to reach. The two differ by a rounding error per shot (the span is
+      // `start + duration`, and the plan subtracts them again), and the next cut
+      // has to be measured from where the plan really ends or the guard stops
+      // holding on exactly the cuts it exists for.
+      cursor += choice.endTime - choice.startTime;
+    } else {
+      snappedSegments[index] = {
+        ...segment,
+        sourceStartTime: round(choice.startTime),
+        sourceEndTime: round(choice.endTime),
+      };
+      cursor = target;
+    }
   });
 
   // Text sits at absolute timeline times, so it has to ride with the cuts that
@@ -661,6 +777,10 @@ export function snapPlanToBeatGrid(
       // forced this cut onto — otherwise the number is a tautology.
       onBeatRatioAfter: measureTimelineBeatAlignment(snappedPlan, grid, requestedUnit),
       substitutedMoments,
+      fps: frameFps,
+      frameAlignedCuts,
+      meanAbsFrameShiftSeconds: frameAlignedCuts > 0 ? frameShiftTotal / frameAlignedCuts : 0,
+      maxAbsFrameShiftSeconds: frameShiftMax,
       issues,
     },
   };

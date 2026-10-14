@@ -44,6 +44,8 @@ interface Job {
     readonly cutOffsetSeconds?: number;
     readonly subdivisionBeats?: number;
     readonly referenceShotLengthsInBeats?: readonly number[];
+    /** Output frame rate, so the snapper can put cuts on the frame grid. */
+    readonly fps?: number;
   };
   /** `align`: explicit cut times to judge. */
   readonly cuts?: readonly number[];
