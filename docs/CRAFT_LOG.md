@@ -1019,3 +1019,54 @@ tolerance. An edit that is perfect at plan level but not frame-aligned therefore
 cannot exceed about 0.5 on-beat in the file, which is what `pulse-fast` (0.333) and
 `social-vertical` (0.250) are showing. That is 3c's frame-quantised branch, and it
 is the indicated next action — but the metric stays untouched until 3d.
+
+## V11 — the 20–32 ΔE colour gap is two problems, and both are sized
+
+The V3/V6 question ("is the output showing the wrong clip?") and the colour
+question ("is the grade wrong?") turn out to be the same measurement. The
+scorecard compares the reference against the output **at the same timestamp**,
+so its `color_delta_e_mean` cannot tell a mis-graded shot from a different pack
+wearing the same grade. Splitting the samples by pack identity separates them.
+
+Method — no render needed on either side:
+
+* the reference's pack per shot is re-derived from the builder's own pure
+  functions (`build._shot_plan` + `build._pick_source`), which is only sound
+  because the seed was pinned in F19;
+* the output's pack per shot is the snapped plan's `sourceVideoId`;
+* every 0.25 s sample is bucketed `same pack` / `different pack`, and the
+  metric's own delta-E is reported per bucket.
+
+    reference          sampled  same-pack  diff-pack   dE same  dE diff  p95 same
+    pulse-fast              92         30         62      18.9     39.9      30.0
+    cinematic-slow         102         70         32      12.6     37.2      44.3
+    doc-natural            104         95          9      18.4     41.7      31.4
+    social-vertical         96         28         68      20.0     39.2      33.7
+    text-forward           100         34         66       8.8     40.1      38.0
+
+Internal check (the buckets must explain the aggregate, not slice it): weighting
+them reproduces the scorecard — text 28.6 vs 29.3, social 31.8 vs 32.1, doc 18.4
+vs 20.2, cinematic 24.6 vs 25.2, pulse 30.5 vs 29.2. They do.
+
+**Verdict.** Both hypotheses are true, and the split is roughly even:
+
+* **Footage selection is the larger cause.** Showing the wrong pack multiplies
+  delta-E by 2.0×–4.6×. This is V6 confirmed with a number and it is why the
+  content metric comes before tuning the grade further.
+* **The grade is still wrong on its own.** Same-pack delta-E is 8.8–20.0, and
+  >5 is visible. `lab-transfer` remains the fix, but on its own it can only
+  remove about half the deficit.
+
+So the order already agreed (footage metric, then colour) is the right order,
+and colour work is not cancelled by this test — it is bounded by it.
+
+Bounding caveat, recorded as a limit not a hedge: "same pack" is not "same
+source time". Output and reference can show different sub-shots *within* one
+pack, so 8.8–20.0 is an **upper bound** on the grade error, not a measurement of
+it. Closing that needs overlapping source ranges, which is the same machinery
+V3/V6 needs; do it then.
+
+The experiment is committed as `tools/kove-eval/experiments/same_source_delta_e.py`
+so the number above is reproducible from a clean checkout. It is an experiment,
+not a shipping subcommand — when footage selection is built it becomes a
+`kove-eval sources` subcommand with a real test.
