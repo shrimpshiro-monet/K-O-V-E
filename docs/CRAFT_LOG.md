@@ -761,3 +761,153 @@ later than the plan, and the underlying beat detector still returns zero onsets 
 "done" — it is *localised*: three separate, measurable defects, in the order they
 should be fixed: detector rate/octave (F12/F15), render timing bias (~21 ms), and the
 metric's inability to separate style offset from renderer lateness.
+
+## Step 1, third pass — the detector: rate guard and octave lock
+
+Two defects, both in `packages/core/src/audio/beat-detection-engine.ts`, both
+measured before they were changed. They are distinct, and the first attempt at
+fixing them was wrong in an instructive way.
+
+### What the detector actually did (before)
+
+Nine fixtures, through the bridge, all with a known answer:
+
+| fixture | rate | onsets | BPM | truth |
+| --- | --- | --- | --- | --- |
+| click-120 | 22050 | 41 | **60.000** | 120 |
+| click-120 | 44100 | 47 | 120.000 | 120 |
+| click-140 | 22050 | 48 | **69.784** | 140 |
+| click-140 | 44100 | 55 | 139.690 | 140 |
+| click-140 | 48000 | 55 | 139.806 | 140 |
+| track-pulse-140 (bare) | 44100 | 63 | **69.824** (conf 0.096) | 140 |
+| track-warm-100 (bare) | 44100 | 39 | 101.695 | 100 |
+| track-driving-120 (bare) | 44100 | 47 | 120.000 | 120 |
+
+F15 recorded "zero onsets at 22050" from the reference *mix*; on a bare click the
+22050 failure is not silence but **exactly half the tempo** (60.000 for a 120 BPM
+click). Two causes, and the fix for one does not fix the other:
+
+1. **Rate.** `detectOnsets` counts frames: `riseLookback` is 0.035s of frames —
+   3 at 44100, **1** at 22050 — and at one frame a smoothed attack has no trough
+   to rise from. The reduced frame density also smears the beat period across
+   neighbouring autocorrelation lags: at 22050 the 140 BPM click put 0.0075 on
+   lag 42 and 0.0071 on lag 44 with almost nothing on lag 43, so the fundamental
+   was not merely weak, it was **split in two** — no octave rule could recover
+   it. Confirmed by measurement, not inferred.
+2. **Octave.** On `track-pulse-140` at 44100 the onsets were correct (63 of them,
+   one per beat) and the autocorrelation still reported 69.8: lag 86 scored
+   0.0151 against lag 43's 0.0132, a ratio of **0.871**, just under the 0.9 the
+   "prefer the fastest candidate" rule demanded. `driving-120` was the same
+   shape at 0.980 — correct by 8% of margin, not by design.
+
+### What was changed
+
+- **Rate guard.** `prepareForAnalysis` resamples to `ANALYSIS_SAMPLE_RATE`
+  (44100) before any frame-counted constant is evaluated. Linear interpolation,
+  deliberately: this feeds RMS envelope and onset detection, where a 2048-sample
+  window already band-limits the signal and the decision is made from envelope
+  shape, not waveform fidelity. The result now carries `analysisSampleRate` so
+  the rate is visible, and `tempoFallback` so the 120 BPM metronome can never
+  again look like a measurement.
+- **Octave lock.** A comb score — the candidate lag plus its harmonics weighted
+  `1/k²` — times a gentle tempo prior centred at 120 BPM and symmetric in
+  octaves. The comb lifts a true fundamental above its subharmonic, and the prior
+  breaks ties without imposing a taste about tempo.
+
+The exponent in `1/k²` is load-bearing, and the first version of this used 1/k.
+With `w₂ = 0.5` a candidate with **no** energy at its own period collected half
+its subharmonic's score for free, which cleared the 0.9 preference ratio against
+the prior's 1.85x maximum advantage: a bare 60 BPM click was promoted to 120.
+The unit test caught it. A false promotion needs `w₂ ≥ ratio × priorRatio` =
+0.9 × 0.54 = 0.486, and `1/k²` gives 0.25, so a tempo cannot be invented from a
+subharmonic alone. This is stated in the code because the next person to "tidy"
+those weights will reintroduce the bug.
+
+### After
+
+| fixture | 22050 | 44100 | 48000 | truth |
+| --- | --- | --- | --- | --- |
+| click-120 | 120.000 (47 onsets) | 120.000 (47) | 120.000 (47) | 120 |
+| click-140 | 139.690 (55) | 139.690 (55) | 139.690 (55) | 140 |
+
+Identical onsets **and** identical tempo at all three rates. The bare golden
+tracks: `pulse-140` 69.824 → **139.623** (confidence 0.096 → **0.952**),
+`driving-120` unchanged at 120.000, `warm-100` unchanged at 101.695. The
+reference mix (the "mixed" case): 139.627 → **140.187** against a constructed
+140.000.
+
+Bare 70 and bare 60 clicks were added as tests specifically to catch the opposite
+error — the lock must not promote a track that has no off-beat energy. 7 tests in
+`beat-detection-engine.test.ts`; the core package's 189 files / 1626 tests still
+pass.
+
+**One instrument defect of my own, fixed here.** The bridge reached into the
+private `detectOnsets` and called it with the file's own rate — a path the
+product no longer takes. It reported 48 onsets for the 22050 Hz click while the
+engine analysed 55, so the diagnostic contradicted the tempo it existed to
+explain. It now goes through `prepareForAnalysis` and reports
+`analysisSampleRate`.
+
+### Plan-level result (unchanged, as required)
+
+`pulse-fast`, snapped through the shipped snapper on the new grid:
+`subdivisionBeats 1 · refinedSubdivisionBeats 0.25 · refinedCuts 30 ·
+snappedCuts 36/36`, and the cuts land **36/36 within 40 ms** of a raw beat at a
+median of **30.6 ms** — which is precisely the style's own measured cut offset
+(30.6 ms). Before the detector fix the same figure was 30.0 ms; the cuts now sit
+on the reference's phase rather than 0.6 ms off it.
+
+### File-level result (measured, not changed — the metric is untouched)
+
+`score --run-id step1-detector` vs the committed baseline: **48 improved / 25
+regressed**. Per reference, baseline → now:
+
+| reference | ref on-beat | ref offset ms | out on-beat | out offset ms | snap step |
+| --- | --- | --- | --- | --- | --- |
+| pulse-fast | 0.000 → **0.737** | +196 → **+30.6** | 0.556 → 0.278 | −8 → **+52.9** | 0.430 s |
+| cinematic-slow | 0.333 → **0.667** | +256 → **+2.7** | 0.571 → **0.714** | −8 → +9.6 | 0.599 s |
+| doc-natural | 0.111 → 0.111 | +184 → −80.3 | 0.000 → **0.273** | +192 → +39.1 | 0.106 s |
+| social-vertical | 0.000 → **0.712** | +192 → **+31.8** | 0.479 → 0.250 | −4 → **+51.2** | 0.430 s |
+| text-forward | 0.053 → **0.737** | +136 → +4.6 | 0.105 → **0.833** | −96 → +14.9 | 0.599 s |
+
+**The reference column is the acceptance for this step and it holds**: both 140 BPM
+references now measure a style offset of +30.6 / +31.8 ms where the engine tracker's
+phase error used to put them at +196 / +192 ms, and their on-beat ratios went
+0.000 → 0.737 / 0.712.
+
+**The two on-beat regressions are the metric's, not the product's, and they are now
+quantified.** `pulse-fast` and `social-vertical` read 0.278 / 0.250 with file-level
+offsets of **+52.9 / +51.2 ms** against style offsets of **+30.6 / +31.8 ms**. The
+plan-level measurement for `pulse-fast` is 36/36 cuts at exactly 30.6 ms — the plan
+is on the reference's phase. So the file-level column is reading the *sum* of:
+
+- the renderer/container path, and
+- the instrument: **F18 measured the scene detector reading cuts +17.1 ms late**
+  against the reference's own known cut times, and the output is 25 fps, so a cut
+  can only be *reported* on a 40 ms frame grid.
+
++30.6 (style) + 17 (detector) + up to 20 (frame grid) ≈ +50 ms. **The honest
+conclusion is that the ~21 ms gap is not yet evidence that the renderer places cuts
+late**, and compensating at the renderer on this evidence would bake the
+instrument's 17 ms into the edit — making the file genuinely late while the metric
+improved. Isolating the renderer's own contribution is the next step, and it needs
+a measurement that does not go through the scene detector.
+
+Why the ratios fell while the offsets are right: the tolerance is 40 ms and the
+remaining gap is ~21 ms, so cuts sit just outside it. Before, the grid phase
+(+6.9 ms) and the output's lateness cancelled and flattered the number. The
+regression is the old error being removed — exactly the pattern from the previous
+pass.
+
+Two other movements worth naming, both consequences of a correct grid rather than
+of anything else:
+
+- `social-vertical` now snaps **48 cuts where it snapped 29** (step 0.430 s, whole
+  beats). The plan changes because the *grid* changed: shot lengths are counted in
+  beats, so a half-tempo reading halved every length in beats. This is the plan
+  responding correctly to a correct tempo, not a new defect — but it means plan
+  shape is downstream of the detector, and the motion/caption metrics that keyed
+  off those timings moved with it.
+- `doc-natural` is unchanged on both sides (ref on-beat 0.111, output 0.273, snap
+  step 0.106 s) and is the one reference the detector fix did not touch. It remains
+  the outlier flagged in the previous pass.

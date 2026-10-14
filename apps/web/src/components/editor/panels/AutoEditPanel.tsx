@@ -17,6 +17,7 @@ import {
   type BeatAnalysisResult,
   type Clip,
   getMediaItemCapabilities,
+  ANALYSIS_SAMPLE_RATE,
 } from "@kove-advanced/core";
 
 interface AutoEditPanelProps {
@@ -102,6 +103,15 @@ export const AutoEditPanel: React.FC<AutoEditPanelProps> = ({ onClose }) => {
           downbeats: project.timeline.beatMarkers
             ?.filter((m) => m.isDownbeat)
             .map((m) => m.time) ?? [],
+          // Carried from the stored analysis. A project saved before the guard
+          // recorded no rate, and every analysis the guard performs runs at
+          // ANALYSIS_SAMPLE_RATE, so that is the rate this grid was produced at.
+          analysisSampleRate:
+            existing.analysisSampleRate ?? ANALYSIS_SAMPLE_RATE,
+          // Also from storage. `confidence === 0` is what a pre-guard project
+          // has in place of the flag, and it means the same thing: the grid is
+          // the fallback, not a measurement.
+          tempoFallback: existing.tempoFallback ?? existing.confidence === 0,
         };
       } else {
         const mediaItem = useProjectStore

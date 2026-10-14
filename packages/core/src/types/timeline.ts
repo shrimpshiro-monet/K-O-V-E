@@ -32,6 +32,22 @@ export interface TimelineBeatAnalysis {
   readonly confidence: number;
   readonly sourceClipId?: string;
   readonly analyzedAt: number;
+  /**
+   * The rate the analysis ran at, after the beat detector's rate guard.
+   *
+   * Absent on projects stored before the guard existed. It is carried so a
+   * timeline reopened from storage reports the same analysis the engine
+   * performed rather than a default.
+   */
+  readonly analysisSampleRate?: number;
+  /**
+   * True when the grid is the 120 BPM fallback rather than a measured tempo.
+   *
+   * Absent on projects stored before the field existed, where `confidence === 0`
+   * is the equivalent signal. Read it before trusting a bpm: a fallback grid is
+   * a constant, and snapping edits to it is snapping to nothing.
+   */
+  readonly tempoFallback?: boolean;
 }
 
 export interface Track {

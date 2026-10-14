@@ -152,12 +152,24 @@ async function detectBeats(wavPath: string, truthBeats: readonly number[]) {
   // count is the difference between measuring that and guessing at it.
   const internal = engine as unknown as {
     detectOnsets: (data: Float32Array, rate: number) => number[];
+    prepareForAnalysis: (
+      data: Float32Array,
+      rate: number,
+    ) => { samples: Float32Array; sampleRate: number };
     config: { windowSize: number; hopSize: number; sensitivity: number };
   };
   let onsetCount: number | null = null;
   let onsets: number[] = [];
+  let analysisSampleRate: number | null = null;
   try {
-    onsets = internal.detectOnsets(samples, sampleRate);
+    // Through the rate guard, not around it. Calling `detectOnsets` with the
+    // file's own rate reports the onsets of an analysis the product no longer
+    // performs — a 22050 Hz file then reads as 48 onsets here while the engine
+    // analysed 55 at 44100, and the diagnostic contradicts the tempo it is
+    // supposed to explain.
+    const prepared = internal.prepareForAnalysis(samples, sampleRate);
+    analysisSampleRate = prepared.sampleRate;
+    onsets = internal.detectOnsets(prepared.samples, prepared.sampleRate);
     onsetCount = onsets.length;
   } catch {
     onsetCount = null;
@@ -200,7 +212,16 @@ async function detectBeats(wavPath: string, truthBeats: readonly number[]) {
     beatCount: detected.length,
     onsetCount,
     firstOnsets: onsets.slice(0, 6),
+    /**
+     * Every onset, not just the first few. The tempo decision is made from this
+     * list, so a diagnosis of a wrong tempo needs the whole list: the envelope
+     * and the autocorrelation curve can then be recomputed outside the engine
+     * and checked against what it actually decided. 63 floats are worth it.
+     */
+    onsets,
     config: internal.config,
+    /** The rate the rate guard actually analysed at, not the file's rate. */
+    analysisSampleRate,
     meanIntervalSeconds: meanGap,
     medianIntervalSeconds: medianGap,
     bpmFromMeanInterval: meanGap > 0 ? 60 / meanGap : null,

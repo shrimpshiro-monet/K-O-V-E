@@ -16,6 +16,20 @@ export interface BeatAnalysisResult {
   readonly beats: Beat[];
   readonly duration: number;
   readonly downbeats: number[];
+  /**
+   * The rate the analysis actually ran at, after the rate guard. Every constant
+   * in the onset detector counts frames of a 2048-sample window with a
+   * 512-sample hop, so analysis is carried out at one known rate no matter what
+   * the file was.
+   */
+  readonly analysisSampleRate: number;
+  /**
+   * True when no tempo could be measured and the 120 BPM fallback was laid down
+   * as a metronome. Callers that snap edits to the beat must read this as "no
+   * beat grid", not as a 120 BPM track: the grid is a constant, not a
+   * measurement, and nothing else in the result says so.
+   */
+  readonly tempoFallback: boolean;
 }
 
 export interface BeatDetectionConfig {
@@ -24,7 +38,44 @@ export interface BeatDetectionConfig {
   readonly sensitivity: number;
   readonly windowSize: number;
   readonly hopSize: number;
+  /** The rate the rate guard resamples to before analysis. */
+  readonly analysisSampleRate: number;
 }
+
+/**
+ * The rate the rate guard resamples to before analysis.
+ *
+ * The onset detector's constants are counts of frames: `riseLookback` is 0.035s
+ * of frames, which is 3 frames at 44100 and 1 at 22050, and at one frame a
+ * smoothed attack has no trough to rise from. The same file handed in at 22.05
+ * kHz therefore produced a different — and wrong — tempo: a 120 BPM click read
+ * exactly 60.000, and a 140 BPM click read 69.784, because the smaller frame
+ * count smears the beat period across neighbouring autocorrelation lags.
+ *
+ * 44100 is not arbitrary: it is the rate this detector was tuned and measured
+ * at. Normalising to it makes the analysis rate-invariant, which is a property
+ * the product needs — a user's file must not depend on where it was recorded.
+ */
+export const ANALYSIS_SAMPLE_RATE = 44100;
+
+/** The tempo used when no tempo can be measured. Flagged by `tempoFallback`. */
+export const FALLBACK_BPM = 120;
+
+/**
+ * How many multiples of a candidate beat period are summed when deciding the
+ * octave. See `calculateBpm`.
+ */
+const MAX_TEMPO_HARMONICS = 4;
+
+/** Center and width of the tempo prior, in octaves around the center. */
+const TEMPO_PRIOR_CENTER_BPM = 120;
+const TEMPO_PRIOR_SIGMA_OCTAVES = 0.9;
+
+/**
+ * How close to the best score a *faster* tempo candidate has to be to be
+ * preferred over a slower one.
+ */
+const TEMPO_PREFERENCE_RATIO = 0.9;
 
 export const DEFAULT_BEAT_DETECTION_CONFIG: BeatDetectionConfig = {
   minBpm: 60,
@@ -32,6 +83,7 @@ export const DEFAULT_BEAT_DETECTION_CONFIG: BeatDetectionConfig = {
   sensitivity: 0.5,
   windowSize: 2048,
   hopSize: 512,
+  analysisSampleRate: ANALYSIS_SAMPLE_RATE,
 };
 
 export class BeatDetectionEngine {
@@ -62,11 +114,15 @@ export class BeatDetectionEngine {
     audioBuffer: AudioBuffer,
   ): Promise<BeatAnalysisResult> {
     const channelData = audioBuffer.getChannelData(0);
-    const sampleRate = audioBuffer.sampleRate;
     const duration = audioBuffer.duration;
 
-    const onsets = this.detectOnsets(channelData, sampleRate);
-    const { bpm, confidence } = this.calculateBpm(onsets, duration);
+    // Rate guard. Everything downstream counts frames, so the samples are
+    // normalised to one known rate first; without this the same audio yields a
+    // different tempo at a different sample rate.
+    const prepared = this.prepareForAnalysis(channelData, audioBuffer.sampleRate);
+
+    const onsets = this.detectOnsets(prepared.samples, prepared.sampleRate);
+    const { bpm, confidence, fallback } = this.calculateBpm(onsets, duration);
     const beats = this.generateBeats(bpm, duration, onsets);
     const downbeats = this.detectDownbeats(beats);
 
@@ -76,7 +132,43 @@ export class BeatDetectionEngine {
       beats,
       duration,
       downbeats,
+      analysisSampleRate: prepared.sampleRate,
+      tempoFallback: fallback,
     };
+  }
+
+  /**
+   * Bring `samples` to the analysis rate, so no rate-dependent constant is ever
+   * evaluated at a rate it was not tuned for.
+   *
+   * Linear interpolation, deliberately: this feeds RMS envelope and onset
+   * detection, where a 2048-sample window already band-limits the signal to
+   * roughly 20 Hz–11 kHz and the decision is made from envelope shape, not from
+   * waveform fidelity. A polyphase filter would be the right tool for playback
+   * or for a spectral method; it would cost more here and change no decision.
+   * Downsampling (48000 → 44100) folds content above the new Nyquist, which for
+   * this purpose is inaudible: the envelope is what is measured.
+   */
+  private prepareForAnalysis(
+    samples: Float32Array,
+    sampleRate: number,
+  ): { samples: Float32Array; sampleRate: number } {
+    const target = this.config.analysisSampleRate;
+    if (!(sampleRate > 0) || !(target > 0) || sampleRate === target) {
+      return { samples, sampleRate };
+    }
+    const ratio = sampleRate / target;
+    const length = Math.max(1, Math.floor(samples.length / ratio));
+    const resampled = new Float32Array(length);
+    for (let index = 0; index < length; index += 1) {
+      const position = index * ratio;
+      const left = Math.floor(position);
+      const right = Math.min(samples.length - 1, left + 1);
+      const fraction = position - left;
+      resampled[index] =
+        (samples[left] ?? 0) * (1 - fraction) + (samples[right] ?? 0) * fraction;
+    }
+    return { samples: resampled, sampleRate: target };
   }
 
   async analyzeFromBlob(blob: Blob): Promise<BeatAnalysisResult> {
@@ -189,9 +281,9 @@ export class BeatDetectionEngine {
   private calculateBpm(
     onsets: number[],
     duration: number,
-  ): { bpm: number; confidence: number } {
+  ): { bpm: number; confidence: number; fallback: boolean } {
     if (onsets.length < 4) {
-      return { bpm: 120, confidence: 0 };
+      return { bpm: FALLBACK_BPM, confidence: 0, fallback: true };
     }
 
     const { minBpm, maxBpm } = this.config;
@@ -205,41 +297,97 @@ export class BeatDetectionEngine {
 
     const minLag = Math.max(2, Math.floor((60 / maxBpm) * envelopeRate));
     const maxLag = Math.min(frames - 2, Math.ceil((60 / minBpm) * envelopeRate));
-    if (maxLag <= minLag) return { bpm: 120, confidence: 0 };
+    if (maxLag <= minLag) return { bpm: FALLBACK_BPM, confidence: 0, fallback: true };
 
     const scores: number[] = [];
-    let bestScore = -1;
     for (let lag = minLag; lag <= maxLag; lag++) {
       let sum = 0;
       for (let i = 0; i + lag < frames; i++) sum += envelope[i] * envelope[i + lag];
-      const score = sum / (frames - lag);
-      scores.push(score);
-      if (score > bestScore) bestScore = score;
+      scores.push(sum / (frames - lag));
     }
 
-    // Prefer the fastest plausible lag that explains the data — the raw peak sits
-    // on beat multiples (half/double tempo), which are all equally correlated.
-    const threshold = bestScore * 0.9;
-    let bestOffset = 0;
-    for (let i = 0; i < scores.length; i++) {
-      if (scores[i] >= threshold) {
-        bestOffset = i;
-        break;
+    const scoreAtLag = (lag: number): number => {
+      const index = lag - minLag;
+      if (index < 0 || index >= scores.length) return 0;
+      return scores[index]!;
+    };
+
+    // Octave decision.
+    //
+    // Raw autocorrelation cannot tell a beat from half a beat: every multiple of
+    // the true period correlates too, and on some material the multiple scores
+    // higher than the fundamental. Measured on the golden tracks, a bare 140 BPM
+    // pulse scored 0.0151 at two beats out against 0.0132 at one — a ratio of
+    // 0.871, just under the 0.9 the preference rule below demanded — so the
+    // engine reported 69.8 BPM for a 140 BPM track.
+    //
+    // Two corrections, both from the signal rather than from a taste:
+    //
+    // 1. A comb score. A lag that really is the beat period also scores at its
+    //    own multiples; a half-tempo lag does not score at its half. Summing the
+    //    harmonics lifts the fundamental above its subharmonic.
+    //
+    //    The weights decay as 1/k², and that exponent is load-bearing rather
+    //    than cosmetic. A candidate with no energy at its own period still
+    //    collects w₂ times its subharmonic's score, and the preference rule
+    //    below accepts any faster candidate within `TEMPO_PREFERENCE_RATIO` of
+    //    the best. So a false promotion needs w₂ ≥ ratio × (prior ratio), and
+    //    the prior can favour a faster candidate by at most 1/0.54 ≈ 1.85x
+    //    across the detector's range: 0.9 × 0.54 = 0.486. With w₂ = 0.5 — the
+    //    first version of this — a bare 60 BPM click was promoted to 120, and a
+    //    test caught it. At 1/k² the free ride is worth 0.25, under the 0.486
+    //    the promotion would need, so a tempo cannot be invented from a
+    //    subharmonic alone.
+    // 2. A tempo prior, gentle and symmetric in octaves, so 60 and 240 are
+    //    equally suspect: the correction leans on the music, not on an opinion
+    //    about tempo.
+    const combScore = (lag: number): number => {
+      let sum = 0;
+      for (let harmonic = 1; harmonic <= MAX_TEMPO_HARMONICS; harmonic += 1) {
+        const multiple = lag * harmonic;
+        if (multiple > maxLag) break;
+        sum += scoreAtLag(multiple) / (harmonic * harmonic);
       }
+      return sum;
+    };
+    const tempoPrior = (lag: number): number => {
+      const bpm = (60 * envelopeRate) / lag;
+      const octaves = Math.log2(bpm / TEMPO_PRIOR_CENTER_BPM);
+      return Math.exp(-0.5 * (octaves / TEMPO_PRIOR_SIGMA_OCTAVES) ** 2);
+    };
+
+    const weighted: number[] = [];
+    let bestWeighted = -1;
+    for (let lag = minLag; lag <= maxLag; lag++) {
+      const value = combScore(lag) * tempoPrior(lag);
+      weighted.push(value);
+      if (value > bestWeighted) bestWeighted = value;
     }
 
+    // Prefer the fastest tempo that explains the data: of the beat multiples
+    // that all correlate, the fundamental is the one the reference cuts to, and
+    // reporting the half-tempo multiple would halve every shot length.
+    const threshold = bestWeighted * TEMPO_PREFERENCE_RATIO;
+    let bestOffset = weighted.findIndex((value) => value >= threshold);
+    if (bestOffset < 0) bestOffset = weighted.indexOf(bestWeighted);
+
+    // Refined on the raw curve, not the comb: the parabola wants the shape of
+    // the peak in the signal, and the comb's shape is the signal's plus its
+    // harmonics' — same peak, noisier shoulders.
     const lag = minLag + bestOffset;
     let refinedLag = lag;
     const left = scores[bestOffset - 1];
     const mid = scores[bestOffset];
     const right = scores[bestOffset + 1];
-    if (left !== undefined && right !== undefined && mid > left && mid > right) {
+    if (left !== undefined && right !== undefined && mid !== undefined && mid > left && mid > right) {
       const denom = left - 2 * mid + right;
       if (denom !== 0) refinedLag = lag - 0.5 * (right - left) / denom;
     }
 
-    const bpm = 60 / (refinedLag / envelopeRate);
-    if (!(bpm >= minBpm && bpm <= maxBpm)) return { bpm: 120, confidence: 0 };
+    const bpm = (60 * envelopeRate) / refinedLag;
+    if (!(bpm >= minBpm && bpm <= maxBpm)) {
+      return { bpm: FALLBACK_BPM, confidence: 0, fallback: true };
+    }
 
     const expectedBeats = (duration * bpm) / 60;
     const confidence = Math.min(
@@ -247,7 +395,7 @@ export class BeatDetectionEngine {
       Math.max(0, 1 - Math.abs(expectedBeats - onsets.length) / expectedBeats),
     );
 
-    return { bpm, confidence };
+    return { bpm, confidence, fallback: false };
   }
 
   private generateBeats(
