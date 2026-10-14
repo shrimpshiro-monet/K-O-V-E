@@ -689,3 +689,75 @@ Step 1's remaining work is product-side and now has a single, testable target:
 degenerate span from refining the whole plan (F17), and to stop reporting success
 against the lattice it chose (F16). Both are measurable without a render, via the
 snap report, and both must be re-scored through the same harness afterwards.
+
+## Step 1, second pass — the cut lattice, and the reference that was not stable
+
+**What was tried.** F17 fixed in `snapPlanToBeatGrid`: the unit is now chosen **per
+cut**, from the two shots that cut joins, and only when the next segment continues
+the chain (a layer or anchored segment starts where the director put it, so its length
+says nothing about this cut). F16 also fixed: `subdivisionBeats`/`gridStepSeconds` now
+describe the unit the **reference's** cutting implies, and `onBeatRatioAfter` is
+measured against that unit, not against the lattice the pass just chose. Two report
+fields, `refinedSubdivisionBeats` and `refinedCuts`, make refinement visible.
+
+**Score delta** (`step1-percut`; 48 improved / 25 regressed metric×reference cells, vs
+the committed baseline). The snap note moved from `step=0.107s` to `step=0.430s` — a
+whole beat — on `pulse-fast` and `social-vertical`, and the *snapped plan* is now
+correct: measured directly, all 36 cuts of `pulse-fast` land **30.0 ms** from their
+nearest raw beat (max 30.0 ms), and 30 ms is precisely the style's own
+`cut_offset_ms` (+30.6 ms). The reference side still reads honest (0.74–0.76 on-beat,
++30.6 ms).
+
+But the **rendered** output moved barely at all:
+
+| reference | out on-beat (16th lattice → per-cut) | out median offset ms |
+| --- | --- | --- |
+| pulse-fast | 0.278 → 0.333 | +51.9 → +51.0 |
+| cinematic-slow | 0.714 → 0.714 | +9.6 → +9.6 |
+| doc-natural | 0.273 → 0.273 | +39.1 → +39.1 |
+| social-vertical | 0.862 → 0.857 | +23.7 → +23.6 |
+| text-forward | 0.833 → 0.833 | +14.9 → +14.9 |
+
+**This is the important negative result of the step.** The plan-level fix is real
+(measured directly, above), but it does not reach the file. The rendered offset is
++51.0 ms with a plan that is +30.0 ms: the ~21 ms difference is the render/timing
+path, not the snap. And 30 ms itself is *inside* the style's own offset, which the
+40 ms tolerance must not forgive — so `pulse-fast` sits at 0.333 with a plan that is
+indistinguishable from on-beat. Two consequences, both measured rather than assumed:
+
+- The on-beat metric cannot separate "cuts 30 ms late because the style cuts 30 ms
+  late" from "cuts 30 ms late because the renderer is late". Until the render's own
+  timing bias is measured and removed, the rendered on-beat column is an instrument
+  reading as much as a product reading. The plan-level measurement above is the
+  product reading; the file-level one is the *sum*.
+- `onBeatRatioAfter` on the plan is 1.0 in the fix and 1.0 before it, at a 16th and
+  at a whole beat respectively — which is exactly why the honest version had to be
+  written first (F16): the old number could not tell the two apart.
+
+**F19 — the golden set's reference media was not reproducible.** `goldens.py` seeded
+the pack renderer with `hash((pack.id, shot))`, and Python randomises `hash()` per
+process. The *plan* was always stable (cuts, lengths, tempo, captions — `golden-set.json`
+stays byte-identical), but the **pixels were not**: the third contact sheet shows the
+reference at 9.0 s and 19.0 s as fully black (mean 0, max 0, over 0.6 s) where an
+earlier build's sheet showed the canopy pack at those same timestamps, from the same
+committed code. Two consequences worth stating plainly:
+
+- Every colour metric is measured against the reference at the sampled time, so ΔE and
+  LAB-histogram distance carried cross-build noise — part of why ΔE drifted
+  30.9 → 28.4 between runs with no colour change in between.
+- Any comparison of two contact sheets across sessions was not a comparison of like
+  with like. Three such comparisons were made during Step 1 before this was caught.
+
+Fixed with a stable seed (`zlib.crc32` of `pack_id:shot`) and pinned by
+`tests/test_goldens.py`, which renders packs under three different `PYTHONHASHSEED`
+values in child processes and requires identical output. The golden set's *media*
+must now be rebuilt once so the fix takes effect; the reference-side numbers in the
+table above are from the pre-fix build and will move when it is.
+
+**Where the rhythm work now stands.** The product's cutting is on the beat
+(plan-level, 30 ms = the style's offset, all 36 cuts). The rendered file is +21 ms
+later than the plan, and the underlying beat detector still returns zero onsets at
+22050 Hz and locks to half tempo on a bare 140 BPM track (F12, F15). Step 1 is not
+"done" — it is *localised*: three separate, measurable defects, in the order they
+should be fixed: detector rate/octave (F12/F15), render timing bias (~21 ms), and the
+metric's inability to separate style offset from renderer lateness.

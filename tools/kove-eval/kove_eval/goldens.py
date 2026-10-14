@@ -27,6 +27,7 @@ balance), not to imitate any particular brand or film.
 from __future__ import annotations
 
 import math
+import zlib
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -182,9 +183,26 @@ def pack_frame(pack: PackSpec, time_s: float, height: int = 720, width: int = 12
     """One frame of a pack, addressed by absolute time (sub-shots in sequence)."""
     shot = min(SUB_SHOTS - 1, int(time_s // SUB_SHOT_SECONDS))
     local_t = time_s - shot * SUB_SHOT_SECONDS
-    rng = np.random.default_rng(hash((pack.id, shot)) % (2**32))
+    rng = np.random.default_rng(pack_shot_seed(pack.id, shot))
     frame = _FRAME_FNS[pack.kind](shot, local_t, rng, height, width)
     return frame
+
+
+def pack_shot_seed(pack_id: str, shot: int) -> int:
+    """A stable seed for one sub-shot of one pack.
+
+    `hash()` is randomised per process (PYTHONHASHSEED), so seeding the pack
+    renderer with it made the reference *media* differ between builds while the
+    plan — cuts, shot lengths, tempo, captions — stayed byte-identical. Two
+    contact sheets from the same committed code could therefore show different
+    reference frames at the same timestamp, and every colour metric measured
+    against the reference carried that noise.
+
+    CRC32 of the name is not cryptographic and does not need to be: it only has
+    to be the same number for the same pack and sub-shot, in every process, on
+    every machine.
+    """
+    return zlib.crc32(f"{pack_id}:{shot}".encode("utf-8")) % (2**32)
 
 
 def render_pack(pack: PackSpec, out_path: Path) -> Path:
