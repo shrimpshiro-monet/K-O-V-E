@@ -911,3 +911,39 @@ of anything else:
 - `doc-natural` is unchanged on both sides (ref on-beat 0.111, output 0.273, snap
   step 0.106 s) and is the one reference the detector fix did not touch. It remains
   the outlier flagged in the previous pass.
+
+### F20 — one mixed reference is read at the wrong tempo, and it is not an octave error
+
+Found while checking why `doc-natural` is the one reference the detector fix did not
+move. Its bed is `driving-120` (**120.000 BPM**). What the analysis actually produces:
+
+| layer | value |
+| --- | --- |
+| detector's fitted tempo | **136.244 BPM** |
+| the grid the harness records | **142.089 BPM** |
+| the true bed | 120.000 BPM |
+
+It is not an octave error (136/120 = 1.135, 142/120 = 1.184), and it is not caused by
+this change: replaying the **old** scoring rule on the same onsets gives lag 44 →
+136.364 BPM, and the new rule gives 136.244 — the ranking is unchanged because the
+true tempo is not the tallest peak. The raw autocorrelation's strongest peak is lag 44
+(136.4 BPM, 0.0053) and the truth, lag 50 (120.0 BPM), is *second* at 0.0038.
+
+The first hypothesis — that the voice-over is dragging the envelope — is not supported:
+`doc-natural` has 10 speech windows and 11 dB of ducking, while `social-vertical` (13
+windows, 8 dB) and `text-forward` (16 windows, 6 dB) both read their beds to within
+0.3%. Whatever pulls the envelope off the beat here is specific to this mix and is not
+yet identified.
+
+**Two separate bpm numbers disagree.** The detector's fitted period says 136.244; the
+harness records 142.089, because `pipeline.py:128` derives bpm from the **walked
+beats'** span over count, not from the fitted period. That is 4.3% here, and it is the
+remaining tail of F11. Any "bpm" written into this log has to say which of the two it
+is; from now on this log will.
+
+Why it matters beyond one reference: `doc-natural`'s reference on-beat ratio has read
+0.111 in every run so far and its measured offset wanders (+184 ms, then −80.3 ms),
+because that reference is being measured against a grid that is ~18% wrong. Its snap
+grid step is 0.106 s — a quarter of a 0.424 s period — so its shot lengths are counted
+in beats of the wrong size, which is upstream of the planner. The fix is in the tempo
+estimate; the metric must not be adjusted to accommodate it.
