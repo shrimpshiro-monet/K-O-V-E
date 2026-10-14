@@ -597,3 +597,95 @@ out one step until the metric is repaired:
   sheets have now shown material in the wrong place, and nothing measures it. This
   is a prerequisite for judging the planner at all.
 - The renderer is the Python compositor, not the browser one (F2).
+
+## Step 1 — measure on the grid the product actually snaps to
+
+**What was tried.** The harness stopped scoring against the engine's librosa tracker
+and started scoring against **the product's own beat detector**, run at 44100 Hz
+(`5dcbeb6`). Nothing in the product changed. The point was to remove the F11 caveat
+from the baseline: the reference's on-beat column was reading near zero because the
+*measurement grid* was 136–256 ms out of phase with the music, not because the
+reference's cuts were off the beat. `MeasuredStyle.beat_source` now records which
+detector produced the grid, so this failure cannot recur silently.
+
+**Score delta** (`step1-product-beats` vs the committed baseline; 44 improved /
+29 regressed metric×reference cells). Per reference, baseline → now:
+
+| reference | ref on-beat | out on-beat | ref median offset ms | out median offset ms |
+| --- | --- | --- | --- | --- |
+| pulse-fast | 0.000 → **0.737** | 0.556 → **0.278** | +196 → +30.6 | −8 → +51.9 |
+| cinematic-slow | 0.333 → **0.667** | 0.571 → **0.714** | +256 → +2.7 | −8 → +9.6 |
+| doc-natural | 0.111 → 0.111 | 0.000 → **0.273** | +184 → −80.3 | +192 → +39.1 |
+| social-vertical | 0.000 → **0.339** | 0.479 → **0.862** | +192 → +6.9 | −4 → +23.7 |
+| text-forward | 0.053 → **0.737** | 0.105 → **0.833** | +136 → +4.6 | −96 → +14.9 |
+
+The reference side is the result this step was for: a reference whose cuts are on the
+beat by construction now reads as on the beat (0.34–0.74 instead of 0.00–0.33), and
+its measured offset collapses from ~200 ms to a few ms on four of five references.
+`doc-natural` is the exception on both columns (−80.3 ms offset, on-beat 0.111
+unchanged) and is the one reference still not explained.
+
+Every other number that moved — ΔE (all five improved 0.9–2.2), cut counts, shot
+lengths, captions — moved as a *side effect*: a different grid moves different cuts,
+which changes which footage is on screen, which changes colour and caption timing.
+Those deltas are not evidence about colour or captions and must not be read as such.
+
+**What this revealed (the actual Step 1 defect).** The output's on-beat ratio did not
+improve the way the reference's did, and on `pulse-fast` it got worse (0.556 → 0.278)
+because the baseline's 0.556 was two errors cancelling: the cuts were snapped to the
+product's lattice and *measured* against a grid that was ~200 ms away, which put them
+accidentally within tolerance. Measuring honestly gives +51.9 ms and 0.278.
+
+The cause is now pinned, by reading the snap report rather than the pixels
+(`pulse-fast`): `requestedUnit 1 · subdivisionBeats 0.25 · gridStepSeconds 0.107 s ·
+offsetSeconds 0.0306 · gridSource music-bed · snappedCuts 36/36 ·
+onBeatRatioBefore 0.556 → **After 1.0**`. The plan has 37 segments with a median
+duration of 0.856 s — two beats — and **one segment of 0.032 s**. The refinement loop
+in `snapPlanToBeatGrid` asks "can the shortest shot hold one grid step?", and that
+single degenerate segment drags the entire plan's lattice from one beat to a quarter
+beat, so every cut is free to land on a 16th. The reference cuts on the beat; the
+output cuts on the nearest 16th; 72% of its cuts are therefore off the beat by up to
+54 ms.
+
+### Failures
+
+- **F16 — the snap grades itself against the lattice it just chose.** The report's
+  `onBeatRatioAfter: 1.0` is measured against `beatGridPoints(grid, unit)`, i.e. the
+  quarter-beat lattice the cuts were just placed on, so a plan with 72% of its cuts
+  off the beat reports a perfect score. This is the "a metric that cannot separate
+  good from bad" rule, in the product rather than the harness: the check is
+  self-confirming and must be measured against **beats** to mean anything.
+- **F17 — one 0.032 s segment sets the grid for a 24 s plan.** Refinement is global
+  and driven by the minimum shot duration; `inferSubdivisionBeats` returns the
+  correct unit (1 beat) and is then overruled by an outlier two orders of magnitude
+  below the median shot. Refine per cut (or over the chain, excluding degenerate
+  spans), not per plan.
+- **F18 — the scene detector reads cuts ~17 ms late.** Measured against the
+  reference's 33 known cut times: median +17.1 ms, p90 +34.3 ms, max +40.0 ms (≈ one
+  frame at 60 fps, consistent with firing on the first changed frame). Any
+  output-side offset figure includes this bias, so "the output is 52 ms late" means
+  ~35 ms of real lateness. Not corrected — recorded, because 17 ms is under half the
+  40 ms tolerance and correcting it would hide renderer-side lateness.
+
+### Third contact sheet (`pulse-fast`) — looked at directly
+
+- **Different source material, again, and worse than `cinematic-slow` (V6):** the
+  reference spends most of its 24 s on the canopy pack; the output shows the city
+  pack at 5.0, 7.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0 and 23.0 s. Nine of twelve
+  sampled timestamps show the wrong pack. Still unmeasured — the prerequisite
+  instrument gap from §Baseline has now cost three steps of judgement.
+- **Captions render as solid yellow blocks**, while the reference's are legible white
+  text ("cut on the beat", "close/new") inside the frame. The Python compositor has
+  no text renderer (F2/F7), so caption *content* cannot be judged from the rendered
+  file — only caption *timing* can.
+- The output frames carry a black lower band with the caption blocks in it; the
+  reference's frames fill the tile. Composition differs, and nothing measures it.
+- `color_delta_e_mean: ref ??? vs out 29.247` — the V10 header bug is still there.
+
+### What carries to the next step
+
+Step 1's remaining work is product-side and now has a single, testable target:
+**the cut lattice.** `requestedUnit` is already correct; the fix is to stop a
+degenerate span from refining the whole plan (F17), and to stop reporting success
+against the lattice it chose (F16). Both are measurable without a render, via the
+snap report, and both must be re-scored through the same harness afterwards.
