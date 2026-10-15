@@ -11870,164 +11870,164 @@ export async function commitEditPlanRevision(
     ? ` Style check: ${planReview.score.toFixed(2)} · density: ${planReview.density.score.toFixed(2)} (${planReview.density.summary}).`
     : " Style check: skipped (deterministic mirror — no style review).";
 
-    // ---- Commit: materialize the new plan first, then remove the previous
-    // plan's output. Materialize failures compensate back to the exact
-    // pre-call state; previous-revision removal only runs after the new
-    // plan is fully applied.
-    const owned = newPlanOwned();
+      // ---- Commit: materialize the new plan first, then remove the previous
+      // plan's output. Materialize failures compensate back to the exact
+      // pre-call state; previous-revision removal only runs after the new
+      // plan is fully applied.
+      const owned = newPlanOwned();
 
-    // ---- Fingerprint no-op: an identical plan is already on the timeline ----
-    // Do NOT tear down and rebuild when the incoming plan hashes equal to the
-    // plan currently applied — this is what stops "it loops and adds a new
-    // plan onto the timeline" when the LLM re-submits semantically identical
-    // content across turns with a different idempotency key.
-    //
-    // Before accepting the no-op, verify every artifact the stored plan
-    // placed still exists: if the user deleted a clip between turns the
-    // fingerprint still matches but the timeline does not, so fall through
-    // to materialize and re-apply. Also require at least one stored artifact
-    // so an empty timeline cannot vacuously match.
-    const fingerprintProjectId = host.getProject().id ?? "__default__";
-    const incomingFingerprint = computeEditPlanFingerprint(finalPlan);
-    const storedState = _previousPlanState.get(fingerprintProjectId);
-    if (storedState?.fingerprint === incomingFingerprint) {
-      const liveClipIds = new Set(
-        host.getProject().timeline.tracks.flatMap((t) => t.clips.map((c) => c.id)),
-      );
-      const liveTransitionIds = new Set(
-        host.getProject().timeline.tracks.flatMap((t) => (t.transitions ?? []).map((x) => x.id)),
-      );
-      const liveTextIds = new Set(
-        (host.getProject().textClips ?? []).map((c) => c.id),
-      );
-      const hasAnyStoredArtifact =
-        storedState.clipIds.length > 0 ||
-        storedState.audioClipIds.length > 0 ||
-        storedState.textIds.length > 0 ||
-        storedState.transitionIds.length > 0;
-      const allStoredPresent =
-        hasAnyStoredArtifact &&
-        storedState.clipIds.every((id) => liveClipIds.has(id)) &&
-        storedState.audioClipIds.every((id) => liveClipIds.has(id)) &&
-        storedState.transitionIds.every((id) => liveTransitionIds.has(id)) &&
-        storedState.textIds.every((id) => liveTextIds.has(id));
-      if (allStoredPresent) {
-        return ok(
-          `${label}: plan unchanged — timeline already matches (${storedState.clipIds.length} clip(s), ${storedState.textIds.length} text overlay(s), ${storedState.transitionIds.length} transition(s), ${storedState.audioClipIds.length} audio clip(s)). No changes applied.`,
-          {
-            applied: false,
-            revision: state.revision,
-            mode,
-            baseRevision: explicitBase ?? null,
-            idempotencyKey,
-            idempotentReplay: false,
-            editPlan: finalPlan,
-            clipIds: [...storedState.clipIds],
-            textIds: [...storedState.textIds],
-            audioClipIds: [...storedState.audioClipIds],
-            effectCount: 0,
-            transitionCount: storedState.transitionIds.length,
-            audioCount: storedState.audioClipIds.length,
-            cameraMoveCount: finalPlan.segments.reduce(
-              (sum, segment) => sum + (segment.cameraMoves?.length ?? 0),
-              0,
-            ),
-            motionCompositionIds: [],
-            motionInstanceIds: [],
-            validationWarnings: finalPlanIssues.filter(
-              (i: { severity: string }) => i.severity === "warning",
-            ),
-            planReview: reviewPayload(planReview, false),
-            density: planReview ? densityPayload(planReview) : null,
-            quality: {
-              status: "unavailable" as const,
-              reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
+      // ---- Fingerprint no-op: an identical plan is already on the timeline ----
+      // Do NOT tear down and rebuild when the incoming plan hashes equal to the
+      // plan currently applied — this is what stops "it loops and adds a new
+      // plan onto the timeline" when the LLM re-submits semantically identical
+      // content across turns with a different idempotency key.
+      //
+      // Before accepting the no-op, verify every artifact the stored plan
+      // placed still exists: if the user deleted a clip between turns the
+      // fingerprint still matches but the timeline does not, so fall through
+      // to materialize and re-apply. Also require at least one stored artifact
+      // so an empty timeline cannot vacuously match.
+      const fingerprintProjectId = host.getProject().id ?? "__default__";
+      const incomingFingerprint = computeEditPlanFingerprint(finalPlan);
+      const storedState = _previousPlanState.get(fingerprintProjectId);
+      if (storedState?.fingerprint === incomingFingerprint) {
+        const liveClipIds = new Set(
+          host.getProject().timeline.tracks.flatMap((t) => t.clips.map((c) => c.id)),
+        );
+        const liveTransitionIds = new Set(
+          host.getProject().timeline.tracks.flatMap((t) => (t.transitions ?? []).map((x) => x.id)),
+        );
+        const liveTextIds = new Set(
+          (host.getProject().textClips ?? []).map((c) => c.id),
+        );
+        const hasAnyStoredArtifact =
+          storedState.clipIds.length > 0 ||
+          storedState.audioClipIds.length > 0 ||
+          storedState.textIds.length > 0 ||
+          storedState.transitionIds.length > 0;
+        const allStoredPresent =
+          hasAnyStoredArtifact &&
+          storedState.clipIds.every((id) => liveClipIds.has(id)) &&
+          storedState.audioClipIds.every((id) => liveClipIds.has(id)) &&
+          storedState.transitionIds.every((id) => liveTransitionIds.has(id)) &&
+          storedState.textIds.every((id) => liveTextIds.has(id));
+        if (allStoredPresent) {
+          return ok(
+            `${label}: plan unchanged — timeline already matches (${storedState.clipIds.length} clip(s), ${storedState.textIds.length} text overlay(s), ${storedState.transitionIds.length} transition(s), ${storedState.audioClipIds.length} audio clip(s)). No changes applied.`,
+            {
+              applied: false,
+              revision: state.revision,
+              mode,
+              baseRevision: explicitBase ?? null,
+              idempotencyKey,
+              idempotentReplay: false,
+              editPlan: finalPlan,
+              clipIds: [...storedState.clipIds],
+              textIds: [...storedState.textIds],
+              audioClipIds: [...storedState.audioClipIds],
+              effectCount: 0,
+              transitionCount: storedState.transitionIds.length,
+              audioCount: storedState.audioClipIds.length,
+              cameraMoveCount: finalPlan.segments.reduce(
+                (sum, segment) => sum + (segment.cameraMoves?.length ?? 0),
+                0,
+              ),
+              motionCompositionIds: [],
+              motionInstanceIds: [],
+              validationWarnings: finalPlanIssues.filter(
+                (i: { severity: string }) => i.severity === "warning",
+              ),
+              planReview: reviewPayload(planReview, false),
+              density: planReview ? densityPayload(planReview) : null,
+              quality: {
+                status: "unavailable" as const,
+                reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
+              },
             },
-          },
+          );
+        }
+        // Stored IDs are missing from the timeline (user deleted clips) —
+        // fall through to materialize so the plan gets re-applied.
+      }
+
+      let materialized;
+      try {
+        materialized = await materializeEditPlan(finalPlan, resolvedMap, host, owned);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "timeline mutation failed";
+        let compensation = { removed: 0, warnings: [] as string[] };
+        try {
+          compensation = await removeOwnedEntities(host, {
+            revision: -1,
+            ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
+            ownedTextClipIds: owned.textIds,
+            ownedTransitionIds: owned.transitionIds,
+            ownedMotionInstanceIds: owned.motionInstanceIds,
+            ownedMotionCompositionIds: owned.motionCompositionIds,
+          });
+        } catch {
+          // Best effort — reported below.
+        }
+        return fail(
+          `EditPlan was valid but could not be applied: ${message}. The timeline was left at its previous revision (${compensation.removed} partial artifact(s) removed).`,
+          "EDIT_PLAN_APPLY_FAILED",
+          { compensation },
         );
       }
-      // Stored IDs are missing from the timeline (user deleted clips) —
-      // fall through to materialize so the plan gets re-applied.
-    }
 
-    let materialized;
-    try {
-      materialized = await materializeEditPlan(finalPlan, resolvedMap, host, owned);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "timeline mutation failed";
-      let compensation = { removed: 0, warnings: [] as string[] };
-      try {
-        compensation = await removeOwnedEntities(host, {
-          revision: -1,
-          ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
-          ownedTextClipIds: owned.textIds,
-          ownedTransitionIds: owned.transitionIds,
-          ownedMotionInstanceIds: owned.motionInstanceIds,
-          ownedMotionCompositionIds: owned.motionCompositionIds,
-        });
-      } catch {
-        // Best effort — reported below.
+      const previousCommit = state.commit;
+      let cleanup = { removed: 0, warnings: [] as string[] };
+      if (previousCommit) {
+        cleanup = await removeOwnedEntities(host, previousCommit);
       }
-      return fail(
-        `EditPlan was valid but could not be applied: ${message}. The timeline was left at its previous revision (${compensation.removed} partial artifact(s) removed).`,
-        "EDIT_PLAN_APPLY_FAILED",
-        { compensation },
-      );
-    }
 
-    const previousCommit = state.commit;
-    let cleanup = { removed: 0, warnings: [] as string[] };
-    if (previousCommit) {
-      cleanup = await removeOwnedEntities(host, previousCommit);
-    }
+      const nextRevision = state.revision + 1;
+      const commit: DirectorPlanCommit = {
+        revision: nextRevision,
+        ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
+        ownedTextClipIds: owned.textIds,
+        ownedTransitionIds: owned.transitionIds,
+        ownedMotionInstanceIds: owned.motionInstanceIds,
+        ownedMotionCompositionIds: owned.motionCompositionIds,
+      };
 
-    const nextRevision = state.revision + 1;
-    const commit: DirectorPlanCommit = {
-      revision: nextRevision,
-      ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
-      ownedTextClipIds: owned.textIds,
-      ownedTransitionIds: owned.transitionIds,
-      ownedMotionInstanceIds: owned.motionInstanceIds,
-      ownedMotionCompositionIds: owned.motionCompositionIds,
-    };
+      const summary =
+        `${label} applied as revision ${nextRevision}: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s), ${materialized.cameraMoveCount} camera move(s)` +
+        (previousCommit
+          ? `, replacing revision ${previousCommit.revision} (${cleanup.removed} prior artifact(s) removed)`
+          : "") +
+        `${styleSuffix}`;
 
-    const summary =
-      `${label} applied as revision ${nextRevision}: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s), ${materialized.cameraMoveCount} camera move(s)` +
-      (previousCommit
-        ? `, replacing revision ${previousCommit.revision} (${cleanup.removed} prior artifact(s) removed)`
-        : "") +
-      `${styleSuffix}`;
+      const data = {
+        editPlan: finalPlan,
+        ...materialized,
+        revision: nextRevision,
+        mode: "replace_plan",
+        baseRevision: explicitBase ?? null,
+        idempotencyKey,
+        idempotentReplay: false,
+        replacedPrevious: previousCommit
+          ? { revision: previousCommit.revision, removedArtifacts: cleanup.removed }
+          : null,
+        cleanupWarnings: cleanup.warnings,
+        validationWarnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
+        planReview: reviewPayload(planReview, revisionApplied),
+        density: planReview ? densityPayload(planReview, revisionApplied) : null,
+        // Honest reporting: there is no working timeline frame sampler yet, so
+        // no visual quality review was performed. NEVER report a synthetic score.
+        quality: {
+          status: "unavailable" as const,
+          reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
+        },
+      };
 
-    const data = {
-      editPlan: finalPlan,
-      ...materialized,
-      revision: nextRevision,
-      mode: "replace_plan",
-      baseRevision: explicitBase ?? null,
-      idempotencyKey,
-      idempotentReplay: false,
-      replacedPrevious: previousCommit
-        ? { revision: previousCommit.revision, removedArtifacts: cleanup.removed }
-        : null,
-      cleanupWarnings: cleanup.warnings,
-      validationWarnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
-      planReview: reviewPayload(planReview, revisionApplied),
-      density: planReview ? densityPayload(planReview, revisionApplied) : null,
-      // Honest reporting: there is no working timeline frame sampler yet, so
-      // no visual quality review was performed. NEVER report a synthetic score.
-      quality: {
-        status: "unavailable" as const,
-        reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
-      },
-    };
+      setDirectorPlanState(project, {
+        revision: nextRevision,
+        commit,
+        lastReplay: { key: idempotencyKey, summary, data, revision: nextRevision },
+      });
 
-    setDirectorPlanState(project, {
-      revision: nextRevision,
-      commit,
-      lastReplay: { key: idempotencyKey, summary, data, revision: nextRevision },
-    });
-
-    return ok(summary, data);
+      return ok(summary, data);
 }
 
 const TOOLS: RegisteredTool[] = [
@@ -34336,9 +34336,8 @@ const TOOLS: RegisteredTool[] = [
         });
       const state = getDirectorPlanState(project);
 
-      // ---- Idempotency: repeating an accepted planning turn is a no-op ----
-      // Checked here as well as in the shared commit tail: this copy saves the
-      // director round-trip, the tail's copy covers non-LLM paths.
+      // These two guards also live in the shared commit tail: this copy saves
+      // the director round-trip, the tail's copy covers non-LLM paths.
       if (state.lastReplay?.key === idempotencyKey && replayIsIntact(project, state)) {
         const cached = state.lastReplay;
         const cachedData =
