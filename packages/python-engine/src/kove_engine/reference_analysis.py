@@ -8,7 +8,7 @@ from typing import Any
 from kove_engine.types import AudioResult, FrameDescription, VideoSegmentMap
 
 
-ANALYSIS_VERSION = "1.1.0"
+ANALYSIS_VERSION = "1.2.0"
 STYLE_PROFILE_VERSION = "1.0.0"
 
 
@@ -28,9 +28,14 @@ def _style_profile(
     audio: list[AudioResult],
     pacing: str,
     forensics: dict[str, Any] | None,
+    shot_durations: list[float] | None = None,
+    cut_count: int | None = None,
 ) -> dict[str, Any]:
     durations = [item["duration"] for item in observations if item["duration"] > 0]
-    cut_count = max(0, len(video.segments) - 1)
+    if cut_count is None:
+        cut_count = max(0, len(video.segments) - 1)
+    # Real cut durations beat sample-gap estimates whenever they exist.
+    shot_lengths = [value for value in (shot_durations or []) if value > 0] or durations
     shot_types = Counter(item["sceneType"] for item in observations)
     effect_candidates = (forensics or {}).get("effectCandidates", [])
     overlay_candidates = (forensics or {}).get("overlayCandidates", [])
@@ -50,7 +55,7 @@ def _style_profile(
         "version": STYLE_PROFILE_VERSION,
         "pacing": pacing,
         "cutsPerMinute": _round(cut_count / (video.duration / 60)) if video.duration > 0 else 0.0,
-        "medianShotDuration": _round(median(durations)) if durations else 0.0,
+        "medianShotDuration": _round(median(shot_lengths)) if shot_lengths else 0.0,
         "cutOnBeatRatio": _round(cut_on_beat_ratio) if cut_on_beat_ratio is not None else None,
         "effectDensity": _round(len(effect_candidates) / (video.duration / 60)) if video.duration > 0 else 0.0,
         "transitionDensity": _round(len(transition_candidates) / (video.duration / 60)) if video.duration > 0 else 0.0,
@@ -69,17 +74,40 @@ def _style_profile(
     }
 
 
+def _shot_durations(
+    scene_cuts: list[tuple[float, float]] | None, duration: float
+) -> list[float]:
+    """Shot lengths implied by real scene cuts.
+
+    The final scene has no following cut to bound it, so it is capped at the
+    media duration rather than inheriting the detector's synthetic tail.
+    """
+    if not scene_cuts:
+        return []
+    ordered = sorted(scene_cuts, key=lambda cut: cut[0])
+    lengths: list[float] = []
+    for index, (start, _reported) in enumerate(ordered):
+        end = ordered[index + 1][0] if index + 1 < len(ordered) else duration
+        lengths.append(max(0.0, float(end) - float(start)))
+    return [length for length in lengths if length > 0]
+
+
 def analyze_reference_edit(
     video: VideoSegmentMap,
     frames: list[FrameDescription],
     audio: list[AudioResult],
     options: ReferenceAnalysisOptions | None = None,
     forensics: dict[str, Any] | None = None,
+    scene_cuts: list[tuple[float, float]] | None = None,
 ) -> dict[str, Any]:
     """Build edit-forensics evidence from sampled observations.
 
     This describes evidence rather than claiming to recover the original NLE project.
     AI vision can enrich the same report later.
+
+    ``scene_cuts`` carries the detector's real (start, duration) pairs. When
+    present, the shot skeleton — cut count, cut times, shot durations and
+    pacing — comes from those cuts instead of from observation gaps.
     """
     config = options or ReferenceAnalysisOptions()
     ordered_frames = sorted(frames, key=lambda frame: frame.timestamp)
@@ -108,9 +136,22 @@ def analyze_reference_edit(
         mean(1.0 if item["hasDialogue"] else 0.0 for item in observations)
         if observations else 0.0
     )
-    cut_count = max(0, len(video.segments) - 1)
+    # Real detector cuts are the shot skeleton; the segment-map estimate is
+    # only a fallback for callers that cannot pass them.
+    shot_durations = _shot_durations(scene_cuts, video.duration)
+    cut_count = (
+        max(0, len(scene_cuts) - 1) if scene_cuts
+        else max(0, len(video.segments) - 1)
+    )
     pacing = "unknown"
-    if durations:
+    if shot_durations:
+        typical_duration = median(shot_durations)
+        pacing = (
+            "fast" if typical_duration <= config.fast_cut_seconds
+            else "slow" if typical_duration >= config.slow_cut_seconds
+            else "moderate"
+        )
+    elif durations:
         typical_duration = median(durations)
         pacing = (
             "fast" if typical_duration <= config.fast_cut_seconds
@@ -140,6 +181,12 @@ def analyze_reference_edit(
                 "confidence": item["confidence"],
             })
 
+    cut_evidence = (
+        [{"time": _round(start), "confidence": 0.9} for start, _duration in scene_cuts]
+        if scene_cuts
+        else []
+    )
+
     report = {
         "analysisVersion": ANALYSIS_VERSION,
         "videoId": video.video_id,
@@ -152,9 +199,13 @@ def analyze_reference_edit(
             "dominantMotionLevels": [name for name, _ in motion_levels.most_common()],
             "dialogueLed": dialogue_ratio >= 0.35,
         },
-        "styleProfile": _style_profile(video, observations, audio, pacing, forensics),
+        "styleProfile": _style_profile(
+            video, observations, audio, pacing, forensics,
+            shot_durations=shot_durations, cut_count=cut_count,
+        ),
         "editPattern": {
             "cutStyle": "rapid montage" if pacing == "fast" else "coverage-led",
+            "cutEvidence": cut_evidence,
             "transitionEvidence": [{
                 "type": "hard-cut",
                 "count": cut_count,
@@ -177,6 +228,9 @@ def analyze_reference_edit(
         },
         "timeline": cues,
         "observations": observations,
+        "limitations": (
+            [] if cut_evidence else ["cut-evidence-unavailable"]
+        ),
     }
     if forensics:
         report["forensics"] = forensics

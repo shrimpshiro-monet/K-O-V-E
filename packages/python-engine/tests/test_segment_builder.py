@@ -7,7 +7,12 @@ from kove_engine.types import (
 )
 
 
-def _make_frame(ts: float, scene_type: SceneType, motion: MotionLevel) -> FrameDescription:
+def _make_frame(
+    ts: float,
+    scene_type: SceneType,
+    motion: MotionLevel,
+    shot_boundary: bool = False,
+) -> FrameDescription:
     return FrameDescription(
         timestamp=ts,
         description=f"frame at {ts}",
@@ -15,6 +20,7 @@ def _make_frame(ts: float, scene_type: SceneType, motion: MotionLevel) -> FrameD
         motion_level=motion,
         has_dialogue=False,
         confidence=0.8,
+        shot_boundary=shot_boundary,
     )
 
 
@@ -117,3 +123,20 @@ def test_empty_frames():
     builder = SegmentBuilder()
     result = builder.build([], "vid1", 5.0)
     assert len(result.segments) == 0
+
+
+def test_shot_boundary_splits_segment_without_label_change():
+    """A real cut splits even when scene type and motion level are identical."""
+    builder = SegmentBuilder()
+    frames = [
+        _make_frame(0.0, SceneType.B_ROLL, MotionLevel.LOW),
+        _make_frame(0.5, SceneType.B_ROLL, MotionLevel.LOW, shot_boundary=True),
+        _make_frame(1.0, SceneType.B_ROLL, MotionLevel.LOW),
+    ]
+    result = builder.build(frames, "vid1", 5.0)
+
+    assert len(result.segments) == 2
+    assert result.segments[0].start_time == 0.0
+    assert result.segments[0].end_time == 0.0
+    assert result.segments[1].shot_boundary_at_start is True
+    assert result.segments[1].end_time == 1.0

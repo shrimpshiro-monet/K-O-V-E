@@ -37,6 +37,10 @@ class SegmentBuilder:
         return VideoSegmentMap(video_id=video_id, duration=duration, segments=segments)
 
     def _should_split(self, prev: FrameDescription, curr: FrameDescription) -> bool:
+        # A real detected cut always wins: identical labels on both sides of a
+        # shot boundary are still two different shots.
+        if curr.shot_boundary:
+            return True
         if prev.scene_type != curr.scene_type:
             return True
         if prev.motion_level != curr.motion_level:

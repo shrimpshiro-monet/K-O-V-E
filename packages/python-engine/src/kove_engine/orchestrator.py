@@ -16,6 +16,7 @@ from kove_engine.segment_builder import SegmentBuilder
 from kove_engine.reference_analysis import analyze_reference_edit
 from kove_engine.forensics import analyze_sampled_sequence
 from kove_engine.types import (
+    AudioResult,
     FrameData,
     FrameDescription,
     SegmentMap,
@@ -47,15 +48,21 @@ class Orchestrator:
         if self.on_progress:
             self.on_progress({"stage": stage, "message": message, **kwargs})
 
-    def analyze(self, video_path: str) -> SegmentMap:
+    def analyze(
+        self, video_path: str, video_id: str | None = None
+    ) -> SegmentMap:
         """Run full analysis while preserving the original segment-map API."""
-        segment_map, _ = self.analyze_with_report(video_path)
+        segment_map, _ = self.analyze_with_report(video_path, video_id)
         return segment_map
 
-    def analyze_with_report(self, video_path: str) -> tuple[SegmentMap, dict]:
+    def analyze_with_report(
+        self, video_path: str, video_id: str | None = None,
+    ) -> tuple[SegmentMap, dict]:
         """Run the full pipeline and return the segment map plus edit report."""
-        video_id = Path(video_path).stem
-        logger.info("Analyzing video: %s", video_path)
+        # Callers pin the id they know the footage by; deriving it from a temp
+        # upload path would rename the user's media on the way through.
+        resolved_video_id = video_id or Path(video_path).stem
+        logger.info("Analyzing video: %s (id=%s)", video_path, resolved_video_id)
 
         self._emit("scene_detecting", "Detecting scene cuts...")
         scene_cuts = self.scene_detector.detect(video_path)
@@ -68,23 +75,24 @@ class Orchestrator:
 
         duration = self._get_duration(video_path)
 
-        frame_descriptions = self._analyze_frames(video_path, frame_paths, duration, scene_cuts)
+        frame_descriptions, audio_results = self._analyze_frames(
+            video_path, frame_paths, duration, scene_cuts
+        )
 
         self._emit("building_segments", "Building segments...")
-        segment_map = self.segment_builder.build(frame_descriptions, video_id, duration)
+        segment_map = self.segment_builder.build(
+            frame_descriptions, resolved_video_id, duration
+        )
 
         self._emit("done", f"Analysis complete: {len(segment_map.segments)} segments")
         result = SegmentMap(videos=[segment_map])
-        audio_results = [
-            self.audio_analyzer.analyze(video_path, frame.timestamp, 1.0)
-            for frame in frame_descriptions
-        ]
         forensics = analyze_sampled_sequence(video_path, frame_paths, duration)
         return result, analyze_reference_edit(
             segment_map,
             frame_descriptions,
             audio_results,
             forensics=forensics,
+            scene_cuts=scene_cuts,
         )
 
     def _analyze_frames(
@@ -93,8 +101,15 @@ class Orchestrator:
         frame_paths: list[tuple[float, str]],
         duration: float,
         scene_cuts: list[tuple[float, float]],
-    ) -> list[FrameDescription]:
+    ) -> tuple[list[FrameDescription], list[AudioResult]]:
+        """Analyze sampled frames once, returning descriptions and audio.
+
+        Audio used to be decoded a second time in ``analyze_with_report``; the
+        per-frame ``AudioResult`` is available here for free, so it is returned
+        alongside the descriptions instead.
+        """
         descriptions: list[FrameDescription] = []
+        audio_results: list[AudioResult] = []
         prev_frame_path: str | None = None
         total = len(frame_paths)
 
@@ -143,10 +158,11 @@ class Orchestrator:
                 shot_boundary=is_cut,
             )
             descriptions.append(fd)
+            audio_results.append(audio)
 
             prev_frame_path = image_path
 
-        return descriptions
+        return descriptions, audio_results
 
     def _generate_description(
         self,

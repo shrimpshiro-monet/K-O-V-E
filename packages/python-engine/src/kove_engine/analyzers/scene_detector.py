@@ -22,12 +22,13 @@ class SceneDetector:
         """Detect scene boundaries using ffmpeg's scene filter.
 
         Returns list of (start_time, duration) tuples for each scene segment.
+        An empty list means "no cut evidence", never "one scene starting at 0".
         """
         try:
             return self._run_ffmpeg(video_path)
         except (FileNotFoundError, subprocess.CalledProcessError) as e:
-            logger.warning("ffmpeg scene detection failed: %s — returning single scene", e)
-            return [(0.0, 0.0)]
+            logger.warning("ffmpeg scene detection failed: %s — no cut evidence", e)
+            return []
 
     def _run_ffmpeg(self, video_path: str) -> list[tuple[float, float]]:
         cmd = [
@@ -48,7 +49,8 @@ class SceneDetector:
                 raw_times.append(float(match.group(1)))
 
         if not raw_times:
-            return [(0.0, 0.0)]
+            # Nothing parsed: report no evidence instead of inventing a scene.
+            return []
 
         raw_times.sort()
 

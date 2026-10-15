@@ -11,11 +11,13 @@ from __future__ import annotations
 
 import asyncio
 import os
+import shutil
+import tempfile
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI
+from fastapi import BackgroundTasks, FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -64,7 +66,16 @@ app = FastAPI(title="KOVE Analysis Engine", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+    ],
+    # The Electron renderer is served from a custom app:// scheme, which never
+    # matches an http origin.
+    allow_origin_regex=r"^app://",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -106,16 +117,24 @@ async def _run_analysis_job(job_id: str, req: AnalyzeRequest) -> None:
         await job_store.set_status(job_id, "failed", {"error": str(exc)})
 
 
-def _run_analysis(orchestrator: Orchestrator, video_paths: list[str]) -> dict:
+def _run_analysis(
+    orchestrator: Orchestrator,
+    video_paths: list[str],
+    video_ids: list[str] | None = None,
+    role: str = "source",
+) -> dict:
     import time
 
     start = time.monotonic()
     all_videos = []
     reports = []
 
-    for path in video_paths:
-        sm, report = orchestrator.analyze_with_report(path)
+    for index, path in enumerate(video_paths):
+        pinned_id = video_ids[index] if video_ids and index < len(video_ids) else None
+        sm, report = orchestrator.analyze_with_report(path, pinned_id)
         all_videos.extend(sm.videos)
+        # The engine has no notion of roles; the caller (upload route) does.
+        report["role"] = role
         reports.append(report)
 
     from kove_engine.types import SegmentMap
@@ -129,11 +148,82 @@ def _run_analysis(orchestrator: Orchestrator, video_paths: list[str]) -> dict:
 
     return {
         "segmentMap": segment_map.model_dump(),
-        "referenceAnalysis": {"analysisVersion": "1.1.0", "videos": reports},
+        "referenceAnalysis": {"analysisVersion": "1.2.0", "videos": reports},
         "processingTimeMs": elapsed_ms,
         "frameCount": total_frames,
         "segmentCount": sum(len(v.segments) for v in all_videos),
     }
+
+
+@app.post("/analyze-upload")
+async def analyze_upload(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    video_id: str = Form(...),
+    role: str = Form("source"),
+    baseline_fps: float = Form(1.5),
+    burst_fps: float = Form(10.0),
+    scene_threshold: float = Form(0.3),
+):
+    """Analyze an uploaded file; returns {jobId} immediately (poll /jobs/{id}).
+
+    Same contract as /analyze. Sweeps expired jobs first so a long-lived
+    sidecar cannot grow its SQLite file without bound.
+    """
+    await job_store.sweep_expired()
+
+    job_id = _new_job_id()
+    await job_store.create(job_id, {
+        "video_id": video_id,
+        "role": role,
+        "filename": file.filename,
+        "baseline_fps": baseline_fps,
+        "burst_fps": burst_fps,
+        "scene_threshold": scene_threshold,
+    })
+    # Read the body before the request stream goes away with the response.
+    file_bytes = await file.read()
+    background_tasks.add_task(
+        _run_upload_analysis_job,
+        job_id, file_bytes, file.filename, video_id, role,
+        baseline_fps, burst_fps, scene_threshold,
+    )
+    return {"jobId": job_id, "status": "pending"}
+
+
+async def _run_upload_analysis_job(
+    job_id: str,
+    file_bytes: bytes,
+    filename: str | None,
+    video_id: str,
+    role: str,
+    baseline_fps: float,
+    burst_fps: float,
+    scene_threshold: float,
+) -> None:
+    await job_store.set_status(job_id, "running")
+    tmpdir = tempfile.mkdtemp(prefix="kove_up_")
+    try:
+        # Only the suffix is taken from the client name: a nested or
+        # absolute "filename" must never escape the temp dir.
+        suffix = Path(Path(filename or "upload.mp4").name).suffix or ".mp4"
+        tmp_path = Path(tmpdir) / f"source{suffix}"
+        tmp_path.write_bytes(file_bytes)
+
+        orchestrator = Orchestrator(
+            baseline_fps=baseline_fps,
+            burst_fps=burst_fps,
+            scene_threshold=scene_threshold,
+        )
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, _run_analysis, orchestrator, [str(tmp_path)], [video_id], role,
+        )
+        await job_store.set_status(job_id, "completed", result)
+    except Exception as exc:  # noqa: BLE001 — job must always reach a terminal state
+        await job_store.set_status(job_id, "failed", {"error": str(exc)})
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 @app.post("/analyze-frames")

@@ -1,3 +1,4 @@
+import subprocess
 from unittest.mock import MagicMock, patch
 
 from kove_engine.analyzers.scene_detector import SceneDetector
@@ -45,11 +46,29 @@ def test_scene_detector_handles_no_scene_changes():
     assert len(result) == 1
 
 
-def test_scene_detector_ffmpeg_failure():
+def test_scene_detector_ffmpeg_failure_returns_no_evidence():
+    """A failed detection is unknown, not 'one scene starting at 0'."""
     detector = SceneDetector()
     with patch("subprocess.run") as mock_run:
         mock_run.side_effect = FileNotFoundError("ffmpeg not found")
         result = detector.detect("/fake/video.mp4")
 
-    assert len(result) == 1
-    assert result[0] == (0.0, 0.0)
+    assert result == []
+
+
+def test_scene_detector_unparseable_output_returns_no_evidence():
+    detector = SceneDetector()
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(stdout="", stderr="no timestamps here", returncode=0)
+        result = detector.detect("/fake/video.mp4")
+
+    assert result == []
+
+
+def test_scene_detector_called_process_error_returns_no_evidence():
+    detector = SceneDetector()
+    with patch("subprocess.run") as mock_run:
+        mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg")
+        result = detector.detect("/fake/video.mp4")
+
+    assert result == []
