@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Project } from "@kove-advanced/core/types/project";
 import { HeadlessHost } from "./headless-host";
+import type { EditingHost } from "./host";
 import { executeTool } from "./executor";
 import { getDirectorPlanState } from "./director/plan-state";
 import { __getReferenceAnalysisForTest, __setReferenceAnalysisForTest } from "./registry";
@@ -185,6 +186,54 @@ describe("build_mirror_plan", () => {
     };
     expect(data.fitPolicy).toBe("scale");
     expect(data.editPlan.segments.every((segment) => segment.sourceVideoId === "video-1")).toBe(true);
+  });
+
+  it("build_mirror_plan never invokes host.llm", async () => {
+    const llmSpy = vi.fn(() => {
+      throw new Error(
+        "build_mirror_plan must not call the LLM — it is a deterministic compile+commit path",
+      );
+    });
+    // A host that *has* an LLM: if the mirror ever routed through plan_edit's
+    // director, this spy would be called and throw.
+    const host = new HeadlessHost(makeProject()) as HeadlessHost & {
+      llm: NonNullable<EditingHost["llm"]>;
+    };
+    host.llm = { client: { complete: llmSpy } as never, provider: "anthropic" };
+
+    // Seed the stash exactly as analyze_reference_media would.
+    const engineReport = report();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request): Promise<Response> => {
+        const url = String(input);
+        if (url.endsWith("/analyze-upload")) {
+          return new Response(JSON.stringify({ jobId: "job-1", status: "pending" }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return new Response(
+          JSON.stringify({
+            status: "completed",
+            result: {
+              referenceAnalysis: { analysisVersion: "1.2.0", videos: [engineReport] },
+            },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }),
+    );
+
+    const analyzed = await executeTool("analyze_reference_media", {}, host);
+    expect(analyzed.ok).toBe(true);
+
+    const planned = await executeTool("build_mirror_plan", {}, host);
+    const applied = await executeTool("build_mirror_plan", { apply: true }, host);
+
+    expect(planned.ok).toBe(true);
+    expect(applied.ok).toBe(true);
+    expect(llmSpy).not.toHaveBeenCalled();
   });
 
   it("rejects an unknown fitPolicy", async () => {
