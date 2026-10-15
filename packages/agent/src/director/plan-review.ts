@@ -379,7 +379,10 @@ function referenceTarget(value: unknown): StyleProfileTarget | undefined {
 
   return {
     pacing: asPacing(profile.pacing),
-    cutsPerMinute: asRange(profile.cutsPerMinute),
+    // The engine reports cutsPerMinute as a scalar. Treating a point estimate
+    // as an exact target made every reference deviation permanent: widen it
+    // into a band so "within 15%" reads as a match (F7).
+    cutsPerMinute: asRange(profile.cutsPerMinute) ?? widenScalarRange(profile.cutsPerMinute),
     cutStyle: asCutStyle(profile.cutStyle),
     effectPalette: asStringArray(profile.effectPalette),
     transitionPalette: asStringArray(profile.transitionPalette),
@@ -406,6 +409,20 @@ function asStringArray(value: unknown): readonly string[] | undefined {
   return Array.isArray(value) && value.every((item) => typeof item === "string")
     ? value as string[]
     : undefined;
+}
+
+/**
+ * Widens a scalar target into a ±15% acceptance band. The engine's
+ * `styleProfile.cutsPerMinute` stays a scalar — the band is a review-side
+ * tolerance, not a change to the analysis contract.
+ */
+export function widenScalarRange(
+  value: unknown,
+  tolerance = 0.15,
+): readonly [number, number] | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return undefined;
+  const round = (n: number): number => Math.round(n * 1000) / 1000;
+  return [round(value * (1 - tolerance)), round(value * (1 + tolerance))];
 }
 
 function asRange(value: unknown): readonly [number, number] | undefined {

@@ -143,3 +143,44 @@ describe("edit plan review", () => {
     expect(review.issues.some((issue) => issue.includes("low analysis confidence"))).toBe(true);
   });
 });
+describe("reference cut-rate target (F7)", () => {
+  // The engine reports cutsPerMinute as a scalar; plan-review must widen it
+  // into a band instead of demanding an exact match.
+  const referenceWith = (cutsPerMinute: unknown) => ({
+    videos: [{ role: "reference", styleProfile: { cutsPerMinute } }],
+  });
+
+  it("scores below 1 when the plan sits 30% under a scalar reference target", () => {
+    // Plan is 30 cuts/min; reference says 40 → band [34, 46].
+    const review = reviewEditPlan(plan, undefined, referenceWith(40));
+
+    expect(review.score).toBeLessThan(1);
+    expect(review.score).toBeCloseTo(1 - 4 / 12, 5);
+    const deviation = review.deviations.find((d) => d.includes("cutsPerMinute"));
+    expect(deviation).toBeDefined();
+    // Both numbers have to be readable: what the plan did and what was asked.
+    expect(deviation).toContain("30");
+    expect(deviation).toContain("34");
+    expect(deviation).toContain("46");
+  });
+
+  it("scores 1 when the plan is inside the widened band", () => {
+    const review = reviewEditPlan(plan, undefined, referenceWith(30));
+
+    expect(review.score).toBe(1);
+    expect(review.deviations).toEqual([]);
+  });
+
+  it("keeps an explicit range target untouched", () => {
+    const review = reviewEditPlan(plan, undefined, referenceWith([24, 45]));
+
+    expect(review.score).toBe(1);
+  });
+
+  it("ignores a non-numeric cut rate instead of inventing a target", () => {
+    const review = reviewEditPlan(plan, undefined, referenceWith("fast"));
+
+    expect(review.score).toBe(1);
+    expect(review.deviations).toEqual([]);
+  });
+});

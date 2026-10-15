@@ -2,7 +2,7 @@
 
 # Kove Advanced Agent — Capability Reference
 
-The agent exposes **333 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
+The agent exposes **335 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
 
 ## Tools
 
@@ -366,6 +366,8 @@ The agent exposes **333 tools** spanning read/observe, project, track, clip, tra
 
 ## ai
 - **extract_segments** (expensive) — Analyze uploaded video(s) via real frame sampling, scene-cut detection, and vision analysis to build a SegmentMap describing what's actually happening in the footage. Use this first when the user wants to create an edit from their footage. Pass videoMediaIds to analyze specific videos, or omit/empty to auto-analyze ALL video media in the project. Expensive — requires confirmation.
+- **analyze_reference_media** (expensive) — Upload a marked reference video to the local python engine and measure how it is actually cut: scene cuts, shot durations, pacing, junction evidence and camera-motion candidates (analysisVersion 1.2.0+). Call this BEFORE build_mirror_plan — the engine report is the only thing that can seed a mirror, and the returned envelope is deliberately trimmed (no observations, no per-frame timestamps) because it is paid for three times over: tool result, plan_edit argument and director prompt. Expensive — requires confirmation.
+- **build_mirror_plan** (expensive) — Compile a deterministic EditPlan that reproduces the analyzed reference's shot structure on the user's own footage: one segment per reference shot, junctions and camera moves mapped from engine evidence by fixed rules — no LLM in the mapping path, so nothing is re-authored. fitPolicy: wrap (loop the source), trim (stop when it runs out, default), scale (stretch the skeleton to fit). apply=false (default) returns the plan plus structuralDiff (shot-count match and per-shot drift against the report); apply=true commits it as ONE timeline revision using plan_edit's own commit tail (revision + idempotency + fingerprint guards), never the director LLM. Requires an analyze_reference_media run at analysisVersion >= 1.2.0 in this session. Expensive — requires confirmation.
 - **expand_prompt_result** (read-only) — Structured output for prompt expansion. Do not call directly.
 - **expand_prompt** (read-only) — Expand a vague or incomplete user prompt into a rich director's brief. Analyzes the prompt for missing information (tone, platform, content direction, length, style) and either auto-fills from context or returns targeted clarifying questions.
 - **plan_edit** (expensive) — Given the user's prompt, have the director produce a structured EditPlan and commit it as ONE timeline revision. mode=replace_plan (the default) replaces any previously committed plan's output — calling this again never stacks a second plan on top. Pass baseRevision (from the last plan_edit result) to reject stale commits, and idempotencyKey to make retried turns no-ops. Pass the source segmentMap and optional referenceAnalysis from extract_segments to reproduce a marked reference video's style on the user's own footage.

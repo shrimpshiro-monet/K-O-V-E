@@ -18,6 +18,20 @@ import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
+import {
+  ENGINE_BASE_URL,
+  pollEngineJob,
+  submitAnalysisUpload,
+} from "./engine/client";
+import {
+  atLeast,
+  compileMirrorPlan,
+  structuralDiff,
+  MINIMUM_ANALYSIS_VERSION,
+  MIRROR_GENRE,
+  type EngineReferenceReport,
+  type FitPolicy,
+} from "./replication/mirror";
 import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
 import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
 import {
@@ -11569,6 +11583,81 @@ let _analysisMode: "eco" | "ai" = "eco";
 export function setAnalysisMode(mode: "eco" | "ai") { _analysisMode = mode; }
 export function getAnalysisMode() { return _analysisMode; }
 
+/**
+ * The last engine-produced reference analysis (full report, untrimmed).
+ *
+ * This stash is the *only* input to the mirror compiler. That is deliberate:
+ * `extract_segments` in eco mode and the `/analyze-frames` path produce
+ * 1.1.0-class reports with no cut evidence, and they can never reach mirror
+ * mode because they never land here.
+ */
+let _lastReferenceAnalysis: EngineReferenceReport | null = null;
+
+/** Test seam: seeds the reference-analysis stash. */
+export function __setReferenceAnalysisForTest(report: unknown): void {
+  _lastReferenceAnalysis = (report as EngineReferenceReport | null) ?? null;
+}
+
+/** Test seam: reads the reference-analysis stash. */
+export function __getReferenceAnalysisForTest(): EngineReferenceReport | null {
+  return _lastReferenceAnalysis;
+}
+
+const FIT_POLICIES: readonly FitPolicy[] = ["wrap", "trim", "scale"];
+
+/**
+ * Bytes for a media item: the in-memory blob when the importer kept one,
+ * otherwise a fresh File from the persisted handle.
+ */
+async function resolveMediaFile(media: MediaItem): Promise<Blob | null> {
+  if (media.blob) return media.blob;
+  const handle = media.fileHandle as { getFile?: () => Promise<Blob> } | null | undefined;
+  if (handle && typeof handle.getFile === "function") {
+    try {
+      return await handle.getFile();
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/** Pulls the per-video report out of the engine's job result envelope. */
+function unwrapEngineReport(result: unknown): EngineReferenceReport | null {
+  const root = asRecord(result);
+  const envelope = asRecord(root?.referenceAnalysis);
+  const videos = Array.isArray(envelope?.videos)
+    ? (envelope.videos as unknown[])
+    : [];
+  const reference =
+    videos.find((video) => asRecord(video)?.role === "reference") ?? videos[0];
+  return (asRecord(reference) ?? root) as EngineReferenceReport | null;
+}
+
+/** The trimmed envelope: no observations, no timestamps, no timings. */
+function trimReferenceReport(
+  report: EngineReferenceReport,
+  name: string | undefined,
+): Record<string, unknown> {
+  const editPattern = asRecord(report.editPattern) ?? {};
+  return {
+    analysisVersion: report.analysisVersion ?? null,
+    videoId: report.videoId ?? null,
+    role: "reference",
+    name: name ?? report.videoId ?? null,
+    duration: report.duration ?? null,
+    summary: report.summary ?? null,
+    styleProfile: report.styleProfile ?? null,
+    editPattern: {
+      cutStyle: editPattern.cutStyle ?? null,
+      transitionCount: editPattern.transitionCount ?? null,
+      effectCount: editPattern.effectCount ?? null,
+      textOverlayCount: editPattern.textOverlayCount ?? null,
+      colorTreatment: editPattern.colorTreatment ?? null,
+    },
+  };
+}
+
 const BASELINE_INTERVAL_SEC = 1 / 1.5; // matches DEFAULT_SAMPLE_CONFIG.baselineFps
 
 export function baselineFrameTimestamps(duration: number): readonly number[] {
@@ -11660,6 +11749,286 @@ const ACTION_DOMAIN_PURPOSE: Record<(typeof ACTION_DOMAINS)[number], string> = {
   subtitle: "Subtitle and caption tracks.",
   marker: "Timeline markers.",
 };
+
+/**
+ * The single commit tail for anything that puts an EditPlan on the timeline.
+ *
+ * `plan_edit` and `build_mirror_plan` both land here, which is the point: the
+ * mirror must not route through the director LLM (it re-authors plans instead
+ * of reproducing them), but it still has to obey the same revision,
+ * idempotency and fingerprint guarantees.
+ */
+export interface CommitEditPlanOptions {
+  readonly plan: EditPlan;
+  readonly segmentMap: SegmentMap;
+  readonly mode?: string;
+  readonly idempotencyKey: string;
+  /** Stale-commit guard: rejected when it does not match the live revision. */
+  readonly baseRevision?: number;
+  readonly validationIssues?: readonly DirectorValidationIssue[];
+  /** Style/density review, when one was run. Mirrors skip it. */
+  readonly planReview?: EditPlanReview | null;
+  readonly revisionApplied?: boolean;
+  /** Summary prefix so a mirror never reports itself as `plan_edit`. */
+  readonly label?: string;
+  /** Run normalize + validate first — for plans that never saw a director. */
+  readonly prepare?: boolean;
+}
+
+export async function commitEditPlanRevision(
+  host: EditingHost,
+  options: CommitEditPlanOptions,
+): Promise<ToolResult> {
+  const {
+    plan: requestedPlan,
+    segmentMap: resolvedMap,
+    mode = "replace_plan",
+    idempotencyKey,
+    baseRevision: explicitBase,
+    validationIssues: providedIssues = [],
+    planReview = null,
+    revisionApplied = false,
+    label = "plan_edit",
+    prepare = false,
+  } = options;
+
+  const project = host.getProject();
+  const state = getDirectorPlanState(project);
+
+  // ---- Idempotency: repeating an accepted commit is a no-op ----
+  if (state.lastReplay?.key === idempotencyKey && replayIsIntact(project, state)) {
+    const cached = state.lastReplay;
+    const cachedData =
+      typeof cached.data === "object" && cached.data !== null
+        // A replay applies nothing: mark it so callers can tell "already
+        // on the timeline" apart from "just applied".
+        ? { ...(cached.data as Record<string, unknown>), idempotentReplay: true, applied: false }
+        : cached.data;
+    return ok(
+      `${cached.summary} [idempotent replay: this planning turn was already accepted at revision ${cached.revision}; timeline unchanged]`,
+      cachedData,
+    );
+  }
+
+  // ---- Stale base revision: reject instead of overwriting newer state ----
+  if (explicitBase !== undefined && explicitBase !== state.revision) {
+    return fail(
+      `Stale baseRevision ${explicitBase}: the project is at revision ${state.revision}. Re-read the current revision and resubmit.`,
+      "STALE_REVISION",
+      { currentRevision: state.revision, requestedBaseRevision: explicitBase },
+    );
+  }
+
+  let finalPlan = requestedPlan;
+  let finalPlanIssues: readonly DirectorValidationIssue[] = providedIssues;
+
+  if (prepare) {
+    finalPlan = normalizeEditPlan(
+      {
+        ...requestedPlan,
+        segments: requestedPlan.segments.map((segment) => ({
+          ...segment,
+          sourceVideoId: resolveDirectorVideoId(resolvedMap, segment.sourceVideoId),
+        })),
+      },
+      resolvedMap,
+    );
+    finalPlanIssues = validateEditPlan(finalPlan, resolvedMap);
+    const blocking = finalPlanIssues.filter((issue) => issue.severity === "error");
+    if (blocking.length > 0) {
+      return fail(
+        `EditPlan failed validation: ${blocking.map((issue) => `[${issue.code}] ${issue.message}`).join("; ")}`,
+        "INVALID_EDIT_PLAN",
+        {
+          issues: blocking,
+          warnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
+        },
+      );
+    }
+  }
+
+  // A deterministic mirror has no style review; keep the payload shape honest
+  // instead of synthesizing a score.
+  const reviewPayload = (
+    review: EditPlanReview | null,
+    revised: boolean,
+  ): ReturnType<typeof effectCostPayload> & {
+    score: number;
+    deviations: readonly string[];
+    revisionApplied: boolean;
+  } | null =>
+    review
+      ? {
+          score: review.score,
+          deviations: review.deviations,
+          revisionApplied: revised,
+          effectCost: effectCostPayload(review),
+        } as never
+      : null;
+
+  const styleSuffix = planReview
+    ? ` Style check: ${planReview.score.toFixed(2)} · density: ${planReview.density.score.toFixed(2)} (${planReview.density.summary}).`
+    : " Style check: skipped (deterministic mirror — no style review).";
+
+    // ---- Commit: materialize the new plan first, then remove the previous
+    // plan's output. Materialize failures compensate back to the exact
+    // pre-call state; previous-revision removal only runs after the new
+    // plan is fully applied.
+    const owned = newPlanOwned();
+
+    // ---- Fingerprint no-op: an identical plan is already on the timeline ----
+    // Do NOT tear down and rebuild when the incoming plan hashes equal to the
+    // plan currently applied — this is what stops "it loops and adds a new
+    // plan onto the timeline" when the LLM re-submits semantically identical
+    // content across turns with a different idempotency key.
+    //
+    // Before accepting the no-op, verify every artifact the stored plan
+    // placed still exists: if the user deleted a clip between turns the
+    // fingerprint still matches but the timeline does not, so fall through
+    // to materialize and re-apply. Also require at least one stored artifact
+    // so an empty timeline cannot vacuously match.
+    const fingerprintProjectId = host.getProject().id ?? "__default__";
+    const incomingFingerprint = computeEditPlanFingerprint(finalPlan);
+    const storedState = _previousPlanState.get(fingerprintProjectId);
+    if (storedState?.fingerprint === incomingFingerprint) {
+      const liveClipIds = new Set(
+        host.getProject().timeline.tracks.flatMap((t) => t.clips.map((c) => c.id)),
+      );
+      const liveTransitionIds = new Set(
+        host.getProject().timeline.tracks.flatMap((t) => (t.transitions ?? []).map((x) => x.id)),
+      );
+      const liveTextIds = new Set(
+        (host.getProject().textClips ?? []).map((c) => c.id),
+      );
+      const hasAnyStoredArtifact =
+        storedState.clipIds.length > 0 ||
+        storedState.audioClipIds.length > 0 ||
+        storedState.textIds.length > 0 ||
+        storedState.transitionIds.length > 0;
+      const allStoredPresent =
+        hasAnyStoredArtifact &&
+        storedState.clipIds.every((id) => liveClipIds.has(id)) &&
+        storedState.audioClipIds.every((id) => liveClipIds.has(id)) &&
+        storedState.transitionIds.every((id) => liveTransitionIds.has(id)) &&
+        storedState.textIds.every((id) => liveTextIds.has(id));
+      if (allStoredPresent) {
+        return ok(
+          `${label}: plan unchanged — timeline already matches (${storedState.clipIds.length} clip(s), ${storedState.textIds.length} text overlay(s), ${storedState.transitionIds.length} transition(s), ${storedState.audioClipIds.length} audio clip(s)). No changes applied.`,
+          {
+            applied: false,
+            revision: state.revision,
+            mode,
+            baseRevision: explicitBase ?? null,
+            idempotencyKey,
+            idempotentReplay: false,
+            editPlan: finalPlan,
+            clipIds: [...storedState.clipIds],
+            textIds: [...storedState.textIds],
+            audioClipIds: [...storedState.audioClipIds],
+            effectCount: 0,
+            transitionCount: storedState.transitionIds.length,
+            audioCount: storedState.audioClipIds.length,
+            cameraMoveCount: finalPlan.segments.reduce(
+              (sum, segment) => sum + (segment.cameraMoves?.length ?? 0),
+              0,
+            ),
+            motionCompositionIds: [],
+            motionInstanceIds: [],
+            validationWarnings: finalPlanIssues.filter(
+              (i: { severity: string }) => i.severity === "warning",
+            ),
+            planReview: reviewPayload(planReview, false),
+            density: planReview ? densityPayload(planReview) : null,
+            quality: {
+              status: "unavailable" as const,
+              reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
+            },
+          },
+        );
+      }
+      // Stored IDs are missing from the timeline (user deleted clips) —
+      // fall through to materialize so the plan gets re-applied.
+    }
+
+    let materialized;
+    try {
+      materialized = await materializeEditPlan(finalPlan, resolvedMap, host, owned);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "timeline mutation failed";
+      let compensation = { removed: 0, warnings: [] as string[] };
+      try {
+        compensation = await removeOwnedEntities(host, {
+          revision: -1,
+          ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
+          ownedTextClipIds: owned.textIds,
+          ownedTransitionIds: owned.transitionIds,
+          ownedMotionInstanceIds: owned.motionInstanceIds,
+          ownedMotionCompositionIds: owned.motionCompositionIds,
+        });
+      } catch {
+        // Best effort — reported below.
+      }
+      return fail(
+        `EditPlan was valid but could not be applied: ${message}. The timeline was left at its previous revision (${compensation.removed} partial artifact(s) removed).`,
+        "EDIT_PLAN_APPLY_FAILED",
+        { compensation },
+      );
+    }
+
+    const previousCommit = state.commit;
+    let cleanup = { removed: 0, warnings: [] as string[] };
+    if (previousCommit) {
+      cleanup = await removeOwnedEntities(host, previousCommit);
+    }
+
+    const nextRevision = state.revision + 1;
+    const commit: DirectorPlanCommit = {
+      revision: nextRevision,
+      ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
+      ownedTextClipIds: owned.textIds,
+      ownedTransitionIds: owned.transitionIds,
+      ownedMotionInstanceIds: owned.motionInstanceIds,
+      ownedMotionCompositionIds: owned.motionCompositionIds,
+    };
+
+    const summary =
+      `${label} applied as revision ${nextRevision}: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s), ${materialized.cameraMoveCount} camera move(s)` +
+      (previousCommit
+        ? `, replacing revision ${previousCommit.revision} (${cleanup.removed} prior artifact(s) removed)`
+        : "") +
+      `${styleSuffix}`;
+
+    const data = {
+      editPlan: finalPlan,
+      ...materialized,
+      revision: nextRevision,
+      mode: "replace_plan",
+      baseRevision: explicitBase ?? null,
+      idempotencyKey,
+      idempotentReplay: false,
+      replacedPrevious: previousCommit
+        ? { revision: previousCommit.revision, removedArtifacts: cleanup.removed }
+        : null,
+      cleanupWarnings: cleanup.warnings,
+      validationWarnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
+      planReview: reviewPayload(planReview, revisionApplied),
+      density: planReview ? densityPayload(planReview, revisionApplied) : null,
+      // Honest reporting: there is no working timeline frame sampler yet, so
+      // no visual quality review was performed. NEVER report a synthetic score.
+      quality: {
+        status: "unavailable" as const,
+        reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
+      },
+    };
+
+    setDirectorPlanState(project, {
+      revision: nextRevision,
+      commit,
+      lastReplay: { key: idempotencyKey, summary, data, revision: nextRevision },
+    });
+
+    return ok(summary, data);
+}
 
 const TOOLS: RegisteredTool[] = [
   // read
@@ -33414,6 +33783,248 @@ const TOOLS: RegisteredTool[] = [
       );
     },
   },
+  {
+    name: "analyze_reference_media",
+    domain: "ai",
+    title: "Analyze reference media",
+    description:
+      "Upload a marked reference video to the local python engine and measure how it is actually cut: scene cuts, shot durations, pacing, junction evidence and camera-motion candidates (analysisVersion 1.2.0+). Call this BEFORE build_mirror_plan — the engine report is the only thing that can seed a mirror, and the returned envelope is deliberately trimmed (no observations, no per-frame timestamps) because it is paid for three times over: tool result, plan_edit argument and director prompt. Expensive — requires confirmation.",
+    inputSchema: {
+      type: "object",
+      properties: { referenceMediaIds: { type: "array", items: str } },
+      required: [],
+      additionalProperties: false,
+    },
+    readOnly: false,
+    destructive: false,
+    expensive: true,
+    strict: true,
+    handler: async (args, host) => {
+      host.requireOpenProject();
+
+      const project = host.getProject();
+      const videoMedia = (project.mediaLibrary?.items ?? []).filter((m) => m.type === "video");
+      const requestedIds = args.referenceMediaIds as string[] | undefined;
+
+      let references: MediaItem[];
+      if (requestedIds && requestedIds.length > 0) {
+        const missing = requestedIds.filter((id) => !videoMedia.some((m) => m.id === id));
+        if (missing.length > 0) {
+          return fail(`Media id(s) ${missing.map((id) => `"${id}"`).join(", ")} are not video media in this project`, "INVALID_MEDIA");
+        }
+        references = requestedIds
+          .map((id) => videoMedia.find((m) => m.id === id))
+          .filter((m): m is MediaItem => Boolean(m));
+      } else {
+        references = videoMedia.filter((m) => m.analysisRole === "reference");
+      }
+      if (references.length === 0) {
+        return fail(
+          "No reference media found. Mark a video as a reference (or pass referenceMediaIds) first.",
+          "NO_REFERENCE_MEDIA",
+        );
+      }
+
+      const media = references[0]!;
+      const file = await resolveMediaFile(media);
+      if (!file) {
+        return fail(
+          `Reference "${media.name ?? media.id}" has no readable file (no blob and no file handle). Re-import it in this session.`,
+          "REFERENCE_FILE_UNAVAILABLE",
+        );
+      }
+
+      let report: EngineReferenceReport | null = null;
+      try {
+        const accepted = await submitAnalysisUpload(file, media.id, "reference");
+        report = unwrapEngineReport(await pollEngineJob<unknown>(accepted.jobId));
+      } catch (error) {
+        return fail(
+          `Reference analysis failed: ${error instanceof Error ? error.message : String(error)}`,
+          "REFERENCE_ANALYSIS_FAILED",
+          { engine: ENGINE_BASE_URL, videoId: media.id },
+        );
+      }
+
+      if (!report) {
+        return fail("Reference analysis returned an empty result.", "REFERENCE_ANALYSIS_FAILED");
+      }
+      const version = report.analysisVersion ?? undefined;
+      if (!atLeast(version, MINIMUM_ANALYSIS_VERSION)) {
+        return fail(
+          `Reference analysis is version ${version ?? "unknown"}; mirror mode needs >= ${MINIMUM_ANALYSIS_VERSION} ` +
+            "(older reports carry no cut evidence). Restart the python engine and re-analyze.",
+          "REFERENCE_VERSION_TOO_OLD",
+          { analysisVersion: version ?? null, minimum: MINIMUM_ANALYSIS_VERSION },
+        );
+      }
+
+      // The stash — not the returned envelope — is what build_mirror_plan
+      // consumes, so a 1.1.0-class report can never reach the compiler.
+      _lastReferenceAnalysis = report;
+
+      const trimmed = trimReferenceReport(report, media.name);
+      const summary = asRecord(report.summary) ?? {};
+      const cutEvidence = (report.editPattern?.cutEvidence ?? []).length;
+      return ok(
+        `analyze_reference_media: "${media.name ?? media.id}" — ${cutEvidence} shot start(s), ` +
+          `${String(summary.cutCount ?? 0)} cut(s), ${String(summary.pacing ?? "unknown")} pacing, ` +
+          `${String(summary.cutsPerMinute ?? 0)} cuts/min (analysisVersion ${version})` +
+          (references.length > 1 ? `. ${references.length} references were requested; the first was analyzed and stashed for mirroring.` : ""),
+        {
+          ...trimmed,
+          shotCount: cutEvidence,
+          referenceCount: references.length,
+          stashedForMirror: true,
+        },
+      );
+    },
+  },
+  {
+    name: "build_mirror_plan",
+    domain: "ai",
+    title: "Build mirror plan",
+    description:
+      "Compile a deterministic EditPlan that reproduces the analyzed reference's shot structure on the user's own footage: one segment per reference shot, junctions and camera moves mapped from engine evidence by fixed rules — no LLM in the mapping path, so nothing is re-authored. fitPolicy: wrap (loop the source), trim (stop when it runs out, default), scale (stretch the skeleton to fit). apply=false (default) returns the plan plus structuralDiff (shot-count match and per-shot drift against the report); apply=true commits it as ONE timeline revision using plan_edit's own commit tail (revision + idempotency + fingerprint guards), never the director LLM. Requires an analyze_reference_media run at analysisVersion >= 1.2.0 in this session. Expensive — requires confirmation.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sourceVideoIds: { type: "array", items: str },
+        fitPolicy: { type: "string", enum: [...FIT_POLICIES] },
+        apply: { type: "boolean" },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    readOnly: false,
+    destructive: false,
+    expensive: true,
+    strict: true,
+    handler: async (args, host) => {
+      host.requireOpenProject();
+
+      const report = _lastReferenceAnalysis;
+      if (!report) {
+        return fail(
+          "No reference analysis in this session. Run analyze_reference_media first (reports from extract_segments do not seed a mirror).",
+          "NO_REFERENCE_ANALYSIS",
+        );
+      }
+      const version = report.analysisVersion ?? undefined;
+      if (!atLeast(version, MINIMUM_ANALYSIS_VERSION)) {
+        return fail(
+          `Reference analysis is version ${version ?? "unknown"}; mirror mode needs >= ${MINIMUM_ANALYSIS_VERSION}. ` +
+            "Numeric compare: \"1.10.0\" passes, \"1.1.0\" does not. Re-run analyze_reference_media against an updated engine.",
+          "REFERENCE_VERSION_TOO_OLD",
+          { analysisVersion: version ?? null, minimum: MINIMUM_ANALYSIS_VERSION },
+        );
+      }
+
+      const project = host.getProject();
+      const videoMedia = (project.mediaLibrary?.items ?? []).filter((m) => m.type === "video");
+      const requestedIds = args.sourceVideoIds as string[] | undefined;
+      let sourceMedia: MediaItem[];
+      if (requestedIds && requestedIds.length > 0) {
+        const missing = requestedIds.filter((id) => !videoMedia.some((m) => m.id === id));
+        if (missing.length > 0) {
+          return fail(`Media id(s) ${missing.map((id) => `"${id}"`).join(", ")} are not video media in this project`, "INVALID_MEDIA");
+        }
+        sourceMedia = requestedIds
+          .map((id) => videoMedia.find((m) => m.id === id))
+          .filter((m): m is MediaItem => Boolean(m));
+      } else {
+        sourceMedia = videoMedia.filter((m) => m.analysisRole !== "reference");
+      }
+      if (sourceMedia.length === 0) {
+        return fail("No source video to mirror onto. Import footage that is not marked as a reference.", "NO_SOURCE_MEDIA");
+      }
+
+      const fitPolicy = (args.fitPolicy as FitPolicy | undefined) ?? "trim";
+      if (!FIT_POLICIES.includes(fitPolicy)) {
+        return fail(`fitPolicy "${fitPolicy}" is not one of ${FIT_POLICIES.join(" | ")}`, "INVALID_PARAMS");
+      }
+
+      const sources = sourceMedia.map((m) => ({
+        videoId: m.id,
+        durationSec: Number.isFinite(m.metadata.duration) ? m.metadata.duration : 0,
+      }));
+
+      let plan;
+      try {
+        plan = compileMirrorPlan(report, sources, fitPolicy);
+      } catch (error) {
+        return fail(
+          `Mirror compilation failed: ${error instanceof Error ? error.message : String(error)}`,
+          "MIRROR_COMPILE_FAILED",
+        );
+      }
+
+      const diff = structuralDiff(plan, report, { sources, fitPolicy });
+      const apply = args.apply === true;
+      const mirrorOf = report.videoId ?? null;
+
+      if (!apply) {
+        return ok(
+          `build_mirror_plan: ${plan.segments.length} shot(s) mirroring reference "${mirrorOf ?? "?"}" ` +
+            `(fitPolicy ${fitPolicy}) — shot-count match: ${diff.cutCountMatch ? "yes" : "NO"}, ` +
+            `max shot drift ${diff.maxShotDriftSec.toFixed(3)}s. Nothing applied; re-run with apply=true to commit.`,
+          { editPlan: plan, fitPolicy, structuralDiff: diff, applied: false, mirrorOf },
+        );
+      }
+
+      // Apply path: the same commit tail plan_edit uses, so the mirror never
+      // routes through the director (which would re-author the plan).
+      const resolvedMap: SegmentMap = {
+        videos: sourceMedia.map((m) => ({
+          videoId: m.id,
+          sourceFile: m.name ?? m.id,
+          duration: m.metadata.duration,
+          segments: [
+            {
+              id: `${m.id}-seg-0`,
+              startTime: 0,
+              endTime: m.metadata.duration,
+              sceneType: "b-roll" as const,
+              motionLevel: "medium" as const,
+              description: `${m.name ?? m.id} — ${m.metadata.duration.toFixed(1)}s`,
+              hasDialogue: false,
+              visualContent: m.name ?? m.id,
+              confidence: 0.5,
+            },
+          ],
+        })),
+      };
+
+      const idempotencyKey = derivePlanIdempotencyKey({
+        mirror: MIRROR_GENRE,
+        referenceVideoId: mirrorOf,
+        analysisVersion: version ?? null,
+        fitPolicy,
+        sourceVideoIds: sources.map((source) => source.videoId),
+      });
+
+      const committed = await commitEditPlanRevision(host, {
+        plan,
+        segmentMap: resolvedMap,
+        idempotencyKey,
+        label: "build_mirror_plan",
+        prepare: true,
+        mode: "replace_plan",
+      });
+
+      if (!committed.ok) return committed;
+      // The commit tail already knows whether it applied anything: a
+      // fingerprint no-op and an idempotent replay both report applied=false.
+      const committedData = (committed.data ?? {}) as Record<string, unknown>;
+      return ok(committed.summary, {
+        ...committedData,
+        fitPolicy,
+        structuralDiff: diff,
+        mirrorOf,
+        applied: committedData.applied !== false,
+      });
+    },
+  },
   // ---- Internal structured-output tool for director sub-call ----
   {
     name: "expand_prompt_result",
@@ -33674,8 +34285,6 @@ const TOOLS: RegisteredTool[] = [
         return fail("No video media in the project. Import at least one video first.", "NO_VIDEO_MEDIA");
       }
 
-      const state = getDirectorPlanState(project);
-
       // Use provided segmentMap or build a fallback from project media
       const providedMap = args.segmentMap as SegmentMap | undefined;
       const providedReferenceAnalysis = args.referenceAnalysis as unknown;
@@ -33725,12 +34334,15 @@ const TOOLS: RegisteredTool[] = [
           segmentMap: providedMap ?? null,
           referenceAnalysis: providedReferenceAnalysis ?? null,
         });
+      const state = getDirectorPlanState(project);
+
+      // ---- Idempotency: repeating an accepted planning turn is a no-op ----
+      // Checked here as well as in the shared commit tail: this copy saves the
+      // director round-trip, the tail's copy covers non-LLM paths.
       if (state.lastReplay?.key === idempotencyKey && replayIsIntact(project, state)) {
         const cached = state.lastReplay;
         const cachedData =
           typeof cached.data === "object" && cached.data !== null
-            // A replay applies nothing: mark it so callers can tell "already
-            // on the timeline" apart from "just applied".
             ? { ...(cached.data as Record<string, unknown>), idempotentReplay: true, applied: false }
             : cached.data;
         return ok(
@@ -33897,174 +34509,17 @@ const TOOLS: RegisteredTool[] = [
         }
       }
 
-      // ---- Commit: materialize the new plan first, then remove the previous
-      // plan's output. Materialize failures compensate back to the exact
-      // pre-call state; previous-revision removal only runs after the new
-      // plan is fully applied.
-      const owned = newPlanOwned();
-
-      // ---- Fingerprint no-op: an identical plan is already on the timeline ----
-      // Do NOT tear down and rebuild when the incoming plan hashes equal to the
-      // plan currently applied — this is what stops "it loops and adds a new
-      // plan onto the timeline" when the LLM re-submits semantically identical
-      // content across turns with a different idempotency key.
-      //
-      // Before accepting the no-op, verify every artifact the stored plan
-      // placed still exists: if the user deleted a clip between turns the
-      // fingerprint still matches but the timeline does not, so fall through
-      // to materialize and re-apply. Also require at least one stored artifact
-      // so an empty timeline cannot vacuously match.
-      const fingerprintProjectId = host.getProject().id ?? "__default__";
-      const incomingFingerprint = computeEditPlanFingerprint(finalPlan);
-      const storedState = _previousPlanState.get(fingerprintProjectId);
-      if (storedState?.fingerprint === incomingFingerprint) {
-        const liveClipIds = new Set(
-          host.getProject().timeline.tracks.flatMap((t) => t.clips.map((c) => c.id)),
-        );
-        const liveTransitionIds = new Set(
-          host.getProject().timeline.tracks.flatMap((t) => (t.transitions ?? []).map((x) => x.id)),
-        );
-        const liveTextIds = new Set(
-          (host.getProject().textClips ?? []).map((c) => c.id),
-        );
-        const hasAnyStoredArtifact =
-          storedState.clipIds.length > 0 ||
-          storedState.audioClipIds.length > 0 ||
-          storedState.textIds.length > 0 ||
-          storedState.transitionIds.length > 0;
-        const allStoredPresent =
-          hasAnyStoredArtifact &&
-          storedState.clipIds.every((id) => liveClipIds.has(id)) &&
-          storedState.audioClipIds.every((id) => liveClipIds.has(id)) &&
-          storedState.transitionIds.every((id) => liveTransitionIds.has(id)) &&
-          storedState.textIds.every((id) => liveTextIds.has(id));
-        if (allStoredPresent) {
-          return ok(
-            `plan_edit: plan unchanged — timeline already matches (${storedState.clipIds.length} clip(s), ${storedState.textIds.length} text overlay(s), ${storedState.transitionIds.length} transition(s), ${storedState.audioClipIds.length} audio clip(s)). No changes applied.`,
-            {
-              applied: false,
-              revision: state.revision,
-              mode,
-              baseRevision: explicitBase ?? null,
-              idempotencyKey,
-              idempotentReplay: false,
-              editPlan: finalPlan,
-              clipIds: [...storedState.clipIds],
-              textIds: [...storedState.textIds],
-              audioClipIds: [...storedState.audioClipIds],
-              effectCount: 0,
-              transitionCount: storedState.transitionIds.length,
-              audioCount: storedState.audioClipIds.length,
-              cameraMoveCount: finalPlan.segments.reduce(
-                (sum, segment) => sum + (segment.cameraMoves?.length ?? 0),
-                0,
-              ),
-              motionCompositionIds: [],
-              motionInstanceIds: [],
-              validationWarnings: finalPlanIssues.filter(
-                (i: { severity: string }) => i.severity === "warning",
-              ),
-              planReview: {
-                score: planReview.score,
-                deviations: planReview.deviations,
-                revisionApplied: false,
-                effectCost: effectCostPayload(planReview),
-              },
-              density: densityPayload(planReview),
-              quality: {
-                status: "unavailable" as const,
-                reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
-              },
-            },
-          );
-        }
-        // Stored IDs are missing from the timeline (user deleted clips) —
-        // fall through to materialize so the plan gets re-applied.
-      }
-
-      let materialized;
-      try {
-        materialized = await materializeEditPlan(finalPlan, resolvedMap, host, owned);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "timeline mutation failed";
-        let compensation = { removed: 0, warnings: [] as string[] };
-        try {
-          compensation = await removeOwnedEntities(host, {
-            revision: -1,
-            ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
-            ownedTextClipIds: owned.textIds,
-            ownedTransitionIds: owned.transitionIds,
-            ownedMotionInstanceIds: owned.motionInstanceIds,
-            ownedMotionCompositionIds: owned.motionCompositionIds,
-          });
-        } catch {
-          // Best effort — reported below.
-        }
-        return fail(
-          `EditPlan was valid but could not be applied: ${message}. The timeline was left at its previous revision (${compensation.removed} partial artifact(s) removed).`,
-          "EDIT_PLAN_APPLY_FAILED",
-          { compensation },
-        );
-      }
-
-      const previousCommit = state.commit;
-      let cleanup = { removed: 0, warnings: [] as string[] };
-      if (previousCommit) {
-        cleanup = await removeOwnedEntities(host, previousCommit);
-      }
-
-      const nextRevision = state.revision + 1;
-      const commit: DirectorPlanCommit = {
-        revision: nextRevision,
-        ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
-        ownedTextClipIds: owned.textIds,
-        ownedTransitionIds: owned.transitionIds,
-        ownedMotionInstanceIds: owned.motionInstanceIds,
-        ownedMotionCompositionIds: owned.motionCompositionIds,
-      };
-
-      const summary =
-        `plan_edit applied as revision ${nextRevision}: ${materialized.clipIds.length} clip(s), ${materialized.textIds.length} text overlay(s), ${materialized.effectCount} effect(s), ${materialized.transitionCount} transition(s), ${materialized.audioCount} audio clip(s), ${materialized.cameraMoveCount} camera move(s)` +
-        (previousCommit
-          ? `, replacing revision ${previousCommit.revision} (${cleanup.removed} prior artifact(s) removed)`
-          : "") +
-        `. Style check: ${planReview.score.toFixed(2)} · density: ${planReview.density.score.toFixed(2)} (${planReview.density.summary}).`;
-
-      const data = {
-        editPlan: finalPlan,
-        ...materialized,
-        revision: nextRevision,
-        mode: "replace_plan",
-        baseRevision: explicitBase ?? null,
+      return await commitEditPlanRevision(host, {
+        plan: finalPlan,
+        segmentMap: resolvedMap,
+        mode,
         idempotencyKey,
-        idempotentReplay: false,
-        replacedPrevious: previousCommit
-          ? { revision: previousCommit.revision, removedArtifacts: cleanup.removed }
-          : null,
-        cleanupWarnings: cleanup.warnings,
-        validationWarnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
-        planReview: {
-          score: planReview.score,
-          deviations: planReview.deviations,
-          revisionApplied,
-          effectCost: effectCostPayload(planReview),
-        },
-        density: densityPayload(planReview, revisionApplied),
-        // Honest reporting: there is no working timeline frame sampler yet, so
-        // no visual quality review was performed. NEVER report a synthetic score.
-        quality: {
-          status: "unavailable" as const,
-          reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
-        },
-      };
-
-      setDirectorPlanState(project, {
-        revision: nextRevision,
-        commit,
-        lastReplay: { key: idempotencyKey, summary, data, revision: nextRevision },
+        baseRevision: explicitBase,
+        validationIssues: finalPlanIssues,
+        planReview,
+        revisionApplied,
+        label: "plan_edit",
       });
-
-      return ok(summary, data);
     },
   },
 

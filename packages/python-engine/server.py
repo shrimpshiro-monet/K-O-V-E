@@ -74,8 +74,9 @@ app.add_middleware(
         "http://127.0.0.1:5174",
     ],
     # The Electron renderer is served from a custom app:// scheme, which never
-    # matches an http origin.
-    allow_origin_regex=r"^app://",
+    # matches an http origin. Starlette fullmatches this regex, so it needs to
+    # consume the whole origin (a bare "^app://" never matches anything).
+    allow_origin_regex=r"^app://.*$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
