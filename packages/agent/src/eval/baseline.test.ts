@@ -73,8 +73,12 @@ function trackWith(clips: Array<{ id: string; startTime: number; duration: numbe
   } as unknown as Track;
 }
 
+const corpusAvailable = existsSync(CORPUS_PATH);
+const corpusTest = corpusAvailable ? it : it.skip;
+const corpusTitle = (title: string) => corpusAvailable ? title : `${title} (skipped: evaluation corpus not present; see docs/AGENT-EVAL-CORPUS.md)`;
+
 describe("baseline harness helpers", () => {
-  it("loads the corpus and passes the asset-existence gate", () => {
+  corpusTest(corpusTitle("loads the corpus and passes the asset-existence gate"), () => {
     const corpus = loadCorpus(CORPUS_PATH);
     expect(corpus).toHaveLength(9);
     expect(missingAssets(corpus, `${REPO_ROOT}/evaluation-files`)).toEqual([]);
@@ -85,7 +89,7 @@ describe("baseline harness helpers", () => {
     expect(parsed).toEqual({ FOO: "bar", QUOTED: "a b", EMPTY: "" });
   });
 
-  it("builds a project with probed metadata and a reference-free segment map", () => {
+  corpusTest(corpusTitle("builds a project with probed metadata and a reference-free segment map"), () => {
     const corpus = loadCorpus(CORPUS_PATH);
     const game = corpus.find(entry => entry.id === "game-01");
     expect(game).toBeDefined();
@@ -101,7 +105,7 @@ describe("baseline harness helpers", () => {
     for (const video of segmentMap.videos) expect(video.segments).toHaveLength(1);
   });
 
-  it("builds a segment map identical to plan_edit's metadata fallback shape", () => {
+  corpusTest(corpusTitle("builds a segment map identical to plan_edit's metadata fallback shape"), () => {
     const corpus = loadCorpus(CORPUS_PATH);
     const { project } = buildBaselineProject(corpus.find(entry => entry.id === "pod-02")!);
     const map = buildSegmentMap(project);

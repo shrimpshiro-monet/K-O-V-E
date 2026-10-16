@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -7,8 +8,11 @@ const REPO_ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../.
 const CORPUS_DIR = resolve(REPO_ROOT, "evaluation-files");
 const CORPUS = resolve(CORPUS_DIR, "projects.json");
 
-describe("eval corpus", () => {
-  const corpus = loadCorpus(CORPUS);
+const corpusAvailable = existsSync(CORPUS);
+const skipReason = "skipped: evaluation corpus not present; see docs/AGENT-EVAL-CORPUS.md";
+
+describe.skipIf(!corpusAvailable)(`eval corpus${corpusAvailable ? "" : ` (${skipReason})`}`, () => {
+  const corpus = corpusAvailable ? loadCorpus(CORPUS) : [];
 
   it("loads 9 projects with one prompt of each type", () => {
     expect(corpus).toHaveLength(9);

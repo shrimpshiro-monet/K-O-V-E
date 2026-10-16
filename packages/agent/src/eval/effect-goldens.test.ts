@@ -14,7 +14,7 @@
  *  - ids come from the registries, so new effects/transitions are covered
  *    automatically.
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
@@ -37,6 +37,11 @@ const STUDIO_PKG = join(REPO_ROOT, "apps/studio/package.json");
 const WIDTH = 320;
 const HEIGHT = 240;
 const FPS = 30;
+const ffmpegProbe = spawnSync("ffmpeg", ["-version"], { stdio: "ignore", timeout: 2_000 });
+// Only an absent executable skips. A present but broken or timed-out binary
+// enters setup and fails the golden instead of silently masking a regression.
+const ffmpegAvailable = (ffmpegProbe.error as NodeJS.ErrnoException | undefined)?.code !== "ENOENT";
+const skipReason = "skipped: ffmpeg not found on PATH; see docs/AGENT-EVAL-CORPUS.md";
 
 /**
  * A pixel counts as changed when any channel moves by more than 4/255 (~1.6%).
@@ -50,13 +55,12 @@ const FPS = 30;
 const CHANNEL_EPSILON = 4;
 const EPS = 0.01;
 
-// `shadow` and `glow` are drop-shadow based: on a clip that fills the frame the
-// shadow/glow lands entirely outside the canvas, so the stimulus must leave an
-// alpha border (the clip is drawn at 60% scale).
-function effectClip(effects: unknown[]) {
+// `shadow` and `glow` are drop-shadow based: an opaque MP4 has no alpha edge
+// to cast them from. Use a generated RGBA PNG with a transparent border.
+function effectClip(effects: unknown[], mediaId = "media-a") {
   return clip({
     id: "clip",
-    mediaId: "media-a",
+    mediaId,
     effects,
     transform: { ...transform(), scale: { x: 0.6, y: 0.6 } },
   });
@@ -84,6 +88,8 @@ const EFFECT_PARAMS: Readonly<Record<string, Record<string, unknown>>> = {
   tonal: { value: 0.7, shadows: 0.7, midtones: 0.7, highlights: 0.7 },
   shadow: { offsetX: 12, offsetY: 12, blur: 8, color: "#FF00FF", opacity: 1, value: 0.8, amount: 80 },
   glow: { radius: 20, intensity: 1.5, color: "#00FFFF", value: 0.8, amount: 70 },
+  // A shader effect must name an actual registered effect shader.
+  shader: { shaderId: "scanlines", density: 360, intensity: 0.9, speed: 0.2 },
   "motion-blur": { distance: 14, angle: 45, amount: 14 },
   "radial-blur": { amount: 45, centerX: 50, centerY: 50 },
   "chromatic-aberration": { amount: 15 },
@@ -158,6 +164,7 @@ let browser: BrowserLike | null = null;
 let page: PageLike | null = null;
 let baseUrl = "";
 let baseline: RenderedPixels | null = null;
+let alphaBaseline: RenderedPixels | null = null;
 let transitionBaseline: RenderedPixels | null = null;
 
 function ffmpeg(output: string, filter: string): void {
@@ -237,6 +244,11 @@ function mediaItem(id: string, name: string, sourceUrl: string) {
   };
 }
 
+function alphaMediaItem() {
+  const item = mediaItem("media-alpha", "source-alpha.png", `${baseUrl}/source-alpha.png`);
+  return { ...item, type: "image", metadata: { ...item.metadata, width: 160, height: 240, codec: "png" } };
+}
+
 function clip(overrides: Record<string, unknown>) {
   return {
     id: "clip",
@@ -281,6 +293,7 @@ function project(clips: unknown[], transitions: unknown[]) {
       items: [
         mediaItem("media-a", "source-a.mp4", `${baseUrl}/source-a.mp4`),
         mediaItem("media-b", "source-b.mp4", `${baseUrl}/source-b.mp4`),
+        alphaMediaItem(),
       ],
     },
     timeline: {
@@ -343,6 +356,7 @@ async function renderInBrowser(target: unknown, time: number): Promise<RenderedP
 }
 
 beforeAll(async () => {
+  if (!ffmpegAvailable) return;
   workDir = mkdtempSync(join(tmpdir(), "kove-effect-goldens-"));
 
   ffmpeg(
@@ -353,6 +367,13 @@ beforeAll(async () => {
     join(workDir, "source-b.mp4"),
     `color=c=0x2040FF:size=${WIDTH / 2}x${HEIGHT}:rate=${FPS}:duration=2`,
   );
+
+  // Drop-shadow/glow require transparent source pixels. An opaque MP4 cannot
+  // cast a shadow even if the effect is functioning correctly.
+  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "lavfi", "-i",
+    "color=c=black@0.0:s=160x240:d=1,format=rgba", "-vf",
+    "drawbox=x=24:y=24:w=110:h=180:color=green@1:t=fill:replace=1",
+    "-frames:v", "1", join(workDir, "source-alpha.png")]);
 
   const entryPath = join(workDir, "entry.ts");
   const bundlePath = join(workDir, "bundle.js");
@@ -403,7 +424,7 @@ beforeAll(async () => {
           ? "text/javascript"
           : name.endsWith(".mp4")
             ? "video/mp4"
-            : "text/html",
+            : name.endsWith(".png") ? "image/png" : "text/html",
       });
       res.end(body);
     } catch {
@@ -441,6 +462,7 @@ beforeAll(async () => {
 
   const effectBaseline = project([effectClip([])], []);
   baseline = await renderInBrowser(effectBaseline, 1);
+  alphaBaseline = await renderInBrowser(project([effectClip([], "media-alpha")], []), 1);
 
   const transitionClipA = clip({ id: "clip-a", mediaId: "media-a", startTime: 0, duration: 1.2, outPoint: 1.2 });
   const transitionClipB = clip({ id: "clip-b", mediaId: "media-b", startTime: 0.8, duration: 1.2, inPoint: 0.2, outPoint: 1.4 });
@@ -460,7 +482,7 @@ afterAll(async () => {
   if (workDir) rmSync(workDir, { recursive: true, force: true });
 });
 
-describe("effect render goldens", () => {
+describe.skipIf(!ffmpegAvailable)(`effect render goldens${ffmpegAvailable ? "" : ` (${skipReason})`}`, () => {
   it("baseline frame is non-empty", () => {
     expect(baseline).not.toBeNull();
     expect(baseline!.rgba).toHaveLength(WIDTH * HEIGHT * 4);
@@ -473,17 +495,18 @@ describe("effect render goldens", () => {
 
   it.each(KNOWN_EFFECT_TYPES)('effect "%s" renders pixels', async effectId => {
     const params = EFFECT_PARAMS[effectId] ?? { value: 1, amount: 50 };
+    const needsAlpha = effectId === "shadow" || effectId === "glow";
     const projectWithEffect = project(
       [
         effectClip([
           { id: `effect-${effectId}`, type: effectId, enabled: true, params },
-        ]),
+        ], needsAlpha ? "media-alpha" : "media-a"),
       ],
       [],
     );
 
     const rendered = await renderInBrowser(projectWithEffect, 1);
-    const diff = pixelDiff(baseline!, rendered);
+    const diff = pixelDiff(needsAlpha ? alphaBaseline! : baseline!, rendered);
     console.log(`[golden] effect ${effectId}: ${(diff * 100).toFixed(2)}% pixels changed`);
     expect(
       diff,
@@ -492,7 +515,7 @@ describe("effect render goldens", () => {
   }, 60_000);
 });
 
-describe("transition render goldens", () => {
+describe.skipIf(!ffmpegAvailable)(`transition render goldens${ffmpegAvailable ? "" : ` (${skipReason})`}`, () => {
   it("transition baseline frame is non-empty", () => {
     expect(transitionBaseline).not.toBeNull();
     expect(transitionBaseline!.rgba).toHaveLength(WIDTH * HEIGHT * 4);

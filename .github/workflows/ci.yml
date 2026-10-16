@@ -28,8 +28,16 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
+      - name: Install ffmpeg for generated-media render goldens
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium for real timeline render goldens
+        run: pnpm --filter @kove-advanced/studio exec playwright install --with-deps chromium
 
       - name: Run TypeScript type checking
         run: pnpm typecheck

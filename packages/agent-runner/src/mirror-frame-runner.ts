@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
 import type { GrayImage } from "@kove-advanced/agent/director/mirror/ssim";
 import type { EditingHost } from "@kove-advanced/agent/host";
+import type { Project } from "@kove-advanced/core/types/project";
+import { MirrorCompositor, createMirrorSnapshot } from "./mirror-compositor";
 
 /** Decode an actual numbered frame as 64x64 luma. No stand-in images or scores.
  * `select` decodes through to frame N, so this is exact for CFR streams but
@@ -47,5 +49,26 @@ export function createFfmpegMirrorFrameRunner(options: {
   return async ({ kind, frame }) => {
     const path = kind === "reference" ? options.referencePath : await options.renderTimelineVideo();
     return decodeMirrorFrame(path, frame, options.ffmpegPath);
+  };
+}
+
+/** Use this runner for Mirror v2: reference samples stay FFmpeg rawvideo; each
+ * timeline sample snapshots the host's latest post-action state and sends it to
+ * VideoEngine in Chromium. Retains EditingHost.sampleMirrorFrame's contract. */
+export function createCompositorMirrorFrameRunner(options: {
+  referencePath: string;
+  getProject: () => Project;
+  mediaPaths?: Readonly<Record<string, string>>;
+  ffmpegPath?: string;
+  chromiumExecutablePath?: string;
+}): { sample: NonNullable<EditingHost["sampleMirrorFrame"]>; close: () => Promise<void> } {
+  const compositor = new MirrorCompositor(options.chromiumExecutablePath);
+  return {
+    sample: async ({ kind, frame, fps }) => {
+      if (kind === "reference") return decodeMirrorFrame(options.referencePath, frame, options.ffmpegPath);
+      const snapshot = await createMirrorSnapshot(options.getProject(), options.mediaPaths);
+      return compositor.sample(snapshot, frame * fps.den / fps.num);
+    },
+    close: () => compositor.close(),
   };
 }
