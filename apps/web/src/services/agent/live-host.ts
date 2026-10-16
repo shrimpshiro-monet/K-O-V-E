@@ -241,7 +241,7 @@ export class LiveEditorHost implements EditingHost {
     const seconds = frameToSeconds(request.frame, request.fps);
     if (request.kind === "reference") {
       if (!this.mirrorReference) throw new Error("Reference media unavailable: select the reference file again");
-      return (await sampleReferenceProxies(this.mirrorReference, [seconds]))[0]!;
+      return (await sampleReferenceProxies(this.mirrorReference, [request.frame], request.fps))[0]!;
     }
     const frame = await this.renderTimelineFrame({ time: seconds, maxDimension: 320, format: "jpeg" });
     if ("code" in frame) throw new Error(frame.error);

@@ -1,3 +1,4 @@
+import { openIndexedVideoFrames } from "@kove-advanced/core/mirror/decoded-frames";
 import { locateCutFrame } from "@kove-advanced/core/mirror/cut-boundary";
 import { frameToSeconds, secondsToFrame, type FrameRate } from "@kove-advanced/core/mirror/timebase";
 import { computeLabStats } from "@kove-advanced/core/color/reinhard-transfer";
@@ -57,11 +58,23 @@ export async function extractReference(file: Blob, clock: ReferenceClock): Promi
     canvas.width = width; canvas.height = height;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) throw new Error("Canvas 2D is unavailable");
+    // Prefer timestamp-verified WebCodecs samples. HTML seeking is only a
+    // capability fallback and is never labelled frame-exact.
+    const indexed = await openIndexedVideoFrames(file, width, height).catch(() => null);
+    const readFrame = async (frame: number): Promise<Uint8ClampedArray> => {
+      if (indexed) return (await indexed.read(frame, fps)).data;
+      const target = Math.min(video.duration - 0.001, frameToSeconds(frame, fps) + fps.den / fps.num / 4);
+      if (Math.abs(video.currentTime - target) > 0.0001) await new Promise<void>((resolve, reject) => {
+        video.onseeked = () => resolve(); video.onerror = () => reject(new Error("Reference frame seek failed")); video.currentTime = target;
+      });
+      ctx.drawImage(video, 0, 0, width, height);
+      return ctx.getImageData(0, 0, width, height).data;
+    };
     // WASM backend is lazy and optional. An unavailable OpenCV build does not block extraction.
     let cv: Awaited<ReturnType<typeof loadOpenCv>> | null = null;
     try { cv = await loadOpenCv(); } catch { /* sparse JS matcher remains available */ }
     let previousMat: InstanceType<NonNullable<typeof cv>["Mat"]> | null = null;
-    const stepFrames = Math.max(1, Math.ceil(durationFrames / 600), Math.ceil(fps.num / fps.den / 4));
+    const stepFrames = indexed && durationFrames <= 600 ? 1 : Math.max(1, Math.ceil(durationFrames / 600), Math.ceil(fps.num / fps.den / 4));
     const frames = Math.ceil(durationFrames / stepFrames);
     const shots: ShotProfile[] = [];
     let previous: Uint8ClampedArray | null = null;
@@ -74,25 +87,11 @@ export async function extractReference(file: Blob, clock: ReferenceClock): Promi
     };
     try { for (let i = 0; i < frames; i++) {
       const frame = Math.min(durationFrames - 1, i * stepFrames);
-      const time = Math.min(video.duration - 0.001, frameToSeconds(frame, fps));
-      if (Math.abs(video.currentTime - time) > 0.005) {
-        await new Promise<void>((resolve, reject) => {
-          video.onseeked = () => resolve(); video.onerror = () => reject(new Error("Reference seek failed")); video.currentTime = time;
-        });
-      }
-      ctx.drawImage(video, 0, 0, width, height);
-      const pixels = ctx.getImageData(0, 0, width, height).data;
+      const pixels = await readFrame(frame);
       // A sampled frame's grade is measured; each shot keeps the first non-boundary sample.
       const cut = previous && difference(previous, pixels) > 0.23;
       let boundary: number | null = null;
-      if (cut) boundary = await locateCutFrame(previousFrame, frame, async (at) => {
-        const atSeconds = Math.min(video.duration - 0.001, frameToSeconds(at, fps) + fps.den / fps.num / 4);
-        if (Math.abs(video.currentTime - atSeconds) > 0.0001) await new Promise<void>((resolve, reject) => {
-          video.onseeked = () => resolve(); video.onerror = () => reject(new Error("Reference frame seek failed")); video.currentTime = atSeconds;
-        });
-        ctx.drawImage(video, 0, 0, width, height);
-        return ctx.getImageData(0, 0, width, height).data;
-      }, difference, 0.23);
+      if (cut) boundary = await locateCutFrame(previousFrame, frame, readFrame, difference, 0.23);
       if (boundary !== null) finish(boundary);
       else if (previous) {
         let sample: CameraMotionSample | null = null;
@@ -112,9 +111,9 @@ export async function extractReference(file: Blob, clock: ReferenceClock): Promi
       previous = pixels;
       previousFrame = frame;
     }
-    } finally { previousMat?.delete(); }
+    } finally { previousMat?.delete(); indexed?.close(); }
     finish(durationFrames);
-    const profile = createReferenceProfile({ aspectRatio: { width: video.videoWidth, height: video.videoHeight }, fps, fpsSource: clock.fpsSource, durationFrames, shots, beatGridMs: [], ...(clock.sampleAspectRatio && { sampleAspectRatio: clock.sampleAspectRatio }), ...(clock.codedDimensions && { codedDimensions: clock.codedDimensions }), ...(clock.rotationDegrees !== undefined && { rotationDegrees: clock.rotationDegrees }), warnings: ["Cut candidates are searched at integer frames; HTML video seeks may not decode exact requested frames. Verify critical cuts manually."] });
+    const profile = createReferenceProfile({ aspectRatio: { width: video.videoWidth, height: video.videoHeight }, fps, fpsSource: clock.fpsSource, durationFrames, shots, beatGridMs: [], ...(clock.sampleAspectRatio && { sampleAspectRatio: clock.sampleAspectRatio }), ...(clock.codedDimensions && { codedDimensions: clock.codedDimensions }), ...(clock.rotationDegrees !== undefined && { rotationDegrees: clock.rotationDegrees }), warnings: !indexed ? ["Indexed WebCodecs decoder unavailable: HTML video seeks may not decode exact requested frames. Verify critical cuts manually."] : stepFrames > 1 ? ["Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames."] : [] });
     return profile;
   } finally { video.removeAttribute("src"); video.load(); URL.revokeObjectURL(url); }
 }

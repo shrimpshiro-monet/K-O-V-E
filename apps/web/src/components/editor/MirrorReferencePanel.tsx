@@ -30,7 +30,7 @@ export function MirrorReferencePanel() {
       setPendingFile(null);
       setProfile(next); setReferenceFile(file); setShotIds([]);
       try { sessionStorage.setItem("kove.mirror.profile", serializeReferenceProfile(next)); } catch { /* download still works in privacy mode */ }
-      setStatus(`${next.shots.length} shots measured. Cut candidates are sampled at up to 4 fps then refined by frame seek (browser seeks are best-effort); captions and beats are not extracted yet.`);
+      setStatus(`${next.shots.length} shots measured. ${next.warnings?.join(" ") || "Cut detection checked every decoded frame."} Captions and beats are not extracted yet.`);
     } catch (error) { toast.error("Reference extraction failed", error instanceof Error ? error.message : "Unknown error"); }
     finally { setBusy(false); }
   };
