@@ -29,8 +29,9 @@ export function parseVideoProbe(json: string): VideoStreamMetadata {
   const nominal = rational(stream.r_frame_rate, "/");
   const variableFrameRate = Boolean(avg && nominal && avg.num * nominal.den !== nominal.num * avg.den);
   const fps = avg && !variableFrameRate && avg.num / avg.den >= 1 && avg.num / avg.den <= 240 ? avg : null;
-  const rawDuration = stream.duration ?? data.format?.duration;
-  const durationSeconds = Number(rawDuration);
+  const streamDuration = Number(stream.duration);
+  const containerDuration = Number(data.format?.duration);
+  const durationSeconds = Number.isFinite(streamDuration) && streamDuration > 0 ? streamDuration : containerDuration;
   const rotation = (stream.side_data_list as Array<Record<string, unknown>> | undefined)?.find((item) => item.rotation !== undefined)?.rotation ?? (stream.tags as Record<string, unknown> | undefined)?.rotate;
   const rotationDegrees = rotation === undefined || rotation === null ? null : Number(rotation);
   return {
