@@ -21,3 +21,8 @@ allowBuilds:
   protobufjs: false
   sharp: false
   workerd: false
+
+# Desktop builds stage binaries for each packaged target (macOS builds both arches).
+supportedArchitectures:
+  os: [darwin, linux, win32]
+  cpu: [x64, arm64]

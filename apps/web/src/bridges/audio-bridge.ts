@@ -1,3 +1,4 @@
+import { getBeatSyncBridge } from "./beat-sync-bridge";
 import type {
   AudioEngine,
   Clip,
@@ -846,4 +847,10 @@ export function isAudioEnhancementEffect(effect: Effect): boolean {
  */
 export function getClipAudioEnhancements(clip: Clip): Effect[] {
   return clip.effects.filter(isAudioEnhancementEffect);
+}
+
+/** Opt-in reactive analysis for a playback AudioNode. Reuses the caller's context
+ * without creating a second source/duplicating its audio routing. */
+export function attachAudioNodeToBeatGraph(context: AudioContext, source: AudioNode): () => void {
+  return getBeatSyncBridge().attachReactiveSource(context, source);
 }

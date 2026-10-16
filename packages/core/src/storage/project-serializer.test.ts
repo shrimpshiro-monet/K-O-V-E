@@ -270,6 +270,18 @@ describe("normalizeProjectCreationFields", () => {
 });
 
 describe("ProjectSerializer round-trip", () => {
+  it("persists the shareable DNA without media bytes", () => {
+    const serializer = new ProjectSerializer(new MemoryStorageEngine());
+    const profile = {
+      version: "kove.mirror.v2" as const,
+      aspectRatio: { width: 1080, height: 1920 }, fps: { num: 30, den: 1 }, fpsSource: "user" as const, durationFrames: 30,
+      shots: [{ startFrame: 0, endFrame: 30, captionWindows: [] }],
+      rhythmCurve: [30], beatGridMs: [],
+    };
+    const json = serializer.exportToJson(makeProject({ mirrorProfile: profile }));
+    expect(serializer.importFromJson(json).mirrorProfile).toEqual(profile);
+  });
+
   it("writes the universal-track reader requirement and preserves it", () => {
     const serializer = new ProjectSerializer(new MemoryStorageEngine());
     const project = makeProject({

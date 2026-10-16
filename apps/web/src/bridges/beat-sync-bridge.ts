@@ -1,3 +1,5 @@
+import { startReactiveAudioAnalysis, evaluateAudioGraph, type LiveAudioFeatures } from "../services/audio/reactive-audio-engine";
+import type { CraftGraph } from "@kove-advanced/core/motion/craft-graph";
 import {
   BeatDetectionEngine,
   getBeatDetectionEngine,
@@ -14,6 +16,7 @@ export interface BeatSyncState {
   error: string | null;
   beatMarkers: TimelineBeatMarker[];
   beatAnalysis: TimelineBeatAnalysis | null;
+  reactiveFeatures: LiveAudioFeatures | null;
 }
 
 export interface BeatSyncOptions {
@@ -42,12 +45,23 @@ class BeatSyncBridge {
     error: null,
     beatMarkers: [],
     beatAnalysis: null,
+    reactiveFeatures: null,
   };
   private options: BeatSyncOptions = { ...DEFAULT_BEAT_SYNC_OPTIONS };
   private listeners: Set<(state: BeatSyncState) => void> = new Set();
 
   constructor() {
     this.engine = getBeatDetectionEngine();
+  }
+
+  /** Attaches to an existing playback node; the caller must stop this when the node is replaced. */
+  attachReactiveSource(ctx: AudioContext, source: AudioNode): () => void {
+    const stop = startReactiveAudioAnalysis(ctx, source, (features) => this.updateState({ reactiveFeatures: features }));
+    return () => { stop(); this.updateState({ reactiveFeatures: null }); };
+  }
+
+  evaluateReactiveGraph(graph: CraftGraph, time: number): number {
+    return evaluateAudioGraph(graph, time, this.state.reactiveFeatures);
   }
 
   getState(): BeatSyncState {

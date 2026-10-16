@@ -64,9 +64,11 @@ apps/cloud/.wrangler/
 apps/ios
 apps/android
 
-# Desktop bundled ffmpeg binaries (large; fetched/built per-platform, documented in MANIFEST.json)
+# Desktop bundled FFmpeg/FFprobe binaries (large; fetched/built per-platform, documented in MANIFEST.json)
 apps/desktop/resources/bin/**/ffmpeg
 apps/desktop/resources/bin/**/ffmpeg.exe
+apps/desktop/resources/bin/**/ffprobe
+apps/desktop/resources/bin/**/ffprobe.exe
 
 # Desktop bundled Blender sidecars (large; fetched/built per-platform, documented in apps/desktop/RIGGING.md)
 apps/desktop/resources/rigging/blender/

@@ -19,11 +19,12 @@ import { TextToSpeechPanel } from "./inspector/TextToSpeechPanel";
 import { FilterPresetsPanel } from "./inspector/FilterPresetsPanel";
 import { MusicLibraryPanel } from "./inspector/MusicLibraryPanel";
 import { TemplatesBrowserPanel } from "./inspector/TemplatesBrowserPanel";
+import { MirrorReferencePanel } from "./MirrorReferencePanel";
 import { MultiCameraPanel } from "./inspector/MultiCameraPanel";
 import { useTtsAudioStore } from "../../stores/tts-store";
 import { toast } from "../../stores/notification-store";
 
-type FeatureId = "templates" | "captions" | "tts" | "filters" | "music" | "multicam" | null;
+type FeatureId = "templates" | "captions" | "tts" | "filters" | "music" | "multicam" | "mirror" | null;
 
 interface FeatureCardProps {
   icon: React.ElementType;
@@ -135,6 +136,8 @@ export const AIGenTab: React.FC = () => {
         return <MusicLibraryPanel />;
       case "multicam":
         return <MultiCameraPanel />;
+      case "mirror":
+        return <MirrorReferencePanel />;
       default:
         return null;
     }
@@ -171,6 +174,10 @@ export const AIGenTab: React.FC = () => {
             Automate your editing with intelligent features
           </Text>
         </div>
+
+        <FeatureSection title="Reference Editing" icon={Video}>
+          <FeatureCard icon={Video} title="Mirror Reference 1:1" description="Measure a reference and build editable shots" iconColor="text-cyan-400" iconBg="bg-cyan-500/20" activeBorder="border-cyan-500/50" activeBg="bg-cyan-500/10" activeRing="ring-cyan-500/30" isActive={activeFeature === "mirror"} onClick={() => handleFeatureClick("mirror")} />
+        </FeatureSection>
 
         <FeatureSection title="Content Generation" icon={Wand2}>
           <FeatureCard

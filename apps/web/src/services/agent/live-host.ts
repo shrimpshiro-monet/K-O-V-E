@@ -1,3 +1,5 @@
+import { frameToSeconds } from "@kove-advanced/core/mirror/timebase";
+import { sampleReferenceProxies, grayDataUrl } from "../mirror/proxy-frames";
 import type {
   AudioSamples,
   EditingHost,
@@ -230,6 +232,21 @@ export class LiveEditorHost implements EditingHost {
    */
   llm?: EditingHost["llm"];
   private jobRunner?: JobRunner;
+  private mirrorReference: Blob | null = null;
+
+  /** Ephemeral media handle: never serialized into EditDNA or project JSON. */
+  setMirrorReference(file: Blob | null): void { this.mirrorReference = file; }
+
+  async sampleMirrorFrame(request: Parameters<NonNullable<EditingHost["sampleMirrorFrame"]>>[0]) {
+    const seconds = frameToSeconds(request.frame, request.fps);
+    if (request.kind === "reference") {
+      if (!this.mirrorReference) throw new Error("Reference media unavailable: select the reference file again");
+      return (await sampleReferenceProxies(this.mirrorReference, [seconds]))[0]!;
+    }
+    const frame = await this.renderTimelineFrame({ time: seconds, maxDimension: 320, format: "jpeg" });
+    if ("code" in frame) throw new Error(frame.error);
+    return grayDataUrl(frame.dataUrl);
+  }
   private appliedInTxn = 0;
   // exportFrame renders MOTION compositions only (it needs a compositionId), so the
   // multicam preview cannot be served by it. Report that explicitly rather than
@@ -328,6 +345,8 @@ export class LiveEditorHost implements EditingHost {
     // Face detection and segmentation need a DOM video decoder + MediaPipe.
     const hasVision = typeof document !== "undefined" && typeof createImageBitmap === "function";
     return {
+      mirrorFrames: this.mirrorReference !== null,
+      lpipsMirrorFrames: false,
       renderMotionFrame: hasRunner,
       renderTimelineFrame: true,
       renderMulticamPreview: false,

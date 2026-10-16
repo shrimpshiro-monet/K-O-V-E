@@ -30,3 +30,4 @@ export {
   type EvalRunOptions,
 } from "./evals/harness";
 export { SCRIPTED_CASES } from "./evals/cases";
+export { decodeMirrorFrame, createFfmpegMirrorFrameRunner } from "./mirror-frame-runner";

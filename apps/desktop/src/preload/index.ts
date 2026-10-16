@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { CHANNELS } from "../shared/channels";
 import type { McpBridgeRequest } from "../shared/mcp";
 
@@ -94,6 +94,8 @@ contextBridge.exposeInMainWorld("kove-advanced", {
     generateProxy: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaGenerateProxy, args),
     transcode: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaTranscode, args),
     extractAudioWav: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaExtractAudioWav, args),
+    getPathForFile: (file: File) => webUtils.getPathForFile(file),
+    probeVideoStream: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaProbeVideoStream, args),
     probeAudioStreams: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaProbeAudioStreams, args),
     fetchUrl: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaFetchUrl, args),
   },

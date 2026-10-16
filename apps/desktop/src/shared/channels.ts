@@ -29,6 +29,7 @@ export const CHANNELS = {
   mediaGenerateProxy: "kove-advanced:media:generateProxy",
   mediaTranscode: "kove-advanced:media:transcode",
   mediaExtractAudioWav: "kove-advanced:media:extractAudioWav",
+  mediaProbeVideoStream: "kove-advanced:media:probeVideoStream",
   mediaProbeAudioStreams: "kove-advanced:media:probeAudioStreams",
   mediaFetchUrl: "kove-advanced:media:fetchUrl",
   riggingProbeBackend: "kove-advanced:rigging:probeBackend",

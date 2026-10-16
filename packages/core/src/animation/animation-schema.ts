@@ -1,3 +1,4 @@
+import type { CraftGraph } from "../motion/craft-graph";
 import type { EasingType } from "../types/timeline";
 
 export interface AnimationSchema {
@@ -324,6 +325,8 @@ export type LayerDefinition =
   | GroupLayer;
 
 export interface AnimationDefinition {
+  /** Optional numeric graph compiled from a preset or measured reference; keyframes remain editable. */
+  graph?: CraftGraph;
   property: AnimatableProperty;
   keyframes: KeyframeDefinition[];
   delay?: number;

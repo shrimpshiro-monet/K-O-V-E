@@ -1,3 +1,4 @@
+import { rhythmSimilarity } from "@kove-advanced/core/rhythm/dtw";
 import type {
   EditDensityReview,
   EditDensityTarget,
@@ -30,6 +31,7 @@ import {
 
 export interface EditPlanReview extends StyleProfileComparison {
   readonly profile: StyleProfile;
+  readonly rhythmScore?: number;
   readonly target: StyleProfileTarget;
   readonly needsRevision: boolean;
   readonly rendered?: RenderedDraftReview;
@@ -137,7 +139,12 @@ export function reviewEditPlan(
 ): EditPlanReview {
   const profile = measureEditPlanStyle(plan);
   const target = mergeStyleTargets(genreTarget(genre), referenceTarget(referenceAnalysis));
-  const comparison = compareStyleProfile(profile, target);
+  const baseline = compareStyleProfile(profile, target);
+  const rhythmScore = target.rhythmCurve?.length ? rhythmSimilarity(target.rhythmCurve, profile.rhythmCurve ?? []) : undefined;
+  const comparison = rhythmScore === undefined ? baseline : {
+    score: (baseline.score + rhythmScore) / 2,
+    deviations: rhythmScore < 0.7 ? [...baseline.deviations, `rhythm shape similarity ${rhythmScore.toFixed(2)} (DTW)`] : baseline.deviations,
+  };
   const density = compareEditDensity(
     measureEditDensity(plan, segmentMap),
     densityTarget(genre, plan.metadata.pacing),
@@ -162,6 +169,7 @@ export function reviewEditPlan(
   return {
     ...comparison,
     profile,
+    rhythmScore,
     target,
     density,
     effectCost,
@@ -329,6 +337,7 @@ export function measureEditPlanStyle(plan: EditPlan): StyleProfile {
     version: "1.0.0",
     pacing: plan.metadata.pacing === "medium" ? "moderate" : plan.metadata.pacing,
     cutsPerMinute: targetDuration > 0 ? plan.segments.length / (targetDuration / 60) : 0,
+    rhythmCurve: plan.segments.map(segmentDurationSec),
     medianShotDuration: shotDurations.length > 0
       ? shotDurations[Math.floor(shotDurations.length / 2)]!
       : 0,
@@ -374,11 +383,14 @@ function referenceTarget(value: unknown): StyleProfileTarget | undefined {
   const root = asRecord(value);
   const videos = Array.isArray(root?.videos) ? root.videos : [];
   const referenceVideo = videos.find((video) => asRecord(video)?.role === "reference") ?? videos[0];
-  const profile = asRecord(asRecord(referenceVideo)?.styleProfile);
+  const profile = asRecord(asRecord(referenceVideo)?.styleProfile) ?? (Array.isArray(root?.shots) ? root : undefined);
   if (!profile) return undefined;
+  const rhythmCurve = Array.isArray(profile.rhythmCurve) && profile.rhythmCurve.every((n) => typeof n === "number" && Number.isFinite(n) && n > 0)
+    ? profile.rhythmCurve as number[] : undefined;
 
   return {
     pacing: asPacing(profile.pacing),
+    rhythmCurve,
     cutsPerMinute: asRange(profile.cutsPerMinute),
     cutStyle: asCutStyle(profile.cutStyle),
     effectPalette: asStringArray(profile.effectPalette),

@@ -96,6 +96,7 @@ export type ProjectAction =
       params: { name: string; settings: ProjectSettings };
     }
   | { type: "project/updateSettings"; params: Partial<ProjectSettings> }
+  | { type: "project/setMirrorProfile"; params: { profile: import("../mirror/reference-profile").ReferenceProfile | null } }
   | {
       type: "project/setCanvasBackground";
       params: {

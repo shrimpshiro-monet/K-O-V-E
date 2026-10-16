@@ -1,3 +1,5 @@
+import type { GrayImage } from "./director/mirror/ssim";
+import type { FrameRate } from "@kove-advanced/core/mirror/timebase";
 import type { Action, ActionResult } from "@kove-advanced/core/types/actions";
 import type { Project } from "@kove-advanced/core/types/project";
 import type { CapabilityManifest } from "@kove-advanced/core/capabilities/manifest";
@@ -34,6 +36,8 @@ export interface JobResult {
  */
 export interface HostFeatures {
   /** Render a single frame of a motion composition (render_motion_frame). */
+  readonly mirrorFrames?: boolean;
+  readonly lpipsMirrorFrames?: boolean;
   readonly renderMotionFrame: boolean;
   /** Render a single composited frame of the main timeline (render_timeline_frame). Not implemented on any host yet. */
   readonly renderTimelineFrame: boolean;
@@ -624,6 +628,12 @@ export interface EditingHost {
    * `{code:"unsupported_host"}`; it must never return a placeholder image.
    */
   renderTimelineFrame?(request: TimelineFrameRequest): Promise<TimelineFrame | { readonly code: "unsupported_host"; readonly error: string }>;
+
+  /** Real decoded reference or composited timeline sample on the EditDNA clock.
+   * Hosts without both decoders omit it. No stand-in pixels are permitted. */
+  sampleMirrorFrame?(request: { kind: "reference" | "timeline"; frame: number; fps: FrameRate }): Promise<GrayImage>;
+  /** Optional actual LPIPS model inference. Omit unless a model is loaded. */
+  lpipsMirrorFrames?(reference: GrayImage, candidate: GrayImage): Promise<number>;
 
   /**
    * Sample a media item's frames and detect/track faces. Optional: hosts

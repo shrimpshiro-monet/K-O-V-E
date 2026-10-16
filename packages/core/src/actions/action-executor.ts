@@ -385,6 +385,10 @@ export class ActionExecutor {
         (project as any).modifiedAt = Date.now();
         break;
 
+      case "project/setMirrorProfile":
+        (project as { mirrorProfile?: typeof action.params.profile }).mirrorProfile = action.params.profile ?? undefined;
+        break;
+
       case "project/updateSettings":
         (project as any).settings = {
           ...project.settings,

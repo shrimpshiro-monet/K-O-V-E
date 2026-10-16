@@ -1,3 +1,4 @@
+import { serializeReferenceProfile } from "../mirror/reference-profile";
 import type {
   Action,
   ValidationResult,
@@ -148,6 +149,13 @@ export class ActionValidator {
             message: "Project name is required and must be a string",
             path: "params.name",
           });
+        }
+        break;
+
+      case "project/setMirrorProfile":
+        if (action.params.profile !== null) {
+          try { serializeReferenceProfile(action.params.profile); }
+          catch { errors.push({ code: "INVALID_PARAMS", message: "Invalid EditDNA profile", path: "params.profile" }); }
         }
         break;
 

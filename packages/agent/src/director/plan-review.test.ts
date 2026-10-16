@@ -35,6 +35,15 @@ const plan: EditPlan = {
 };
 
 describe("edit plan review", () => {
+  it("scores the ordered rhythm of a measured reference instead of only cut rate", () => {
+    const same = reviewEditPlan(plan, undefined, { shots: [], rhythmCurve: [2, 2] });
+    const different = reviewEditPlan(plan, undefined, { shots: [], rhythmCurve: [0.2, 3.8] });
+    expect(same.profile.rhythmCurve).toEqual([2, 2]);
+    expect(same.rhythmScore).toBe(1);
+    expect(different.rhythmScore).toBeLessThan(same.rhythmScore!);
+    expect(different.score).toBeLessThan(same.score);
+  });
+
   it("measures plan style and accepts a matching target", () => {
     const profile = measureEditPlanStyle(plan);
     expect(profile.cutsPerMinute).toBe(30);
