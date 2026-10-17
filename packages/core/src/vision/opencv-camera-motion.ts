@@ -22,8 +22,24 @@ export async function loadOpenCv(): Promise<typeof OpenCV> {
   }
   throw new Error("OpenCV did not initialize; use the JS motion backend");
 }
-type PointPair = [number, number, number, number];
-function fit(pairs: readonly PointPair[]) {
+let loggedMissingAffineWarning = false;
+
+/** The installed OpenCV.js typings advertise estimateAffinePartial2D, but the
+ * shipped runtime does not expose it. Probe the runtime, never the types. */
+export function hasNativeAffineEstimator(cv: Record<string, unknown>): boolean {
+  const available = typeof cv.estimateAffinePartial2D === "function";
+  if (!available && !loggedMissingAffineWarning) {
+    loggedMissingAffineWarning = true;
+    console.warn("[kove/mirror] cv.estimateAffinePartial2D is unavailable at runtime; using the JS least-squares similarity fallback.");
+  }
+  return available;
+}
+
+export type PointPair = readonly [number, number, number, number];
+/** The existing JS partial-affine least-squares fit used by the LK/RANSAC
+ * fallback. x' = a*x - b*y + tx; y' = b*x + a*y + ty. */
+export function fitTrackedPointSimilarity(pairs: readonly PointPair[]) {
+  if (pairs.length < 2 || pairs.some((pair) => pair.some((value) => !Number.isFinite(value)))) return null;
   const n = pairs.length;
   const mx = pairs.reduce((s, p) => s + p[0], 0) / n, my = pairs.reduce((s, p) => s + p[1], 0) / n;
   const nx = pairs.reduce((s, p) => s + p[2], 0) / n, ny = pairs.reduce((s, p) => s + p[3], 0) / n;
@@ -38,6 +54,10 @@ function fit(pairs: readonly PointPair[]) {
 }
 /** Sparse LK + deterministic two-point RANSAC + least-squares refit. Returns null if not enough tracks. */
 export function extractFrameMotion(cv: typeof OpenCV, previous: OpenCV.Mat, current: OpenCV.Mat, frame: number): CameraMotionSample | null {
+  // This extractor deliberately uses its tested JS estimator even when a
+  // future OpenCV runtime exposes the native function; the probe makes the
+  // current missing capability explicit rather than trusting its typings.
+  hasNativeAffineEstimator(cv as unknown as Record<string, unknown>);
   const prevPts = new cv.Mat(), nextPts = new cv.Mat(), status = new cv.Mat(), errors = new cv.Mat();
   try {
     cv.goodFeaturesToTrack(previous, prevPts, 200, 0.01, 8);
@@ -53,14 +73,14 @@ export function extractFrameMotion(cv: typeof OpenCV, previous: OpenCV.Mat, curr
     // Fixed pair schedule for reproducible measurement; two tracks determine a similarity transform.
     for (let k = 0; k < Math.min(80, pairs.length * 2); k++) {
       const first = k % pairs.length, second = (first + 1 + (k * 37) % (pairs.length - 1)) % pairs.length;
-      const transform = fit([pairs[first], pairs[second]]);
+      const transform = fitTrackedPointSimilarity([pairs[first]!, pairs[second]!]);
       if (!transform) continue;
       const { a, b, tx, ty } = transform;
       const inliers = pairs.filter(([x, y, X, Y]) => Math.hypot(a*x - b*y + tx - X, b*x + a*y + ty - Y) < 3);
       if (inliers.length > best.length) best = inliers;
     }
     if (best.length < 6) return null;
-    const transform = fit(best);
+    const transform = fitTrackedPointSimilarity(best);
     if (!transform) return null;
     const { a, b, tx, ty } = transform, scale = Math.hypot(a, b);
     if (!Number.isFinite(scale) || scale < 0.75 || scale > 1.25) return null;

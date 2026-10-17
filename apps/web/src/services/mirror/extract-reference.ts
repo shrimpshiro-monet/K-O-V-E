@@ -1,14 +1,18 @@
 import { openIndexedVideoFrames } from "@kove-advanced/core/mirror/decoded-frames";
-import { locateCutFrame } from "@kove-advanced/core/mirror/cut-boundary";
+import { refineCutFrameByPeak } from "@kove-advanced/core/mirror/cut-boundary";
 import { frameToSeconds, secondsToFrame, type FrameRate } from "@kove-advanced/core/mirror/timebase";
 import { computeLabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import { loadOpenCv, extractFrameMotion } from "@kove-advanced/core/vision/opencv-camera-motion";
 import { classifyDominantMove, type CameraMotionSample } from "@kove-advanced/core/vision/camera-motion-extractor";
 import { createReferenceProfile, type ReferenceProfile, type ShotProfile } from "@kove-advanced/core/mirror/reference-profile";
 
+/** Tuned against the existing normalized, sampled-RGB difference signal.
+ * Never reuse this value for luma or another signal without recalibration. */
+const CUT_DIFFERENCE_THRESHOLD = 0.23;
+
 /** Bounded, local decoder pass. No media bytes leave the browser or enter the DNA artifact.
  * Cuts use frame difference; camera motion uses sparse patch correspondences + least-squares similarity fit.
- * Sampling at <= 4 fps limits temporal accuracy: never promise frame-exact cuts from this fallback. */
+ * Sparse HTML seeking is limited to <= 4 fps: never promise frame-exact cuts from that fallback. */
 export interface ReferenceClock {
   fps: FrameRate;
   fpsSource: ReferenceProfile["fpsSource"];
@@ -75,6 +79,12 @@ export async function extractReference(file: Blob, clock: ReferenceClock): Promi
     try { cv = await loadOpenCv(); } catch { /* sparse JS matcher remains available */ }
     let previousMat: InstanceType<NonNullable<typeof cv>["Mat"]> | null = null;
     const stepFrames = indexed && durationFrames <= 600 ? 1 : Math.max(1, Math.ceil(durationFrames / 600), Math.ceil(fps.num / fps.den / 4));
+    // One warnings path for decoder precision, sparse sampling and low-confidence cuts.
+    const warnings: string[] = !indexed
+      ? ["Indexed WebCodecs decoder unavailable: HTML video seeks may not decode exact requested frames. Verify critical cuts manually."]
+      : stepFrames > 1
+        ? ["Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames."]
+        : [];
     const frames = Math.ceil(durationFrames / stepFrames);
     const shots: ShotProfile[] = [];
     let previous: Uint8ClampedArray | null = null;
@@ -89,9 +99,18 @@ export async function extractReference(file: Blob, clock: ReferenceClock): Promi
       const frame = Math.min(durationFrames - 1, i * stepFrames);
       const pixels = await readFrame(frame);
       // A sampled frame's grade is measured; each shot keeps the first non-boundary sample.
-      const cut = previous && difference(previous, pixels) > 0.23;
+      const cut = previous && difference(previous, pixels) > CUT_DIFFERENCE_THRESHOLD;
       let boundary: number | null = null;
-      if (cut) boundary = await locateCutFrame(previousFrame, frame, readFrame, difference, 0.23);
+      if (cut) {
+        const refined = await refineCutFrameByPeak({
+          startFrame: previousFrame, endFrame: frame + 1,
+          read: readFrame, difference, threshold: CUT_DIFFERENCE_THRESHOLD,
+        });
+        boundary = refined.frame;
+        if (!refined.isHardCut) warnings.push(
+          `Shot boundary near frame ${refined.frame} looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.`,
+        );
+      }
       if (boundary !== null) finish(boundary);
       else if (previous) {
         let sample: CameraMotionSample | null = null;
@@ -113,7 +132,7 @@ export async function extractReference(file: Blob, clock: ReferenceClock): Promi
     }
     } finally { previousMat?.delete(); indexed?.close(); }
     finish(durationFrames);
-    const profile = createReferenceProfile({ aspectRatio: { width: video.videoWidth, height: video.videoHeight }, fps, fpsSource: clock.fpsSource, durationFrames, shots, beatGridMs: [], ...(clock.sampleAspectRatio && { sampleAspectRatio: clock.sampleAspectRatio }), ...(clock.codedDimensions && { codedDimensions: clock.codedDimensions }), ...(clock.rotationDegrees !== undefined && { rotationDegrees: clock.rotationDegrees }), warnings: !indexed ? ["Indexed WebCodecs decoder unavailable: HTML video seeks may not decode exact requested frames. Verify critical cuts manually."] : stepFrames > 1 ? ["Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames."] : [] });
+    const profile = createReferenceProfile({ aspectRatio: { width: video.videoWidth, height: video.videoHeight }, fps, fpsSource: clock.fpsSource, durationFrames, shots, beatGridMs: [], ...(clock.sampleAspectRatio && { sampleAspectRatio: clock.sampleAspectRatio }), ...(clock.codedDimensions && { codedDimensions: clock.codedDimensions }), ...(clock.rotationDegrees !== undefined && { rotationDegrees: clock.rotationDegrees }), warnings });
     return profile;
   } finally { video.removeAttribute("src"); video.load(); URL.revokeObjectURL(url); }
 }

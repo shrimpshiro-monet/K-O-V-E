@@ -7,6 +7,10 @@ export interface ShotProfile {
   startFrame: number;
   endFrame: number;
   captionWindows: Array<{ startFrame: number; endFrame: number; text?: string }>;
+  /** Canonical, frame-indexed motion measurement lives in cameraMotion.samples.
+   * The existing dominantMove is derived from samples for v2 compatibility.
+   * Do not introduce a sibling `camera` field or independently stored summary:
+   * derive new classifications from these samples to avoid two sources of truth. */
   cameraMotion?: CameraMotionCurve;
   colorStats?: LabStats;
 }
