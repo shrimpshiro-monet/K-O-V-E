@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { locateCutFrame, refineCutFrameByPeak } from "./cut-boundary";
+import { InvalidCutDifferenceError, locateCutFrame, refineCutFrameByPeak } from "./cut-boundary";
 
 function harness(values: number[]) {
   return {
@@ -50,6 +50,7 @@ describe("peak refinement on the existing inclusive-frame candidate bracket", ()
     for (const [startFrame, endFrame] of [[0, 1], [-1, 2], [0.5, 2], [0, Number.MAX_SAFE_INTEGER + 1]]) {
       await expect(refineCutFrameByPeak({ startFrame, endFrame, read, difference, threshold: 0.23 })).rejects.toThrow();
     }
-    await expect(refineCutFrameByPeak({ startFrame: 0, endFrame: 2, read, difference: () => NaN, threshold: 0.23 })).rejects.toThrow(/difference/);
+    await expect(refineCutFrameByPeak({ startFrame: 0, endFrame: 2, read, difference: () => NaN, threshold: 0.23 })).rejects.toThrow(InvalidCutDifferenceError);
+    await expect(refineCutFrameByPeak({ startFrame: 0, endFrame: 2, read, difference: () => -1, threshold: 0.23 })).rejects.toThrow(InvalidCutDifferenceError);
   });
 });

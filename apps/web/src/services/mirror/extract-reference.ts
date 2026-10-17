@@ -1,5 +1,5 @@
 import { openIndexedVideoFrames } from "@kove-advanced/core/mirror/decoded-frames";
-import { refineCutFrameByPeak } from "@kove-advanced/core/mirror/cut-boundary";
+import { InvalidCutDifferenceError, locateCutFrame, refineCutFrameByPeak } from "@kove-advanced/core/mirror/cut-boundary";
 import { frameToSeconds, secondsToFrame, type FrameRate } from "@kove-advanced/core/mirror/timebase";
 import { computeLabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import { loadOpenCv, extractFrameMotion } from "@kove-advanced/core/vision/opencv-camera-motion";
@@ -99,17 +99,47 @@ export async function extractReference(file: Blob, clock: ReferenceClock): Promi
       const frame = Math.min(durationFrames - 1, i * stepFrames);
       const pixels = await readFrame(frame);
       // A sampled frame's grade is measured; each shot keeps the first non-boundary sample.
-      const cut = previous && difference(previous, pixels) > CUT_DIFFERENCE_THRESHOLD;
+      const coarseDifference = previous ? difference(previous, pixels) : null;
+      if (coarseDifference !== null && (!Number.isFinite(coarseDifference) || coarseDifference < 0)) {
+        // Do not promote a corrupt sample to the anchor for the next bracket.
+        warnings.push(`Cut candidate ending at frame ${frame} had an invalid coarse difference; no boundary inferred.`);
+        continue;
+      }
+      const cut = coarseDifference !== null && coarseDifference > CUT_DIFFERENCE_THRESHOLD;
       let boundary: number | null = null;
       if (cut) {
-        const refined = await refineCutFrameByPeak({
-          startFrame: previousFrame, endFrame: frame + 1,
-          read: readFrame, difference, threshold: CUT_DIFFERENCE_THRESHOLD,
-        });
-        boundary = refined.frame;
-        if (!refined.isHardCut) warnings.push(
-          `Shot boundary near frame ${refined.frame} looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.`,
-        );
+        try {
+          const refined = await refineCutFrameByPeak({
+            startFrame: previousFrame, endFrame: frame + 1,
+            read: readFrame, difference, threshold: CUT_DIFFERENCE_THRESHOLD,
+          });
+          boundary = refined.frame;
+          if (!refined.isHardCut) warnings.push(
+            `Shot boundary near frame ${refined.frame} looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.`,
+          );
+        } catch (error) {
+          // Only a malformed numeric measurement gets the conservative retry.
+          // Real decoder/seek failures still propagate instead of inventing a cut.
+          if (!(error instanceof InvalidCutDifferenceError)) throw error;
+          try {
+            let checkedFrame = previousFrame;
+            boundary = await locateCutFrame(previousFrame, frame, readFrame, (a, b) => {
+              checkedFrame++;
+              const value = difference(a, b);
+              if (!Number.isFinite(value) || value < 0) throw new InvalidCutDifferenceError(checkedFrame);
+              return value;
+            }, CUT_DIFFERENCE_THRESHOLD);
+            warnings.push(boundary === null
+              ? `Peak refinement near frame ${frame} had an invalid difference; the first-crossing retry found no verified boundary.`
+              : `Peak refinement near frame ${frame} had an invalid difference; using first threshold crossing at frame ${boundary} (lower-confidence).`);
+          } catch (retryError) {
+            if (!(retryError instanceof InvalidCutDifferenceError)) throw retryError;
+            // A persistently invalid signal cannot support either estimator.
+            // Keep shots contiguous, but do not publish a fabricated boundary.
+            boundary = null;
+            warnings.push(`Cut candidate between frames ${previousFrame} and ${frame} had persistently invalid differences; no boundary inferred.`);
+          }
+        }
       }
       if (boundary !== null) finish(boundary);
       else if (previous) {

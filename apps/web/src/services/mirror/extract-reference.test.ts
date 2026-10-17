@@ -24,46 +24,68 @@ function valueAt(frame: number): number {
   return Math.round(224 - (frame - 16) * 18); // gradual fade from frames 17..24
 }
 
-describe("extractReference peak boundary wiring", () => {
-  it("selects the stronger cut, tiles half-open shots, and warns about a gradual transition", async () => {
-    URL.createObjectURL = vi.fn(() => "blob:synthetic");
-    URL.revokeObjectURL = vi.fn();
-    let currentTime = 0;
-    const video = {
-      duration: 32 / 30, videoWidth: 160, videoHeight: 160, readyState: 2,
-      preload: "", muted: false, src: "", onseeked: null as (() => void) | null,
-      set onloadedmetadata(handler: (() => void) | null) { if (handler) queueMicrotask(handler); },
-      set onloadeddata(_handler: (() => void) | null) {},
-      set onerror(_handler: (() => void) | null) {},
-      get currentTime() { return currentTime; },
-      set currentTime(value: number) { currentTime = value; queueMicrotask(() => video.onseeked?.()); },
-      removeAttribute: vi.fn(), load: vi.fn(),
-    };
-    const context = {
-      drawImage: vi.fn(),
-      getImageData: (_x: number, _y: number, width: number, height: number) => {
-        const intensity = valueAt(Math.floor(currentTime * 30));
-        const data = new Uint8ClampedArray(width * height * 4);
-        for (let i = 0; i < data.length; i += 4) {
-          data[i] = intensity; data[i + 1] = intensity; data[i + 2] = intensity; data[i + 3] = 255;
-        }
-        return { data };
-      },
-    };
-    const canvas = { width: 0, height: 0, getContext: () => context };
-    const createElement = document.createElement.bind(document);
-    vi.spyOn(document, "createElement").mockImplementation(((tag: string) =>
-      tag === "video" ? video : tag === "canvas" ? canvas : createElement(tag)) as typeof document.createElement);
+/** An HTML-video fallback fixture; do not mistake these mocked pixels for
+ * proof of accurate browser seeking on real footage. */
+async function extractFixture(options: { invalidAt?: number; decoderFailsAt?: number } = {}) {
+  URL.createObjectURL = vi.fn(() => "blob:synthetic");
+  URL.revokeObjectURL = vi.fn();
+  let currentTime = 0;
+  const video = {
+    duration: 32 / 30, videoWidth: 160, videoHeight: 160, readyState: 2,
+    preload: "", muted: false, src: "", onseeked: null as (() => void) | null,
+    set onloadedmetadata(handler: (() => void) | null) { if (handler) queueMicrotask(handler); },
+    set onloadeddata(_handler: (() => void) | null) {},
+    set onerror(_handler: (() => void) | null) {},
+    get currentTime() { return currentTime; },
+    set currentTime(value: number) { currentTime = value; queueMicrotask(() => video.onseeked?.()); },
+    removeAttribute: vi.fn(), load: vi.fn(),
+  };
+  const context = {
+    drawImage: vi.fn(),
+    getImageData: (_x: number, _y: number, width: number, height: number) => {
+      const frame = Math.floor(currentTime * 30);
+      if (frame === options.decoderFailsAt) throw new Error("Decoder failed");
+      // An empty pixel buffer makes the existing sampled-RGB difference NaN.
+      if (frame === options.invalidAt) return { data: new Uint8ClampedArray(0) };
+      const intensity = valueAt(frame);
+      const data = new Uint8ClampedArray(width * height * 4);
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = intensity; data[i + 1] = intensity; data[i + 2] = intensity; data[i + 3] = 255;
+      }
+      return { data };
+    },
+  };
+  const canvas = { width: 0, height: 0, getContext: () => context };
+  const createElement = document.createElement.bind(document);
+  vi.spyOn(document, "createElement").mockImplementation(((tag: string) =>
+    tag === "video" ? video : tag === "canvas" ? canvas : createElement(tag)) as typeof document.createElement);
+  return extractReference(new Blob(["synthetic"]), { fps: { num: 30, den: 1 }, fpsSource: "user" });
+}
 
-    const profile = await extractReference(new Blob(["synthetic"]), { fps: { num: 30, den: 1 }, fpsSource: "user" });
-    expect(profile.shots.map(({ startFrame, endFrame }) => [startFrame, endFrame])).toEqual([
-      [0, 4], [4, expect.any(Number)], [expect.any(Number), 32],
-    ]);
-    const fadeFrame = profile.shots[1]!.endFrame;
-    expect(fadeFrame).toBeGreaterThanOrEqual(17);
-    expect(fadeFrame).toBeLessThanOrEqual(24);
-    expect(profile.shots[2]!.startFrame).toBe(fadeFrame);
+const intervals = (profile: Awaited<ReturnType<typeof extractReference>>) =>
+  profile.shots.map(({ startFrame, endFrame }) => [startFrame, endFrame]);
+
+describe("extractReference peak boundary wiring", () => {
+  it("selects the exact stronger cut, tiles half-open shots, and warns about a gradual transition", async () => {
+    const profile = await extractFixture();
+    expect(intervals(profile)).toEqual([[0, 4], [4, 17], [17, 32]]);
     expect(profile.warnings).toContain("Indexed WebCodecs decoder unavailable: HTML video seeks may not decode exact requested frames. Verify critical cuts manually.");
     expect(profile.warnings).toEqual(expect.arrayContaining([expect.stringContaining("gradual transition")]));
+  });
+
+  it("falls back to the first VERIFIED crossing with a lower-confidence warning on a malformed peak measurement", async () => {
+    const profile = await extractFixture({ invalidAt: 4 });
+    expect(intervals(profile)).toEqual([[0, 2], [2, 17], [17, 32]]);
+    expect(profile.warnings).toEqual(expect.arrayContaining([expect.stringContaining("using first threshold crossing at frame 2 (lower-confidence)")]));
+  });
+
+  it("omits an unmeasurable cut instead of inventing a boundary when both strategies see invalid data", async () => {
+    const profile = await extractFixture({ invalidAt: 1 });
+    expect(intervals(profile)).toEqual([[0, 17], [17, 32]]);
+    expect(profile.warnings).toEqual(expect.arrayContaining([expect.stringContaining("persistently invalid differences; no boundary inferred")]));
+  });
+
+  it("does not swallow a real decoder failure", async () => {
+    await expect(extractFixture({ decoderFailsAt: 4 })).rejects.toThrow("Decoder failed");
   });
 });

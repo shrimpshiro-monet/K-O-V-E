@@ -22,6 +22,15 @@ export async function locateCutFrame<T>(
   return null;
 }
 
+/** A malformed measurement, not a decoder/read failure. Callers may retry with
+ * a conservative strategy, but must never use this value as a peak. */
+export class InvalidCutDifferenceError extends Error {
+  constructor(frame: number) {
+    super(`refineCutFrameByPeak: difference at frame ${frame} must be finite and nonnegative`);
+    this.name = "InvalidCutDifferenceError";
+  }
+}
+
 export interface PeakRefinementOptions<T> {
   /** Inclusive anchor frame of the candidate bracket. */
   startFrame: number;
@@ -61,7 +70,7 @@ export async function refineCutFrameByPeak<T>(
   for (let frame = startFrame + 1; frame < endFrame; frame++) {
     const current = await read(frame);
     const value = difference(previous, current);
-    if (!Number.isFinite(value) || value < 0) throw new Error("refineCutFrameByPeak: difference must be finite and nonnegative");
+    if (!Number.isFinite(value) || value < 0) throw new InvalidCutDifferenceError(frame);
     if (value > bestDifference) {
       bestDifference = value;
       bestFrame = frame;
