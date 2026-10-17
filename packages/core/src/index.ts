@@ -89,6 +89,8 @@ export type { FrameRate } from "./mirror/timebase";
 export { parseReferenceProfile, createReferenceProfile, serializeReferenceProfile } from "./mirror/reference-profile";
 export type { ReferenceProfile, ShotProfile } from "./mirror/reference-profile";
 export { allocateSourceRanges } from "./mirror/allocate-shots";
+export { applyAudioAnnotations } from "./mirror/audio-annotations";
+export type { ReferenceWordTiming, AudioAnnotationInput, AudioAnnotationResult } from "./mirror/audio-annotations";
 export { dtwDistance, rhythmSimilarity } from "./rhythm/dtw";
 export { computeLabStats, applyReinhardTransfer, createReinhardLut } from "./color/reinhard-transfer";
 export type { LabStats } from "./color/reinhard-transfer";

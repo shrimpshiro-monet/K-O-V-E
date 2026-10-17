@@ -10,6 +10,7 @@ import { useProjectStore } from "../../stores/project-store";
 import { toast } from "../../stores/notification-store";
 import { getLiveEditorHost, runExclusive } from "../../services/agent/host-singleton";
 import { extractReference, probeReferenceClock, sampleVideoStats } from "../../services/mirror/extract-reference";
+import { enrichReferenceWithAudio } from "../../services/mirror/enrich-reference-audio";
 
 export function MirrorReferencePanel() {
   const media = useProjectStore((s) => s.project.mediaLibrary.items.filter((m) => m.type === "video"));
@@ -25,12 +26,22 @@ export function MirrorReferencePanel() {
   const extract = async (file: File, clock: ReferenceClock) => {
     setBusy(true); setStatus("Measuring shots, motion and color on this device…");
     try {
-      const next = await extractReference(file, clock);
+      const measured = await extractReference(file, clock);
       getLiveEditorHost().setMirrorReference(file);
+      setStatus(`${measured.shots.length} shots measured. Detecting beats and transcribing captions locally…`);
+      let next = measured;
+      try {
+        next = await enrichReferenceWithAudio(file, measured, { onStatus: setStatus });
+      } catch {
+        next = { ...measured, warnings: [...(measured.warnings ?? []), "Audio annotation enrichment failed; the measured profile is used as-is."] };
+      }
       setPendingFile(null);
       setProfile(next); setReferenceFile(file); setShotIds([]);
       try { sessionStorage.setItem("kove.mirror.profile", serializeReferenceProfile(next)); } catch { /* download still works in privacy mode */ }
-      setStatus(`${next.shots.length} shots measured. ${next.warnings?.join(" ") || "Cut detection checked every decoded frame."} Captions and beats are not extracted yet.`);
+      const captionCount = next.shots.reduce((sum, shot) => sum + shot.captionWindows.length, 0);
+      const beatsPart = next.beatGridMs.length > 0 ? `${next.beatGridMs.length} beats` : "no beats";
+      const captionsPart = captionCount > 0 ? `${captionCount} caption windows` : "no captions";
+      setStatus(`${next.shots.length} shots measured · ${captionsPart} · ${beatsPart}.${next.warnings?.length ? ` ${next.warnings.join(" ")}` : ""}`);
     } catch (error) { toast.error("Reference extraction failed", error instanceof Error ? error.message : "Unknown error"); }
     finally { setBusy(false); }
   };
@@ -118,6 +129,6 @@ export function MirrorReferencePanel() {
       <Button label={busy ? "Working…" : "Mirror Reference 1:1"} onClick={() => { void apply(); }} disabled={busy || !selected.length} />
     </>}
     {status && <p role="status">{status}</p>}
-    <p className="text-text-muted">Grayscale SSIM is measured from decoded/rendered proxies, not semantic parity. LPIPS requires a real model backend; captions are not extracted.</p>
+    <p className="text-text-muted">Grayscale SSIM is measured from decoded/rendered proxies, not semantic parity. LPIPS requires a real model backend. Captions and beats are extracted locally when the reference has audio.</p>
   </div>;
 }
