@@ -91,6 +91,10 @@ export default defineConfig({
     },
   },
   server: {
+    // Distinct from the Vite default 5173 so this worktree never collides
+    // with another local K.O.V.E dev server.
+    port: 5391,
+    strictPort: true,
     headers: {
       "Cross-Origin-Opener-Policy": "same-origin",
       "Cross-Origin-Embedder-Policy": "require-corp",
