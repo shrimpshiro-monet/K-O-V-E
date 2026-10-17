@@ -861,6 +861,17 @@ export class VideoEngine {
                 }
               }
             } catch (error) {
+              if (this.exportMode) {
+                // Export/compositor scoring must never fall through to the
+                // black background on an undecodable image — a silent black
+                // frame reads as a legitimately-scored (terrible) candidate and
+                // will mislead the mirror critic. Fail loudly instead, matching
+                // the effects-engine export contract.
+                throw new Error(
+                  `Failed to create ImageBitmap for image ${mediaItem.id} during export`,
+                  { cause: error },
+                );
+              }
               console.warn(
                 `Failed to create ImageBitmap for image ${mediaItem.id}:`,
                 error,
