@@ -1,6 +1,6 @@
 # FFmpeg — license & attribution
 
-Kove Advanced Desktop bundles a prebuilt **FFmpeg** binary (one per platform/arch
+Kove Advanced Desktop bundles prebuilt **FFmpeg** and **FFprobe** binaries (one per platform/arch
 under `resources/bin/<platform>-<arch>/`) which it invokes **as a separate
 process** for video/audio export, transcoding, and stream probing. FFmpeg is not
 linked into the Kove Advanced application; it is executed across the OS process
@@ -63,3 +63,5 @@ physical medium for no more than our reasonable cost of distribution.
 Kove Advanced Desktop (the Electron application and its own source) is **not** a
 derivative work of FFmpeg and is licensed separately. Only the FFmpeg binaries in
 `resources/bin/` are covered by the GPL terms above.
+
+FFprobe is staged from pinned `@ffprobe-installer/<platform>-<arch>` npm packages by `scripts/fetch-ffmpeg.mjs`; its version, SHA-256, upstream and declared license are recorded per slot in the generated manifest. The macOS arm64 package declares LGPL-2.1; macOS x64, Linux x64, and Windows x64 packages declare GPL-3.0. Inspect upstream build configuration before redistribution. The probe is executed out of process.

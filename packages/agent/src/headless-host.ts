@@ -13,6 +13,10 @@ import type { AudioSamples, EditingHost, HostFeatures, JobKind, JobResult, JobRu
 export interface HeadlessHostOptions {
   readonly history?: ActionHistory;
   readonly jobRunner?: JobRunner;
+  /** Supply real decoded reference + rendered timeline frames (e.g. via ffmpeg and a compositor).
+   * Without this runner mirror_refine reports UNSUPPORTED_HOST rather than fake scores. */
+  readonly mirrorFrameRunner?: NonNullable<EditingHost["sampleMirrorFrame"]>;
+  readonly lpipsRunner?: NonNullable<EditingHost["lpipsMirrorFrames"]>;
   /** Supplies decoded audio for analysis tools (measure_loudness). Without it they report UNSUPPORTED_HOST. */
   readonly audioSource?: (mediaId: string, audioTrackIndex: number) => Promise<AudioSamples | null>;
   /**
@@ -35,6 +39,8 @@ export class HeadlessHost implements EditingHost {
   private readonly executor: ActionExecutor;
   private readonly history: ActionHistory;
   private readonly jobRunner?: JobRunner;
+  private readonly mirrorFrameRunner?: HeadlessHostOptions["mirrorFrameRunner"];
+  private readonly lpipsRunner?: HeadlessHostOptions["lpipsRunner"];
   private readonly audioSource?: HeadlessHostOptions["audioSource"];
   private readonly measureRunner?: HeadlessHostOptions["measureRunner"];
   private txnCounter = 0;
@@ -47,6 +53,8 @@ export class HeadlessHost implements EditingHost {
     this.history = options.history ?? new ActionHistory();
     this.executor = new ActionExecutor(this.history);
     this.jobRunner = options.jobRunner;
+    this.mirrorFrameRunner = options.mirrorFrameRunner;
+    this.lpipsRunner = options.lpipsRunner;
     this.audioSource = options.audioSource;
     this.measureRunner = options.measureRunner;
     this.ledger = new HistoryLedger(this.historyBackend());
@@ -56,6 +64,8 @@ export class HeadlessHost implements EditingHost {
   features(): HostFeatures {
     const hasRunner = this.jobRunner !== undefined;
     return {
+      mirrorFrames: this.mirrorFrameRunner !== undefined,
+      lpipsMirrorFrames: this.lpipsRunner !== undefined,
       renderMotionFrame: hasRunner,
       renderTimelineFrame: false,
       renderMulticamPreview: false,
@@ -70,6 +80,16 @@ export class HeadlessHost implements EditingHost {
       autoReframe: false,
       refineMatteEdges: false,
     };
+  }
+
+  async sampleMirrorFrame(request: Parameters<NonNullable<EditingHost["sampleMirrorFrame"]>>[0]) {
+    if (!this.mirrorFrameRunner) throw new Error("Headless reference decoder and timeline renderer are not configured");
+    return this.mirrorFrameRunner(request);
+  }
+
+  async lpipsMirrorFrames(reference: Parameters<NonNullable<EditingHost["lpipsMirrorFrames"]>>[0], candidate: Parameters<NonNullable<EditingHost["lpipsMirrorFrames"]>>[1]) {
+    if (!this.lpipsRunner) throw new Error("LPIPS model is not configured");
+    return this.lpipsRunner(reference, candidate);
   }
 
   loadAudioSamples(mediaId: string, audioTrackIndex = 0): Promise<AudioSamples | null> {

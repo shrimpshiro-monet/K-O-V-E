@@ -282,6 +282,12 @@ export interface KoveAdvancedBridge {
       audioBitrateKbps?: number;
     }): Promise<{ outPath: string }>;
     extractAudioWav(args: { srcPath: string; streamIndex?: number }): Promise<{ outPath: string }>;
+    getPathForFile(file: File): string;
+    probeVideoStream(args: { srcPath: string }): Promise<{
+      fps: { num: number; den: number } | null; durationSeconds: number | null;
+      width: number; height: number; sampleAspectRatio: { num: number; den: number } | null;
+      rotationDegrees: number | null; variableFrameRate: boolean;
+    }>;
     probeAudioStreams(args: { srcPath: string }): Promise<{
       streams: { index: number; codec: string; channels: number; sampleRate: number; language?: string }[];
     }>;

@@ -21,6 +21,8 @@
 // darwin host fetches both mac slots.
 
 import { createHash } from "node:crypto";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
 import {
   mkdir,
   writeFile,
@@ -203,7 +205,7 @@ async function fetchSlot(slot) {
   return slot;
 }
 
-async function writeManifest(slots) {
+async function writeManifest(slots, probes) {
   const manifestPath = path.join(BIN_ROOT, "MANIFEST.json");
   let existing = {};
   if (await fileExists(manifestPath)) {
@@ -221,13 +223,14 @@ async function writeManifest(slots) {
       ffmpegVersion: cfg.ffmpegVersion,
       source: cfg.source,
       sha256: cfg.binSha256,
+      ffprobe: probes[slot],
     };
   }
   const manifest = {
     license:
       "All binaries are GPL FFmpeg builds invoked as a separate process. See LICENSES/FFMPEG.md. None are built --enable-nonfree (enforced at fetch time).",
     binaries,
-    note: "Binaries are gitignored. Run `pnpm --filter @kove-advanced/desktop fetch:ffmpeg` (host slots) or `node scripts/fetch-ffmpeg.mjs --all`. Sources/versions differ per slot (see each entry); digests are verified on every fetch.",
+    note: "Binaries are gitignored. Run `pnpm --filter @kove-advanced/desktop fetch:ffmpeg` (host slots) or `node scripts/fetch-ffmpeg.mjs --all`. Sources/versions differ per slot (see each entry); digests are verified on every fetch. FFprobe is staged from pinned @ffprobe-installer platform packages; per-slot hashes and licenses are listed above.",
   };
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
@@ -240,7 +243,23 @@ async function main() {
   for (const slot of slots) {
     await fetchSlot(slot);
   }
-  await writeManifest(slots);
+  // ffprobe is a separately packaged, pinned npm binary. Copy into the same
+  // extraResources slot: asar/node_modules is not executable at runtime.
+  const resolveProbe = createRequire(require.resolve("@ffprobe-installer/ffprobe"));
+  const probes = {};
+  for (const slot of slots) {
+    const bin = slot.startsWith("win32") ? "ffprobe.exe" : "ffprobe";
+    const source = resolveProbe.resolve(`@ffprobe-installer/${slot}/${bin}`);
+    const target = path.join(BIN_ROOT, slot, bin);
+    const bytes = await readFile(source);
+    if (bytes.includes(NONFREE)) throw new Error(`${slot}: non-redistributable ffprobe build`);
+    await writeFile(target, bytes);
+    await chmod(target, 0o755);
+    const upstream = resolveProbe(`@ffprobe-installer/${slot}/package.json`);
+    probes[slot] = { file: `${slot}/${bin}`, version: upstream.ffprobe, source: upstream.homepage, license: upstream.license, sha256: sha256(bytes) };
+    console.log(`[ffprobe] ${slot}: staged from pinned @ffprobe-installer/${slot} (${sha256(bytes)})`);
+  }
+  await writeManifest(slots, probes);
   console.log(`[ffmpeg] done: ${slots.join(", ")}`);
 }
 

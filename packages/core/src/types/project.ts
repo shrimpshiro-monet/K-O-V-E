@@ -24,6 +24,8 @@ export interface ProjectSettings {
 }
 
 export interface Project {
+  /** DNA-only reference structure; never media bytes. */
+  readonly mirrorProfile?: import("../mirror/reference-profile").ReferenceProfile;
   readonly id: string;
   readonly name: string;
   readonly createdAt: number;

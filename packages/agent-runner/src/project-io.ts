@@ -31,6 +31,12 @@ function serializer(): ProjectSerializer {
   return new ProjectSerializer(noopStorage);
 }
 
+// The mirror compositor uses the same versioned, blob-free project serialization
+// as saved projects; media bytes are bound to the snapshot separately.
+export function serializeProjectSnapshot(project: Project): string {
+  return serializer().exportToJson(project);
+}
+
 export function createEmptyProject(
   name?: string,
   settings?: Partial<ProjectSettings>,

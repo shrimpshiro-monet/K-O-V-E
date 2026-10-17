@@ -164,6 +164,9 @@ export class InverseActionGenerator {
           name: projectBefore.name,
         });
 
+      case "project/setMirrorProfile":
+        return this.createInverseAction(action, "project/setMirrorProfile", { profile: projectBefore.mirrorProfile ?? null });
+
       case "project/updateSettings":
         return this.createInverseAction(action, "project/updateSettings", {
           ...projectBefore.settings,

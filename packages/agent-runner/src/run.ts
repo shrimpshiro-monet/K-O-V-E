@@ -10,6 +10,7 @@ import type { LLMClient, RunTurnResult, JobRunner } from "@kove-advanced/agent";
 import type { Project } from "@kove-advanced/core/types/project";
 import { makeNodeLLMClient, type LlmProvider } from "./node-llm";
 import { loadProjectFile, saveProjectFile } from "./project-io";
+import { createCompositorMirrorFrameRunner } from "./mirror-frame-runner";
 
 export interface HeadlessEditOptions {
   readonly project: Project;
@@ -24,6 +25,14 @@ export interface HeadlessEditOptions {
   readonly limits?: { maxSteps?: number; maxToolCalls?: number };
   readonly dryRun?: boolean;
   readonly fetchFn?: typeof fetch;
+  /** Opt in to real FFmpeg reference + Chromium timeline sampling for mirror_refine.
+   * mediaPaths binds serialized media IDs to local files; absent media fails. */
+  readonly mirror?: {
+    referencePath: string;
+    mediaPaths?: Readonly<Record<string, string>>;
+    ffmpegPath?: string;
+    chromiumExecutablePath?: string;
+  };
 }
 
 export interface HeadlessEditResult {
@@ -37,34 +46,42 @@ export interface HeadlessEditResult {
 export async function runHeadlessEdit(
   opts: HeadlessEditOptions,
 ): Promise<HeadlessEditResult> {
-  const host = new HeadlessHost(opts.project, { jobRunner: opts.jobRunner });
-  const llm =
-    opts.llm ??
-    makeNodeLLMClient({
-      provider: opts.provider,
-      model: opts.model,
-      apiKey: opts.apiKey,
-      maxTokens: opts.maxTokens,
-      fetchFn: opts.fetchFn,
-    });
-  const selectedToolNames = selectToolsForPrompt(opts.prompt);
-  const tools =
-    opts.provider === "anthropic"
-      ? toAnthropicTools(selectedToolNames)
-      : toOpenAITools(selectedToolNames);
-
-  const result = await runTurn({
-    host,
-    llm,
-    tools,
-    system: buildSystemPrompt(host, selectedToolNames),
-    messages: [{ role: "user", content: opts.prompt }],
-    limits: opts.limits,
-    dryRun: opts.dryRun,
-    turnLabel: "Headless edit",
+  const mirror = opts.mirror && createCompositorMirrorFrameRunner({
+    ...opts.mirror,
+    getProject: (): Project => host.getProject(),
   });
+  const host: HeadlessHost = new HeadlessHost(opts.project, { jobRunner: opts.jobRunner, mirrorFrameRunner: mirror?.sample });
+  try {
+    const llm =
+      opts.llm ??
+      makeNodeLLMClient({
+        provider: opts.provider,
+        model: opts.model,
+        apiKey: opts.apiKey,
+        maxTokens: opts.maxTokens,
+        fetchFn: opts.fetchFn,
+      });
+    const selectedToolNames = selectToolsForPrompt(opts.prompt);
+    const tools =
+      opts.provider === "anthropic"
+        ? toAnthropicTools(selectedToolNames)
+        : toOpenAITools(selectedToolNames);
 
-  return { project: host.getProject(), result };
+    const result = await runTurn({
+      host,
+      llm,
+      tools,
+      system: buildSystemPrompt(host, selectedToolNames),
+      messages: [{ role: "user", content: opts.prompt }],
+      limits: opts.limits,
+      dryRun: opts.dryRun,
+      turnLabel: "Headless edit",
+    });
+
+    return { project: host.getProject(), result };
+  } finally {
+    await mirror?.close();
+  }
 }
 
 export interface HeadlessEditFileOptions

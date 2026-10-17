@@ -1,4 +1,5 @@
 import type { Action } from "../types/actions";
+import { recordLocalPreference } from "./local-preferences";
 
 export interface HistoryEntry {
   readonly action: Action;
@@ -66,6 +67,7 @@ const ACTION_DESCRIPTIONS: Record<
   "marker/update": () => "Update marker",
   "project/rename": () => "Rename project",
   "project/updateSettings": () => "Update settings",
+  "project/setMirrorProfile": () => "Attach EditDNA",
   "project/setCanvasBackground": () => "Change canvas background",
   "project/registerGeneratedShader": () => "Add generated shader",
   "project/removeGeneratedShader": () => "Remove generated shader",
@@ -144,6 +146,7 @@ export class ActionHistory {
   private listeners: Set<() => void> = new Set();
   private lastActionTime: number = 0;
   private autoGroupWindow: number = 100;
+  private preferenceRecorded = new Set<string>();
   /** Monotonic; bumped by every push/undo/redo/clear. Never reset, so it can detect change across clear(). */
   private revision = 0;
 
@@ -164,6 +167,12 @@ export class ActionHistory {
     const now = Date.now();
     const timeSinceLastAction = now - this.lastActionTime;
     this.lastActionTime = now;
+    // Actions surviving a new editing decision beyond the undo window are positive samples.
+    const previous = this.undoStack.at(-1);
+    if (previous && now - previous.timestamp > 8000 && !this.preferenceRecorded.has(previous.action.id)) {
+      recordLocalPreference(previous.action.type, true);
+      this.preferenceRecorded.add(previous.action.id);
+    }
 
     const lastEntry =
       this.undoStack.length > 0
@@ -265,6 +274,10 @@ export class ActionHistory {
   undo(): Action | null {
     const entry = this.undoStack.pop();
     if (entry) {
+      if (Date.now() - entry.timestamp <= 8000 && !this.preferenceRecorded.has(entry.action.id)) {
+        recordLocalPreference(entry.action.type, false);
+        this.preferenceRecorded.add(entry.action.id);
+      }
       this.redoStack.push(entry);
       this.revision += 1;
       this.notify();
@@ -395,6 +408,7 @@ export class ActionHistory {
   clear(): void {
     this.undoStack = [];
     this.redoStack = [];
+    this.preferenceRecorded.clear();
     this.snapshots = [];
     this.currentGroupId = null;
     this.groupDepth = 0;

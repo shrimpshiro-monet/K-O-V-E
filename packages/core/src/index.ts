@@ -81,3 +81,18 @@ export {
   compressionPlanToExportSettings,
   COMPRESSION_SIZE_PRESETS,
 } from "./export/compression";
+
+// Mirror Engine primitives (the OpenCV runtime itself remains lazy-loaded).
+export { locateCutFrame } from "./mirror/cut-boundary";
+export { frameRate, frameToSeconds, secondsToFrame, shotDurationFrames, shotSampleFrame } from "./mirror/timebase";
+export type { FrameRate } from "./mirror/timebase";
+export { parseReferenceProfile, createReferenceProfile, serializeReferenceProfile } from "./mirror/reference-profile";
+export type { ReferenceProfile, ShotProfile } from "./mirror/reference-profile";
+export { allocateSourceRanges } from "./mirror/allocate-shots";
+export { dtwDistance, rhythmSimilarity } from "./rhythm/dtw";
+export { computeLabStats, applyReinhardTransfer, createReinhardLut } from "./color/reinhard-transfer";
+export type { LabStats } from "./color/reinhard-transfer";
+export { classifyDominantMove } from "./vision/camera-motion-extractor";
+export type { CameraMotionCurve, CameraMotionSample } from "./vision/camera-motion-extractor";
+export { compilePresetToGraph, evaluateCraftGraph, validateCraftGraph, toGraph } from "./motion/craft-graph";
+export type { CraftGraph, CraftNode } from "./motion/craft-graph";

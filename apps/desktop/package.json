@@ -12,7 +12,7 @@
     "name": "Kove Advanced",
     "email": "support@kove-advanced.video"
   },
-  "description": "Kove Advanced — open-source professional video editor",
+  "description": "Kove Advanced \u2014 open-source professional video editor",
   "scripts": {
     "build:main": "node scripts/prepare-aurora-native.mjs && tsup",
     "build:renderer": "KOVE_ADVANCED_DESKTOP=1 pnpm --filter @kove-advanced/web build",
@@ -29,6 +29,7 @@
     "dist": "pnpm run fetch:ffmpeg && pnpm run build && electron-builder"
   },
   "dependencies": {
+    "@ffprobe-installer/ffprobe": "2.1.2",
     "electron-updater": "^6.3.9",
     "zod": "^3.23.8"
   },

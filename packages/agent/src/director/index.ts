@@ -26,3 +26,8 @@ export {
 	type DraftSelfReview,
 	type MaterializedDraftSummary,
 } from "./plan-review";
+export { mirrorReference1to1 } from "./mirror/mirror-reference-tool";
+export { refineMirror } from "./mirror/refine-mirror";
+export { runAdaptiveDirector } from "./adaptive-director";
+export { searchBestPlan } from "./plan-optimizer";
+export { scorePlan, computeRhythmAxis } from "./edit-quality-score";

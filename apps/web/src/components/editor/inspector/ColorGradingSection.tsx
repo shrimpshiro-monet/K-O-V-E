@@ -1,3 +1,4 @@
+import { frameToSeconds } from "@kove-advanced/core/mirror/timebase";
 import React, { useCallback, useMemo } from "react";
 import { ToolcraftButton as Button } from "@kove-advanced/ui";
 import { ToolcraftCard as Card } from "@kove-advanced/ui";
@@ -21,6 +22,12 @@ import {
 import { ColorWheelsControl } from "./ColorWheelsControl";
 import { CurvesEditor } from "./CurvesEditor";
 import { LUTLoader } from "./LUTLoader";
+import { createReinhardLut } from "@kove-advanced/core/color/reinhard-transfer";
+import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
+import { sampleVideoStats } from "../../../services/mirror/extract-reference";
+import { getLiveEditorHost, runExclusive } from "../../../services/agent/host-singleton";
+import { executeTool } from "@kove-advanced/agent";
+import { toast } from "../../../stores/notification-store";
 import { HSLControls } from "./HSLControls";
 
 const WHITE_BALANCE_PRESETS: Array<{
@@ -74,6 +81,7 @@ export const ColorGradingSection: React.FC<ColorGradingSectionProps> = ({
   const { getColorGrading, updateColorGrading, resetColorGrading } =
     useProjectStore();
 
+  const [matching, setMatching] = React.useState(false);
   const modifiedAt = useProjectStore((state) => state.project.modifiedAt);
 
   const colorGrading = useMemo(
@@ -169,9 +177,36 @@ export const ColorGradingSection: React.FC<ColorGradingSectionProps> = ({
     resetColorGrading(clipId);
   }, [clipId, resetColorGrading]);
 
+  const matchReference = async () => {
+    setMatching(true);
+    try {
+      const project = useProjectStore.getState().project;
+      let raw: string | null = null;
+      try { raw = sessionStorage.getItem("kove.mirror.profile"); } catch { /* project DNA remains available */ }
+      if (!project.mirrorProfile && !raw) throw new Error("Extract a reference in AI Tools first.");
+      const profile = project.mirrorProfile ?? JSON.parse(raw!) as ReferenceProfile;
+      const clip = project.timeline.tracks.flatMap((track) => track.clips).find((item) => item.id === clipId);
+      const media = project.mediaLibrary.items.find((item) => item.id === clip?.mediaId);
+      const blob = media?.blob ?? await media?.fileHandle?.getFile();
+      if (!clip || !blob) throw new Error("Selected clip's source media is unavailable locally.");
+      if (profile.version !== "kove.mirror.v2") throw new Error("Legacy EditDNA needs an explicit FPS selection before grading.");
+      const origin = profile.shots[0]?.startFrame ?? 0;
+      const shot = profile.shots.find((item) => clip.startTime >= frameToSeconds(item.startFrame - origin, profile.fps) && clip.startTime < frameToSeconds(item.endFrame - origin, profile.fps));
+      if (!shot?.colorStats) throw new Error("No measured reference color for this shot.");
+      const target = await sampleVideoStats(blob, clip.inPoint + Math.min(0.25, clip.duration / 2));
+      const result = await runExclusive(() => executeTool("set_color_grading", {
+        clipId, colorGrading: { ...clip.colorGrading, lut: createReinhardLut(shot.colorStats!, target) },
+      }, getLiveEditorHost()));
+      if (!result.ok) throw new Error(result.error?.message ?? result.summary);
+      toast.success("Reference shot matched", "Applied measured Lab grade as an editable clip LUT.");
+    } catch (error) { toast.error("Match Reference Shot", error instanceof Error ? error.message : "Unknown error"); }
+    finally { setMatching(false); }
+  };
+
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button label={matching ? "Matching…" : "Match Reference Shot"} disabled={matching} variant="ghost" size="sm" onClick={() => { void matchReference(); }} />
         <Button
           label="Reset All"
           icon={<RotateCcw size={10} />}

@@ -5,6 +5,8 @@ export interface StyleProfile {
   readonly version: "1.0.0";
   readonly pacing: StyleProfilePacing;
   readonly cutsPerMinute: number;
+  /** Shot durations in timeline order; unlike median, retains acceleration/deceleration. */
+  readonly rhythmCurve?: readonly number[];
   readonly medianShotDuration: number;
   readonly cutOnBeatRatio: number | null;
   readonly effectDensity: number;
@@ -23,6 +25,7 @@ export interface StyleProfile {
 export interface StyleProfileTarget {
   readonly pacing?: StyleProfilePacing;
   readonly cutsPerMinute?: readonly [number, number];
+  readonly rhythmCurve?: readonly number[];
   readonly cutStyle?: StyleProfileCutStyle;
   readonly effectPalette?: readonly string[];
   readonly transitionPalette?: readonly string[];

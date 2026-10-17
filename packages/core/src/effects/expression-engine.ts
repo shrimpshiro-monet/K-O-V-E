@@ -1,3 +1,4 @@
+import { evaluateCraftGraph, type CraftGraph } from "../motion/craft-graph";
 export interface ExpressionContext {
   time: number;
   value: any;
@@ -43,6 +44,12 @@ export interface ExpressionContext {
 
 export class ExpressionEngine {
   private cache = new Map<string, Function>();
+
+  /** Safe, serializable alternative to arbitrary expression strings. */
+  evaluateGraph(graph: CraftGraph, time: number, resolveReference: (key: string) => number): number {
+    return evaluateCraftGraph(graph, time, resolveReference);
+  }
+
 
   evaluate(expression: string, context: ExpressionContext): any {
     if (!this.cache.has(expression)) {
