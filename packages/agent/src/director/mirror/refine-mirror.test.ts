@@ -11,6 +11,12 @@ describe("render-backed critic", () => {
     expect(applied).toEqual(result.bestKnobs);
     expect(calls).toBe(result.trials);
   });
+  it("keeps exact Mirror refinement sensitive to a uniform 2x timing error", async () => {
+    const result = await refineMirror({ samples: [{ timeSeconds: 0, reference: frame(180) }],
+      referenceDurations: [4, 4, 1, 1], candidateDurations: [8, 8, 2, 2], iterations: 0,
+      apply: async () => {}, render: async () => frame(180) });
+    expect(result.rhythmScore).toBeLessThan(0.8);
+  });
   it("reports LPIPS only when a real model callback is configured", async () => {
     let calls = 0;
     const result = await refineMirror({ samples: [{ timeSeconds: 0, reference: frame(180) }], referenceDurations: [30], candidateDurations: [30], iterations: 0,

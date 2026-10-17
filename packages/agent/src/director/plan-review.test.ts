@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EditPlan } from "@kove-advanced/creation-schema";
+import { rhythmSimilarity } from "@kove-advanced/core/rhythm/dtw";
 import { measureEditPlanStyle, reviewEditPlan, reviewMaterializedDraft } from "./plan-review";
 
 const plan: EditPlan = {
@@ -42,6 +43,14 @@ describe("edit plan review", () => {
     expect(same.rhythmScore).toBe(1);
     expect(different.rhythmScore).toBeLessThan(same.rhythmScore!);
     expect(different.score).toBeLessThan(same.score);
+  });
+
+  it("reviews relative pacing style across duration scales without changing exact Mirror scoring", () => {
+    const retimed = reviewEditPlan(plan, undefined, { shots: [], rhythmCurve: [4, 4] });
+    const differentShape = reviewEditPlan(plan, undefined, { shots: [], rhythmCurve: [1, 7] });
+    expect(rhythmSimilarity([4, 4], [2, 2])).toBeLessThan(1);
+    expect(retimed.rhythmScore).toBe(1);
+    expect(differentShape.rhythmScore).toBeLessThan(retimed.rhythmScore!);
   });
 
   it("measures plan style and accepts a matching target", () => {

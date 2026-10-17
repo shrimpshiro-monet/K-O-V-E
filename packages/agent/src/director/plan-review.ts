@@ -1,4 +1,4 @@
-import { rhythmSimilarity } from "@kove-advanced/core/rhythm/dtw";
+import { tempoInvariantRhythmSimilarity } from "@kove-advanced/core/rhythm/tempo-invariant";
 import type {
   EditDensityReview,
   EditDensityTarget,
@@ -140,7 +140,9 @@ export function reviewEditPlan(
   const profile = measureEditPlanStyle(plan);
   const target = mergeStyleTargets(genreTarget(genre), referenceTarget(referenceAnalysis));
   const baseline = compareStyleProfile(profile, target);
-  const rhythmScore = target.rhythmCurve?.length ? rhythmSimilarity(target.rhythmCurve, profile.rhythmCurve ?? []) : undefined;
+  // Plan review compares style, not exact 1:1 timing. Keep Mirror's measured
+  // reference/refinement rhythmSimilarity on the raw duration clock.
+  const rhythmScore = target.rhythmCurve?.length ? tempoInvariantRhythmSimilarity(target.rhythmCurve, profile.rhythmCurve ?? []) : undefined;
   const comparison = rhythmScore === undefined ? baseline : {
     score: (baseline.score + rhythmScore) / 2,
     deviations: rhythmScore < 0.7 ? [...baseline.deviations, `rhythm shape similarity ${rhythmScore.toFixed(2)} (DTW)`] : baseline.deviations,
