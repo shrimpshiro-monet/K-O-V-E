@@ -7,6 +7,11 @@ import {
 import type { LLMClient } from "@kove-advanced/agent";
 import { apiFetch } from "../api-proxy";
 import type { LlmProvider } from "../../stores/settings-store";
+import {
+  deriveIdempotencyKey,
+  getGatewayToken,
+  parseGatewayError,
+} from "./gateway-session";
 
 const PATHS: Record<LlmProvider, string> = {
   "openai-compatible": "/chat/completions",
@@ -62,14 +67,21 @@ async function gatewayFetch(
   path: string,
   payload: string,
   signal?: AbortSignal,
+  extraHeaders?: Record<string, string>,
 ): Promise<Response> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(extraHeaders ?? {}),
+  };
   const bridge = typeof window !== "undefined" ? window["kove-advanced"] : undefined;
   if (bridge?.platform === "desktop" && bridge.cloud) {
     // Desktop: the main process performs the request with runtime
-    // credentials (env / .dev.vars) and relays the response.
+    // credentials (env / .dev.vars) and relays the response. The session
+    // token + idempotency key ride along so desktop enforces the same
+    // auth/metering contract (see smoke-test checklist).
     const result = await bridge.cloud.fetch("cloudflare", path, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: payload,
     });
     return new Response(result.body, {
@@ -82,22 +94,35 @@ async function gatewayFetch(
   // proxy; production by apps/web/functions/api/llm (Cloudflare Pages).
   return fetch(`/api/llm${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: payload,
     signal,
   });
 }
 
-function makeCloudflareSend(signal?: AbortSignal) {
+function makeCloudflareSend(model: string, signal?: AbortSignal) {
   return async (body: unknown): Promise<unknown> => {
     if (signal?.aborted) {
       throw new DOMException("Aborted", "AbortError");
     }
     // Normalize body: ensure all message content fields are strings
     const normalized = normalizeCloudflareBody(body);
-    const res = await gatewayFetch(CF_LLM_PATH, JSON.stringify(normalized), signal);
+
+    // §2 gateway auth + metering:
+    //  - session token (Clerk JWT) when the app has registered a session;
+    //  - deterministic Idempotency-Key so retries/replays dedup in the ledger.
+    const extraHeaders: Record<string, string> = {};
+    const token = await getGatewayToken();
+    if (token) extraHeaders["Authorization"] = `Bearer ${token}`;
+    extraHeaders["Idempotency-Key"] = await deriveIdempotencyKey(model, normalized);
+
+    const res = await gatewayFetch(CF_LLM_PATH, JSON.stringify(normalized), signal, extraHeaders);
     if (!res.ok) {
       const text = await res.text().catch(() => "");
+      // Structured gateway errors (401 / QUOTA_EXCEEDED / ...) are surfaced as
+      // GatewayLlmError — deliberately NOT retried (they are not transient).
+      const gatewayErr = parseGatewayError(res.status, text);
+      if (gatewayErr) throw gatewayErr;
       throw llmHttpError(
         "cloudflare-ai",
         res.status,
@@ -129,12 +154,13 @@ function normalizeCloudflareBody(body: unknown): unknown {
  * accepted or sent by the client.
  */
 export function makeCloudflareAIClient(opts: CloudflareAIOptions): LLMClient {
-  const send = withRetry(makeCloudflareSend(opts.signal), {
+  const model = opts.model ?? "@cf/google/gemma-4-26b-a4b-it";
+  const send = withRetry(makeCloudflareSend(model, opts.signal), {
     signal: opts.signal,
   });
   return makeClientFromSend({
     provider: "openai",
-    model: opts.model ?? "@cf/google/gemma-4-26b-a4b-it",
+    model,
     maxTokens: opts.maxTokens ?? 4096,
     send,
   });

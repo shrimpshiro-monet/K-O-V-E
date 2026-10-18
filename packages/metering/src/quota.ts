@@ -12,7 +12,7 @@ import {
   type MeteringError,
   type PlanLimits,
   type PlanTier,
-} from "./types";
+} from "./types.ts";
 
 /**
  * Verified session produced by the gateway's auth layer (Clerk JWT verify).

@@ -13,6 +13,11 @@
  * to the correct service-specific header before forwarding.
  */
 
+interface ProxyFunctionContext {
+  readonly request: Request;
+  readonly params: Record<string, string | string[] | undefined>;
+}
+
 interface ServiceConfig {
   baseUrl: string;
   allowedPaths: RegExp;
@@ -106,7 +111,7 @@ function jsonError(
   });
 }
 
-export const onRequest: PagesFunction = async (context) => {
+export const onRequest: (context: ProxyFunctionContext) => Promise<Response> = async (context) => {
   const corsHeaders = getCorsHeaders(context.request);
 
   if (context.request.method === "OPTIONS") {

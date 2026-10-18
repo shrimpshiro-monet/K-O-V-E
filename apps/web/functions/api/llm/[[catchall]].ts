@@ -1,22 +1,43 @@
 /**
  * Server-side LLM gateway (Cloudflare Pages Function) — `/api/llm/*`.
  *
- * This is the ONLY path the web client uses for Cloudflare Workers AI calls.
- * Provider credentials live in Pages secrets (`CLOUDFLARE_API_TOKEN`,
- * `CLOUDFLARE_ACCOUNT_ID` — set via `wrangler pages secret put`) and are
- * attached here, on the server. The client sends an unauthenticated JSON body
- * and never sees a provider token.
+ * The ONLY path the web client uses for model calls. Provider credentials
+ * (Cloudflare Workers AI, and the optional Pro frontier slot) live in Pages
+ * secrets and are attached HERE, on the server — the client never sees a
+ * provider token.
  *
- * PR2 (§2) layers on top of this file: session auth on every request, the
- * usage ledger, plans/quotas/rate limits, and role-based model routing.
- * Until then it is a credential-injecting passthrough with the same hardening
- * as the legacy BYOK proxy (strict CORS, 8 MB streaming body cap, no body
- * logging).
+ * §2 layers on top of the credential-injecting passthrough:
+ *   1. AUTH — every request must carry a valid Clerk JWT (401 otherwise).
+ *   2. ENTITLEMENT — the user's tier (free/pro) is resolved from Supabase.
+ *   3. QUOTA + BUDGET — pre-turn policy gates (429 QUOTA_EXCEEDED, 504).
+ *   4. MODEL ROUTING — free → fast (Workers AI); pro → fast or the frontier
+ *      slot. The client-sent `model` is replaced by the authorized model, so
+ *      a client can never steer to a model its tier may not use.
+ *   5. METERING — the successful provider call is recorded idempotently in
+ *      the usage ledger (Idempotency-Key header); a replay produces ZERO new
+ *      billable rows.
  *
- * Dev: the Vite dev proxy (apps/web/vite.config.ts) provides the same
- * same-origin `/api/llm/*` path with server-side credentials from .dev.vars.
- * Desktop: the Electron main process provides it from its runtime env.
+ * The auth/metering logic lives in @kove-advanced/gateway (fully mock-tested
+ * there); this file is the thin HTTP adapter: CORS, body cap, header hygiene,
+ * upstream routing. `deps` is injectable so the whole flow is unit-testable
+ * with mocks — no live Clerk/Supabase/Workers AI required.
+ *
+ * Dev: the Vite dev proxy (apps/web/vite.config.ts) serves the same path with
+ * server-side credentials; desktop: the Electron main process. Both are
+ * documented in the smoke-test checklist (docs/SMOKE-TEST-CHECKLIST.md).
  */
+import {
+  EntitlementStore,
+  Gateway,
+  SupabaseLedgerStore,
+} from "@kove-advanced/gateway";
+import {
+  DEFAULT_FAST_MODEL,
+  DEFAULT_FRONTIER_MODEL,
+  Ledger,
+  type MeteringError,
+  type PlanTier,
+} from "@kove-advanced/metering";
 
 const ALLOWED_ORIGINS = [
   "https://kove-advanced.pages.dev",
@@ -31,9 +52,38 @@ const UPSTREAM_TIMEOUT_MS = 120_000;
 /** Paths the client may reach (mirrors the Workers AI surface we use). */
 const ALLOWED_PATHS = ["/v1/chat/completions", "/v1/models"];
 
-interface GatewayEnv {
+export interface GatewayEnv {
+  // Provider credentials (Workers AI).
   readonly CLOUDFLARE_API_TOKEN?: string;
   readonly CLOUDFLARE_ACCOUNT_ID?: string;
+  // Auth (Clerk). Issuer = the Clerk instance, e.g.
+  // https://<instance>.clerk.accounts.dev. JWKS URL defaults to the
+  // instance's well-known key set.
+  readonly CLERK_ISSUER?: string;
+  readonly CLERK_JWKS_URL?: string;
+  readonly CLERK_AUDIENCE?: string;
+  // Entitlements + ledger (Supabase Postgres, service-role = server-only).
+  readonly SUPABASE_URL?: string;
+  readonly SUPABASE_SERVICE_ROLE_KEY?: string;
+  // Optional Pro frontier slot (owner wires the real endpoint/secret).
+  readonly FRONTIER_BASE_URL?: string;
+  readonly FRONTIER_API_KEY?: string;
+  // Model overrides (defaults are the shared metering constants).
+  readonly GATEWAY_FAST_MODEL?: string;
+  readonly GATEWAY_FRONTIER_MODEL?: string;
+}
+
+/**
+ * Injectable dependencies for the HTTP adapter. In production these are built
+ * from `env` by `buildProductionDeps`; in tests they are fakes.
+ */
+export interface LlmGatewayDeps {
+  readonly gateway: Gateway;
+  readonly fetchProvider: (url: string, init: RequestInit) => Promise<Response>;
+  readonly fastModel: string;
+  readonly frontierModel?: string;
+  readonly hasFrontier: boolean;
+  readonly isFrontierModel?: (modelId: string) => boolean;
 }
 
 interface GatewayContext {
@@ -43,6 +93,7 @@ interface GatewayContext {
 }
 
 class BodyTooLargeError extends Error {}
+class NotConfiguredError extends Error {}
 
 /**
  * Buffer a request body while enforcing a byte cap — so the limit holds for
@@ -82,7 +133,7 @@ function getCorsHeaders(request: Request): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Idempotency-Key",
     Vary: "Origin",
   };
 }
@@ -99,10 +150,133 @@ function jsonError(
   );
 }
 
+/** Structured metering error → HTTP response (preserves code + suggestedFix). */
+function meteringErrorToResponse(
+  err: MeteringError,
+  corsHeaders: Record<string, string>,
+): Response {
+  return new Response(
+    JSON.stringify({
+      error: {
+        code: err.code,
+        message: err.message,
+        suggestedFix: err.suggestedFix,
+      },
+    }),
+    {
+      status: err.httpStatus,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    },
+  );
+}
+
+/**
+ * Build production dependencies from Pages env. Fails CLOSED: if auth or the
+ * ledger is not configured we refuse to serve (503) rather than silently
+ * allow unauthenticated LLM access.
+ */
+export function buildProductionDeps(env: GatewayEnv): LlmGatewayDeps {
+  const issuer = env.CLERK_ISSUER?.trim();
+  const supabaseUrl = env.SUPABASE_URL?.trim();
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!issuer || !supabaseUrl || !serviceRoleKey) {
+    throw new NotConfiguredError(
+      "LLM gateway auth/ledger not configured (need CLERK_ISSUER, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY).",
+    );
+  }
+  // Clerk JWKS lives at https://<instance>.clerk.com/.well-known/jwks.json;
+  // the issuer is https://<instance>.clerk.accounts.dev.
+  const jwksUrl =
+    env.CLERK_JWKS_URL?.trim() ||
+    `${issuer.replace(".accounts.dev", ".com")}/.well-known/jwks.json`;
+
+  const fastModel = env.GATEWAY_FAST_MODEL?.trim() || DEFAULT_FAST_MODEL;
+  const frontierModel = env.GATEWAY_FRONTIER_MODEL?.trim() || DEFAULT_FRONTIER_MODEL;
+  const hasFrontier = Boolean(env.FRONTIER_BASE_URL?.trim() && env.FRONTIER_API_KEY?.trim());
+
+  const gateway = new Gateway({
+    clerk: {
+      issuer,
+      jwksUrl,
+      audience: env.CLERK_AUDIENCE?.trim() || undefined,
+    },
+    entitlements: new EntitlementStore({ url: supabaseUrl, serviceRoleKey }),
+    ledger: new Ledger(
+      new SupabaseLedgerStore({ url: supabaseUrl, serviceRoleKey }),
+    ),
+    isFrontierModel: (m) => m === frontierModel,
+  });
+
+  const fetchProvider: LlmGatewayDeps["fetchProvider"] = (url, init) =>
+    fetch(url, { ...init, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
+
+  return { gateway, fetchProvider, fastModel, frontierModel, hasFrontier };
+}
+
+/** Resolved upstream target for an authorized model. */
+function resolveUpstream(
+  model: string,
+  env: GatewayEnv,
+  deps: LlmGatewayDeps,
+):
+  | { ok: true; url: string; authorization: string }
+  | { ok: false; error: MeteringError } {
+  const isFrontier = deps.isFrontierModel
+    ? deps.isFrontierModel(model)
+    : model === deps.frontierModel;
+  if (isFrontier) {
+    const base = env.FRONTIER_BASE_URL?.trim();
+    const key = env.FRONTIER_API_KEY?.trim();
+    if (!base || !key || !deps.hasFrontier) {
+      return {
+        ok: false,
+        error: {
+          code: "FRONTIER_NOT_CONFIGURED",
+          message: "The requested model tier is not available on this deployment yet.",
+          suggestedFix: "Try the default model, or contact support about Pro model access.",
+          httpStatus: 503,
+        },
+      };
+    }
+    return {
+      ok: true,
+      url: `${base.replace(/\/$/, "")}/v1/chat/completions`,
+      authorization: `Bearer ${key}`,
+    };
+  }
+  // Fast model → Cloudflare Workers AI (OpenAI-compatible surface).
+  const apiToken = env.CLOUDFLARE_API_TOKEN;
+  const accountId = env.CLOUDFLARE_ACCOUNT_ID;
+  if (!apiToken || !accountId) {
+    return {
+      ok: false,
+      error: {
+        code: "GATEWAY_NOT_CONFIGURED",
+        message: "LLM gateway is not configured on this deployment (missing Pages secrets).",
+        suggestedFix: "Contact support.",
+        httpStatus: 503,
+      },
+    };
+  }
+  return {
+    ok: true,
+    url: `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`,
+    authorization: `Bearer ${apiToken}`,
+  };
+}
+
+/** The tier's allowed model ids (for the authenticated /v1/models endpoint). */
+function allowedModelsFor(deps: LlmGatewayDeps, tier: PlanTier): string[] {
+  const base = [deps.fastModel];
+  if (tier === "pro" && deps.frontierModel) base.push(deps.frontierModel);
+  return base;
+}
+
 export async function handleLlmGateway(
   request: Request,
   env: GatewayEnv,
   path: string,
+  deps?: LlmGatewayDeps,
 ): Promise<Response> {
   const corsHeaders = getCorsHeaders(request);
 
@@ -118,15 +292,22 @@ export async function handleLlmGateway(
     return jsonError(`Path not allowed: ${normalizedPath}`, 404, "NOT_FOUND", corsHeaders);
   }
 
-  const apiToken = env.CLOUDFLARE_API_TOKEN;
-  const accountId = env.CLOUDFLARE_ACCOUNT_ID;
-  if (!apiToken || !accountId) {
+  // Resolve deps: injected (tests) or built from env (production).
+  let resolved: LlmGatewayDeps;
+  try {
+    resolved = deps ?? buildProductionDeps(env);
+  } catch {
     return jsonError(
       "LLM gateway is not configured on this deployment (missing Pages secrets).",
       503,
       "GATEWAY_NOT_CONFIGURED",
       corsHeaders,
     );
+  }
+
+  const isCompletions = normalizedPath === "/v1/chat/completions";
+  if (isCompletions && request.method !== "POST") {
+    return jsonError("Method not allowed", 405, "METHOD_NOT_ALLOWED", corsHeaders);
   }
 
   // Fast-path reject on a declared oversized body; the streaming cap below is
@@ -138,8 +319,12 @@ export async function handleLlmGateway(
     }
   }
 
-  let requestBody: ArrayBuffer | undefined;
-  if (request.method === "POST") {
+  // Buffer + parse the body (if any) so the requested model is known BEFORE
+  // the policy gates run (model routing depends on it).
+  let payload: Record<string, unknown> = {};
+  let hadBody = false;
+  if (isCompletions) {
+    let requestBody: ArrayBuffer | undefined;
     try {
       requestBody = await readBodyCapped(request, MAX_REQUEST_BODY_BYTES);
     } catch (err) {
@@ -148,44 +333,69 @@ export async function handleLlmGateway(
       }
       throw err;
     }
+    if (requestBody) {
+      try {
+        payload = JSON.parse(new TextDecoder().decode(requestBody)) as Record<string, unknown>;
+        hadBody = true;
+      } catch {
+        return jsonError("Request body must be valid JSON", 400, "BAD_REQUEST", corsHeaders);
+      }
+    }
+  }
+  const requestedModel =
+    typeof payload.model === "string" && payload.model.trim()
+      ? payload.model.trim()
+      : undefined;
+
+  // AUTH + ENTITLEMENT + QUOTA + BUDGET (401 / 403 / 429 / 504).
+  const authorized = await resolved.gateway.authorize(request, { requestedModel });
+  if (!authorized.ok) return meteringErrorToResponse(authorized.error, corsHeaders);
+
+  // /v1/models: authenticated, NOT billable — the tier's allowed models.
+  if (normalizedPath === "/v1/models") {
+    return new Response(
+      JSON.stringify({ models: allowedModelsFor(resolved, authorized.turn.tier) }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
+    );
   }
 
-  const originalUrl = new URL(request.url);
-  const targetUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai${normalizedPath}${originalUrl.search}`;
+  // Enforce the authorized model — never trust the client's model choice.
+  payload.model = authorized.turn.model;
+  const finalBody = hadBody || Object.keys(payload).length > 0 ? JSON.stringify(payload) : undefined;
 
-  const upstreamHeaders = new Headers();
-  const contentType = request.headers.get("Content-Type");
-  if (contentType) upstreamHeaders.set("Content-Type", contentType);
-  upstreamHeaders.set("Authorization", `Bearer ${apiToken}`);
+  const upstream = resolveUpstream(authorized.turn.model, env, resolved);
+  if (!upstream.ok) return meteringErrorToResponse(upstream.error, corsHeaders);
 
-  let upstreamResponse: Response;
-  try {
-    upstreamResponse = await fetch(targetUrl, {
-      method: request.method,
-      headers: upstreamHeaders,
-      body: request.method === "POST" ? requestBody : undefined,
-      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
-    });
-  } catch (err) {
-    const message =
-      err instanceof DOMException && err.name === "TimeoutError"
-        ? "Upstream request timed out"
-        : "Failed to reach upstream service";
-    return jsonError(message, 502, "UPSTREAM_ERROR", corsHeaders);
-  }
+  const turn = authorized.turn;
+  const completed = await resolved.gateway.complete(
+    turn,
+    () =>
+      resolved.fetchProvider(upstream.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: upstream.authorization,
+        },
+        body: finalBody,
+      }),
+  );
+  if (!completed.ok) return meteringErrorToResponse(completed.error, corsHeaders);
 
   // Strip CF-internal headers before forwarding to the browser.
-  const responseHeaders = new Headers(upstreamResponse.headers);
+  const responseHeaders = new Headers(completed.response.headers);
   for (const hop of ["cf-ray", "cf-cache-status", "set-cookie", "connection"]) {
     responseHeaders.delete(hop);
   }
   for (const [key, value] of Object.entries(corsHeaders)) {
     responseHeaders.set(key, value);
   }
+  // Advertise replay accounting to the client (informational, no secrets).
+  responseHeaders.set("X-Kove-Billed", completed.billed ? "1" : "0");
+  responseHeaders.set("X-Kove-Replayed", completed.replayed ? "1" : "0");
 
-  return new Response(upstreamResponse.body, {
-    status: upstreamResponse.status,
-    statusText: upstreamResponse.statusText,
+  return new Response(completed.response.body, {
+    status: completed.response.status,
+    statusText: completed.response.statusText,
     headers: responseHeaders,
   });
 }
@@ -193,8 +403,7 @@ export async function handleLlmGateway(
 /**
  * Pages Function entrypoint. `path` is the remainder after /api/llm.
  * NOTE: no request/prompt logging here — media and prompts must not enter
- * logs (billing/debugging needs a redacted trace, added with the ledger in
- * PR2).
+ * logs (the ledger stores only token counts + latency, never content).
  */
 export const onRequest = async (context: GatewayContext): Promise<Response> => {
   const rawPath = Array.isArray(context.params?.catchall)

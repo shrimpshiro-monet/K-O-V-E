@@ -11,7 +11,7 @@ import type {
   LedgerStore,
   PlanTier,
   TurnUsage,
-} from "./types";
+} from "./types.ts";
 
 let counter = 0;
 function nextEventId(): string {
@@ -38,7 +38,11 @@ export interface RecordTurnResult {
 }
 
 export class Ledger {
-  constructor(private readonly store: LedgerStore) {}
+  private readonly store: LedgerStore;
+
+  constructor(store: LedgerStore) {
+    this.store = store;
+  }
 
   /**
    * Record a completed turn. Safe to call repeatedly with the same

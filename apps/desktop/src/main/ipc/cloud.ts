@@ -70,7 +70,10 @@ function parseDevVarsText(text: string): Record<string, string> {
 function devVarsCandidates(): string[] {
   const candidates = [path.resolve(process.cwd(), ".dev.vars")];
   // Running from apps/desktop/ (the common dev cwd): the repo-root .dev.vars.
-  candidates.push(path.resolve(__dirname, "../../../../.dev.vars"));
+  // __dirname is apps/desktop/src/main/ipc, so the repo root is FIVE levels
+  // up (the earlier 4-level path pointed at apps/.dev.vars, which never
+  // exists — the shared dev vars live at the repo root next to vite's).
+  candidates.push(path.resolve(__dirname, "../../../../../.dev.vars"));
   return candidates;
 }
 

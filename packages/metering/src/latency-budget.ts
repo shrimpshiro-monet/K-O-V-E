@@ -6,7 +6,7 @@
  * fail EARLY (before spending the LLM call) when earlier stages already
  * exhausted the cap, and can surface which stage is the bottleneck.
  */
-import { meteringError, type MeteringError } from "./types";
+import { meteringError, type MeteringError } from "./types.ts";
 
 export type BudgetStage = "frame-sampling" | "perception" | "llm" | "apply";
 
@@ -57,7 +57,11 @@ export class TurnLatencyBudget {
     apply: 0,
   };
 
-  constructor(private readonly config: BudgetConfig) {}
+  private readonly config: BudgetConfig;
+
+  constructor(config: BudgetConfig) {
+    this.config = config;
+  }
 
   get totalBudgetMs(): number {
     return this.config.totalMs;

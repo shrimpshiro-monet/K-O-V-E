@@ -310,6 +310,12 @@ importers:
       '@kove-advanced/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@kove-advanced/gateway':
+        specifier: workspace:*
+        version: link:../../packages/gateway
+      '@kove-advanced/metering':
+        specifier: workspace:*
+        version: link:../../packages/metering
       '@kove-advanced/ui':
         specifier: workspace:*
         version: link:../../packages/ui

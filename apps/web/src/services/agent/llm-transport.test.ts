@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
   apiFetch: vi.fn(),
@@ -9,6 +9,7 @@ vi.mock("../api-proxy", () => ({
 }));
 
 import { makeBYOKClient } from "./llm-transport";
+import { setGatewaySession } from "./gateway-session";
 
 describe("compatible LLM transport", () => {
   beforeEach(() => {
@@ -179,13 +180,131 @@ describe("Cloudflare gateway transport (PR1: no client credentials)", () => {
         tools: [],
       });
 
-      const [, init] = fetchMock.mock.calls[0] as [string, globalThis.RequestInit];
-      const body = JSON.parse(String(init?.body)) as {
-        messages: Array<{ content: unknown }>;
-      };
-      expect(body.messages[0].content).toBe("frame 1 and frame 2");
+    const [, init] = fetchMock.mock.calls[0] as [string, globalThis.RequestInit];
+    const body = JSON.parse(String(init?.body)) as {
+      messages: Array<{ content: unknown }>;
+    };
+    expect(body.messages[0].content).toBe("frame 1 and frame 2");
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("Cloudflare gateway transport (PR2: auth + metering headers)", () => {
+  const okResponse = () =>
+    Response.json({
+      choices: [{ message: { content: "planned" }, finish_reason: "stop" }],
+    });
+
+  afterEach(() => {
+    setGatewaySession(undefined);
+    vi.unstubAllGlobals();
+  });
+
+  it("sends the session token when a session is registered", async () => {
+    setGatewaySession({ getToken: () => "jwt-session-token" });
+    const fetchMock = vi.fn(async (_url: string, _init?: globalThis.RequestInit) => okResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = makeBYOKClient({
+      provider: "cloudflare",
+      model: "@cf/google/gemma-4-26b-a4b-it",
+      apiKey: "",
+    });
+    await client.complete({
+      messages: [{ role: "user", content: "cut" }],
+      tools: [],
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, globalThis.RequestInit];
+    const headers = (init?.headers ?? {}) as Record<string, string>;
+    expect(headers.Authorization ?? headers.authorization).toBe("Bearer jwt-session-token");
+  });
+
+  it("sends a deterministic Idempotency-Key that is stable across identical calls", async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: globalThis.RequestInit) => okResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = makeBYOKClient({
+      provider: "cloudflare",
+      model: "@cf/google/gemma-4-26b-a4b-it",
+      apiKey: "",
+    });
+    const brief = { messages: [{ role: "user" as const, content: "same brief" }], tools: [] };
+    await client.complete(brief);
+    await client.complete(brief);
+
+    const keyOf = (i: number): string | undefined => {
+      const [, init] = fetchMock.mock.calls[i] as [
+        string,
+        globalThis.RequestInit | undefined,
+      ];
+      const headers = (init?.headers ?? {}) as Record<string, string>;
+      return headers["Idempotency-Key"] ?? headers["idempotency-key"];
+    };
+    const k1 = keyOf(0);
+    const k2 = keyOf(1);
+    expect(k1).toBeDefined();
+    expect(k1).toMatch(/^v1\./);
+    // Identical logical call (a replay/retry) reuses the SAME key.
+    expect(k1).toBe(k2);
+  });
+
+  it("surfaces a structured QUOTA_EXCEEDED (429) as a non-retried GatewayLlmError", async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: globalThis.RequestInit) =>
+      new Response(
+        JSON.stringify({
+          error: {
+            code: "QUOTA_EXCEEDED",
+            message: "Daily limit reached",
+            suggestedFix: "Upgrade to Pro, or try again tomorrow.",
+          },
+        }),
+        { status: 429, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = makeBYOKClient({
+      provider: "cloudflare",
+      model: "@cf/google/gemma-4-26b-a4b-it",
+      apiKey: "",
+    });
+    await expect(
+      client.complete({ messages: [{ role: "user", content: "hi" }], tools: [] }),
+    ).rejects.toMatchObject({
+      name: "GatewayLlmError",
+      code: "QUOTA_EXCEEDED",
+      httpStatus: 429,
+    });
+    // A quota failure is NOT transient — exactly one upstream call.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("surfaces a structured UNAUTHENTICATED (401) as a non-retried GatewayLlmError", async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: globalThis.RequestInit) =>
+      new Response(
+        JSON.stringify({
+          error: { code: "UNAUTHENTICATED", message: "Sign in to continue." },
+        }),
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = makeBYOKClient({
+      provider: "cloudflare",
+      model: "@cf/google/gemma-4-26b-a4b-it",
+      apiKey: "",
+    });
+    await expect(
+      client.complete({ messages: [{ role: "user", content: "hi" }], tools: [] }),
+    ).rejects.toMatchObject({
+      name: "GatewayLlmError",
+      code: "UNAUTHENTICATED",
+      httpStatus: 401,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

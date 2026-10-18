@@ -11,7 +11,7 @@
  * Nothing here may be imported from the client bundle — auth and billing
  * logic is server-side only (the bundle gate enforces this).
  */
-export * from "./clerk";
-export * from "./supabase";
-export * from "./morer";
-export * from "./runner";
+export * from "./clerk.ts";
+export * from "./supabase.ts";
+export * from "./morer.ts";
+export * from "./runner.ts";

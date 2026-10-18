@@ -8,8 +8,8 @@
  * mock-testable in CI (the Supabase-backed store and the MoR webhook handler
  * live in the gateway layer and conform to the interfaces here).
  */
-export * from "./types";
-export * from "./ledger";
-export * from "./quota";
-export * from "./latency-budget";
-export * from "./cost";
+export * from "./types.ts";
+export * from "./ledger.ts";
+export * from "./quota.ts";
+export * from "./latency-budget.ts";
+export * from "./cost.ts";

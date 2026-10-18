@@ -7,7 +7,7 @@
  * otherwise `costUsd` stays 0 and `costStatus` is "unverified" — the ledger
  * still records exact token counts so real costs can be back-filled later.
  */
-import type { TurnUsage } from "./types";
+import type { TurnUsage } from "./types.ts";
 
 /** Verified price per 1M tokens (USD). Owner-supplied before launch. */
 export interface ModelPricing {

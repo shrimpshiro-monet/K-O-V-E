@@ -49,6 +49,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "@kove-advanced/core": path.resolve(__dirname, "../../packages/core/src"),
       "@kove-advanced/agent": path.resolve(__dirname, "../../packages/agent/src"),
+      "@kove-advanced/metering": path.resolve(__dirname, "../../packages/metering/src"),
+      "@kove-advanced/gateway": path.resolve(__dirname, "../../packages/gateway/src"),
     },
   },
 });

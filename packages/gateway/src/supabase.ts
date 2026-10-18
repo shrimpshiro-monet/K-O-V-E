@@ -38,7 +38,11 @@ interface PostgrestError {
  * constraint on insert (23505) and treated as "original already exists".
  */
 export class SupabaseLedgerStore implements LedgerStore {
-  constructor(private readonly cfg: SupabaseConfig) {}
+  private readonly cfg: SupabaseConfig;
+
+  constructor(cfg: SupabaseConfig) {
+    this.cfg = cfg;
+  }
 
   private get fetchFn(): typeof fetch {
     return this.cfg.fetchImpl ?? fetch;
@@ -127,7 +131,11 @@ export class SupabaseLedgerStore implements LedgerStore {
  * "free" when absent. Written only by the MoR webhook handler.
  */
 export class EntitlementStore {
-  constructor(private readonly cfg: SupabaseConfig) {}
+  private readonly cfg: SupabaseConfig;
+
+  constructor(cfg: SupabaseConfig) {
+    this.cfg = cfg;
+  }
 
   private get fetchFn(): typeof fetch {
     return this.cfg.fetchImpl ?? fetch;

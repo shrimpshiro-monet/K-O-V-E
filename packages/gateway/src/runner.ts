@@ -23,8 +23,8 @@ import {
   type MeteringError,
   type PlanTier,
 } from "@kove-advanced/metering";
-import { verifyClerkJwt, type VerifyJwtOptions } from "./clerk";
-import type { EntitlementStore } from "./supabase";
+import { verifyClerkJwt, type VerifyJwtOptions } from "./clerk.ts";
+import type { EntitlementStore } from "./supabase.ts";
 
 export interface GatewayConfig {
   readonly clerk: Omit<VerifyJwtOptions, "fetchImpl"> & { fetchImpl?: typeof fetch };
@@ -50,7 +50,11 @@ export type AuthorizeResult =
 const IDEMPOTENCY_HEADER = "idempotency-key";
 
 export class Gateway {
-  constructor(private readonly cfg: GatewayConfig) {}
+  private readonly cfg: GatewayConfig;
+
+  constructor(cfg: GatewayConfig) {
+    this.cfg = cfg;
+  }
 
   /**
    * Authenticate + resolve tier + run the pre-turn policy gates.

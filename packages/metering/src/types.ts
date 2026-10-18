@@ -78,6 +78,8 @@ export interface MeteringError {
     | "QUOTA_EXCEEDED"
     | "MODEL_NOT_ALLOWED"
     | "BUDGET_EXCEEDED"
+    | "FRONTIER_NOT_CONFIGURED"
+    | "GATEWAY_NOT_CONFIGURED"
     | "INTERNAL";
   readonly message: string;
   readonly suggestedFix: string;
