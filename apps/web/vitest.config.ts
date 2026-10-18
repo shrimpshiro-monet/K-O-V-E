@@ -31,6 +31,9 @@ export default defineConfig({
       "src/**/*.spec.ts",
       "src/**/*.spec.tsx",
       "vite-plugins/**/*.test.ts",
+      // Pages Functions (server-side LLM gateway) run in the Node environment
+      // via a per-file `// @vitest-environment node` directive.
+      "functions/**/*.test.ts",
     ],
     setupFiles: ["./src/test/setup.ts"],
     coverage: {

@@ -1,6 +1,10 @@
 import "@testing-library/jest-dom/vitest";
 
-class LocalStorageMock {
+// Everything below mocks DOM globals. Tests that run in the Node environment
+// (e.g. Cloudflare Pages Functions) have no `window` — skip all of it.
+if (typeof window !== "undefined") {
+  void (function domSetup() {
+    class LocalStorageMock {
   private store = new Map<string, string>();
 
   get length(): number {
@@ -362,3 +366,5 @@ Object.defineProperty(globalThis, "OffscreenCanvas", {
   writable: true,
   value: OffscreenCanvasMock,
 });
+  })();
+}

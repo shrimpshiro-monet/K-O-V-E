@@ -14,10 +14,19 @@ const PATHS: Record<LlmProvider, string> = {
   "cloudflare": "/chat/completions",
 };
 
-/** Cloudflare Workers AI uses OpenAI-compatible /v1/chat/completions. */
+/**
+ * Cloudflare Workers AI is reached through a server-side gateway ONLY.
+ *
+ * The provider token and account id are NEVER part of the client: in the
+ * browser they live in Cloudflare Pages secrets (apps/web/functions/api/llm),
+ * in dev they are injected by the Vite dev proxy (vite.config.ts) reading
+ * .dev.vars, and on desktop the Electron main process reads them from the
+ * environment at runtime. The client sends an unauthenticated JSON body to a
+ * same-origin path and receives the provider response.
+ *
+ * Workers AI uses an OpenAI-compatible /v1/chat/completions shape.
+ */
 export interface CloudflareAIOptions {
-  readonly accountId: string;
-  readonly apiToken: string;
   readonly model?: string;
   readonly maxTokens?: number;
   readonly signal?: AbortSignal;
@@ -41,33 +50,52 @@ function contentToString(content: unknown): string {
   return String(content);
 }
 
-function makeCloudflareSend(
-  accountId: string,
-  apiToken: string,
+/**
+ * Same-origin gateway path for Cloudflare Workers AI. The server side
+ * (Pages Function in prod, Vite dev proxy in dev, Electron main process on
+ * desktop) attaches the provider credentials. The client never sees them and
+ * never calls api.cloudflare.com directly.
+ */
+const CF_LLM_PATH = "/v1/chat/completions";
+
+async function gatewayFetch(
+  path: string,
+  payload: string,
   signal?: AbortSignal,
-) {
+): Promise<Response> {
+  const bridge = typeof window !== "undefined" ? window["kove-advanced"] : undefined;
+  if (bridge?.platform === "desktop" && bridge.cloud) {
+    // Desktop: the main process performs the request with runtime
+    // credentials (env / .dev.vars) and relays the response.
+    const result = await bridge.cloud.fetch("cloudflare", path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+    });
+    return new Response(result.body, {
+      status: result.status,
+      statusText: result.statusText,
+      headers: result.headers,
+    });
+  }
+  // Browser (dev + prod): same-origin gateway. Dev is served by the Vite dev
+  // proxy; production by apps/web/functions/api/llm (Cloudflare Pages).
+  return fetch(`/api/llm${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    signal,
+  });
+}
+
+function makeCloudflareSend(signal?: AbortSignal) {
   return async (body: unknown): Promise<unknown> => {
     if (signal?.aborted) {
       throw new DOMException("Aborted", "AbortError");
     }
     // Normalize body: ensure all message content fields are strings
     const normalized = normalizeCloudflareBody(body);
-    const isDev = import.meta.env.DEV;
-    const url = isDev
-      ? `/api/cf-ai/client/v4/accounts/${accountId}/ai/v1/chat/completions`
-      : `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (!isDev) {
-      headers.Authorization = `Bearer ${apiToken}`;
-    }
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(normalized),
-      signal,
-    });
+    const res = await gatewayFetch(CF_LLM_PATH, JSON.stringify(normalized), signal);
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw llmHttpError(
@@ -96,14 +124,14 @@ function normalizeCloudflareBody(body: unknown): unknown {
 }
 
 /**
- * Builds an LLMClient backed by Cloudflare Workers AI (OpenAI-compatible endpoint).
- * Defaults to the vision model used by Monet's frame analysis pipeline.
+ * Builds an LLMClient backed by Cloudflare Workers AI through the
+ * server-side gateway (see CloudflareAIOptions). No provider credentials are
+ * accepted or sent by the client.
  */
 export function makeCloudflareAIClient(opts: CloudflareAIOptions): LLMClient {
-  const send = withRetry(
-    makeCloudflareSend(opts.accountId, opts.apiToken, opts.signal),
-    { signal: opts.signal },
-  );
+  const send = withRetry(makeCloudflareSend(opts.signal), {
+    signal: opts.signal,
+  });
   return makeClientFromSend({
     provider: "openai",
     model: opts.model ?? "@cf/google/gemma-4-26b-a4b-it",
@@ -167,11 +195,11 @@ export interface BYOKClientOptions {
  * requests for custom endpoints, and keychain-backed native requests on desktop).
  */
 export function makeBYOKClient(opts: BYOKClientOptions): LLMClient {
-  // Cloudflare Workers AI has its own dedicated transport
+  // Cloudflare Workers AI routes through the server-side gateway; no
+  // provider credentials are passed or stored client-side. (opts.apiKey /
+  // opts.baseUrl are ignored for this provider by design.)
   if (opts.provider === "cloudflare") {
     return makeCloudflareAIClient({
-      accountId: opts.baseUrl ?? "",
-      apiToken: opts.apiKey,
       model: opts.model,
       maxTokens: opts.maxTokens,
       signal: opts.signal,

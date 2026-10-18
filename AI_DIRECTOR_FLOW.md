@@ -129,9 +129,11 @@ const provider = settings.defaultLlmProvider ?? "cloudflare";
 
 // 2. Resolve credentials
 if (provider === "cloudflare") {
-  apiKey = import.meta.env.VITE_CLOUDFLARE_API_TOKEN ?? "";
-  baseUrl = import.meta.env.VITE_CLOUDFLARE_ACCOUNT_ID ?? "";
-  model = settings.llmModel.trim() || import.meta.env.VITE_CLOUDFLARE_AI_MODEL || "@cf/google/gemma-4-26b-a4b-it";
+  // Server-side gateway: provider credentials live in Pages secrets (prod),
+  // the Vite dev proxy (dev, .dev.vars) or the Electron main env (desktop).
+  // The client sends an unauthenticated body to same-origin /api/llm/* and
+  // never holds a provider token.
+  model = settings.llmModel.trim() || "@cf/google/gemma-4-26b-a4b-it";
 } else {
   // BYOK: read from secure storage
   apiKey = (await getSecret(provider)) ?? "";

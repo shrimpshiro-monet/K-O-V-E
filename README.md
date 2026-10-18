@@ -1,22 +1,27 @@
 # Kove Advanced Video
 
-> **The open source CapCut alternative. Professional video editing in your browser. No uploads. No installs. 100% open source.**
+A professional video editor that runs entirely client-side in the browser and
+desktop, with an AI director that plans and applies multi-track edits from a
+plain-language brief. Built with React, TypeScript, WebCodecs, and WebGPU.
 
-Kove Advanced Video is a fully-featured browser-based video editor that runs entirely client-side. Built with React, TypeScript, WebCodecs, and WebGPU for professional-grade video editing without the need for expensive software or cloud processing.
+**Live:** https://kove-advanced.video · **Docs:** [CONTRIBUTING.md](CONTRIBUTING.md)
 
-**[Try it Live](https://kove-advanced.video)** | **[Documentation](CONTRIBUTING.md)** | **[Discussions](https://github.com/Augani/kove-advanced-video/discussions)** | **[Twitter](https://x.com/python_xi)**
-
-![Kove Advanced Editor](https://img.shields.io/badge/Lines%20of%20Code-130k+-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Status](https://img.shields.io/badge/Status-Beta-orange) ![Open Source](https://img.shields.io/badge/Open%20Source-100%25-brightgreen) [![Sponsor Augani](https://img.shields.io/github/sponsors/Augani?logo=githubsponsors&label=Sponsor&color=EA4AAA)](https://github.com/sponsors/Augani)
+> This repository is the source of record for the Kove Advanced product. It is
+> proprietary — see [SECURITY-ROTATION.md](SECURITY-ROTATION.md) for the
+> credential and rotation model that applies to production deployments.
 
 ---
 
 ## Why Kove Advanced?
 
-- **100% Client-Side** - Your videos never leave your device. No uploads, no cloud processing, complete privacy.
-- **No Installation** - Works in Chrome/Edge. Just open and start editing.
-- **Professional Features** - Multi-track timeline, keyframe animations, color grading, audio effects, and more.
-- **GPU Accelerated** - WebGPU and WebCodecs for smooth 4K editing and fast exports.
-- **Free Forever** - MIT licensed, no subscriptions, no watermarks.
+- **Client-first** - Media is processed on your device. No uploads to a
+  general-purpose cloud, no installs.
+- **Professional features** - Multi-track timeline, keyframe animation, color
+  grading, audio effects, and more.
+- **GPU accelerated** - WebCodecs and WebGPU for smooth 4K editing and fast
+  export.
+- **AI director** - The `plan_edit` pipeline turns a written brief into a
+  structured, validated edit plan and applies it to the timeline.
 
 ---
 
@@ -64,7 +69,7 @@ Kove Advanced Video is a fully-featured browser-based video editor that runs ent
 - **ProRes** - Professional intermediate format (Proxy, LT, Standard, HQ, 4444)
 - **Quality presets** - 4K @ 60fps, 1080p, 720p, 480p
 - **Custom settings** - Bitrate, frame rate, codec options, color depth
-- **Hardware encoding** - WebCodecs for fast exports
+- **Hardware encoding** - WebCodecs for fast export
 - **AI upscaling** - Enhance resolution with WebGPU shaders
 - **Audio export** - MP3, WAV, AAC, FLAC, OGG
 - **Image sequences** - JPG, PNG, WebP frame export
@@ -92,19 +97,15 @@ Kove Advanced Video is a fully-featured browser-based video editor that runs ent
 ## Quick Start
 
 ### Try Online
-Visit **[kove-advanced.video](https://kove-advanced.video)** to start editing immediately.
+Visit **https://kove-advanced.video** to start editing immediately.
 
 ### Run Locally
 
 ```bash
-# Clone the repository
-git clone https://github.com/Augani/kove-advanced-video.git
-cd kove-advanced-video
-
-# Install dependencies (requires Node.js 18+)
+# Install dependencies (requires Node.js 22+)
 pnpm install
 
-# Start development server
+# Start the development server
 pnpm dev
 
 # Open http://localhost:5173
@@ -117,6 +118,12 @@ pnpm build
 pnpm preview
 ```
 
+> **Credentials.** The dev server reads Cloudflare Workers AI credentials from
+> the repository-root `.dev.vars` (never from `VITE_*` variables — a CI gate
+> fails the build on any secret-looking `VITE_*` name). Production deployments
+> use Cloudflare Pages secrets. See [SECURITY-ROTATION.md](SECURITY-ROTATION.md)
+> and [apps/web/.env.example](apps/web/.env.example).
+
 ---
 
 ## Browser Requirements
@@ -128,7 +135,8 @@ pnpm preview
 | Firefox | 130+ | Full support |
 | Safari | 16.4+ | Full support |
 
-All major browsers now support WebCodecs for hardware-accelerated video encoding/decoding.
+All major browsers now support WebCodecs for hardware-accelerated video
+encoding/decoding.
 
 **Recommended:**
 - 8GB+ RAM
@@ -143,22 +151,22 @@ All major browsers now support WebCodecs for hardware-accelerated video encoding
 
 ```
 kove-advanced/
-├── apps/web/              # React frontend (~66k lines)
-│   └── src/
-│       ├── components/    # UI components
-│       │   └── editor/    # Editor panels (Timeline, Preview, Inspector)
-│       ├── stores/        # Zustand state management
-│       ├── services/      # Auto-save, shortcuts, screen recording
-│       └── bridges/       # Engine coordination
+├── apps/web/              # React frontend (Vite + Cloudflare Pages)
+│   ├── src/
+│   │   ├── components/    # UI components
+│   │   │   └── editor/    # Editor panels (Timeline, Preview, Inspector)
+│   │   ├── stores/        # Zustand state management
+│   │   ├── services/      # Agent, LLM transport, analytics, storage
+│   │   └── bridges/       # Engine coordination
+│   └── functions/         # Server-side Pages Functions (LLM gateway)
 │
-└── packages/core/         # Core engines (~59k lines)
-    └── src/
-        ├── video/         # Video processing, WebGPU rendering
-        ├── audio/         # Web Audio API, effects, beat detection
-        ├── graphics/      # Canvas/THREE.js, shapes, SVG
-        ├── text/          # Text rendering, animations
-        ├── export/        # MP4/WebM encoding
-        └── storage/       # IndexedDB, serialization
+├── apps/desktop/          # Electron desktop app
+│
+└── packages/              # Shared libraries
+    ├── core/              # Video/audio/graphics engines (~59k lines)
+    ├── agent/             # Director, tool registry, agent loop
+    ├── creation-schema/   # Edit-plan schema + validation
+    └── ...                # frame-worker, agent-runner, ui
 ```
 
 ### Key Technologies
@@ -178,59 +186,26 @@ kove-advanced/
 - **Immutable state** - Predictable updates with Zustand
 - **Engine separation** - Video, audio, graphics engines are independent
 - **Progressive enhancement** - Graceful fallbacks (WebGPU → Canvas2D)
+- **Server-side credentials** - Provider tokens never ship in the client
+  bundle; the browser talks to a same-origin gateway only
 
 ---
 
-## AI-Managed Development
+## Security Model
 
-Kove Advanced is an experiment in AI-assisted open source development. Claude AI helps manage:
+Provider credentials (LLM, etc.) are **never** part of the client bundle:
 
-- **Issue triage** - Reviews and responds to issues
-- **Code implementation** - Writes features and fixes bugs
-- **Code review** - Maintains quality standards
-- **Documentation** - Keeps docs up to date
+- **Browser (production):** requests go to the same-origin
+  `/api/llm/*` Pages Function, which attaches Cloudflare Pages secrets.
+- **Browser (dev):** the Vite dev proxy attaches credentials from `.dev.vars`,
+  read by the Node dev server — never inlined as `VITE_*` variables.
+- **Desktop:** the Electron main process attaches credentials from its runtime
+  environment; the renderer relays through a local IPC bridge.
 
-Human oversight from Augustus ensures strategic direction and final approval on major changes. All code is public, tested, and follows best practices.
-
-**What this means for contributors:**
-- Issues get reviewed quickly (usually within 24 hours)
-- Bug fixes ship fast
-- Clear, detailed responses to questions
-- High code quality standards
-
----
-
-## Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-**Ways to contribute:**
-- Report bugs with reproduction steps
-- Suggest features in Discussions
-- Submit PRs for bugs or features
-- Improve documentation
-- Write tests
-- Share effect presets
-
-**Development workflow:**
-```bash
-# Fork and clone
-git clone https://github.com/Augani/kove-advanced-video.git
-
-# Create feature branch
-git checkout -b feat/your-feature
-
-# Make changes, then test
-pnpm typecheck
-pnpm test
-pnpm lint
-
-# Commit with conventional commits
-git commit -m "feat: add your feature"
-
-# Push and open PR
-git push origin feat/your-feature
-```
+CI enforces this with two gates: `scripts/check-vite-secrets.mjs` (no
+secret-looking `VITE_*` names in source) and `scripts/check-bundle-secrets.mjs`
+(no credential-looking values or the direct provider host in the built bundle),
+plus `gitleaks` over git history.
 
 ---
 
@@ -247,8 +222,8 @@ git push origin feat/your-feature
 - Keyframe animation system
 - Export to MP4/WebM (4K supported)
 - Screen recording
-- AI upscaling
 - Undo/redo with auto-save
+- AI director (`plan_edit`) with validated, reproducible edit plans
 
 ### In Progress
 - Nested sequences (timeline in timeline)
@@ -267,9 +242,11 @@ git push origin feat/your-feature
 
 ## License
 
-MIT License - Use freely for personal and commercial projects.
-
-See [LICENSE](LICENSE) for details.
+This repository is currently licensed under the terms in
+[LICENSE](LICENSE) (Copyright (c) 2024-2026 Augustus Otu and Contributors).
+The product is transitioning to a closed-source, subscription-based service;
+the licensing and distribution terms for new releases are an open owner
+decision and will be restated here when finalized.
 
 ---
 
@@ -281,28 +258,3 @@ See [LICENSE](LICENSE) for details.
 - [Zustand](https://zustand-demo.pmnd.rs/) - State management
 - [THREE.js](https://threejs.org) - 3D rendering
 - [TailwindCSS](https://tailwindcss.com) - Styling
-
-**Inspired by:**
-- DaVinci Resolve - Professional tools done right
-- CapCut - Accessible editing for everyone
-- Figma - Browser-based professional software
-
----
-
-## Support
-
-- **GitHub Issues** - Bug reports and feature requests
-- **GitHub Discussions** - Questions and community chat
-- **Twitter/X** - [@python_xi](https://x.com/python_xi)
-
----
-
-## $KOVE_ADVANCED Token
-
-CA: `B7wDnfrdtvdG7SCkRjSMJ6LkVwGWvdWrQ75iV8G9pump`
-
----
-
-**Built with care by [@python_xi](https://x.com/python_xi) and AI working together.**
-
-*Making professional video editing accessible to everyone. Forever free. Forever open source.*

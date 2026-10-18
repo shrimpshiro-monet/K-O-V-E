@@ -11,6 +11,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  secrets:
+    name: Secret gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # gitleaks scans history, not just the head commit.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Fail on any VITE_* variable NAME that suggests a secret. VITE_* values
+      # are inlined into the client bundle, so a name like "VITE_" + "FOO_API_" +
+      # "TOKEN" is a bug even if no value is set. (Public-by-design ids are
+      # renamed, not exempted.)
+      - name: Check VITE_* env var names
+        run: node scripts/check-vite-secrets.mjs
+
+      # Scan git history for high-entropy / known-format secrets.
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   test:
     name: Test & Lint
     runs-on: ubuntu-latest
@@ -63,3 +92,9 @@ jobs:
 
       - name: Build project
         run: pnpm build
+
+      # Fail if the compiled client bundle contains credential-looking values,
+      # a literal Bearer token, the direct Cloudflare API host, or residual
+      # secret-looking VITE_ references.
+      - name: Check production bundle for secrets
+        run: node scripts/check-bundle-secrets.mjs

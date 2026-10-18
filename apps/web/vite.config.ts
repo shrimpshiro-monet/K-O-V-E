@@ -8,32 +8,31 @@ import { pruneFontsPlugin } from "./vite-plugins/prune-fonts";
 const isDesktop = process.env.KOVE_ADVANCED_DESKTOP === "1";
 
 /**
- * Reads .dev.vars (Cloudflare Workers local env) and injects CLOUDFLARE_*
- * values as VITE_* env vars so the frontend can auto-populate during dev.
+ * Reads CLOUDFLARE_* values from .dev.vars for the DEV-ONLY server-side LLM
+ * proxy (see server.proxy below). Values are used by the Node dev server
+ * process only — they are NEVER injected as VITE_* env vars, so no provider
+ * secret can reach the client bundle in dev.
  */
-function cloudflareDevVarsPlugin() {
+function readCloudflareDevVars(): { accountId: string; apiToken: string } {
   const devVarsPath = path.resolve(__dirname, "../../.dev.vars");
-  return {
-    name: "cloudflare-dev-vars",
-    config() {
-      if (!fs.existsSync(devVarsPath)) return;
-      const content = fs.readFileSync(devVarsPath, "utf-8");
-      for (const line of content.split("\n")) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith("#")) continue;
-        const eqIdx = trimmed.indexOf("=");
-        if (eqIdx === -1) continue;
-        const key = trimmed.slice(0, eqIdx).trim();
-        const val = trimmed.slice(eqIdx + 1).trim();
-        if (key.startsWith("CLOUDFLARE_")) {
-          const viteKey = `VITE_${key}`;
-          if (!process.env[viteKey]) {
-            process.env[viteKey] = val;
-          }
-        }
-      }
-    },
-  };
+  let accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
+  let apiToken = process.env.CLOUDFLARE_API_TOKEN ?? "";
+  if (!fs.existsSync(devVarsPath)) {
+    return { accountId, apiToken };
+  }
+  const content = fs.readFileSync(devVarsPath, "utf-8");
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    let val = trimmed.slice(eqIdx + 1).trim();
+    if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+    if (key === "CLOUDFLARE_ACCOUNT_ID" && !accountId) accountId = val;
+    if (key === "CLOUDFLARE_API_TOKEN" && !apiToken) apiToken = val;
+  }
+  return { accountId, apiToken };
 }
 
 function desktopHtmlPlugin() {
@@ -60,7 +59,7 @@ function desktopHtmlPlugin() {
 
 export default defineConfig({
   base: isDesktop ? "./" : "/",
-  plugins: [react(), cloudflareDevVarsPlugin(), desktopHtmlPlugin(), stripFfmpegPlugin(isDesktop), pruneFontsPlugin(isDesktop)],
+  plugins: [react(), desktopHtmlPlugin(), stripFfmpegPlugin(isDesktop), pruneFontsPlugin(isDesktop)],
   assetsInclude: ["**/*.wasm"],
   resolve: {
     dedupe: ["react", "react-dom"],
@@ -99,24 +98,23 @@ export default defineConfig({
     // proxy host; enable only when explicitly requested.
     allowedHosts: process.env.KOVE_DEV_ALLOW_ALL_HOSTS ? true : undefined,
     proxy: (() => {
-      // Read the API token directly from .dev.vars
-      const devVarsPath = path.resolve(__dirname, "../../.dev.vars");
-      let apiToken = "";
-      if (fs.existsSync(devVarsPath)) {
-        for (const line of fs.readFileSync(devVarsPath, "utf-8").split("\n")) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith("CLOUDFLARE_API_TOKEN=")) {
-            apiToken = trimmed.slice("CLOUDFLARE_API_TOKEN=".length).trim();
-            break;
-          }
-        }
-      }
-      console.log("[vite] Cloudflare proxy token:", apiToken ? `${apiToken.slice(0, 8)}...` : "MISSING");
+      // EXPLICIT server-side LLM gateway for dev: the client calls
+      // same-origin /api/llm/* and this proxy (Node dev-server process, never
+      // the browser) attaches the Cloudflare credentials read from the
+      // environment or .dev.vars. Mirrors apps/web/functions/api/llm in prod.
+      const { accountId, apiToken } = readCloudflareDevVars();
+      console.log(
+        "[vite] /api/llm dev proxy:",
+        apiToken && accountId
+          ? "credentials loaded (server-side only)"
+          : "CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID missing — LLM calls will 401",
+      );
       return {
-        "/api/cf-ai": {
+        "/api/llm": {
           target: "https://api.cloudflare.com",
           changeOrigin: true,
-          rewrite: (p: string) => p.replace(/^\/api\/cf-ai/, ""),
+          rewrite: (p: string) =>
+            p.replace(/^\/api\/llm/, `/client/v4/accounts/${accountId}/ai`),
           headers: {
             Authorization: `Bearer ${apiToken}`,
           },

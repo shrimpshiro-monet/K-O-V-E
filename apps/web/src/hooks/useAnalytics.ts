@@ -2,7 +2,10 @@ import { useCallback } from "react";
 
 type EventProperties = Record<string, string | number | boolean | null>;
 
-const analyticsKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
+// PostHog's "project API key" (phc_…) is public by design — it is meant to be
+// shipped in the browser. It is named without the KEY/TOKEN substrings so the
+// secret-name CI gate (scripts/check-vite-secrets.mjs) stays meaningful.
+const analyticsKey = import.meta.env.VITE_POSTHOG_CLIENT_ID;
 const analyticsHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
 let analyticsClientPromise: Promise<typeof import("posthog-js").default | null> | null = null;
 
