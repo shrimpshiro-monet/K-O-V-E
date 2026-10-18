@@ -6,7 +6,7 @@ vi.mock("@kove-advanced/core/vision/opencv-camera-motion", () => ({
   extractFrameMotion: vi.fn(),
 }));
 
-import { extractReference } from "./extract-reference";
+import { extractReference, type ExtractReferenceOptions } from "./extract-reference";
 
 const originals = { createObjectURL: URL.createObjectURL, revokeObjectURL: URL.revokeObjectURL };
 afterEach(() => {
@@ -26,7 +26,10 @@ function valueAt(frame: number): number {
 
 /** An HTML-video fallback fixture; do not mistake these mocked pixels for
  * proof of accurate browser seeking on real footage. */
-async function extractFixture(options: { invalidAt?: number; decoderFailsAt?: number } = {}) {
+async function extractFixture(
+  fixture: { invalidAt?: number; decoderFailsAt?: number } = {},
+  extractOptions: ExtractReferenceOptions = {},
+) {
   URL.createObjectURL = vi.fn(() => "blob:synthetic");
   URL.revokeObjectURL = vi.fn();
   let currentTime = 0;
@@ -44,9 +47,9 @@ async function extractFixture(options: { invalidAt?: number; decoderFailsAt?: nu
     drawImage: vi.fn(),
     getImageData: (_x: number, _y: number, width: number, height: number) => {
       const frame = Math.floor(currentTime * 30);
-      if (frame === options.decoderFailsAt) throw new Error("Decoder failed");
+      if (frame === fixture.decoderFailsAt) throw new Error("Decoder failed");
       // An empty pixel buffer makes the existing sampled-RGB difference NaN.
-      if (frame === options.invalidAt) return { data: new Uint8ClampedArray(0) };
+      if (frame === fixture.invalidAt) return { data: new Uint8ClampedArray(0) };
       const intensity = valueAt(frame);
       const data = new Uint8ClampedArray(width * height * 4);
       for (let i = 0; i < data.length; i += 4) {
@@ -59,7 +62,7 @@ async function extractFixture(options: { invalidAt?: number; decoderFailsAt?: nu
   const createElement = document.createElement.bind(document);
   vi.spyOn(document, "createElement").mockImplementation(((tag: string) =>
     tag === "video" ? video : tag === "canvas" ? canvas : createElement(tag)) as typeof document.createElement);
-  return extractReference(new Blob(["synthetic"]), { fps: { num: 30, den: 1 }, fpsSource: "user" });
+  return extractReference(new Blob(["synthetic"]), { fps: { num: 30, den: 1 }, fpsSource: "user" }, extractOptions);
 }
 
 const intervals = (profile: Awaited<ReturnType<typeof extractReference>>) =>
@@ -87,5 +90,37 @@ describe("extractReference peak boundary wiring", () => {
 
   it("does not swallow a real decoder failure", async () => {
     await expect(extractFixture({ decoderFailsAt: 4 })).rejects.toThrow("Decoder failed");
+  });
+
+  it("reports monotonically increasing sample progress and finishes at the total", async () => {
+    const progress: Array<[number, number]> = [];
+    await extractFixture({}, { onProgress: (done, total) => progress.push([done, total]) });
+
+    expect(progress.length).toBeGreaterThan(1);
+    const firstTotal = progress[0]![1];
+    expect(firstTotal).toBeGreaterThan(1);
+    expect(progress[0]![0]).toBeGreaterThan(0);
+    for (let i = 0; i < progress.length; i++) {
+      const [done, total] = progress[i]!;
+      expect(total).toBe(firstTotal);
+      if (i > 0) expect(done).toBeGreaterThan(progress[i - 1]![0]);
+    }
+    expect(progress.at(-1)![0]).toBe(firstTotal);
+  });
+
+  it("yields to the macrotask queue while measuring instead of starving the tab", async () => {
+    let queuedTaskRan = false;
+    let extractionFinished = false;
+    const queuedTask = new Promise<void>((resolve) => {
+      setTimeout(() => { queuedTaskRan = true; resolve(); }, 0);
+    });
+    const extraction = extractFixture().then(() => { extractionFinished = true; });
+
+    await queuedTask;
+    expect(queuedTaskRan).toBe(true);
+    // Without a yield the fixture resolves entirely on microtasks, so this
+    // task only gets a turn after extraction has already finished.
+    expect(extractionFinished).toBe(false);
+    await extraction;
   });
 });

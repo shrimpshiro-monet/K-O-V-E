@@ -26,7 +26,9 @@ export function MirrorReferencePanel() {
   const extract = async (file: File, clock: ReferenceClock) => {
     setBusy(true); setStatus("Measuring shots, motion and color on this device…");
     try {
-      const measured = await extractReference(file, clock);
+      const measured = await extractReference(file, clock, {
+        onProgress: (done, total) => setStatus(`Measuring shots… ${done}/${total} frames`),
+      });
       getLiveEditorHost().setMirrorReference(file);
       setStatus(`${measured.shots.length} shots measured. Detecting beats and transcribing captions locally…`);
       let next = measured;

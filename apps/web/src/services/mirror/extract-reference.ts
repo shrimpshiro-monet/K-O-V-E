@@ -10,6 +10,30 @@ import { createReferenceProfile, type ReferenceProfile, type ShotProfile } from 
  * Never reuse this value for luma or another signal without recalibration. */
 const CUT_DIFFERENCE_THRESHOLD = 0.23;
 
+/** One fallback frame costs roughly 340k luminance comparisons, so two frames
+ * keeps a synchronous batch well under one animation frame before yielding. */
+const FRAMES_PER_YIELD = 2;
+
+export interface ExtractReferenceOptions {
+  /** Called after each yielded batch so a caller can paint extraction progress. */
+  onProgress?: (done: number, total: number) => void;
+}
+
+interface YieldingScheduler {
+  yield?: () => Promise<void>;
+}
+
+/** Let the tab paint and handle input between synchronous sample batches.
+ * scheduler.yield() avoids the clamping delay of nested zero timers where available. */
+async function yieldToEventLoop(): Promise<void> {
+  const scheduler = (globalThis as typeof globalThis & { scheduler?: YieldingScheduler }).scheduler;
+  if (typeof scheduler?.yield === "function") {
+    await scheduler.yield();
+    return;
+  }
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+}
+
 /** Bounded, local decoder pass. No media bytes leave the browser or enter the DNA artifact.
  * Cuts use frame difference; camera motion uses sparse patch correspondences + least-squares similarity fit.
  * Sparse HTML seeking is limited to <= 4 fps: never promise frame-exact cuts from that fallback. */
@@ -38,12 +62,15 @@ export async function probeReferenceClock(file: File): Promise<{ status: "known"
   return { status: "unknown", reason: "Browser video metadata does not expose an authoritative frame rate. Select one explicitly." };
 }
 
-export async function extractReference(file: Blob, clock: ReferenceClock): Promise<ReferenceProfile> {
+export async function extractReference(file: Blob, clock: ReferenceClock, options: ExtractReferenceOptions = {}): Promise<ReferenceProfile> {
   const url = URL.createObjectURL(file);
   const video = document.createElement("video");
   video.preload = "auto";
   video.muted = true;
   video.src = url;
+  // WASM backend is lazy and optional. Start the import before metadata and
+  // decoder setup so a cold fetch overlaps that work instead of the sample loop.
+  const openCvReady = loadOpenCv().catch(() => null);
   try {
     await new Promise<void>((resolve, reject) => {
       video.onloadedmetadata = () => resolve();
@@ -74,9 +101,9 @@ export async function extractReference(file: Blob, clock: ReferenceClock): Promi
       ctx.drawImage(video, 0, 0, width, height);
       return ctx.getImageData(0, 0, width, height).data;
     };
-    // WASM backend is lazy and optional. An unavailable OpenCV build does not block extraction.
-    let cv: Awaited<ReturnType<typeof loadOpenCv>> | null = null;
-    try { cv = await loadOpenCv(); } catch { /* sparse JS matcher remains available */ }
+    // An unavailable OpenCV build does not block extraction: the sparse JS
+    // matcher below remains available.
+    let cv: Awaited<ReturnType<typeof loadOpenCv>> | null = await openCvReady;
     let previousMat: InstanceType<NonNullable<typeof cv>["Mat"]> | null = null;
     const stepFrames = indexed && durationFrames <= 600 ? 1 : Math.max(1, Math.ceil(durationFrames / 600), Math.ceil(fps.num / fps.den / 4));
     // One warnings path for decoder precision, sparse sampling and low-confidence cuts.
@@ -96,6 +123,12 @@ export async function extractReference(file: Blob, clock: ReferenceClock): Promi
       startFrame = endFrame; motion = []; grade = undefined;
     };
     try { for (let i = 0; i < frames; i++) {
+      // Report completed frames and hand the main thread back before each
+      // batch. Without this the fully synchronous fallback matcher never paints.
+      if (i % FRAMES_PER_YIELD === 0) {
+        if (i > 0) options.onProgress?.(i, frames);
+        await yieldToEventLoop();
+      }
       const frame = Math.min(durationFrames - 1, i * stepFrames);
       const pixels = await readFrame(frame);
       // A sampled frame's grade is measured; each shot keeps the first non-boundary sample.
@@ -161,6 +194,7 @@ export async function extractReference(file: Blob, clock: ReferenceClock): Promi
       previousFrame = frame;
     }
     } finally { previousMat?.delete(); indexed?.close(); }
+    options.onProgress?.(frames, frames);
     finish(durationFrames);
     const profile = createReferenceProfile({ aspectRatio: { width: video.videoWidth, height: video.videoHeight }, fps, fpsSource: clock.fpsSource, durationFrames, shots, beatGridMs: [], ...(clock.sampleAspectRatio && { sampleAspectRatio: clock.sampleAspectRatio }), ...(clock.codedDimensions && { codedDimensions: clock.codedDimensions }), ...(clock.rotationDegrees !== undefined && { rotationDegrees: clock.rotationDegrees }), warnings });
     return profile;
