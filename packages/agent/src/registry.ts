@@ -13,7 +13,13 @@ import {
   withSecondFields,
   withWarnings,
 } from "./multicam-units";
-import { extractSegments as runFrameWorkerPipeline } from "@kove-advanced/frame-worker";
+import {
+  extractSegments as runFrameWorkerPipeline,
+  detectSceneBoundaries,
+  computeAdaptiveTimestamps,
+  DEFAULT_SAMPLE_CONFIG,
+  type AdaptiveSampleConfig,
+} from "@kove-advanced/frame-worker";
 import type { ExtractedFrame } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
@@ -27,7 +33,15 @@ import {
   replayIsIntact,
   removeOwnedEntities,
 } from "./director/plan-state";
-import type { DirectorPlanCommit } from "@kove-advanced/core/types/project";
+import {
+  mediaFingerprint,
+  freshEntry,
+  setPerceptionEntries,
+  pruneStaleEntries,
+  cachedSegmentMap,
+  cachedReferenceAnalysis,
+} from "./director/perception-cache";
+import type { DirectorPlanCommit, PerceptionCacheEntry } from "@kove-advanced/core/types/project";
 import type {
   CaptionStyleTemplate,
   EditDensityProfile,
@@ -11596,16 +11610,28 @@ function isExtractedFrameData(
   );
 }
 
-async function captureBaselineFrames(
+/** Attempts per timestamp when capturing a single frame (existing behavior). */
+const FRAME_CAPTURE_ATTEMPTS = 2;
+
+/**
+ * Burst-frame budget for the second (adaptive) sampling pass. The baseline
+ * pass is always kept whole; the burst frames around detected cuts are what
+ * the two-pass design adds, and they are the expensive part (each frame is a
+ * billed vision call behind the §2 gateway), so only the burst is bounded.
+ */
+export const MAX_BURST_FRAMES_PER_VIDEO = 400;
+/** A target timestamp within this distance of a captured frame is "covered". */
+const BURST_DEDUPE_TOLERANCE_SEC = 0.05;
+
+async function captureFramesAt(
   host: EditingHost,
   mediaId: string,
-  duration: number,
+  timestamps: readonly number[],
 ): Promise<{ frames: ExtractedFrame[]; firstError?: string }> {
   const frames: ExtractedFrame[] = [];
-  const timestamps = baselineFrameTimestamps(duration);
   let firstError: string | undefined;
   for (const timestamp of timestamps) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < FRAME_CAPTURE_ATTEMPTS; attempt++) {
       const job = await host.runJob("extractVideoFrame", {
         mediaId,
         timeSeconds: timestamp,
@@ -11630,6 +11656,117 @@ async function captureBaselineFrames(
     }
   }
   return { frames, firstError };
+}
+
+async function captureBaselineFrames(
+  host: EditingHost,
+  mediaId: string,
+  duration: number,
+): Promise<{ frames: ExtractedFrame[]; firstError?: string }> {
+  return captureFramesAt(host, mediaId, baselineFrameTimestamps(duration));
+}
+
+export type BoundaryDetector = (
+  frames: readonly ExtractedFrame[],
+  threshold: number,
+) => Promise<readonly { timestamp: number; score: number }[]>;
+
+export interface AdaptiveCaptureResult {
+  /** Baseline + burst frames, sorted by timestamp. */
+  frames: ExtractedFrame[];
+  firstError?: string;
+  pass1Frames: number;
+  pass2Frames: number;
+  boundaryCount: number;
+  /** True when the burst budget cut the second pass short. */
+  burstCapped: boolean;
+  /**
+   * True when cut detection was unavailable (e.g. headless Node hosts without
+   * canvas APIs) and the capture degraded to baseline-only.
+   */
+  cutDetectionUnavailable: boolean;
+}
+
+function distanceToNearestBoundary(t: number, boundaries: readonly { timestamp: number }[]): number {
+  let best = Number.POSITIVE_INFINITY;
+  for (const boundary of boundaries) {
+    best = Math.min(best, Math.abs(t - boundary.timestamp));
+  }
+  return best;
+}
+
+/**
+ * Two-pass frame sampling (the "adaptive" sampling the frame-worker pipeline
+ * was designed around — previously it computed burst timestamps but never
+ * captured the frames for them):
+ *
+ *   pass 1 — baseline grid (1.5 fps) for structure + scene-cut detection
+ *   pass 2 — burst frames (10 fps, ±burstDurationSec) ONLY around detected cuts
+ *
+ * The detector is injectable so tests can run deterministic boundaries;
+ * production uses the frame-worker's perceptual histogram detector. When the
+ * detector cannot run (no canvas in headless hosts) the capture degrades to
+ * baseline-only instead of failing the analysis.
+ */
+export async function captureAdaptiveFrames(
+  host: EditingHost,
+  mediaId: string,
+  duration: number,
+  config: AdaptiveSampleConfig = DEFAULT_SAMPLE_CONFIG,
+  detector: BoundaryDetector = detectSceneBoundaries,
+): Promise<AdaptiveCaptureResult> {
+  const pass1 = await captureBaselineFrames(host, mediaId, duration);
+  if (pass1.frames.length === 0) {
+    return {
+      frames: [],
+      firstError: pass1.firstError,
+      pass1Frames: 0,
+      pass2Frames: 0,
+      boundaryCount: 0,
+      burstCapped: false,
+      cutDetectionUnavailable: false,
+    };
+  }
+
+  let boundaries: readonly { timestamp: number; score: number }[];
+  let cutDetectionUnavailable = false;
+  try {
+    boundaries = await detector(pass1.frames, config.sceneThreshold);
+  } catch {
+    boundaries = [];
+    cutDetectionUnavailable = true;
+  }
+
+  const targets = computeAdaptiveTimestamps(duration, boundaries, config);
+  const missing = targets.filter(
+    (t) => !pass1.frames.some((f) => Math.abs(f.timestamp - t) < BURST_DEDUPE_TOLERANCE_SEC),
+  );
+
+  let toCapture = missing;
+  let burstCapped = false;
+  if (missing.length > MAX_BURST_FRAMES_PER_VIDEO) {
+    burstCapped = true;
+    // Over budget: keep the burst frames closest to a cut — they carry the
+    // temporal detail the second pass exists for.
+    toCapture = [...missing]
+      .sort(
+        (a, b) =>
+          distanceToNearestBoundary(a, boundaries) - distanceToNearestBoundary(b, boundaries),
+      )
+      .slice(0, MAX_BURST_FRAMES_PER_VIDEO);
+  }
+
+  const pass2 = await captureFramesAt(host, mediaId, toCapture);
+  const frames = [...pass1.frames, ...pass2.frames].sort((a, b) => a.timestamp - b.timestamp);
+  return {
+    frames,
+    firstError: pass1.firstError,
+    pass1Frames: pass1.frames.length,
+    pass2Frames: pass2.frames.length,
+    boundaryCount: boundaries.length,
+    burstCapped,
+    cutDetectionUnavailable,
+  };
 }
 
 /** Action domains the executor routes by prefix (see core's ActionExecutor). */
@@ -33274,8 +33411,11 @@ const TOOLS: RegisteredTool[] = [
     domain: "ai",
     title: "Extract video segments",
     description:
-      "Analyze uploaded video(s) via real frame sampling, scene-cut detection, and vision analysis to build a SegmentMap describing what's actually happening in the footage. Use this first when the user wants to create an edit from their footage. Pass videoMediaIds to analyze specific videos, or omit/empty to auto-analyze ALL video media in the project. Expensive — requires confirmation.",
-    inputSchema: obj({ videoMediaIds: { type: "array", items: str } }),
+      "Analyze uploaded video(s) via two-pass frame sampling (baseline grid + burst frames around detected scene cuts) and vision analysis to build a SegmentMap describing what's actually happening in the footage. Use this first when the user wants to create an edit from their footage. Pass videoMediaIds to analyze specific videos, or omit/empty to auto-analyze ALL video media in the project. Results are cached on the project per media file: repeating the call for unchanged footage returns the cached perception instantly (no re-sampling, no new vision calls) — pass forceRefresh: true to force re-analysis after an edit to the source. Expensive — requires confirmation.",
+    inputSchema: obj({
+      videoMediaIds: { type: "array", items: str },
+      forceRefresh: bool,
+    }),
     readOnly: false,
     destructive: false,
     expensive: true,
@@ -33296,14 +33436,55 @@ const TOOLS: RegisteredTool[] = [
         videoMediaIds = videoMediaItems.map((m) => m.id);
       }
 
+      const mediaMap = new Map(videoMediaItems.map((m) => [m.id, m]));
+      const referenceMediaIds = new Set(
+        videoMediaItems.filter((media) => media.analysisRole === "reference").map((media) => media.id),
+      );
+      const sourceMediaIds = videoMediaIds.filter((id) => !referenceMediaIds.has(id));
+      const videoList = videoMediaIds.map((id) => {
+        const m = mediaMap.get(id);
+        return m ? `"${m.name}" (${id})` : id;
+      }).join(", ");
+
+      // ---- Perception cache: unchanged footage is never re-sampled or re-visioned ----
+      pruneStaleEntries(project);
+      const forceRefresh = args.forceRefresh === true;
+      if (!forceRefresh) {
+        const sourceItems = sourceMediaIds
+          .map((id) => mediaMap.get(id))
+          .filter((m): m is MediaItem => !!m);
+        const referenceItems = videoMediaIds
+          .filter((id) => referenceMediaIds.has(id))
+          .map((id) => mediaMap.get(id))
+          .filter((m): m is MediaItem => !!m);
+        const hitMap = cachedSegmentMap(project, sourceItems);
+        const hitReference =
+          referenceItems.length > 0 ? cachedReferenceAnalysis(project, referenceItems) : null;
+        if (hitMap.complete && (referenceItems.length === 0 || hitReference !== null)) {
+          const cachedFrameCount = [
+            ...sourceItems,
+            ...referenceItems,
+          ].reduce((sum, m) => sum + (freshEntry(project, m)?.frameCount ?? 0), 0);
+          return ok(
+            `extract_segments: perception cache hit for ${videoMediaIds.length} video(s) [${videoList}] — reused ${cachedFrameCount} cached frame(s) of prior analysis. No frames re-sampled, no vision calls made. Pass forceRefresh: true to re-analyze.`,
+            {
+              segmentMap: { videos: hitMap.map.videos },
+              referenceAnalysis: hitReference ?? { analysisVersion: "1.1.0", videos: [] },
+              cached: true,
+              videoCount: videoMediaIds.length,
+              referenceVideoIds: [...referenceMediaIds],
+              totalSegments: hitMap.map.videos.reduce((sum, v) => sum + v.segments.length, 0),
+              frameCount: cachedFrameCount,
+              videoMediaIds,
+            },
+          );
+        }
+      }
+
       // Eco mode uses the local Python analyzer. Only AI mode requires the
       // configured Cloudflare vision worker.
       if (_analysisMode === "ai" && !VISION_WORKER_URL) {
         // Fallback: build a basic SegmentMap from video metadata (no vision analysis)
-        const mediaMap = new Map(videoMediaItems.map((m) => [m.id, m]));
-        const referenceMediaIds = new Set(
-          videoMediaItems.filter((media) => media.analysisRole === "reference").map((media) => media.id),
-        );
         const videos = videoMediaIds.filter((id) => !referenceMediaIds.has(id)).map((id) => {
           const media = mediaMap.get(id);
           if (!media) return null;
@@ -33352,10 +33533,6 @@ const TOOLS: RegisteredTool[] = [
             }],
           })),
         };
-        const videoList = videoMediaIds.map((id) => {
-          const m = mediaMap.get(id);
-          return m ? `"${m.name}" (${id})` : id;
-        }).join(", ");
 
         return ok(
           `extract_segments: generated basic SegmentMap for ${videoMediaIds.length} video(s) [${videoList}] (vision worker not available — using metadata only)`,
@@ -33363,12 +33540,12 @@ const TOOLS: RegisteredTool[] = [
         );
       }
 
-      const mediaMap = new Map(videoMediaItems.map((m) => [m.id, m]));
-      const referenceMediaIds = new Set(
-        videoMediaItems.filter((media) => media.analysisRole === "reference").map((media) => media.id),
-      );
-      const sourceMediaIds = videoMediaIds.filter((id) => !referenceMediaIds.has(id));
       const videoInputs: Array<{ videoId: string; duration: number; frames: ExtractedFrame[] }> = [];
+      let pass1Total = 0;
+      let pass2Total = 0;
+      let boundaryTotal = 0;
+      let burstCapped = false;
+      let cutDetectionUnavailable = false;
 
       for (const id of videoMediaIds) {
         const media = mediaMap.get(id);
@@ -33376,20 +33553,27 @@ const TOOLS: RegisteredTool[] = [
         if (media.type !== "video") return fail(`Media id "${id}" is type "${media.type}", not video`, "INVALID_MEDIA");
 
         const duration = media.metadata.duration;
-        const { frames, firstError } = await captureBaselineFrames(host, id, duration);
-        if (frames.length === 0) {
-          const hint = firstError
-            ? ` (job error: ${firstError})`
+        // Two-pass sampling: baseline grid first, then burst frames around
+        // the cuts detected in pass 1 (see captureAdaptiveFrames).
+        const capture = await captureAdaptiveFrames(host, id, duration);
+        if (capture.frames.length === 0) {
+          const hint = capture.firstError
+            ? ` (job error: ${capture.firstError})`
             : "";
           return fail(`Frame capture returned no frames for "${id}"${hint}`, "FRAME_CAPTURE_FAILED");
         }
-        videoInputs.push({ videoId: id, duration, frames });
+        videoInputs.push({ videoId: id, duration, frames: capture.frames });
+        pass1Total += capture.pass1Frames;
+        pass2Total += capture.pass2Frames;
+        boundaryTotal += capture.boundaryCount;
+        burstCapped = burstCapped || capture.burstCapped;
+        cutDetectionUnavailable = cutDetectionUnavailable || capture.cutDetectionUnavailable;
       }
 
       const workerUrl = _analysisMode === "eco"
         ? "http://localhost:8000/analyze-frames"
         : VISION_WORKER_URL!;
-      const result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl });
+      const result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl, sampleConfig: DEFAULT_SAMPLE_CONFIG });
       const sourceIds = new Set(sourceMediaIds);
       const sourceSegmentMap = {
         videos: result.segmentMap.videos.filter((video) => sourceIds.has(video.videoId)),
@@ -33402,14 +33586,42 @@ const TOOLS: RegisteredTool[] = [
         })),
       };
 
-      // Build a user-friendly video list for the response
-      const videoList = videoMediaIds.map((id) => {
-        const m = mediaMap.get(id);
-        return m ? `"${m.name}" (${id})` : id;
-      }).join(", ");
+      // ---- Store the perception results on the project (per media, fingerprint-validated) ----
+      const capturedAtMs = Date.now();
+      const twoPass = pass2Total > 0;
+      const entriesToStore: Array<{ media: MediaItem; entry: PerceptionCacheEntry }> = [];
+      for (const input of videoInputs) {
+        const media = mediaMap.get(input.videoId);
+        if (!media) continue;
+        const videoEntry = result.segmentMap.videos.find((v) => v.videoId === input.videoId);
+        const referenceEntry = result.referenceAnalysis.videos.find((v) => v.videoId === input.videoId);
+        if (!videoEntry && !referenceEntry) continue;
+        entriesToStore.push({
+          media,
+          entry: {
+            fingerprint: mediaFingerprint(media),
+            capturedAtMs,
+            frameCount: input.frames.length,
+            twoPass,
+            videoMap: videoEntry,
+            referenceAnalysis: referenceEntry,
+          },
+        });
+      }
+      if (entriesToStore.length > 0) setPerceptionEntries(project, entriesToStore);
+
+      const samplingDetail = [
+        `${pass1Total} baseline + ${pass2Total} burst frame(s) around ${boundaryTotal} cut(s)`,
+      ];
+      if (cutDetectionUnavailable) {
+        samplingDetail.push("cut detection unavailable in this host — baseline sampling only");
+      }
+      if (burstCapped) {
+        samplingDetail.push(`burst capped at ${MAX_BURST_FRAMES_PER_VIDEO}/video`);
+      }
 
       return ok(
-        `extract_segments: analyzed ${videoMediaIds.length} video(s) [${videoList}], ${referenceMediaIds.size} reference(s), ${result.frameCount} frame(s), ${sourceSegmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0)} source segment(s) in ${result.processingTimeMs}ms`,
+        `extract_segments: analyzed ${videoMediaIds.length} video(s) [${videoList}], ${referenceMediaIds.size} reference(s), ${samplingDetail.join("; ")}, ${sourceSegmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0)} source segment(s) in ${result.processingTimeMs}ms`,
         { segmentMap: sourceSegmentMap, referenceAnalysis, videoCount: videoMediaIds.length, referenceVideoIds: [...referenceMediaIds], totalSegments: sourceSegmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0), frameCount: result.frameCount, videoMediaIds },
       );
     },
@@ -33679,6 +33891,17 @@ const TOOLS: RegisteredTool[] = [
       // Use provided segmentMap or build a fallback from project media
       const providedMap = args.segmentMap as SegmentMap | undefined;
       const providedReferenceAnalysis = args.referenceAnalysis as unknown;
+
+      // When the LLM did not pass a reference analysis, resolve it from the
+      // perception cache (extract_segments' output is already on the project)
+      // instead of silently dropping it. NOTE: the idempotency key below
+      // deliberately keeps the PROVIDED values — cache resolution must not
+      // change which turn a replay belongs to.
+      const sourceMediaItems = videoMedia.filter((m) => m.analysisRole !== "reference");
+      const referenceMediaItems = videoMedia.filter((m) => m.analysisRole === "reference");
+      const resolvedReferenceAnalysis =
+        providedReferenceAnalysis ?? cachedReferenceAnalysis(project, referenceMediaItems);
+
       let resolvedMap: SegmentMap;
 
       if (providedMap && Array.isArray(providedMap.videos) && providedMap.videos.length > 0) {
@@ -33690,27 +33913,41 @@ const TOOLS: RegisteredTool[] = [
           })),
         };
       } else {
-        // Fallback: build a basic SegmentMap from media metadata
-        resolvedMap = {
-          videos: videoMedia.filter((m) => m.analysisRole !== "reference").map((m) => ({
-            videoId: m.id,
-            sourceFile: m.name ?? m.id,
-            duration: m.metadata.duration,
-            segments: [
-              {
-                id: `${m.id}-seg-0`,
-                startTime: 0,
-                endTime: m.metadata.duration,
-                sceneType: "b-roll" as const,
-                motionLevel: "medium" as const,
-                description: `${m.name ?? m.id} — ${m.metadata.duration.toFixed(1)}s`,
-                hasDialogue: false,
-                visualContent: m.name ?? m.id,
-                confidence: 0.5,
-              },
-            ],
-          })),
-        };
+        // Prefer the perception cache (real vision analysis, zero new cost)
+        // over the metadata-only fallback — but only when it covers the FULL
+        // footage graph; a partial cache would mislead the director about
+        // which footage exists, so a miss keeps the honest fallback.
+        const cached = cachedSegmentMap(project, sourceMediaItems);
+        if (cached.complete && cached.map.videos.length > 0) {
+          resolvedMap = {
+            videos: cached.map.videos.map((video) => ({
+              ...video,
+              segments: Array.isArray(video.segments) ? video.segments : [],
+            })),
+          };
+        } else {
+          // Fallback: build a basic SegmentMap from media metadata
+          resolvedMap = {
+            videos: sourceMediaItems.map((m) => ({
+              videoId: m.id,
+              sourceFile: m.name ?? m.id,
+              duration: m.metadata.duration,
+              segments: [
+                {
+                  id: `${m.id}-seg-0`,
+                  startTime: 0,
+                  endTime: m.metadata.duration,
+                  sceneType: "b-roll" as const,
+                  motionLevel: "medium" as const,
+                  description: `${m.name ?? m.id} — ${m.metadata.duration.toFixed(1)}s`,
+                  hasDialogue: false,
+                  visualContent: m.name ?? m.id,
+                  confidence: 0.5,
+                },
+              ],
+            })),
+          };
+        }
       }
 
       const genre = genreId ? PRE_BAKED_GENRES.find((g) => g.id === genreId) : undefined;
@@ -33748,7 +33985,7 @@ const TOOLS: RegisteredTool[] = [
         );
       }
 
-      const directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, providedReferenceAnalysis);
+      const directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, resolvedReferenceAnalysis);
 
       const planTools =
         host.llm.provider === "anthropic"
@@ -33865,7 +34102,7 @@ const TOOLS: RegisteredTool[] = [
       // The brief combines both gates: a plan can match the genre palette and
       // still be eight splices, and the revision pass is the one chance to fix
       // that before it reaches the timeline.
-      let planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis, resolvedMap);
+      let planReview = reviewEditPlan(finalPlan, genre, resolvedReferenceAnalysis, resolvedMap);
       let revisionApplied = false;
       if (planReview.needsRevision) {
         try {
@@ -33888,7 +34125,7 @@ const TOOLS: RegisteredTool[] = [
             if (revisedBlocking.length === 0) {
               finalPlan = revised.plan;
               finalPlanIssues = revised.issues;
-              planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis, resolvedMap);
+              planReview = reviewEditPlan(finalPlan, genre, resolvedReferenceAnalysis, resolvedMap);
               revisionApplied = true;
             }
           }

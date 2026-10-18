@@ -15,9 +15,15 @@ export type {
   ExtractedFrame,
   VisionDescription,
   AdaptiveSampleConfig,
+  SceneBoundary,
 } from "./frame-extraction";
 
-export { DEFAULT_SAMPLE_CONFIG, batchFrames } from "./frame-extraction";
+export {
+  DEFAULT_SAMPLE_CONFIG,
+  batchFrames,
+  computeAdaptiveTimestamps,
+  detectSceneBoundaries,
+} from "./frame-extraction";
 
 export interface ExtractSegmentsInput {
   readonly videos: readonly VideoInput[];
@@ -78,11 +84,16 @@ export async function extractSegments(
   let totalFrameCount = 0;
 
   for (const video of input.videos) {
-    // Detect scene boundaries from the provided frames (now async — decoding is unavoidably async)
-    const sceneBoundaries = await detectSceneBoundaries(
-      video.frames,
-      config.sceneThreshold,
-    );
+    // Detect scene boundaries from the provided frames. Decoding is
+    // unavoidably async AND requires browser canvas APIs — in headless
+    // (Node) hosts createImageBitmap is unavailable, so fall back to the
+    // baseline grid instead of crashing the whole analysis.
+    let sceneBoundaries: readonly { timestamp: number; score: number }[] = [];
+    try {
+      sceneBoundaries = await detectSceneBoundaries(video.frames, config.sceneThreshold);
+    } catch {
+      sceneBoundaries = [];
+    }
 
     // Compute which timestamps we need (adaptive sampling)
     const targetTimestamps = computeAdaptiveTimestamps(
