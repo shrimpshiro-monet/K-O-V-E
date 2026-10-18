@@ -198,18 +198,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     let model: string;
-    let baseUrl: string;
-    let apiKey: string;
+    let baseUrl = "";
+    let apiKey = "";
 
     if (provider === "cloudflare") {
-      // Cloudflare: zero-config from .dev.vars via Vite plugin — no BYOK needed
-      apiKey = import.meta.env.VITE_CLOUDFLARE_API_TOKEN ?? "";
-      baseUrl = import.meta.env.VITE_CLOUDFLARE_ACCOUNT_ID ?? "";
-      model = settings.llmModel.trim() || import.meta.env.VITE_CLOUDFLARE_AI_MODEL || "@cf/google/gemma-4-26b-a4b-it";
-      if (!apiKey || !baseUrl) {
-        set({ error: "Cloudflare credentials not found in .dev.vars." });
-        return;
-      }
+      // Cloudflare Workers AI is served by the server-side gateway: the
+      // provider token/account live in Pages secrets (prod), the Vite dev
+      // proxy (dev) or the Electron main process env (desktop) — never in the
+      // client bundle. Nothing to configure client-side.
+      model = settings.llmModel.trim() || "@cf/google/gemma-4-26b-a4b-it";
     } else {
       // BYOK providers: require settings configuration
       model = settings.llmModel.trim();

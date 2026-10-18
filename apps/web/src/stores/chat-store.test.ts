@@ -294,6 +294,63 @@ describe("chat-store", () => {
     expect(h.runTurn).toHaveBeenCalledOnce();
   });
 
+  it("runs Cloudflare through the server-side gateway with zero client credentials", async () => {
+    h.settings.defaultLlmProvider = "cloudflare";
+    h.settings.llmModel = "";
+    h.settings.configuredServices = [];
+    h.isSessionUnlocked.mockReturnValue(false);
+    h.runTurn.mockImplementation(
+      impl(async ({ messages }) => ({
+        text: "ok",
+        messages,
+        toolCalls: 0,
+        stoppedReason: "end_turn",
+        committed: true,
+      })),
+    );
+
+    await store().send("hello gateway");
+
+    // No secure storage involved, no provider credentials resolved client-side:
+    // the gateway (Pages secret / dev proxy / desktop main env) authenticates.
+    expect(h.getSecret).not.toHaveBeenCalled();
+    expect(store().error).toBeNull();
+    expect(h.makeBYOKClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "cloudflare",
+        model: "@cf/google/gemma-4-26b-a4b-it",
+        baseUrl: "",
+        apiKey: "",
+      }),
+    );
+    expect(h.runTurn).toHaveBeenCalledOnce();
+  });
+
+  it("uses the configured model for the Cloudflare gateway provider", async () => {
+    h.settings.defaultLlmProvider = "cloudflare";
+    h.settings.llmModel = "@cf/meta/llama-4-maverick";
+    h.settings.configuredServices = [];
+    h.isSessionUnlocked.mockReturnValue(false);
+    h.runTurn.mockImplementation(
+      impl(async ({ messages }) => ({
+        text: "ok",
+        messages,
+        toolCalls: 0,
+        stoppedReason: "end_turn",
+        committed: true,
+      })),
+    );
+
+    await store().send("hello gateway");
+
+    expect(h.makeBYOKClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "cloudflare",
+        model: "@cf/meta/llama-4-maverick",
+      }),
+    );
+  });
+
   it("blocks a compatible provider until endpoint and model are configured", async () => {
     h.settings.defaultLlmProvider = "openai-compatible";
     h.settings.llmModel = "";

@@ -111,10 +111,15 @@ export function computeAdaptiveTimestamps(
 ): readonly number[] {
   const timestamps = new Set<number>();
 
-  // Baseline frames
+  // Baseline frames. `t += interval` accumulates float error (e.g. the last
+  // step yields 9.999999999999998 < duration), which used to round INTO a
+  // spurious target at exactly `duration` — a frame time no extractor can
+  // serve — so the rounded value is checked before adding.
   const baselineInterval = 1 / config.baselineFps;
   for (let t = 0; t < durationSec; t += baselineInterval) {
-    timestamps.add(Math.round(t * 1000) / 1000);
+    const rounded = Math.round(t * 1000) / 1000;
+    if (rounded >= durationSec) break;
+    timestamps.add(rounded);
   }
 
   // Burst frames around scene boundaries

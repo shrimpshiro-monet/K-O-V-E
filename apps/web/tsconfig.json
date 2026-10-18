@@ -13,9 +13,13 @@
       "@kove-advanced/core/*": ["../../packages/core/src/*"],
       "@kove-advanced/agent": ["../../packages/agent/src/index.ts"],
       "@kove-advanced/agent/*": ["../../packages/agent/src/*"],
+      "@kove-advanced/metering": ["../../packages/metering/src/index.ts"],
+      "@kove-advanced/metering/*": ["../../packages/metering/src/*"],
+      "@kove-advanced/gateway": ["../../packages/gateway/src/index.ts"],
+      "@kove-advanced/gateway/*": ["../../packages/gateway/src/*"],
       "@kove-advanced/ui": ["../../packages/ui/src/index.ts"],
       "@kove-advanced/ui/*": ["../../packages/ui/src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "functions", "dev-llm-gateway.ts"]
 }

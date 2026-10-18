@@ -1,5 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { buildUpstreamRequest } from "../src/main/ipc/cloud";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import {
+  buildUpstreamRequest,
+  resolveCloudflareCredentials,
+} from "../src/main/ipc/cloud";
 
 describe("buildUpstreamRequest", () => {
   it("elevenlabs: xi-api-key + base url + path", () => {
@@ -92,5 +95,69 @@ describe("buildUpstreamRequest", () => {
       { baseUrl: "http://localhost:4000/v1" },
     );
     expect(models.url).toBe("http://localhost:4000/v1/models");
+  });
+});
+
+describe("buildUpstreamRequest — cloudflare (server-side relay)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("attaches credentials from the main-process env, never from the renderer", () => {
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "acct-from-env");
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "tok-from-env");
+
+    const r = buildUpstreamRequest("cloudflare", "/v1/chat/completions", "", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer renderer-injected",
+      },
+      body: '{"model":"@cf/google/gemma-4-26b-a4b-it"}',
+    });
+
+    expect(r.url).toBe(
+      "https://api.cloudflare.com/client/v4/accounts/acct-from-env/ai/v1/chat/completions",
+    );
+    expect(r.method).toBe("POST");
+    expect(r.headers.Authorization).toBe("Bearer tok-from-env");
+    expect(r.headers["content-type"]).toBe("application/json");
+    expect(r.body).toBe('{"model":"@cf/google/gemma-4-26b-a4b-it"}');
+  });
+
+  it("ignores a renderer-supplied Authorization header", () => {
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "acct");
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "tok");
+    const r = buildUpstreamRequest("cloudflare", "/v1/models", "", {
+      headers: { Authorization: "Bearer injected" },
+    });
+    expect(r.headers.Authorization).toBe("Bearer tok");
+  });
+
+  it("throws a descriptive error when credentials are not configured", () => {
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "");
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "");
+    expect(() =>
+      buildUpstreamRequest("cloudflare", "/v1/chat/completions", "", {}),
+    ).toThrow(/CLOUDFLARE_API_TOKEN|\.dev\.vars/);
+  });
+
+  it("rejects paths outside the Workers AI surface", () => {
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "acct");
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "tok");
+    expect(() =>
+      buildUpstreamRequest("cloudflare", "/v1/embeddings", "", {}),
+    ).toThrow(/Unsupported Cloudflare API path/);
+  });
+
+  it("resolveCloudflareCredentials reads the environment at request time", () => {
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "acct-123");
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "tok-456");
+    expect(resolveCloudflareCredentials()).toEqual({
+      accountId: "acct-123",
+      apiToken: "tok-456",
+    });
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "");
+    expect(resolveCloudflareCredentials()).toBeNull();
   });
 });

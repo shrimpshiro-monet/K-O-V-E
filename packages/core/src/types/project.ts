@@ -55,6 +55,13 @@ export interface Project {
    * idempotency record so repeating the same planning turn is a no-op.
    */
   readonly directorPlanState?: DirectorPlanState;
+  /**
+   * AI perception-analysis cache (frame sampling + vision per media item).
+   * Owned by the agent's extract_segments / plan_edit tools; persisted with
+   * the project file so a reload reuses prior analysis instead of
+   * re-sampling and re-billing. See PerceptionCacheEntry.
+   */
+  readonly perceptionCache?: PerceptionCache;
 }
 
 /** One committed plan revision and everything it placed on the timeline. */
@@ -83,6 +90,41 @@ export interface DirectorPlanState {
   readonly revision: number;
   readonly commit: DirectorPlanCommit | null;
   readonly lastReplay?: DirectorPlanReplay;
+}
+
+/**
+ * One cached perception-analysis result for a single media item.
+ *
+ * Owned by the agent's extract_segments / plan_edit tools: frame sampling +
+ * vision analysis is expensive (and, behind the §2 gateway, billed), so the
+ * result is cached on the project and reused while the media is unchanged.
+ * Entries are keyed by media id; `fingerprint` is a hash of the media's
+ * identity (name/size/lastModified/duration/...) computed at capture time —
+ * when the file changes, the fingerprint no longer matches and the entry is
+ * ignored (stale entries are pruned by the tools).
+ *
+ * The payloads are shaped by @kove-advanced/creation-schema /
+ * @kove-advanced/frame-worker but typed `unknown` here to avoid a
+ * core → creation-schema dependency; the agent validates on read.
+ */
+export interface PerceptionCacheEntry {
+  /** FNV-1a fingerprint of the media identity at capture time. */
+  readonly fingerprint: string;
+  readonly capturedAtMs: number;
+  /** Frames that were sent to the vision analysis. */
+  readonly frameCount: number;
+  /** True when captured with two-pass (baseline + burst around cuts) sampling. */
+  readonly twoPass: boolean;
+  /** Per-video SegmentMap entry (source media). */
+  readonly videoMap?: unknown;
+  /** Per-video reference analysis entry (reference media). */
+  readonly referenceAnalysis?: unknown;
+}
+
+export interface PerceptionCache {
+  readonly version: 1;
+  /** Keyed by media id. */
+  readonly entries: Record<string, PerceptionCacheEntry>;
 }
 
 export interface MediaLibrary {

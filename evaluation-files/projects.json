@@ -1,0 +1,248 @@
+[
+  {
+    "id": "game-01",
+    "category": "game",
+    "media": [
+      "media/game-01-source.mp4"
+    ],
+    "music": null,
+    "reference": "media/game-01-reference.mp4",
+    "notes": "SYNTHETIC. Gameplay placeholder: 4 hard-cut scenes (color/testsrc/bars) + sine audio. Reference clip is a synthetic stand-in for an owner-supplied human edit.",
+    "prompts": [
+      {
+        "id": "game-01-detailed",
+        "type": "detailed",
+        "text": "Make a 15 second hype highlight, fast hard cuts on the action, punchy zoom punches on the biggest moments, bold title at the end, for YouTube Shorts. Keep the energy high and no slow parts."
+      },
+      {
+        "id": "game-01-vague",
+        "type": "vague",
+        "text": "make something cool with this"
+      },
+      {
+        "id": "game-01-genre",
+        "type": "genre",
+        "text": "edit this as a gaming montage"
+      }
+    ]
+  },
+  {
+    "id": "game-02",
+    "category": "game",
+    "media": [
+      "media/game-02-source.mp4"
+    ],
+    "music": null,
+    "reference": null,
+    "notes": "SYNTHETIC. Single take with one mid-take scene change, no audio.",
+    "prompts": [
+      {
+        "id": "game-02-detailed",
+        "type": "detailed",
+        "text": "Cut a 10 second recap that keeps the first scene as the hook, speed ramp through the middle, and land on a freeze at the end with a short title card. Instagram, vertical."
+      },
+      {
+        "id": "game-02-vague",
+        "type": "vague",
+        "text": "shorten this"
+      },
+      {
+        "id": "game-02-genre",
+        "type": "genre",
+        "text": "turn it into a vlog clip"
+      }
+    ]
+  },
+  {
+    "id": "sport-01",
+    "category": "sport",
+    "media": [
+      "media/sport-01-source.mp4"
+    ],
+    "music": null,
+    "reference": null,
+    "notes": "SYNTHETIC. Six 1-second scene changes, no audio — fast-cut material for beat/shot-density plumbing.",
+    "prompts": [
+      {
+        "id": "sport-01-detailed",
+        "type": "detailed",
+        "text": "Build a 12 second sports highlight with hard cuts every second, a slow-mo ramp on the biggest play, SFX on each impact, and a closing caption. TikTok vertical."
+      },
+      {
+        "id": "sport-01-vague",
+        "type": "vague",
+        "text": "highlight reel"
+      },
+      {
+        "id": "sport-01-genre",
+        "type": "genre",
+        "text": "make it a sports highlight edit"
+      }
+    ]
+  },
+  {
+    "id": "sport-02",
+    "category": "sport",
+    "media": [
+      "media/sport-02-a.mp4",
+      "media/sport-02-b.mp4"
+    ],
+    "music": null,
+    "reference": null,
+    "notes": "SYNTHETIC. Two angles of the same synthetic event (different color blocks), no audio. Tests multi-source shot selection.",
+    "prompts": [
+      {
+        "id": "sport-02-detailed",
+        "type": "detailed",
+        "text": "Alternate between the two angles every 2 seconds for a 10 second sports recap, crossfade only once at the halfway point, add a lower-third name tag and a final title. YouTube."
+      },
+      {
+        "id": "sport-02-vague",
+        "type": "vague",
+        "text": "use both clips"
+      },
+      {
+        "id": "sport-02-genre",
+        "type": "genre",
+        "text": "multicam recap style"
+      }
+    ]
+  },
+  {
+    "id": "stream-01",
+    "category": "stream",
+    "media": [
+      "media/stream-01-source.mp4"
+    ],
+    "music": null,
+    "reference": null,
+    "notes": "SYNTHETIC. One 12-second talking-head-style scene (testsrc + 220 Hz tone as speech placeholder).",
+    "prompts": [
+      {
+        "id": "stream-01-detailed",
+        "type": "detailed",
+        "text": "Make a 15 second streaming highlight: open on the strongest moment, keep the speaker on screen for the middle with subtle push-ins, caption the key line, soft music under, outro tag. Twitch clips vertical."
+      },
+      {
+        "id": "stream-01-vague",
+        "type": "vague",
+        "text": "clip the best part"
+      },
+      {
+        "id": "stream-01-genre",
+        "type": "genre",
+        "text": "make it a vlog"
+      }
+    ]
+  },
+  {
+    "id": "speech-01",
+    "category": "speech",
+    "media": [
+      "media/speech-01-source.mp4"
+    ],
+    "music": null,
+    "reference": null,
+    "notes": "SYNTHETIC. Two 6-second scenes with a 330 Hz tone standing in for speech. Tests dialogue-span plumbing.",
+    "prompts": [
+      {
+        "id": "speech-01-detailed",
+        "type": "detailed",
+        "text": "Cut a 30 second talking piece: keep both scenes in order, add lower-third captions for the first 8 seconds, gentle zooms, no flashy effects, and a plain end card. Documentary tone."
+      },
+      {
+        "id": "speech-01-vague",
+        "type": "vague",
+        "text": "make it shorter"
+      },
+      {
+        "id": "speech-01-genre",
+        "type": "genre",
+        "text": "documentary style"
+      }
+    ]
+  },
+  {
+    "id": "pod-02",
+    "category": "speech",
+    "media": [
+      "media/pod-02-source.mp4"
+    ],
+    "music": null,
+    "reference": null,
+    "notes": "SYNTHETIC. Single 12-second scene with an 180 Hz tone (podcast speech placeholder).",
+    "prompts": [
+      {
+        "id": "pod-02-detailed",
+        "type": "detailed",
+        "text": "Create a 15 second podcast teaser: hook with the loudest line, caption it, slow zoom in, end on a title card with the show name. Keep it calm."
+      },
+      {
+        "id": "pod-02-vague",
+        "type": "vague",
+        "text": "teaser"
+      },
+      {
+        "id": "pod-02-genre",
+        "type": "genre",
+        "text": "podcast clip style"
+      }
+    ]
+  },
+  {
+    "id": "multi-03",
+    "category": "multi",
+    "media": [
+      "media/multi-03-a.mp4",
+      "media/multi-03-b.mp4"
+    ],
+    "music": "media/music-bed.wav",
+    "reference": "media/multi-03-reference.mp4",
+    "notes": "SYNTHETIC. Two sources + synthetic music bed (440/330 Hz beat placeholder) + synthetic reference clip. Four assets: tests music + reference wiring.",
+    "prompts": [
+      {
+        "id": "multi-03-detailed",
+        "type": "detailed",
+        "text": "Make a 20 second travel-style montage from both clips, matched to the music bed's beat, split-screen them once in the middle, 3 text callouts, and close with a title. Match the reference's pacing if it looks good."
+      },
+      {
+        "id": "multi-03-vague",
+        "type": "vague",
+        "text": "montage with the music"
+      },
+      {
+        "id": "multi-03-genre",
+        "type": "genre",
+        "text": "social travel reel"
+      }
+    ]
+  },
+  {
+    "id": "multi-04",
+    "category": "multi",
+    "media": [
+      "media/multi-04-a.mp4",
+      "media/multi-04-b.mp4"
+    ],
+    "music": "media/music-bed.wav",
+    "reference": null,
+    "notes": "SYNTHETIC. Two 8-second sources + shared music bed. Tests beat-aligned cutting with a music track and no reference.",
+    "prompts": [
+      {
+        "id": "multi-04-detailed",
+        "type": "detailed",
+        "text": "Build a 16 second edit that cuts on the music bed's beats, alternates the two sources, one speed ramp at the midpoint, and a single bold end title. Vertical short."
+      },
+      {
+        "id": "multi-04-vague",
+        "type": "vague",
+        "text": "cut to the beat"
+      },
+      {
+        "id": "multi-04-genre",
+        "type": "genre",
+        "text": "music video style"
+      }
+    ]
+  }
+]
