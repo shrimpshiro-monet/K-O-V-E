@@ -17,6 +17,7 @@
     "check:mobile-offline": "node scripts/check-mobile-offline.mjs",
     "check:retired-cloud-gpu": "node scripts/check-retired-cloud-gpu.mjs",
     "eval:media:synthetic": "node scripts/make-synthetic-corpus.mjs",
+    "eval:live": "node scripts/eval-live.mjs",
     "typecheck": "pnpm -r typecheck",
     "clean": "pnpm -r clean",
     "claude:help": "cat scripts/claude-review.md",
