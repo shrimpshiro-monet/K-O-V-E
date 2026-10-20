@@ -78,4 +78,20 @@ describe("ChatMessage", () => {
     );
     expect(screen.getByText("The model stopped at its response limit.")).toBeInTheDocument();
   });
+
+  it("tags a user message that carried a reference video", () => {
+    render(
+      <ChatMessage
+        message={{
+          id: "user-1",
+          role: "user",
+          text: "/mirror make it punchier",
+          toolCalls: [],
+          reference: { name: "ref.webm", intent: "replicate" },
+        }}
+      />,
+    );
+    expect(screen.getByText("ref.webm")).toBeInTheDocument();
+    expect(screen.getByText("replicate")).toBeInTheDocument();
+  });
 });

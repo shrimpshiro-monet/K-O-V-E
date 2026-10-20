@@ -42,4 +42,16 @@ describe("agent tool router", () => {
     });
     expect(names).toContain("animate_layer");
   });
+
+  it("routes a bare reference command to the mirror and planning tools", () => {
+    const names = selectToolsForPrompt("/mirror");
+    expect(names).toContain("mirror_reference_1to1");
+    expect(names).toContain("plan_edit");
+    expect(names).toContain("list_media");
+  });
+
+  it("routes a reference request phrased in words", () => {
+    const names = selectToolsForPrompt("Replicate the reference cut on my footage");
+    expect(names).toContain("mirror_reference_1to1");
+  });
 });

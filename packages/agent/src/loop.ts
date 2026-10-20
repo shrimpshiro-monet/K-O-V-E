@@ -30,6 +30,13 @@ export interface RunTurnInput {
   readonly turnLabel?: string;
   /** Run the mandatory director checkup before editing turns. */
   readonly enforceDirectorWorkflow?: boolean;
+  /**
+   * The turn's plan is already on the timeline — the app rebuilt the footage
+   * from a reference before the model was called. The model may then edit
+   * directly; requiring `plan_edit` would replace the structure that was
+   * just applied.
+   */
+  readonly directorPlanApplied?: boolean;
 }
 
 export type StopReason =
@@ -223,9 +230,13 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
   // Only force a fresh plan_edit if there's no existing director plan for this
   // project. Follow-up editing requests ("make it shorter", "add a cut here")
   // should use clip/effect/text tools to modify the existing timeline rather
-  // than rebuilding from scratch.
+  // than rebuilding from scratch. A turn whose plan the app already applied
+  // (a mirrored reference structure) is in the same position.
   const requiresDirectorPlan =
-    enforceDirectorWorkflow && !hasExistingPlan && DIRECTOR_REQUEST.test(latestUserPrompt(messages));
+    enforceDirectorWorkflow &&
+    !input.directorPlanApplied &&
+    !hasExistingPlan &&
+    DIRECTOR_REQUEST.test(latestUserPrompt(messages));
   let directorPlanCompleted = !requiresDirectorPlan;
   let planEditApplied = false;
 

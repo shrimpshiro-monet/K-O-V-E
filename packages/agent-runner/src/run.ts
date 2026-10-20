@@ -5,9 +5,18 @@ import {
   toOpenAITools,
   buildSystemPrompt,
   selectToolsForPrompt,
+  executeTool,
+  parseReferenceIntent,
+  referenceIntentDirective,
 } from "@kove-advanced/agent";
-import type { LLMClient, RunTurnResult, JobRunner } from "@kove-advanced/agent";
+import type {
+  LLMClient,
+  RunTurnResult,
+  JobRunner,
+  ReferenceApplication,
+} from "@kove-advanced/agent";
 import type { Project } from "@kove-advanced/core/types/project";
+import { fitProfileToFootage } from "@kove-advanced/core/mirror/fit-profile-to-footage";
 import { makeNodeLLMClient, type LlmProvider } from "./node-llm";
 import { loadProjectFile, saveProjectFile } from "./project-io";
 import { createCompositorMirrorFrameRunner } from "./mirror-frame-runner";
@@ -42,6 +51,67 @@ export interface HeadlessEditResult {
   readonly saved?: boolean;
 }
 
+/**
+ * Applies the reference intent before the model's turn, the same way the app
+ * does: a 1:1 intent rebuilds the footage from the project's EditDNA, and the
+ * directive states what is already on the timeline so the model adds craft
+ * instead of planning a second timeline.
+ */
+async function prepareReferencePrompt(
+  host: HeadlessHost,
+  prompt: string,
+): Promise<{ prompt: string; applied: ReferenceApplication }> {
+  const parsed = parseReferenceIntent(prompt);
+  const project = host.getProject();
+  const reference = project.mediaLibrary.items.find(
+    (item) => item.type === "video" && item.analysisRole === "reference",
+  );
+  const intent = parsed.intent ?? (reference ? "reference" : null);
+  if (!intent) return { prompt, applied: "none" };
+
+  let applied: ReferenceApplication = "none";
+  const profile = project.mirrorProfile;
+  const sourceItems = project.mediaLibrary.items.filter(
+    (item) => item.type === "video" && item.analysisRole !== "reference",
+  );
+  if (intent !== "reference" && profile && sourceItems.length) {
+    // A reference longer than the footage is fitted to it, exactly like the
+    // app does, so the structure can always be rebuilt.
+    const available = sourceItems.reduce((sum, item) => sum + item.metadata.duration, 0);
+    const fitted = fitProfileToFootage(profile, available);
+    const applied1to1 = await executeTool(
+      "mirror_reference_1to1",
+      { profile: fitted.profile, userMediaIds: sourceItems.map((item) => item.id) },
+      host,
+    );
+    if (applied1to1.ok) applied = "structure";
+  }
+
+  const directive = referenceIntentDirective({
+    intent,
+    referenceName: reference?.name ?? "reference",
+    referenceMediaId: reference?.id,
+    attached: Boolean(reference),
+    applied,
+    ...(profile
+      ? {
+          fps: `${profile.fps.num}/${profile.fps.den}`,
+          shotCount: profile.shots.length,
+          aspectRatio: `${profile.aspectRatio.width}x${profile.aspectRatio.height}`,
+          dominantMoves: profile.shots.map(
+            (shot) => shot.cameraMotion?.dominantMove ?? "unknown",
+          ),
+          beatCount: profile.beatGridMs.length,
+          captionWindowCount: profile.shots.reduce(
+            (sum, shot) => sum + shot.captionWindows.length,
+            0,
+          ),
+        }
+      : {}),
+  });
+  return { prompt: `${parsed.prompt}\n\n${directive}`, applied };
+}
+
 /** Runs one headless agent editing turn against an in-memory project. */
 export async function runHeadlessEdit(
   opts: HeadlessEditOptions,
@@ -61,7 +131,9 @@ export async function runHeadlessEdit(
         maxTokens: opts.maxTokens,
         fetchFn: opts.fetchFn,
       });
-    const selectedToolNames = selectToolsForPrompt(opts.prompt);
+    const prepared = await prepareReferencePrompt(host, opts.prompt);
+    const prompt = prepared.prompt;
+    const selectedToolNames = selectToolsForPrompt(prompt);
     const tools =
       opts.provider === "anthropic"
         ? toAnthropicTools(selectedToolNames)
@@ -72,10 +144,11 @@ export async function runHeadlessEdit(
       llm,
       tools,
       system: buildSystemPrompt(host, selectedToolNames),
-      messages: [{ role: "user", content: opts.prompt }],
+      messages: [{ role: "user", content: prompt }],
       limits: opts.limits,
       dryRun: opts.dryRun,
       turnLabel: "Headless edit",
+      directorPlanApplied: prepared.applied === "structure",
     });
 
     return { project: host.getProject(), result };

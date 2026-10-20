@@ -6,6 +6,8 @@ import {
   buildSystemPrompt,
   selectToolsForPrompt,
   setAnalysisMode as setAgentAnalysisMode,
+  parseReferenceIntent,
+  referenceIntentDirective,
 } from "@kove-advanced/agent";
 import type {
   AgentEvent,
@@ -13,11 +15,20 @@ import type {
   ToolCall,
   ToolResult,
   LoopMessage,
+  ReferenceIntent,
+  ReferenceApplication,
 } from "@kove-advanced/agent";
+import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import { isSessionUnlocked, getSecret } from "../services/secure-storage";
 import { getLiveEditorHost, runExclusive } from "../services/agent/host-singleton";
 import { makeBYOKClient } from "../services/agent/llm-transport";
 import { normalizeCompatibleBaseUrl } from "../services/api-proxy";
+import {
+  measureReferenceVideo,
+  enrichReferenceVideo,
+  applyReferenceStructure,
+  attachReferenceProfile,
+} from "../services/mirror/reference-flow";
 import {
   conversationTitle,
   useChatHistoryStore,
@@ -53,6 +64,23 @@ export interface ChatMessage {
   readonly notice?: string;
   readonly expansion?: PromptExpansionData;
   readonly pendingQuestions?: string[];
+  /** Set on user messages that carried a reference video. */
+  readonly reference?: ChatReferenceTag;
+}
+
+/** The reference a user message carried, shown as a tag under the message. */
+export interface ChatReferenceTag {
+  readonly name: string;
+  readonly intent: ReferenceIntent;
+}
+
+/** A reference video the user attached to the chat. */
+export interface ReferenceAttachment {
+  /** The media-library id of the reference; it is tagged analysisRole=reference. */
+  readonly mediaId: string;
+  readonly name: string;
+  /** Kept so the reference can be measured without a second import. */
+  readonly file: File | null;
 }
 
 interface PendingConfirm {
@@ -79,8 +107,15 @@ interface ChatState {
   projectId: string | null;
   currentConversationId: string | null;
   conversationStartedAt: number | null;
+  /** The reference video attached to the next turn, if any. */
+  reference: ReferenceAttachment | null;
+  /** What the director should do with the reference when the message is silent. */
+  referenceIntent: ReferenceIntent;
 
   send: (text: string) => Promise<void>;
+  attachReference: (file: File) => Promise<void>;
+  clearReference: () => void;
+  setReferenceIntent: (intent: ReferenceIntent) => void;
   setAnalysisMode: (mode: "eco" | "ai") => void;
   resolveConfirm: (decision: ConfirmDecision) => void;
   stop: () => void;
@@ -110,6 +145,137 @@ function undoStackSize(): number | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * The reference for this turn: the one attached in the chat, or the one the
+ * user marked as a reference in the Assets panel.
+ */
+function resolveReferenceAttachment(explicit: ReferenceAttachment | null): ReferenceAttachment | null {
+  if (explicit) return explicit;
+  const items = useProjectStore.getState().project.mediaLibrary.items;
+  const marked = items.find((item) => item.type === "video" && item.analysisRole === "reference");
+  if (!marked) return null;
+  return { mediaId: marked.id, name: marked.name, file: null };
+}
+
+/** Reads the bytes of a reference that may live in the media library only. */
+async function referenceBytes(attachment: ReferenceAttachment): Promise<Blob | null> {
+  if (attachment.file) return attachment.file;
+  const item = useProjectStore.getState().project.mediaLibrary.items.find(
+    (media) => media.id === attachment.mediaId,
+  );
+  if (!item) return null;
+  if (item.blob) return item.blob;
+  try {
+    return (await item.fileHandle?.getFile()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** The footage the reference structure may be applied to. */
+function referenceSourceMedia(): Array<{ id: string; name: string; duration: number; blob: Blob | null }> {
+  return useProjectStore
+    .getState()
+    .project.mediaLibrary.items.filter(
+      (item) => item.type === "video" && item.analysisRole !== "reference",
+    )
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      duration: item.metadata.duration,
+      blob: item.blob,
+    }));
+}
+
+interface PrepareReferenceTurnInput {
+  readonly intent: ReferenceIntent;
+  readonly attachment: ReferenceAttachment | null;
+  readonly parsedPrompt: string;
+  readonly notice: (message: string) => void;
+}
+
+/**
+ * Prepares a reference turn before the model sees it: the reference is
+ * measured on this device, and for a 1:1 intent the structure is applied to
+ * the user's footage so the model adds craft on top of a real cut instead of
+ * planning a fresh timeline. Returns the message the model receives.
+ */
+async function prepareReferenceTurn(
+  input: PrepareReferenceTurnInput,
+): Promise<{ text: string; applied: ReferenceApplication }> {
+  const { intent, attachment, parsedPrompt, notice } = input;
+  if (!attachment) {
+    const directive = referenceIntentDirective({
+      intent,
+      referenceName: "",
+      attached: false,
+      applied: "none",
+    });
+    return { text: `${parsedPrompt}\n\n${directive}`, applied: "none" };
+  }
+
+  const warnings: string[] = [];
+  let profile: ReferenceProfile | null = null;
+  let applied: ReferenceApplication = "none";
+
+  const bytes = await referenceBytes(attachment);
+  if (!bytes) {
+    warnings.push("The reference video is not available locally, so it could not be measured.");
+  } else {
+    try {
+      notice("Measuring the reference…");
+      const measured = await measureReferenceVideo(bytes, (done, total) =>
+        notice(`Measuring the reference… ${done}/${total} frames`),
+      );
+      notice("Detecting beats and captions in the reference…");
+      profile = await enrichReferenceVideo(bytes, measured.profile, notice);
+      if (intent === "reference") {
+        // Style guidance only: the EditDNA is attached so the plan can follow
+        // the reference's rhythm, but the timeline is not rebuilt.
+        await attachReferenceProfile(profile);
+      } else {
+        const sources = referenceSourceMedia();
+        if (!sources.length) {
+          warnings.push("No source footage is in the library, so the reference structure was not applied.");
+        } else {
+          notice("Rebuilding your footage to the reference structure…");
+          const result = await applyReferenceStructure(profile, sources);
+          warnings.push(...result.warnings);
+          applied = "structure";
+        }
+      }
+    } catch (error) {
+      warnings.push(
+        `The reference could not be measured: ${error instanceof Error ? error.message : "unknown error"}`,
+      );
+    }
+  }
+
+  const directive = referenceIntentDirective({
+    intent,
+    referenceName: attachment.name,
+    referenceMediaId: attachment.mediaId,
+    attached: true,
+    applied,
+    ...(profile
+      ? {
+          fps: `${profile.fps.num}/${profile.fps.den}`,
+          durationSeconds: (profile.durationFrames * profile.fps.den) / profile.fps.num,
+          shotCount: profile.shots.length,
+          aspectRatio: `${profile.aspectRatio.width}x${profile.aspectRatio.height}`,
+          dominantMoves: profile.shots.map((shot) => shot.cameraMotion?.dominantMove ?? "unknown"),
+          beatCount: profile.beatGridMs.length,
+          captionWindowCount: profile.shots.reduce(
+            (sum, shot) => sum + shot.captionWindows.length,
+            0,
+          ),
+        }
+      : {}),
+    warnings: [...warnings, ...(profile?.warnings ?? [])],
+  });
+  return { text: `${parsedPrompt}\n\n${directive}`, applied };
 }
 
 function conversationFromMessages(messages: ChatMessage[]): LoopMessage[] {
@@ -166,10 +332,44 @@ export const useChatStore = create<ChatState>((set, get) => ({
   projectId: null,
   currentConversationId: null,
   conversationStartedAt: null,
+  reference: null,
+  referenceIntent: "replicate" as const,
 
   setAnalysisMode: (mode) => {
     set({ analysisMode: mode });
     setAgentAnalysisMode(mode);
+  },
+
+  attachReference: async (file: File) => {
+    const projectStore = useProjectStore.getState();
+    const before = new Set(projectStore.project.mediaLibrary.items.map((item) => item.id));
+    const imported = await projectStore.importMedia(file);
+    if (!imported.success) {
+      set({ error: imported.error?.message ?? "The reference video could not be imported." });
+      return;
+    }
+    const items = useProjectStore.getState().project.mediaLibrary.items;
+    const added = items.find((item) => !before.has(item.id));
+    if (!added) {
+      set({ error: "The reference video was imported but could not be identified." });
+      return;
+    }
+    // The reference is tagged so the model treats it as style, never as footage.
+    const tagged = await useProjectStore.getState().setMediaAnalysisRole(added.id, "reference");
+    if (!tagged.success) {
+      set({ error: tagged.error?.message ?? "The reference video could not be tagged." });
+      return;
+    }
+    getLiveEditorHost().setMirrorReference(file);
+    set({ reference: { mediaId: added.id, name: added.name, file }, error: null });
+  },
+
+  clearReference: () => {
+    set({ reference: null });
+  },
+
+  setReferenceIntent: (intent: ReferenceIntent) => {
+    set({ referenceIntent: intent });
   },
 
   send: async (text: string) => {
@@ -245,11 +445,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const active = get();
     const conversationId = active.currentConversationId ?? genId();
     const conversationStartedAt = active.conversationStartedAt ?? Date.now();
+    // The reference intent travels with the message: an explicit slash command
+    // wins, then keyword phrasing, then whatever the user picked in the chat.
+    const parsedIntent = parseReferenceIntent(trimmed);
+    const attachment = resolveReferenceAttachment(get().reference);
+    const referenceIntent = parsedIntent.intent ?? (attachment ? get().referenceIntent : null);
     const userMessage: ChatMessage = {
       id: genId(),
       role: "user",
       text: trimmed,
       toolCalls: [],
+      ...(attachment && referenceIntent
+        ? { reference: { name: attachment.name, intent: referenceIntent } }
+        : {}),
     };
     const assistantMessage: ChatMessage = {
       id: genId(),
@@ -279,6 +487,34 @@ export const useChatStore = create<ChatState>((set, get) => ({
         messages: state.messages.map((m) => (m.id === assistantId ? fn(m) : m)),
       }));
     };
+
+    // The reference is handled before the model sees the turn: it is measured on
+    // this device and, for a 1:1 intent, applied to the source footage, so the
+    // model adds craft on top of a real cut instead of planning a new one.
+    let turnText = trimmed;
+    let directorPlanApplied = false;
+    if (referenceIntent) {
+      const prepared = await prepareReferenceTurn({
+        intent: referenceIntent,
+        attachment,
+        parsedPrompt: parsedIntent.prompt,
+        notice: (message) => updateAssistant((m) => ({ ...m, notice: message })),
+      });
+      turnText = prepared.text;
+      // The structure is already on the timeline: the model adds craft to it
+      // instead of replacing it with a fresh plan.
+      directorPlanApplied = prepared.applied === "structure";
+      if (controller.signal.aborted) {
+        set({ status: "idle", abortController: null });
+        return;
+      }
+      set((state) => ({
+        conversation: [
+          ...state.conversation.slice(0, -1),
+          { role: "user", content: turnText },
+        ],
+      }));
+    }
 
     const onEvent = (event: AgentEvent): void => {
       switch (event.type) {
@@ -401,6 +637,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                   set({ status: "awaiting_confirm", pendingConfirm: { call, resolve } });
                 }),
                   enforceDirectorWorkflow: true,
+          directorPlanApplied,
           onEvent,
           turnLabel: "AI edit",
         }),
@@ -610,6 +847,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       projectId: null,
       currentConversationId: null,
       conversationStartedAt: null,
+      reference: null,
+      referenceIntent: "replicate",
     });
   },
 }));

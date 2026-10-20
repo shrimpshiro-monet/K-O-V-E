@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ToolcraftButton as Button } from "@kove-advanced/ui";
 import { executeTool } from "@kove-advanced/agent";
 import { allocateSourceRanges } from "@kove-advanced/core/mirror/allocate-shots";
+import { probeReferenceClock as probeContainerClock } from "@kove-advanced/core/mirror/reference-clock";
 import { serializeReferenceProfile, type ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import type { LabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import { useProjectStore } from "../../stores/project-store";
@@ -55,8 +56,22 @@ export function MirrorReferencePanel() {
     setBusy(true);
     try {
       const result = await probeReferenceClock(file);
-      if (result.status === "known") { setBusy(false); await extract(file, result.clock); }
-      else { setPendingFile(file); setStatus(`FPS unknown: ${result.reason}`); }
+      if (result.status === "known") { setBusy(false); await extract(file, result.clock); return; }
+      // No desktop probe: read the clock out of the container itself so the
+      // user is only asked for a frame rate when the file really is opaque.
+      const container = await probeContainerClock(file).catch(() => null);
+      if (container) {
+        setBusy(false);
+        await extract(file, {
+          fps: container.fps,
+          fpsSource: "web-metadata",
+          durationSeconds: container.durationSeconds,
+          codedDimensions: { width: container.width, height: container.height },
+          rotationDegrees: container.rotationDegrees,
+        });
+        return;
+      }
+      setPendingFile(file); setStatus(`FPS unknown: ${result.reason}`);
     } catch (error) { toast.error("Reference probe failed", error instanceof Error ? error.message : "Unknown error"); }
     finally { setBusy(false); }
   };

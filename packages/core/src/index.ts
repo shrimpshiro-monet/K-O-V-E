@@ -86,6 +86,10 @@ export {
 export { locateCutFrame } from "./mirror/cut-boundary";
 export { frameRate, frameToSeconds, secondsToFrame, shotDurationFrames, shotSampleFrame } from "./mirror/timebase";
 export type { FrameRate } from "./mirror/timebase";
+export { probeReferenceClock, snapFrameRate } from "./mirror/reference-clock";
+export type { ReferenceClockProbe } from "./mirror/reference-clock";
+export { fitProfileToFootage } from "./mirror/fit-profile-to-footage";
+export type { FittedReference } from "./mirror/fit-profile-to-footage";
 export { parseReferenceProfile, createReferenceProfile, serializeReferenceProfile } from "./mirror/reference-profile";
 export type { ReferenceProfile, ShotProfile } from "./mirror/reference-profile";
 export { allocateSourceRanges } from "./mirror/allocate-shots";

@@ -22,6 +22,20 @@ export { runTurn } from "./loop";
 export type { RunTurnInput, RunTurnResult, StopReason } from "./loop";
 export { buildSystemPrompt } from "./system-prompt";
 export { selectToolsForPrompt, DEFAULT_AGENT_TOOL_LIMIT } from "./tool-router";
+export {
+  parseReferenceIntent,
+  mentionsReferenceWorkflow,
+  referenceIntentDirective,
+  REFERENCE_INTENTS,
+  REFERENCE_INTENT_COMMANDS,
+} from "./mirror-intent";
+export type {
+  ReferenceIntent,
+  ReferenceIntentSource,
+  ReferenceIntentFacts,
+  ReferenceApplication,
+  ParsedReferenceIntent,
+} from "./mirror-intent";
 export { toLogRecord, createEventLogger, collectEvents } from "./observability";
 export type { AgentLogRecord } from "./observability";
 export { generateCapabilityMarkdown } from "./gen-docs";

@@ -1,5 +1,6 @@
 import { listTools } from "./registry";
 import type { RegisteredTool } from "./registry";
+import { mentionsReferenceWorkflow } from "./mirror-intent";
 
 /** Leave headroom below provider limits for future built-in/meta tools. */
 export const DEFAULT_AGENT_TOOL_LIMIT = 120;
@@ -110,7 +111,11 @@ export function selectToolsForPrompt(
   const maxTools = Math.max(1, options.maxTools ?? DEFAULT_AGENT_TOOL_LIMIT);
   const wantsMotion = MOTION_TERMS.test(prompt);
   const wantsCreation = CREATION_TERMS.test(prompt);
-  const wantsDirector = DIRECTOR_TERMS.test(prompt);
+  // A reference request is a director request: "/mirror" carries no editing
+  // vocabulary at all, so without this the mirror and planning tools would
+  // never reach the model.
+  const wantsReference = mentionsReferenceWorkflow(prompt);
+  const wantsDirector = DIRECTOR_TERMS.test(prompt) || wantsReference;
   const prior = new Set(options.priorToolNames ?? []);
   const promptWords = new Set(words(prompt));
 

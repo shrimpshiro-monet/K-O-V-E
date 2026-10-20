@@ -41,6 +41,33 @@ describe("runTurn", () => {
     expect(result.committed).toBe(true);
   });
 
+  it("lets the model edit when the app already applied the turn's plan", async () => {
+    const host = new HeadlessHost(makeProjectWithClip());
+    const events: AgentEvent[] = [];
+    const result = await runTurn({
+      host,
+      llm: new MockLLMClient([
+        {
+          text: "Adding the title card on top of the mirrored structure.",
+          stopReason: "tool_use",
+          toolUses: [{ id: "t1", name: "add_track", input: { trackType: "text" } }],
+        },
+        { text: "Done.", stopReason: "end_turn", toolUses: [] },
+      ]),
+      tools,
+      messages: userMsg("/mirror make the cuts punchier"),
+      enforceDirectorWorkflow: true,
+      directorPlanApplied: true,
+      onEvent: (event) => events.push(event),
+    });
+
+    expect(
+      events.some((event) => event.type === "tool_result" && event.result.error?.code === "PLAN_REQUIRED"),
+    ).toBe(false);
+    expect(host.getProject().timeline.tracks).toHaveLength(2);
+    expect(result.committed).toBe(true);
+  });
+
   it("allows footage discovery before direct planning", async () => {
     const host = new HeadlessHost(makeProjectWithClip());
     const events: AgentEvent[] = [];

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { RunTurnInput, RunTurnResult } from "@kove-advanced/agent";
+import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 
 const h = vi.hoisted(() => ({
   runTurn: vi.fn(),
@@ -7,7 +8,17 @@ const h = vi.hoisted(() => ({
   isSessionUnlocked: vi.fn(() => true),
   makeBYOKClient: vi.fn(() => ({ complete: vi.fn() })),
   undo: vi.fn(async () => ({ success: true })),
-  projectState: { hasOpenProject: true, projectId: "project-a" },
+  importMedia: vi.fn(async () => ({ success: true })),
+  setMediaAnalysisRole: vi.fn(async () => ({ success: true })),
+  measureReferenceVideo: vi.fn(),
+  enrichReferenceVideo: vi.fn(),
+  applyReferenceStructure: vi.fn(),
+  attachReferenceProfile: vi.fn(),
+  projectState: {
+    hasOpenProject: true,
+    projectId: "project-a",
+    mediaItems: [] as unknown[],
+  },
   undoStackSize: 0,
   settings: {
     defaultLlmProvider: "openai-compatible" as string | null,
@@ -19,13 +30,20 @@ const h = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@kove-advanced/agent", () => ({
-  runTurn: h.runTurn,
-  toAnthropicTools: () => [],
-  toOpenAITools: () => [],
-  buildSystemPrompt: () => "system",
-  selectToolsForPrompt: () => [],
-}));
+vi.mock("@kove-advanced/agent", async () => {
+  // The intent helpers stay real: the store's behavior is what is under test.
+  const intent = await import("@kove-advanced/agent/mirror-intent");
+  return {
+    runTurn: h.runTurn,
+    toAnthropicTools: () => [],
+    toOpenAITools: () => [],
+    buildSystemPrompt: () => "system",
+    selectToolsForPrompt: () => [],
+    setAnalysisMode: () => {},
+    parseReferenceIntent: intent.parseReferenceIntent,
+    referenceIntentDirective: intent.referenceIntentDirective,
+  };
+});
 
 vi.mock("../services/secure-storage", () => ({
   isSessionUnlocked: h.isSessionUnlocked,
@@ -33,7 +51,16 @@ vi.mock("../services/secure-storage", () => ({
 }));
 
 vi.mock("../services/agent/live-host", () => ({
-  LiveEditorHost: class {},
+  LiveEditorHost: class {
+    setMirrorReference(): void {}
+  },
+}));
+
+vi.mock("../services/mirror/reference-flow", () => ({
+  measureReferenceVideo: h.measureReferenceVideo,
+  enrichReferenceVideo: h.enrichReferenceVideo,
+  applyReferenceStructure: h.applyReferenceStructure,
+  attachReferenceProfile: h.attachReferenceProfile,
 }));
 
 vi.mock("../services/agent/llm-transport", () => ({
@@ -50,8 +77,13 @@ vi.mock("./project-store", () => ({
   useProjectStore: {
     getState: () => ({
       hasOpenProject: h.projectState.hasOpenProject,
-      project: { id: h.projectState.projectId },
+      project: {
+        id: h.projectState.projectId,
+        mediaLibrary: { items: h.projectState.mediaItems },
+      },
       undo: h.undo,
+      importMedia: h.importMedia,
+      setMediaAnalysisRole: h.setMediaAnalysisRole,
       actionExecutor: {
         getHistory: () => ({ getUndoStackSize: () => h.undoStackSize }),
       },
@@ -76,6 +108,41 @@ const flush = (): Promise<void> =>
 
 const store = () => useChatStore.getState();
 
+/** A measured reference, as the flow would produce it on this device. */
+const referenceProfile = {
+  version: "kove.mirror.v2",
+  fps: { num: 30, den: 1 },
+  fpsSource: "web-metadata",
+  durationFrames: 60,
+  aspectRatio: { width: 576, height: 640 },
+  shots: [
+    { startFrame: 0, endFrame: 30, cameraMotion: { dominantMove: "static" }, captionWindows: [] },
+    { startFrame: 30, endFrame: 60, cameraMotion: { dominantMove: "pan-left" }, captionWindows: [] },
+  ],
+  rhythmCurve: [30, 30],
+  beatGridMs: [0, 500],
+} as unknown as ReferenceProfile;
+
+const mediaItem = (overrides: Record<string, unknown> = {}) => ({
+  id: "media-source",
+  name: "source.mp4",
+  type: "video",
+  analysisRole: undefined,
+  blob: new Blob([new Uint8Array([1, 2, 3])], { type: "video/mp4" }),
+  fileHandle: null,
+  metadata: { duration: 12 },
+  ...overrides,
+});
+
+/** The user message the model actually received on the last turn. */
+const sentUserContent = (): string => {
+  const call = h.runTurn.mock.calls.at(-1)?.[0] as
+    | { messages: Array<{ role: string; content: string }> }
+    | undefined;
+  const last = call?.messages.at(-1);
+  return last?.role === "user" ? last.content : "";
+};
+
 describe("chat-store", () => {
   beforeEach(() => {
     store().reset();
@@ -93,6 +160,18 @@ describe("chat-store", () => {
     h.settings.agentAutoConfirm = false;
     h.settings.agentDryRun = false;
     h.undoStackSize = 0;
+    h.projectState.mediaItems = [];
+    h.importMedia.mockResolvedValue({ success: true });
+    h.setMediaAnalysisRole.mockResolvedValue({ success: true });
+    h.measureReferenceVideo.mockReset();
+    h.enrichReferenceVideo.mockReset();
+    h.applyReferenceStructure.mockReset();
+    h.attachReferenceProfile.mockReset();
+    h.applyReferenceStructure.mockResolvedValue({
+      shotItemIds: ["clip-1"],
+      summary: "Applied 1 shot",
+      warnings: [],
+    });
   });
 
   it("refuses to run without an open project", async () => {
@@ -718,5 +797,153 @@ describe("chat-store", () => {
     expect(store().conversation).toHaveLength(0);
     expect(store().lastTurnCommitted).toBe(false);
     expect(store().status).toBe("idle");
+  });
+
+  it("tags an attached reference video so the model treats it as style, not footage", async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], "ref.webm", { type: "video/webm" });
+    h.importMedia.mockImplementation(async () => {
+      h.projectState.mediaItems = [mediaItem({ id: "media-ref", name: "ref.webm" })];
+      return { success: true };
+    });
+
+    await store().attachReference(file);
+
+    expect(h.setMediaAnalysisRole).toHaveBeenCalledWith("media-ref", "reference");
+    expect(store().reference).toMatchObject({ mediaId: "media-ref", name: "ref.webm" });
+  });
+
+  it("rebuilds the footage from the reference and tells the model to add craft on top", async () => {
+    h.projectState.mediaItems = [
+      mediaItem({ id: "media-ref", name: "ref.webm", analysisRole: "reference" }),
+      mediaItem({ id: "media-source", name: "source.mp4" }),
+    ];
+    h.measureReferenceVideo.mockResolvedValue({
+      profile: referenceProfile,
+      clock: { fps: { num: 30, den: 1 } },
+    });
+    h.enrichReferenceVideo.mockResolvedValue(referenceProfile);
+    h.runTurn.mockImplementation(
+      impl(async ({ messages }) => ({
+        text: "Done",
+        messages,
+        toolCalls: 0,
+        stoppedReason: "end_turn",
+        committed: true,
+      })),
+    );
+
+    await store().send("/mirror make the cuts punchier");
+
+    expect(h.applyReferenceStructure).toHaveBeenCalledTimes(1);
+    expect(h.attachReferenceProfile).not.toHaveBeenCalled();
+    const content = sentUserContent();
+    expect(content).toContain("REPLICATE");
+    expect(content).toContain("Do NOT call plan_edit");
+    expect(content).toContain("2 shots");
+    expect(content).toContain("30/1 fps");
+    expect(store().messages[0].reference).toMatchObject({
+      name: "ref.webm",
+      intent: "replicate",
+    });
+    // The structure is on the timeline, so the model must not be forced to
+    // plan again — it adds craft to what is already there.
+    expect(h.runTurn.mock.calls.at(-1)?.[0]?.directorPlanApplied).toBe(true);
+  });
+
+  it("keeps the reference as guidance only for the reference intent", async () => {
+    h.projectState.mediaItems = [
+      mediaItem({ id: "media-ref", name: "ref.webm", analysisRole: "reference" }),
+      mediaItem({ id: "media-source", name: "source.mp4" }),
+    ];
+    h.measureReferenceVideo.mockResolvedValue({
+      profile: referenceProfile,
+      clock: { fps: { num: 30, den: 1 } },
+    });
+    h.enrichReferenceVideo.mockResolvedValue(referenceProfile);
+    h.runTurn.mockImplementation(
+      impl(async ({ messages }) => ({
+        text: "Done",
+        messages,
+        toolCalls: 0,
+        stoppedReason: "end_turn",
+        committed: true,
+      })),
+    );
+
+    await store().send("/reference keep the vibe");
+
+    expect(h.attachReferenceProfile).toHaveBeenCalledTimes(1);
+    expect(h.applyReferenceStructure).not.toHaveBeenCalled();
+    expect(sentUserContent()).toContain("REFERENCE");
+    expect(h.runTurn.mock.calls.at(-1)?.[0]?.directorPlanApplied).toBe(false);
+  });
+
+  it("uses the intent picked in the composer when the message is silent", async () => {
+    h.projectState.mediaItems = [
+      mediaItem({ id: "media-ref", name: "ref.webm", analysisRole: "reference" }),
+      mediaItem({ id: "media-source", name: "source.mp4" }),
+    ];
+    h.measureReferenceVideo.mockResolvedValue({
+      profile: referenceProfile,
+      clock: { fps: { num: 30, den: 1 } },
+    });
+    h.enrichReferenceVideo.mockResolvedValue(referenceProfile);
+    h.runTurn.mockImplementation(
+      impl(async ({ messages }) => ({
+        text: "Done",
+        messages,
+        toolCalls: 0,
+        stoppedReason: "end_turn",
+        committed: true,
+      })),
+    );
+    store().setReferenceIntent("recreate");
+
+    await store().send("make it mine");
+
+    expect(h.applyReferenceStructure).toHaveBeenCalledTimes(1);
+    expect(sentUserContent()).toContain("RECREATE");
+  });
+
+  it("reports a failed measurement to the model instead of failing the turn", async () => {
+    h.projectState.mediaItems = [
+      mediaItem({ id: "media-ref", name: "ref.webm", analysisRole: "reference" }),
+      mediaItem({ id: "media-source", name: "source.mp4" }),
+    ];
+    h.measureReferenceVideo.mockRejectedValue(new Error("decode failed"));
+    h.runTurn.mockImplementation(
+      impl(async ({ messages }) => ({
+        text: "Done",
+        messages,
+        toolCalls: 0,
+        stoppedReason: "end_turn",
+        committed: true,
+      })),
+    );
+
+    await store().send("/mirror");
+
+    expect(h.runTurn).toHaveBeenCalled();
+    expect(h.applyReferenceStructure).not.toHaveBeenCalled();
+    const content = sentUserContent();
+    expect(content).toContain("could not be measured");
+    expect(content).toContain("was NOT applied");
+  });
+
+  it("asks for a reference when the intent is requested without one", async () => {
+    h.runTurn.mockImplementation(
+      impl(async ({ messages }) => ({
+        text: "Done",
+        messages,
+        toolCalls: 0,
+        stoppedReason: "end_turn",
+        committed: true,
+      })),
+    );
+
+    await store().send("/mirror");
+
+    expect(h.measureReferenceVideo).not.toHaveBeenCalled();
+    expect(sentUserContent()).toContain("No reference video is attached");
   });
 });

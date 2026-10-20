@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Bot, User } from "@/icons/lucide-compat";
+import { Bot, Paperclip, User } from "@/icons/lucide-compat";
 import type { ChatMessage as ChatMessageData } from "../../../stores/chat-store";
 import { MarkdownMessage } from "./MarkdownMessage";
 import { ToolCallCard } from "./ToolCallCard";
@@ -33,6 +33,19 @@ export function ChatMessage({
         ) : (
           <MarkdownMessage text={message.text} />
         ))}
+        {isUser && message.reference && (
+          <div className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] text-accent">
+            <Paperclip size={10} aria-hidden />
+            <span className="max-w-[10rem] truncate">{message.reference.name}</span>
+            <span className="opacity-70">
+              {message.reference.intent === "replicate"
+                ? "replicate"
+                : message.reference.intent === "recreate"
+                  ? "recreate"
+                  : "reference"}
+            </span>
+          </div>
+        )}
         {!isUser && pending && !message.text && message.toolCalls.length === 0 && (
           <div className="flex items-center gap-1.5 py-1 text-[12px] text-fg-muted" role="status">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
