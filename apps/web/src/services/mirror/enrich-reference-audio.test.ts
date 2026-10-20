@@ -109,4 +109,23 @@ describe("enrichReferenceWithAudio", () => {
     expect(enriched.shots[0]!.captionWindows).toEqual([]);
     expect(enriched.warnings?.join(" ")).toMatch(/transcription failed/i);
   });
+
+  it("gives up on a transcription that never answers instead of blocking the turn", async () => {
+    stubAudioContext();
+    // A model host that accepts the connection but never responds: the promise
+    // stays pending forever, so the stage has to have a ceiling of its own.
+    transcribeMock.mockImplementation(() => new Promise(() => {}));
+    const enriched = await enrichReferenceWithAudio(
+      new Blob([new Uint8Array([1])]),
+      measuredProfile(),
+      { transcriptionTimeoutMs: 20 },
+    );
+    expect(enriched.beatGridMs).toEqual([500, 1000]);
+    expect(enriched.shots[0]!.captionWindows).toEqual([]);
+    expect(enriched.warnings?.join(" ")).toMatch(/transcription failed/i);
+    expect(transcribeMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ timeoutMs: 20 }),
+    );
+  });
 });

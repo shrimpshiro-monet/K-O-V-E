@@ -812,6 +812,27 @@ describe("chat-store", () => {
     expect(store().reference).toMatchObject({ mediaId: "media-ref", name: "ref.webm" });
   });
 
+  it("tags the item the import created, not whichever one arrived first", async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], "ref.webm", { type: "video/webm" });
+    // A source import finishes while the reference import is in flight: the
+    // library now holds both, and the reference must be the one the import
+    // reported — not the first item that appeared.
+    h.projectState.mediaItems = [mediaItem({ id: "media-source", name: "source.webm" })];
+    h.importMedia.mockImplementation(async () => {
+      h.projectState.mediaItems = [
+        mediaItem({ id: "media-source", name: "source.webm" }),
+        mediaItem({ id: "media-ref", name: "ref.webm" }),
+      ];
+      return { success: true, actionId: "media-ref" };
+    });
+
+    await store().attachReference(file);
+
+    expect(h.setMediaAnalysisRole).toHaveBeenCalledWith("media-ref", "reference");
+    expect(h.setMediaAnalysisRole).not.toHaveBeenCalledWith("media-source", "reference");
+    expect(store().reference).toMatchObject({ mediaId: "media-ref" });
+  });
+
   it("rebuilds the footage from the reference and tells the model to add craft on top", async () => {
     h.projectState.mediaItems = [
       mediaItem({ id: "media-ref", name: "ref.webm", analysisRole: "reference" }),

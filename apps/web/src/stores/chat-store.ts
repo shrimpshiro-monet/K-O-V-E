@@ -349,7 +349,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
     const items = useProjectStore.getState().project.mediaLibrary.items;
-    const added = items.find((item) => !before.has(item.id));
+    // The import reports the id of the item it created. Identifying the new
+    // item by diffing the library instead would tag the wrong item when
+    // another import finishes at the same time — and tagging the user's
+    // source footage as the reference would leave the mirror nothing to cut.
+    const added = imported.actionId
+      ? items.find((item) => item.id === imported.actionId)
+      : items.find((item) => !before.has(item.id));
     if (!added) {
       set({ error: "The reference video was imported but could not be identified." });
       return;

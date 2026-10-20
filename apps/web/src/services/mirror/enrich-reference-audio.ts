@@ -10,10 +10,44 @@ import { transcribeWithWordTimestamps } from "../multicam-transcription";
  *
  * All analysis is local — word timings and beat times are numbers; no audio
  * bytes enter the EditDNA artifact. */
+/**
+ * How long the local transcription may take before the reference is used
+ * without caption windows. The Whisper model is fetched from a remote host; a
+ * host that accepts the connection but never answers would otherwise block
+ * the whole reference turn forever.
+ */
+const DEFAULT_TRANSCRIPTION_TIMEOUT_MS = 180_000;
+
+/**
+ * Bounds a promise that may never settle. The transcription worker is
+ * terminated by its own timeout; this is the outer guarantee that the
+ * reference workflow always moves on, whatever the worker does.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export async function enrichReferenceWithAudio(
   file: Blob,
   profile: ReferenceProfile,
-  options: { language?: string; onStatus?: (message: string) => void } = {},
+  options: {
+    language?: string;
+    onStatus?: (message: string) => void;
+    /** Overrides the transcription ceiling (tests use a short one). */
+    transcriptionTimeoutMs?: number;
+  } = {},
 ): Promise<ReferenceProfile> {
   const baseWarnings = profile.warnings ?? [];
   let audioBuffer: AudioBuffer;
@@ -45,15 +79,25 @@ export async function enrichReferenceWithAudio(
   }
 
   let words: ReferenceWordTiming[] = [];
+  const transcriptionTimeoutMs =
+    options.transcriptionTimeoutMs ?? DEFAULT_TRANSCRIPTION_TIMEOUT_MS;
   try {
     options.onStatus?.("Transcribing reference audio locally for caption windows…");
-    words = await transcribeWithWordTimestamps(audioBuffer, {
-      model: "fast",
-      language: options.language,
-      onStatus: options.onStatus,
-    });
-  } catch {
-    stageWarnings.push("Local transcription failed; caption windows were not extracted.");
+    words = await withTimeout(
+      transcribeWithWordTimestamps(audioBuffer, {
+        model: "fast",
+        language: options.language,
+        onStatus: options.onStatus,
+        timeoutMs: transcriptionTimeoutMs,
+      }),
+      transcriptionTimeoutMs,
+      `timed out after ${Math.round(transcriptionTimeoutMs / 1000)}s`,
+    );
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "unknown error";
+    stageWarnings.push(
+      `Local transcription failed (${reason}); caption windows were not extracted.`,
+    );
   }
 
   const { profile: annotated, droppedWords } = applyAudioAnnotations(profile, { words, beatsMs });

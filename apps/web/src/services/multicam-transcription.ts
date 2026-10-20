@@ -41,6 +41,13 @@ export async function transcribeWithWordTimestamps(
     model?: WhisperModelKey;
     language?: string;
     onStatus?: (message: string) => void;
+    /**
+     * Give up after this many milliseconds. The Whisper model is fetched from
+     * a remote host, and a host that accepts the connection but never answers
+     * leaves this promise pending forever — the worker is terminated and the
+     * call rejects instead. Omit it to wait indefinitely.
+     */
+    timeoutMs?: number;
   } = {},
 ): Promise<WhisperWord[]> {
   const worker = new Worker(
@@ -50,6 +57,13 @@ export async function transcribeWithWordTimestamps(
   try {
     const requestId = crypto.randomUUID();
     const chunks = await new Promise<WorkerChunk[]>((resolve, reject) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const settle =
+        <A extends unknown[]>(fn: (...args: A) => void) =>
+        (...args: A): void => {
+          if (timer !== undefined) clearTimeout(timer);
+          fn(...args);
+        };
       const handleMessage = (event: MessageEvent<Record<string, unknown>>) => {
         if (event.data.requestId !== requestId) return;
         const kind = event.data.type;
@@ -62,13 +76,23 @@ export async function transcribeWithWordTimestamps(
           options.onStatus?.("Transcribing locally…");
         } else if (kind === "result") {
           worker.removeEventListener("message", handleMessage);
-          resolve((event.data.chunks as WorkerChunk[] | undefined) ?? []);
+          settle(resolve)((event.data.chunks as WorkerChunk[] | undefined) ?? []);
         } else if (kind === "error") {
           worker.removeEventListener("message", handleMessage);
-          reject(new Error(String(event.data.message ?? "Local transcription failed.")));
+          settle(reject)(new Error(String(event.data.message ?? "Local transcription failed.")));
         }
       };
       worker.addEventListener("message", handleMessage);
+      if (options.timeoutMs !== undefined && options.timeoutMs > 0) {
+        timer = setTimeout(() => {
+          worker.removeEventListener("message", handleMessage);
+          reject(
+            new Error(
+              `Local transcription timed out after ${Math.round(options.timeoutMs! / 1000)}s`,
+            ),
+          );
+        }, options.timeoutMs);
+      }
       worker.postMessage({
         requestId,
         type: "transcribe",
