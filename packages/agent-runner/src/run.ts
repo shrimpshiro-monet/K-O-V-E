@@ -93,9 +93,11 @@ async function prepareReferencePrompt(
     referenceMediaId: reference?.id,
     attached: Boolean(reference),
     applied,
+    warnings: profile?.warnings ?? [],
     ...(profile
       ? {
           fps: `${profile.fps.num}/${profile.fps.den}`,
+          durationSeconds: (profile.durationFrames * profile.fps.den) / profile.fps.num,
           shotCount: profile.shots.length,
           aspectRatio: `${profile.aspectRatio.width}x${profile.aspectRatio.height}`,
           dominantMoves: profile.shots.map(
