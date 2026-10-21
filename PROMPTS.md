@@ -18,6 +18,82 @@ Compare `gateRates.allGates.mean` + the new `quality` section against the curren
 
 ---
 
+## Verified contradictions (external audit — proven against source)
+
+Each claim below was checked line-by-line against the repo; verdicts are what a
+fix must actually reconcile.
+
+1. **Two opposite density rules — CONFIRMED.** The density contract is "a floor,
+   not a ceiling" for "12-24 shots, 6-15 effect hits" (`director-prompt.ts:62`,
+   `:264`), while the same prompt's Variety rule says "For 30s of edit: 2-4
+   transitions total, 2-5 segment-specific effects" (`:137`), and the main agent
+   prompt repeats the restraint side: "Less is more… Over-editing is worse than
+   under-editing" (`system-prompt.ts:138`). 6-15 vs 2-5 is unsatisfiable — the
+   model picks per sample, which is exactly the inconsistent craft we score at 0.53.
+2. **Contrast/saturation specified three incompatible ways — CONFIRMED.**
+   Director: `value 0..2` CSS multipliers, "Never pass percent offsets"
+   (`director-prompt.ts:90`). Main prompt: `-100..100` for brightness/contrast/
+   saturation (`system-prompt.ts:120`). Auto-generated manifest: `min -100,
+   max 100, unit "%", default 0` (`docs/AGENT-CAPABILITIES.md` capability
+   manifest). Renderer truth: `video-engine.ts:4040-4045` builds raw CSS
+   (`brightness(1+value)`, `contrast(value || 1)`, `saturate(value || 1)`) and
+   core presets use multiplier-scale values (contrast 1.15-1.4, brightness ±5).
+   **Note:** the audit's specific "1.2 → +1.2% no-op" mechanism is *not* what
+   the renderer does (1.2 → +20% there); the proven fact is the three-way
+   contradiction, and the likely real failure modes are blown frames (a model
+   following `-100..100` sends 20-50 → 20-50×) or falsy no-ops (`0 || 1`).
+   Where (if anywhere) params get normalized on the `add_video_effect` path must
+   be traced during the fix — the fix must end with **one documented scale** and
+   the manifest regenerated (`pnpm --filter @kove-advanced/agent gen:docs`).
+3. **Director told to execute work it can't do — CONFIRMED.** Workflow step 4
+   says "IMMEDIATELY EXECUTE the accepted plan by calling editing tools
+   (split_clip, move_clip…)" and step 5 "respond with ONLY a brief summary"
+   (`director-prompt.ts:194-195`), but the director call receives **only**
+   `submit_edit_plan` (`registry.ts:33769-33770`) and is explicitly told "do
+   not respond with plain text" (`:33781`). ~15% of the prompt is instructions
+   for the main agent, not this call.
+4. **Text timing impossible on hook shots — CONFIRMED (arithmetic).** Text must
+   start 0.3-0.5s after a segment starts and end 0.3s before it ends
+   (`director-prompt.ts:140-141`), while hook shots are 0.4-1.0s (`:146`).
+   Every hook shorter than ~0.8s yields zero/negative text duration — and
+   textElements are *required* for social/short-form (`:115`), i.e. the prompt
+   forbids text on the shot it says is most important.
+5. **Craft graded via counts — CONFIRMED structurally.** The pre-submit
+   self-check is 9 items where 1-8 are count/structure checks and only item 9
+   is qualitative ("Would a human editor recognise this…") (`director-prompt.ts:178-187`);
+   the review gate "read[s] the plan you submit — not your rationale" (`:193`)
+   and forces revision when counts fall short (`creation-schema/src/director/density.ts`).
+   The model is paid in counts → confetti.
+6. **Beat-snapping targets source audio, not the music track — CONFIRMED at
+   schema level.** `beatTimestamps` exist only on source segments
+   (`creation-schema/src/director/segment-map.ts:25`); nothing analyzes beats of
+   a separately-uploaded music file in the plan_edit flow (the only waveform beat
+   tool, `registry.ts:24540`, drives motion compositions, not cuts). Music-driven
+   prompts snap cuts to the VOD's audio, not the track's.
+7. **Rules copy-pasted across 3-4 surfaces — CONFIRMED**; it is the root cause
+   of #1 and #2 and will keep producing drift until one source owns each rule.
+
+**Not the prompt (don't spend prompt effort here):** the planner has no visual
+feedback (text + numbers only; repair catches schema errors/counts, never "looks
+wrong"), and renderer quality of an effect/transition is independent of wording.
+
+### Decisive experiments (in priority order)
+1. **Code-trace first (free):** settle the effect-param scale end-to-end
+   (tool → materializer → renderer) and fix to one scale. Already half-done —
+   see #2 above.
+2. **Baseline A/B (needs quota):** run the existing harness on the current
+   prompt, then again after fixes #1-#4; compare `gateRates.allGates.mean`
+   (now 0.639), craft (0.53), and `quality.meanOverall`.
+3. **Arms B/C + blind export rating** (from the audit): B = fixes above,
+   C = a minimal ~600-token prompt (role, schema, vocabulary, "every cut needs
+   a reason"). If C beats B, the density contract itself is the problem; if
+   all arms tie, the cause is missing visual feedback/renderer, not wording.
+   Note: plans aren't persisted by the harness today — if the "inspect 20 real
+   plans' contrast values" check is wanted, add plan JSON dumps to
+   `runBaselineCase` first (small, additive).
+
+---
+
 ## Priority 1 — The director (makes the EditPlans that are failing)
 
 | # | What | Where |
@@ -108,10 +184,24 @@ also prompt surface: confusing schemas cause malformed calls regardless of wordi
 
 ## Suggested fix order
 
-1. **#1 + #5 together** — anti-overlap must be structurally unmissable (example of
-   correct sequential placement; repair text should show the fixed plan, not the rule again).
-2. **#1 + #4** — require/encourage transitions and craft per genre; verify via the
-   `craft` quality component (currently 0.53 → should rise).
-3. **#3 + #5** — single canonical target-duration statement; repair checks length.
-4. Rerun baseline → compare `gateRates.allGates.mean` (now 0.639) and `quality.meanOverall`
-   (to be established on the next full run) before considering a model swap.
+1. **Stop the bleeding (Priority 1 #1 + #5):** anti-overlap structurally unmissable
+   (show correct sequential placement; repair shows the fixed plan, not the rule again).
+2. **Reconcile audit #1 (density):** one density number set across
+   `DIRECTOR_SYSTEM_PROMPT` (:62/:137/:264) and `system-prompt.ts:138` — decide
+   floor-vs-restraint once (or make it genre-conditional) and delete the copies.
+3. **Reconcile audit #2 (effect scales):** one documented scale for contrast/
+   saturation/brightness across director prompt, main prompt, and manifest;
+   trace `add_video_effect` → renderer to confirm, then regenerate the manifest.
+4. **Delete audit #3:** remove the execute-with-editing-tools Workflow steps
+   (194-195) from `DIRECTOR_SYSTEM_PROMPT` — that text belongs (if anywhere) in
+   `buildSystemPrompt`, which already says plan_edit applies the plan itself.
+5. **Fix audit #4 math:** text timing rule vs hook length — either exempt hook
+   shots or shrink margins for segments < ~1.5s.
+6. **Craft balance (Priority 1 #1 + #4):** value transitions/craft per genre;
+   consider demoting some of self-check items 1-8 so counts stop being the whole
+   scoreboard. Verify via the `craft` quality component (0.53 → should rise).
+7. **Length (Priority 1 #3):** one canonical target-duration statement; repair
+   re-checks it.
+8. Rerun baseline → compare `gateRates.allGates.mean` (now 0.639), craft, and
+   `quality.meanOverall` before considering a model swap. Then the audit's
+   A/B/C arms if deeper evidence is needed.
