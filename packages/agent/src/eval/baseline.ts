@@ -19,6 +19,13 @@ import type { LLMClient, LLMSend } from "../llm";
 import { getGenreById } from "../director";
 import { loadCorpus, missingAssets, resolveCorpusFile } from "./corpus";
 import type { EvalProject, EvalPrompt, PromptType } from "./corpus";
+import {
+  bestQuality,
+  loadReferenceFingerprints,
+  summarizeQuality,
+  type QualityScore,
+  type ReferenceFingerprint,
+} from "./quality";
 
 export const REPO_ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../..");
 export const CORPUS_DIR = resolve(REPO_ROOT, "evaluation-files");
@@ -405,6 +412,11 @@ export interface BaselineCaseResult {
     readonly planScore: number | null;
     readonly timelineDuration: number;
   };
+  /**
+   * Structural quality vs the best-matching real reference fingerprint
+   * (cut granularity, rhythm, craft). Informational — never part of ok/gates.
+   */
+  readonly quality?: QualityScore | null;
 }
 
 export interface GateRate {
@@ -454,6 +466,8 @@ export interface BaselineSummary {
     readonly incompleteIds: readonly string[];
   };
   readonly results: readonly BaselineCaseResult[];
+  /** Aggregate quality over passing, non-quota runs (absent when nothing scored). */
+  readonly quality?: ReturnType<typeof summarizeQuality>;
 }
 
 /** Workers AI daily-free-allocation exhaustion is transport, not a model result. */
@@ -488,6 +502,7 @@ export async function runBaselineCase(opts: {
   readonly client: LLMClient;
   readonly root?: string;
   readonly run?: number;
+  readonly references?: readonly ReferenceFingerprint[];
 }): Promise<BaselineCaseResult> {
   const started = Date.now();
   const id = `${opts.entry.id}/${opts.prompt.id}`;
@@ -587,6 +602,34 @@ export async function runBaselineCase(opts: {
       0,
     );
 
+    // Primary-track cut rhythm: the busiest non-audio/non-text track, in
+    // timeline order. This is what a viewer perceives as "the edit".
+    const primaryTrack = tracks
+      .filter(track => (track.clips ?? []).length > 0 && track.type !== "audio" && track.type !== "text")
+      .sort((a, b) => (b.clips?.length ?? 0) - (a.clips?.length ?? 0))[0];
+    const clipDurationsSec = (primaryTrack?.clips ?? [])
+      .slice()
+      .sort((a, b) => a.startTime - b.startTime)
+      .map(clip => clip.duration)
+      .filter(duration => Number.isFinite(duration) && duration > 0);
+    const transitionCount = data?.transitionIds?.length ?? 0;
+    const effectCount = data?.effectCount ?? 0;
+    const textCount = data?.textIds?.length ?? 0;
+    const quality =
+      opts.references && opts.references.length > 0 && clipDurationsSec.length > 0
+        ? bestQuality(
+            {
+              clipCount: clipDurationsSec.length,
+              clipDurationsSec,
+              timelineDuration,
+              transitionCount,
+              effectCount,
+              textCount,
+            },
+            opts.references,
+          )
+        : null;
+
     const gates: BaselineGates = { planValidates, materializes, noClipOverlaps: overlaps.length === 0 };
     const passed = gates.planValidates && gates.materializes && gates.noClipOverlaps && toolOk;
     if (!passed && failures.length === 0) failures.push("one or more hard gates failed");
@@ -606,13 +649,14 @@ export async function runBaselineCase(opts: {
       stats: {
         durationMs: Date.now() - started,
         clipCount,
-        transitionCount: data?.transitionIds?.length ?? 0,
-        effectCount: data?.effectCount ?? 0,
+        transitionCount,
+        effectCount,
         audioCount: data?.audioClipIds?.length ?? 0,
-        textCount: data?.textIds?.length ?? 0,
+        textCount,
         planScore: data?.planReview?.score ?? null,
         timelineDuration,
       },
+      quality,
     };
   } catch (error) {
     failures.push(`threw: ${error instanceof Error ? error.message : String(error)}`);
@@ -676,6 +720,8 @@ export interface RunBaselineOptions {
   readonly concurrency?: number;
   readonly reportPath?: string;
   readonly root?: string;
+  /** Directory of measured reference profiles (real-*.json). Default: evaluation-files/reference. */
+  readonly referenceDir?: string;
   readonly onCase?: (result: BaselineCaseResult) => void;
 }
 
@@ -745,6 +791,10 @@ export function summarizeBaseline(
     else mixedIds.push(id);
   }
 
+  const qualitySummary = summarizeQuality(
+    valid.filter(r => r.ok && r.quality).map(r => r.quality!),
+  );
+
   return {
     generatedAt: new Date().toISOString(),
     model: opts.model,
@@ -770,6 +820,7 @@ export function summarizeBaseline(
       incomplete: incompleteIds.length,
       incompleteIds,
     },
+    ...(qualitySummary ? { quality: qualitySummary } : {}),
     results,
   };
 }
@@ -790,6 +841,9 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
   }
 
   const runsPerCombo = Math.max(1, opts.runsPerCombo ?? 1);
+  const references = loadReferenceFingerprints(
+    opts.referenceDir ?? resolve(root, "reference"),
+  );
   const combos = corpus
     .flatMap(entry => entry.prompts.map(prompt => ({ entry, prompt })))
     .slice(0, Math.max(1, opts.limit ?? Number.MAX_SAFE_INTEGER));
@@ -807,6 +861,7 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
       client,
       root,
       run: item.run,
+      references,
     });
     if (result.quotaExhausted) quotaHit = true;
     opts.onCase?.(result);
