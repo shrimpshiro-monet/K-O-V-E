@@ -16,6 +16,10 @@ Rerun the live eval when quota resets:
 `cd packages/agent && KOVE_EVAL_BASELINE=1 node_modules/.bin/vitest run src/eval/baseline.test.ts`
 Compare `gateRates.allGates.mean` + the new `quality` section against the current report.
 
+**Ready-to-land package:** `DIRECTOR-V2-HANDOFF.md` — the v2 director prompt
+plus every required code change (repair-shows-corrected-plan, length clamp,
+effect-param single source, plan-JSON dump) in order.
+
 ---
 
 ## Verified contradictions (external audit — proven against source)
