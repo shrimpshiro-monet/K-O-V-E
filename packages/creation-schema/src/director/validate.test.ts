@@ -400,4 +400,50 @@ describe("relayPlanSegmentsSequentially", () => {
     );
     expect(relayed.segments.every((segment) => Number.isFinite(segment.targetPosition))).toBe(true);
   });
+
+  it("caps the timeline at maxEndSeconds — trims the tail and drops shots past the cap", () => {
+    // Three 4s shots (0-12) for a 6s target: the middle shot loses its tail,
+    // the third starts past the cap and goes away. Length is arithmetic.
+    const { plan: relayed, trimmed, dropped } = relayPlanSegmentsSequentially(
+      withSegments([seg(0, 0), seg(1, undefined), seg(2, undefined)]),
+      { maxEndSeconds: 6 },
+    );
+    expect(trimmed).toBe(1);
+    expect(dropped).toEqual([2]);
+    expect(relayed.segments).toHaveLength(2);
+    expect(relayed.segments[0].targetPosition).toBe(0);
+    expect(relayed.segments[1].targetPosition).toBe(4);
+    expect(relayed.segments[1].sourceEndTime - relayed.segments[1].sourceStartTime).toBeCloseTo(2, 5);
+    expect(relayed.segments[1].sourceStartTime).toBe(4);
+  });
+
+  it("remaps index references when cap drops segments and drops transitions into them", () => {
+    const { plan: relayed, dropped } = relayPlanSegmentsSequentially(
+      withSegments(
+        [seg(0, 0), seg(1, undefined), seg(2, undefined)],
+        [
+          { afterSegmentIndex: 0, type: "crossfade", duration: 0.2, rationale: "smooth" },
+          { afterSegmentIndex: 1, type: "crossfade", duration: 0.2, rationale: "smooth" },
+        ],
+      ),
+      { maxEndSeconds: 6 },
+    );
+    expect(dropped).toEqual([2]);
+    // Transition into the kept boundary survives at its remapped index; the
+    // transition into the dropped shot points past the kept list and goes.
+    expect(relayed.transitions).toHaveLength(1);
+    expect(relayed.transitions[0].afterSegmentIndex).toBe(0);
+  });
+
+  it("leaves a plan that already fits untouched when a cap is supplied", () => {
+    const original = withSegments([seg(0, 0), seg(1, undefined)]);
+    const { plan: relayed, trimmed, dropped, changes } = relayPlanSegmentsSequentially(
+      original,
+      { maxEndSeconds: 60 },
+    );
+    expect(trimmed).toBe(0);
+    expect(dropped).toEqual([]);
+    expect(changes).toEqual([]);
+    expect(relayed).toBe(original);
+  });
 });

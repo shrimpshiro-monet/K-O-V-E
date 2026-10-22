@@ -567,10 +567,14 @@ describe("plan_edit integrity", () => {
   // C3: length is contract-checked, never model-claimed
   // -----------------------------------------------------------------------
 
-  it("rejects a plan over +10% of the contract target even when metadata.targetDuration agrees with it", async () => {
+  it("caps a runaway over-length plan to the contract target instead of rejecting it", async () => {
     // The audited drift (GAP 3): a model claimed 220s of segments for a 30s
     // request and the code shipped it because metadata.targetDuration was the
-    // only thing checked. The target comes from the request now.
+    // only thing checked. The target comes from the request now — and length
+    // being arithmetic, the relay enforces it in code (trim tail, drop shots
+    // that start past the target) rather than gambling the rejection on a
+    // repair round-trip the model has been observed to lose. metadata.
+    // targetDuration agreeing with the model still does not set the target.
     const overshoot = validPlan({
       segments: [
         {
@@ -598,18 +602,12 @@ describe("plan_edit integrity", () => {
     const h = harness([planResponse(overshoot), planResponse(overshoot)]);
     const result = await executeTool("plan_edit", { prompt: "make a 30s tiktok edit" }, h.host);
 
-    expect(result.ok).toBe(false);
-    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
-    const data = result.data as {
-      issues: Array<{ code: string; message: string }>;
-      durationCheck: { targetSeconds: number; planSeconds: number; availableVideoSeconds: number };
-    };
-    expect(data.issues.some((issue) => issue.code === "plan_length_out_of_tolerance")).toBe(true);
-    // The rejection is informative: expected, computed, and available.
-    expect(data.durationCheck.targetSeconds).toBe(30);
-    expect(data.durationCheck.planSeconds).toBeCloseTo(204, 5);
-    expect(data.durationCheck.availableVideoSeconds).toBe(10);
-    expect(timelineClips(h.project)).toHaveLength(0);
+    expect(result.ok).toBe(true);
+    // The shot starting at 200s (past the 30s target) is gone; the kept shot
+    // landed on the timeline.
+    const clips = timelineClips(h.project);
+    expect(clips.length).toBeGreaterThanOrEqual(1);
+    expect(clips.every((clip) => clip.startTime + clip.duration <= 30 + 1e-6)).toBe(true);
   });
 
   it("rejects an under-length plan when the footage could cover the target", async () => {

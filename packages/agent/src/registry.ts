@@ -2061,7 +2061,7 @@ function actionTool(spec: ActionToolSpec): RegisteredTool {
  * default (4096) truncates dense EditPlans mid-tool-call, which then fail
  * JSON parsing and surface as "no plan returned".
  */
-const DIRECTOR_PLAN_MAX_TOKENS = 8192;
+const DIRECTOR_PLAN_MAX_TOKENS = 16384;
 
 /**
  * Every timeline entity a single plan_edit commit creates. Filled as
@@ -2455,14 +2455,31 @@ async function materializeEditPlan(
   // owns and was how video clips ended up in the Music lane.
   let musicTrack = host.getProject().timeline.tracks.find((track) => track.type === "audio" && track.name === "Music");
   let sfxTrack = host.getProject().timeline.tracks.find((track) => track.type === "audio" && track.name === "SFX");
+  // Media references the model writes are often the filename the user's prompt
+  // quoted ("21 Savage - a lot.mp3") while the library stores a prefixed name
+  // ("audio/21 Savage - a lot.mp3"). Resolve past directory prefixes and, as a
+  // last resort, extensions — never the other way around a hard miss.
+  const normalizeMediaRef = (value: string): string =>
+    value.trim().toLowerCase().replace(/\\/g, "/").replace(/^[^/]+\//, "");
+  const mediaItems = () => host.getProject().mediaLibrary.items.filter((item) => item.type === "audio" || item.type === "video");
+  const resolveMedia = (reference: string) => {
+    const items = mediaItems();
+    return items.find((item) => item.id === reference)
+      ?? items.find((item) => item.name === reference)
+      ?? items.find((item) => normalizeMediaRef(item.name) === normalizeMediaRef(reference))
+      ?? items.find((item) => {
+        const name = normalizeMediaRef(item.name).replace(/\.[a-z0-9]+$/, "");
+        const wanted = normalizeMediaRef(reference).replace(/\.[a-z0-9]+$/, "");
+        return wanted.length > 0 && name === wanted;
+      });
+  };
   for (const decision of plan.audioDecisions) {
     if (decision.type === "silence") continue;
     if (!decision.sourceVideoId) {
       console.warn(`[plan_edit] skipping audio decision ${decision.type} — no sourceVideoId`);
       continue;
     }
-    const media = host.getProject().mediaLibrary.items.find((item) => item.id === decision.sourceVideoId)
-      ?? host.getProject().mediaLibrary.items.find((item) => item.name === decision.sourceVideoId);
+    const media = resolveMedia(decision.sourceVideoId);
     if (!media) {
       const available = host.getProject().mediaLibrary.items
         .filter((item) => item.type === "audio" || item.type === "video")
@@ -2835,9 +2852,19 @@ function normalizeDirectorPlanInput(value: unknown): EditPlan {
           : undefined,
         // Camera moves keep their raw shape: `normalizeEditPlan` coerces the
         // numbers and validation reports unknown move ids with the supported
-        // list, so a typo gets repaired instead of silently dropped.
+        // list, so a typo gets repaired instead of silently dropped. Models
+        // habitually emit `type` (the shape effectSpecs/transitions use), so
+        // alias it onto `move` — the key the compiler and validator read.
         cameraMoves: Array.isArray(segment.cameraMoves)
-          ? segment.cameraMoves.filter((move): move is Record<string, unknown> => Boolean(move && typeof move === "object"))
+          ? segment.cameraMoves
+              .filter((move): move is Record<string, unknown> => Boolean(move && typeof move === "object"))
+              .map(move =>
+                typeof move.move === "string"
+                  ? move
+                  : typeof move.type === "string"
+                    ? { ...move, move: move.type }
+                    : move,
+              )
           : undefined,
         speedRamp: speedRamp ? {
           keyframes: Array.isArray(speedRamp.keyframes)
@@ -33499,6 +33526,7 @@ const TOOLS: RegisteredTool[] = [
         trackIndex: { type: "integer" },
         targetPosition: num,
         speed: num,
+        cameraMoves: { type: "array", items: obj({ move: str, intensity: num }) },
         speedRamp: obj({
           keyframes: { type: "array", items: obj({ time: num, speed: num, easing: str }) },
           freezeFrames: { type: "array", items: obj({ sourceTime: num, startTime: num, duration: num }) },
@@ -33817,13 +33845,38 @@ const TOOLS: RegisteredTool[] = [
           ? toAnthropicTools(["submit_edit_plan"])
           : toOpenAITools(["submit_edit_plan"]);
 
-      const requestPlan = async (system: string, messages: LoopMessage[]) =>
-        host.llm!.client.complete({
-          system,
-          messages,
-          tools: planTools,
-          maxTokens: DIRECTOR_PLAN_MAX_TOKENS,
-        });
+      const requestPlan = async (system: string, messages: LoopMessage[]) => {
+        // Workers AI intermittently 408s on long generations; one quick retry
+        // turns a dead run into a pass. Quota (429/daily-allocation) never
+        // retries — it would just burn the clock until the report excludes it.
+        // Pinned sampling means an identical retry replays the same slow
+        // generation, so the retry carries a compactness steer instead.
+        let attemptMessages = messages;
+        for (let attempt = 0; ; attempt++) {
+          try {
+            return await host.llm!.client.complete({
+              system,
+              messages: attemptMessages,
+              tools: planTools,
+              maxTokens: DIRECTOR_PLAN_MAX_TOKENS,
+            });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            const quota = /quota|allocation|used up|429|code.?:?4006/i.test(message);
+            const transient = /408|timeout|timed out|5\d{2}|ECONNRESET|fetch failed/i.test(message);
+            if (quota || !transient || attempt >= 1) throw error;
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+            attemptMessages = [
+              ...messages,
+              {
+                role: "user" as const,
+                content:
+                  "Respond compactly: call submit_edit_plan immediately with no preamble, rationales of 12 words or fewer.",
+              },
+            ];
+          }
+        }
+      };
 
       const initialRequest =
         "Analyze the footage and call submit_edit_plan with your complete EditPlan. You must call submit_edit_plan — do not respond with plain text.";
@@ -33832,7 +33885,7 @@ const TOOLS: RegisteredTool[] = [
       let response = await requestPlan(directorPrompt, [{ role: "user", content: initialRequest }]);
       let planCall = response.toolUses.find((t) => t.name === "submit_edit_plan");
       let truncatedRetries = 0;
-      while (!planCall && response.stopReason === "max_tokens" && truncatedRetries < 1) {
+      while (!planCall && response.stopReason === "max_tokens" && truncatedRetries < 2) {
         truncatedRetries += 1;
         response = await requestPlan(directorPrompt, [
           { role: "user", content: initialRequest },
@@ -33840,7 +33893,7 @@ const TOOLS: RegisteredTool[] = [
           {
             role: "user",
             content:
-              "Your previous response was cut off before the tool call completed (output token limit). Resubmit the COMPLETE EditPlan via submit_edit_plan with shorter rationales.",
+              "Your previous response was cut off before the tool call completed (output token limit). Do not preamble or explain — call submit_edit_plan immediately as your first output. Submit the COMPLETE EditPlan with rationales of 12 words or fewer.",
           },
         ]);
         planCall = response.toolUses.find((t) => t.name === "submit_edit_plan");
@@ -33918,9 +33971,14 @@ const TOOLS: RegisteredTool[] = [
         // Deterministic placement relay (C2): stacked same-track shots are
         // re-laid by arithmetic — push-forward per track, gaps kept — before
         // validation ever judges them. This is the "repair shows the corrected
-        // plan" normalization done in code; the model's repair turn is only
-        // for errors that are not pure timing arithmetic.
-        const relayed = relayPlanSegmentsSequentially(resolved);
+        // plan" normalization in code; the model's repair turn is only
+        // for errors that are not pure timing arithmetic. Length is arithmetic
+        // too: the relay trims tail source ranges to the contract target and
+        // drops segments that start past it, so a 46-minute timeline is
+        // mechanically impossible rather than a repair round-trip gamble.
+        const relayed = relayPlanSegmentsSequentially(resolved, {
+          maxEndSeconds: lengthTargetSeconds,
+        });
         placementRepairs = relayed.changes;
         const issues: DirectorValidationIssue[] = [...validateEditPlan(relayed.plan, resolvedMap)];
         const lengthIssue = lengthGate(relayed.plan);

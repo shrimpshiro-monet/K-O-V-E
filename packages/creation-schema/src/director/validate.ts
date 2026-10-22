@@ -503,9 +503,22 @@ export interface PlacementRepair {
  * plan is the same plan with explicit `targetPosition` written on every
  * segment — the canonical layout to hand back to the model (or commit).
  */
-export function relayPlanSegmentsSequentially(plan: EditPlan): {
+export function relayPlanSegmentsSequentially(
+  plan: EditPlan,
+  options?: {
+    /**
+     * Deterministic length cap: segments are trimmed (tail of the source
+     * range) so no kept shot ends past this many seconds, and segments that
+     * start at or past it are dropped with their index references remapped.
+     * Length is arithmetic — same creed as the placement relay.
+     */
+    readonly maxEndSeconds?: number;
+  },
+): {
   plan: EditPlan;
   changes: PlacementRepair[];
+  trimmed: number;
+  dropped: number[];
 } {
   const base = computePlanPlacement(plan);
   const transitionAfter = new Set(
@@ -527,15 +540,82 @@ export function relayPlanSegmentsSequentially(plan: EditPlan): {
     positions.push(position);
     runningEnd.set(trackKey, Math.max(runningEnd.get(trackKey) ?? 0, position + duration));
   });
-  if (changes.length === 0) return { plan, changes: [] };
-  const relayed: EditPlan = {
-    ...plan,
-    segments: plan.segments.map((segment, index) => ({
+
+  const cap = options?.maxEndSeconds;
+  const droppedSet = new Set<number>();
+  const trimmedSet = new Set<number>();
+  if (cap !== undefined && cap > 0) {
+    plan.segments.forEach((segment, index) => {
+      if (positions[index] >= cap - 1e-6) {
+        droppedSet.add(index);
+        return;
+      }
+      const room = cap - positions[index];
+      const duration = Math.max(0, segment.sourceEndTime - segment.sourceStartTime);
+      if (duration > room) {
+        trimmedSet.add(index);
+      }
+    });
+  }
+
+  const dropped = [...droppedSet];
+  const trimmed = trimmedSet.size;
+  if (changes.length === 0 && trimmed === 0 && dropped.length === 0) {
+    return { plan, changes: [], trimmed: 0, dropped: [] };
+  }
+
+  const keptIndices = plan.segments
+    .map((_, index) => index)
+    .filter(index => !droppedSet.has(index));
+  const keptIndex = new Map(keptIndices.map((kept, position) => [kept, position]));
+  const remapChanges = changes
+    .filter(change => keptIndex.has(change.segmentIndex))
+    .map(change => ({ ...change, segmentIndex: keptIndex.get(change.segmentIndex)! }));
+
+  const segments = keptIndices.map(index => {
+    const segment = plan.segments[index];
+    const trimmedHere = trimmedSet.has(index);
+    return {
       ...segment,
       targetPosition: positions[index],
-    })),
+      sourceEndTime: trimmedHere
+        ? segment.sourceStartTime + Math.max(0, cap! - positions[index])
+        : segment.sourceEndTime,
+    };
+  });
+
+  const transitions = plan.transitions
+    .map(transition => {
+      const mapped = keptIndex.get(transition.afterSegmentIndex);
+      return mapped === undefined ? undefined : { ...transition, afterSegmentIndex: mapped };
+    })
+    .filter((transition): transition is EditPlan["transitions"][number] =>
+      transition !== undefined && transition.afterSegmentIndex < segments.length - 1);
+
+  const effects = plan.effects
+    .filter(effect => effect.targetSegmentIndex === undefined || keptIndex.has(effect.targetSegmentIndex))
+    .map(effect =>
+      effect.targetSegmentIndex === undefined
+        ? effect
+        : { ...effect, targetSegmentIndex: keptIndex.get(effect.targetSegmentIndex)! },
+    );
+
+  const motionMoments = (plan.motionMoments ?? [])
+    .filter(moment => moment.segmentIndex === undefined || keptIndex.has(moment.segmentIndex))
+    .map(moment =>
+      moment.segmentIndex === undefined
+        ? moment
+        : { ...moment, segmentIndex: keptIndex.get(moment.segmentIndex)! },
+    );
+
+  const relayed: EditPlan = {
+    ...plan,
+    segments,
+    transitions,
+    effects,
+    motionMoments,
   };
-  return { plan: relayed, changes };
+  return { plan: relayed, changes: remapChanges, trimmed, dropped };
 }
 
 function rangesOverlap(left: PlannedSegment, right: PlannedSegment): boolean {

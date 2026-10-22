@@ -58,6 +58,22 @@ describe("director prompt", () => {
     expect(inferTargetDuration("give me about 2 minutes", "slow")).toBe(120);
     expect(inferTargetDuration("just make something cool", "fast")).toBe(30);
 
+    // Hyphenated runtimes are real targets; interval phrases are not. The
+    // corpus prompt that broke C3 verbatim: "Cut a 45-second YouTube Short …
+    // hit roughly one point every 12-15 seconds" used to infer 15s.
+    expect(
+      inferTargetDuration(
+        "Cut a 45-second YouTube Short from podcast #1.mp4 that teaches one clear idea. Hit roughly one point every 12-15 seconds.",
+        "medium",
+      ),
+    ).toBe(45);
+    // Even when the interval phrase comes first.
+    expect(inferTargetDuration("Every 12-15 seconds, cut a 45-second clip", "fast")).toBe(45);
+    // Offset phrases after the runtime must not win by being matched first.
+    expect(
+      inferTargetDuration("Make a 30-second TikTok. Start about 2 seconds before the punchline.", "fast"),
+    ).toBe(30);
+
     const contract = buildDensityContract("30 second tiktok edit", PRE_BAKED_GENRES[0]);
     expect(contract.targetDuration).toBe(30);
     expect(contract.shots[0]).toBeGreaterThanOrEqual(12);

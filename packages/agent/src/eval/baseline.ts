@@ -641,7 +641,10 @@ export async function runBaselineCase(opts: {
       .sort((a, b) => a.startTime - b.startTime)
       .map(clip => clip.duration)
       .filter(duration => Number.isFinite(duration) && duration > 0);
-    const transitionCount = data?.transitionIds?.length ?? 0;
+    // transitionCount is the materializer's own count of successful
+    // transition/add calls; transitionIds is diff-detected and silently 0
+    // when that detection misses — prefer the authoritative one.
+    const transitionCount = data?.transitionCount ?? data?.transitionIds?.length ?? 0;
     const effectCount = data?.effectCount ?? 0;
     const textCount = data?.textIds?.length ?? 0;
     const quality =

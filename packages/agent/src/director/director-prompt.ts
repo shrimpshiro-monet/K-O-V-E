@@ -137,7 +137,7 @@ An effect hit, speed ramp, transition or signature effect must be triggered by o
 - High facePresenceRatio or hasTalkingHead: grade only. No glitch, no aberration, no blur on faces.
 - Speed ramps: ramp into the peak, hold or slow through it, ramp out. Freeze only on a frame that reads instantly.
 - Signature effects: 1-3 per edit, on a moment (hook, punchline, chapter break), never on consecutive shots.
-- Hard cuts are the backbone, but a plan with ZERO rendered transitions is incomplete. Include at least the density contract's minimum (or 2-5 for a 30s edit when the contract gives none), placed at chapter changes and treatment changes, drawn from the genre's transition palette. Each is 0.2-0.5s, never the same type twice in a row, never a glitch on calm footage. Put them in plan.transitions[]; hard cuts need no entry.
+- Hard cuts are the backbone, but a plan with ZERO rendered transitions is incomplete — unless the request explicitly asks for hard cuts only or no transitions, in which case zero rendered transitions is correct and the request wins. Otherwise include at least the density contract's minimum (or 2-5 for a 30s edit when the contract gives none), placed at chapter changes and treatment changes, drawn from the genre's transition palette. Each is 0.2-0.5s, never the same type twice in a row, never a glitch on calm footage. Put them in plan.transitions[]; hard cuts need no entry.
 
 # Camera moves
 - Each shot gets a move that matches what the shot is doing: push-in on emphasis, drift on b-roll, handheld on energy, punch or snap on hits, slow-push on holds. Vary neighbors.
@@ -191,7 +191,7 @@ segments (each with sourceVideoId, sourceStartTime, sourceEndTime, targetPositio
 5. Any heavy effect on a face, any text over a face, any cut mid-sentence? Fix.
 6. Do cuts land on the music beat grid, not the footage's?
 7. Are counts at or above the density contract? If short, split long shots and add detail or reaction inserts from the same source ranges. Do not add effects to hit a count.
-8. Add up the main-sequence durations: do they equal the target duration (within 5%), with every targetPosition equal to the previous end and no overlaps outside layout overlays? Does plan.transitions[] contain at least the contract minimum?
+8. Add up the main-sequence durations: do they equal the target duration (within 5%), with every targetPosition equal to the previous end and no overlaps outside layout overlays? Does plan.transitions[] contain at least the contract minimum (zero is correct only when the request explicitly forbids transitions)?
 9. Would a human editor call this authored, or clips dropped on a timeline with filters? If the latter, rework the cut list, not the filters.`;
 
 /**
@@ -203,16 +203,24 @@ segments (each with sourceVideoId, sourceStartTime, sourceEndTime, targetPositio
  */
 export function inferTargetDuration(prompt: string, pacing: Pacing): number {
   const text = prompt.toLowerCase();
-  const minutes = text.match(/(\d+(?:\.\d+)?)\s*(?:m\b|min\b|mins\b|minute|minutes)/);
-  if (minutes) {
-    const value = Number(minutes[1]) * 60;
-    if (Number.isFinite(value)) return clampDuration(value);
+  const hits: Array<{ value: number; interval: boolean }> = [];
+  const pattern = /(\d+(?:\.\d+)?)(?:\s*-\s*|\s*)(minutes?|mins?|seconds?|secs?|m\b|s\b)/g;
+  for (const match of text.matchAll(pattern)) {
+    const value = Number(match[1]);
+    if (!Number.isFinite(value)) continue;
+    const index = match.index ?? 0;
+    const before = text.slice(Math.max(0, index - 20), index);
+    // "every 12-15 seconds" is a per-item rhythm, not a runtime: the tail of
+    // a range ("-15 seconds") and counts preceded by every/each/per are
+    // intervals. A hyphenated runtime ("45-second") is a real target and now
+    // matches the separator at all — it never did with \s* alone.
+    const interval =
+      text.charAt(index - 1) === "-" || /(?:every|each|per|average|roughly)\s*$/.test(before);
+    const minutes = /^m(in|inute)/.test(match[2]) || match[2] === "m";
+    hits.push({ value: minutes ? value * 60 : value, interval });
   }
-  const seconds = text.match(/(\d+(?:\.\d+)?)\s*(?:s\b|sec\b|secs\b|second|seconds)/);
-  if (seconds) {
-    const value = Number(seconds[1]);
-    if (Number.isFinite(value)) return clampDuration(value);
-  }
+  const chosen = hits.find(hit => !hit.interval) ?? hits[0];
+  if (chosen && Number.isFinite(chosen.value)) return clampDuration(chosen.value);
   const fallback = pacing === "fast" ? 30 : pacing === "medium" ? 45 : 75;
   return clampDuration(fallback);
 }

@@ -245,9 +245,14 @@ describe("baseline harness helpers", () => {
       });
 
       // Without the eval override, generic env still wins over .dev.vars.
+      // Ambient KOVE_EVAL_* exports (a shell running a live eval) are cleared
+      // explicitly: unstubAllEnvs restores them, and they outrank CLOUDFLARE_*.
       vi.unstubAllEnvs();
       vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "acct-generic");
       vi.stubEnv("CLOUDFLARE_API_TOKEN", "tok-generic");
+      vi.stubEnv("KOVE_EVAL_CLOUDFLARE_ACCOUNT_ID", "");
+      vi.stubEnv("KOVE_EVAL_CLOUDFLARE_API_TOKEN", "");
+      vi.stubEnv("KOVE_EVAL_CLOUDFLARE_AI_MODEL", "");
       const config = loadWorkersAIConfig();
       expect(config?.accountId).toBe("acct-generic");
       expect(config?.apiToken).toBe("tok-generic");
