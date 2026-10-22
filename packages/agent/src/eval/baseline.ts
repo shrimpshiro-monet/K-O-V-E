@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Project, MediaItem } from "@kove-advanced/core/types/project";
@@ -31,6 +31,29 @@ export const REPO_ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)), "
 export const CORPUS_DIR = resolve(REPO_ROOT, "evaluation-files");
 export const CORPUS_PATH = resolve(CORPUS_DIR, "projects.json");
 export const DEFAULT_REPORT_PATH = resolve(CORPUS_DIR, "baseline-v0.json");
+export const PLAN_DUMP_DIR = resolve(CORPUS_DIR, "plans");
+
+/**
+ * Persist the plan a run produced (accepted or rejected) so an audit can read
+ * what the model actually emitted — e.g. the contrast/saturation values that
+ * motivated the one true param scale. Untracked measurement artifact.
+ */
+export function dumpPlanJson(
+  entryId: string,
+  promptId: string,
+  run: number,
+  plan: unknown,
+): string | null {
+  try {
+    const dir = resolve(PLAN_DUMP_DIR, entryId);
+    mkdirSync(dir, { recursive: true });
+    const file = resolve(dir, `${promptId}-run${run}.json`);
+    writeFileSync(file, JSON.stringify(plan, null, 2));
+    return file;
+  } catch {
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Cloudflare Workers AI client (same endpoint/shape the web app uses)
@@ -477,6 +500,7 @@ export function isQuotaMessage(text: string): boolean {
 
 interface PlanEditData {
   readonly editPlan?: EditPlan;
+  readonly plan?: EditPlan;
   readonly clipIds?: string[];
   readonly textIds?: string[];
   readonly transitionIds?: string[];
@@ -547,6 +571,11 @@ export async function runBaselineCase(opts: {
 
     project = host.getProject();
     data = (result.data ?? null) as PlanEditData | null;
+
+    // Dump the produced plan either way: the accepted editPlan on success, or
+    // the rejected plan the failure payload carries. Audits read these.
+    const producedPlan = data?.editPlan ?? data?.plan ?? null;
+    if (producedPlan) dumpPlanJson(opts.entry.id, opts.prompt.id, run, producedPlan);
 
     // Gate A — the produced plan validates against the segment map it was
     // given (plan_edit itself only fails on error-severity issues, so
