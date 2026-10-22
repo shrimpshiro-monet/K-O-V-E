@@ -5,6 +5,7 @@ import {
   canonicalizeTransitionType,
   isSupportedTransitionType,
   normalizeEditPlan,
+  relayPlanSegmentsSequentially,
   summarizeSegmentMap,
   validateEditPlan,
 } from "./index";
@@ -331,5 +332,72 @@ describe("director validation helpers", () => {
     expect(speedRampIssue).toBeDefined();
     expect(speedRampIssue!.code).toBe("misplaced_feature");
     expect(speedRampIssue!.message).toContain("segment.speedRamp");
+  });
+});
+
+describe("relayPlanSegmentsSequentially", () => {
+  type PlanSegment = EditPlan["segments"][number];
+
+  const seg = (
+    index: number,
+    targetPosition: number | undefined,
+    trackIndex = 0,
+    dur = 4,
+  ): PlanSegment => ({
+    sourceVideoId: "video-1",
+    sourceStartTime: index * dur,
+    sourceEndTime: (index + 1) * dur,
+    trackIndex,
+    ...(targetPosition === undefined ? {} : { targetPosition }),
+    effects: [],
+    rationale: `shot ${index}`,
+  });
+
+  const withSegments = (
+    segments: PlanSegment[],
+    transitions: EditPlan["transitions"] = [],
+  ): EditPlan => ({ ...plan, segments, transitions });
+
+  it("pushes an overlapping shot to where the previous shot on its track ends", () => {
+    const { plan: relayed, changes } = relayPlanSegmentsSequentially(
+      withSegments([seg(0, 0), seg(1, 2)]),
+    );
+    expect(changes).toEqual([{ segmentIndex: 1, from: 2, to: 4 }]);
+    expect(relayed.segments.map((segment) => segment.targetPosition)).toEqual([0, 4]);
+  });
+
+  it("keeps gaps the plan asked for — only overlaps move", () => {
+    const original = withSegments([seg(0, 0), seg(1, 9)]);
+    const { plan: relayed, changes } = relayPlanSegmentsSequentially(original);
+    expect(changes).toEqual([]);
+    expect(relayed).toBe(original);
+    expect(relayed.segments[1].targetPosition).toBe(9);
+  });
+
+  it("leaves complementary overlay pairs on their own tracks alone", () => {
+    const { changes } = relayPlanSegmentsSequentially(
+      withSegments([seg(0, 0, 0), seg(1, 0, 1)]),
+    );
+    expect(changes).toEqual([]);
+  });
+
+  it("never moves a segment that follows a transition — the butt-join is the cut", () => {
+    // Segment 1 is pinned to 4 by the transition after segment 0; the later
+    // explicit 4 collides with it and must move, not the pinned shot.
+    const { plan: relayed, changes } = relayPlanSegmentsSequentially(
+      withSegments(
+        [seg(0, 0), seg(1, undefined), seg(2, 4)],
+        [{ afterSegmentIndex: 0, type: "crossfade", duration: 0.2, rationale: "smooth" }],
+      ),
+    );
+    expect(changes).toEqual([{ segmentIndex: 2, from: 4, to: 8 }]);
+    expect(relayed.segments.map((segment) => segment.targetPosition)).toEqual([0, 4, 8]);
+  });
+
+  it("writes explicit targetPosition on every segment of a corrected plan", () => {
+    const { plan: relayed } = relayPlanSegmentsSequentially(
+      withSegments([seg(0, 0), seg(1, 2), seg(2, undefined)]),
+    );
+    expect(relayed.segments.every((segment) => Number.isFinite(segment.targetPosition))).toBe(true);
   });
 });

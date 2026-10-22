@@ -8,7 +8,7 @@ import {
 import type { EditingHost, TextOverlayOptions, OverlayRef } from "../host";
 import { HeadlessHost } from "../headless-host";
 import { executeTool } from "../executor";
-import { MockLLMClient, type LLMClient, type LLMResponse } from "../llm";
+import { MockLLMClient, type LLMClient, type LLMResponse, type LLMTurnInput } from "../llm";
 import { getDirectorPlanState } from "./plan-state";
 
 // ---------------------------------------------------------------------------
@@ -30,13 +30,20 @@ class CountingLLM implements LLMClient {
   calls = 0;
   /** System prompt of every call, in order — used to assert what the model was told. */
   readonly systems: string[] = [];
+  /** User messages of every call, in order — the repair payload is asserted here. */
+  readonly users: string[] = [];
   private readonly inner: MockLLMClient;
   constructor(script: LLMResponse[]) {
     this.inner = new MockLLMClient([...script, END]);
   }
-  async complete(input: { system?: string }): Promise<LLMResponse> {
+  async complete(input: LLMTurnInput): Promise<LLMResponse> {
     this.calls += 1;
     if (input.system) this.systems.push(input.system);
+    for (const message of input.messages ?? []) {
+      if ("content" in message && typeof message.content === "string") {
+        this.users.push(message.content);
+      }
+    }
     return this.inner.complete();
   }
 }
@@ -81,8 +88,7 @@ interface Harness {
   failNextTextCreation: () => void;
 }
 
-function harness(script: LLMResponse[] = []): Harness {
-  const project = makeProject();
+function harness(script: LLMResponse[] = [], project: Project = makeProject()): Harness {
   const host = new HeadlessHost(project) as HarnessHost;
   const createdTextOverlays: TextOverlayOptions[] = [];
   let textShouldFail = false;
@@ -424,7 +430,10 @@ describe("plan_edit integrity", () => {
     expect(timelineClips(h.project)).toHaveLength(0);
   });
 
-  it("rejects overlapping primary-video segments on the same track", async () => {
+  it("relays stacked same-track shots and commits the corrected layout — no repair round-trip", async () => {
+    // GAP 4 (audit): shots stacked at one timestamp used to die with a
+    // re-stated rule. The fix is arithmetic, so the plan is re-laid and
+    // committed directly — the model's repair turn is never spent on it.
     const plan = validPlan({
       segments: [
         {
@@ -447,14 +456,232 @@ describe("plan_edit integrity", () => {
         },
       ],
       transitions: [],
+      metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
     });
-    const h = harness([planResponse(plan), planResponse(plan)]);
-    const result = await executeTool("plan_edit", { prompt: "stacked" }, h.host);
+    const h = harness([planResponse(plan)]);
+    const result = await executeTool("plan_edit", { prompt: "make a 8s edit" }, h.host);
+
+    expect(result.ok).toBe(true);
+    const data = result.data as {
+      placementRepairs: Array<{ segmentIndex: number; from: number; to: number }>;
+      editPlan: { segments: Array<{ targetPosition: number }> };
+    };
+    expect(data.placementRepairs).toEqual([{ segmentIndex: 1, from: 2, to: 4 }]);
+    // The committed plan carries the corrected layout, written explicitly.
+    expect(data.editPlan.segments.map((segment) => segment.targetPosition)).toEqual([0, 4]);
+    const clips = timelineClips(h.project);
+    expect(clips).toHaveLength(2);
+    expect(clips.map((clip) => clip.startTime)).toEqual([0, 4]);
+    // No repair call — placement was deterministic. (A density revision may
+    // still run because the fixture is thin; it is a different gate.)
+    expect(h.llm.calls).toBeLessThanOrEqual(2);
+  });
+
+  it("shows the repair the relayed plan when stacking is not the only error", async () => {
+    const stacked = validPlan({
+      segments: [
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 0,
+          sourceEndTime: 4,
+          trackIndex: 0,
+          targetPosition: 0,
+          effects: ["not-a-real-effect"],
+          rationale: "one",
+        },
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 4,
+          sourceEndTime: 8,
+          trackIndex: 0,
+          targetPosition: 2, // overlaps segment 1
+          effects: [],
+          rationale: "two",
+        },
+      ],
+      transitions: [],
+      metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+    });
+    const fixed = validPlan({
+      metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(stacked), planResponse(fixed)]);
+    const result = await executeTool("plan_edit", { prompt: "make a 8s edit" }, h.host);
+
+    expect(result.ok).toBe(true);
+    // The repair turn saw the plan with placement already corrected: the
+    // overlapping shot sits at 4, not 2.
+    const repairUser = h.llm.users.find((text) => text.includes("rejected for these reasons"));
+    expect(repairUser).toBeDefined();
+    expect(repairUser).toContain("Corrected plan:");
+    expect(repairUser).toContain('"targetPosition":4');
+    expect(repairUser).toContain("unsupported_effect");
+    // And the system note is still the bounded repair contract.
+    const repairSystem = h.llm.systems.find((text) => text.includes("Plan rejected"));
+    expect(repairSystem).toContain("repair once");
+  });
+
+  it("rejects a stacked plan that still fails after relay + repair, with the corrected plan in the payload", async () => {
+    const stacked = validPlan({
+      segments: [
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 0,
+          sourceEndTime: 4,
+          trackIndex: 0,
+          targetPosition: 0,
+          effects: ["not-a-real-effect"],
+          rationale: "one",
+        },
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 4,
+          sourceEndTime: 8,
+          trackIndex: 0,
+          targetPosition: 2,
+          effects: [],
+          rationale: "two",
+        },
+      ],
+      transitions: [],
+      metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "x" },
+    });
+    const h = harness([planResponse(stacked), planResponse(stacked)]);
+    const result = await executeTool("plan_edit", { prompt: "make a 8s edit" }, h.host);
 
     expect(result.ok).toBe(false);
-    const data = result.data as { issues: Array<{ code: string }> };
-    expect(data.issues.some((issue) => issue.code === "overlapping_timeline_segments")).toBe(true);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as {
+      issues: Array<{ code: string }>;
+      placementRepairs: Array<{ segmentIndex: number }>;
+    };
+    // The remaining error is the effect vocabulary, not the overlap — the
+    // stacking was already repaired deterministically before the model ran.
+    expect(data.issues.some((issue) => issue.code === "unsupported_effect")).toBe(true);
+    expect(data.issues.some((issue) => issue.code === "overlapping_timeline_segments")).toBe(false);
+    expect(data.placementRepairs).toHaveLength(1);
     expect(timelineClips(h.project)).toHaveLength(0);
+  });
+
+  // -----------------------------------------------------------------------
+  // C3: length is contract-checked, never model-claimed
+  // -----------------------------------------------------------------------
+
+  it("rejects a plan over +10% of the contract target even when metadata.targetDuration agrees with it", async () => {
+    // The audited drift (GAP 3): a model claimed 220s of segments for a 30s
+    // request and the code shipped it because metadata.targetDuration was the
+    // only thing checked. The target comes from the request now.
+    const overshoot = validPlan({
+      segments: [
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 0,
+          sourceEndTime: 4,
+          trackIndex: 0,
+          targetPosition: 0,
+          effects: [],
+          rationale: "one",
+        },
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 4,
+          sourceEndTime: 8,
+          trackIndex: 0,
+          targetPosition: 200,
+          effects: [],
+          rationale: "two",
+        },
+      ],
+      transitions: [],
+      metadata: { targetDuration: 204, targetPlatform: "tiktok", genre: "social-reel", pacing: "fast", rationale: "the model agrees with itself" },
+    });
+    const h = harness([planResponse(overshoot), planResponse(overshoot)]);
+    const result = await executeTool("plan_edit", { prompt: "make a 30s tiktok edit" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as {
+      issues: Array<{ code: string; message: string }>;
+      durationCheck: { targetSeconds: number; planSeconds: number; availableVideoSeconds: number };
+    };
+    expect(data.issues.some((issue) => issue.code === "plan_length_out_of_tolerance")).toBe(true);
+    // The rejection is informative: expected, computed, and available.
+    expect(data.durationCheck.targetSeconds).toBe(30);
+    expect(data.durationCheck.planSeconds).toBeCloseTo(204, 5);
+    expect(data.durationCheck.availableVideoSeconds).toBe(10);
+    expect(timelineClips(h.project)).toHaveLength(0);
+  });
+
+  it("rejects an under-length plan when the footage could cover the target", async () => {
+    // "Expects 30s, gets 12s" — with 60s of material in the bin, a 12s plan
+    // is the model under-delivering, and the length gate says so before repair.
+    const project = makeProject();
+    (project.mediaLibrary.items[0] as { metadata: { duration: number } }).metadata.duration = 60;
+    const thin = validPlan({
+      segments: [
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 0,
+          sourceEndTime: 4,
+          trackIndex: 0,
+          targetPosition: 0,
+          effects: [],
+          rationale: "one",
+        },
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 4,
+          sourceEndTime: 8,
+          trackIndex: 0,
+          targetPosition: 4,
+          effects: [],
+          rationale: "two",
+        },
+        {
+          sourceVideoId: "video_0",
+          sourceStartTime: 8,
+          sourceEndTime: 12,
+          trackIndex: 0,
+          targetPosition: 8,
+          effects: [],
+          rationale: "three",
+        },
+      ],
+      transitions: [],
+      metadata: { targetDuration: 12, targetPlatform: "tiktok", genre: "social-reel", pacing: "fast", rationale: "under-delivered" },
+    });
+    const h = harness([planResponse(thin), planResponse(thin)], project);
+    const result = await executeTool("plan_edit", { prompt: "make a 30s tiktok edit" }, h.host);
+
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe("INVALID_EDIT_PLAN");
+    const data = result.data as {
+      issues: Array<{ code: string }>;
+      durationCheck: { targetSeconds: number; planSeconds: number; availableVideoSeconds: number };
+    };
+    expect(data.issues.some((issue) => issue.code === "plan_length_out_of_tolerance")).toBe(true);
+    expect(data.durationCheck.targetSeconds).toBe(30);
+    expect(data.durationCheck.planSeconds).toBeCloseTo(12, 5);
+    expect(data.durationCheck.availableVideoSeconds).toBe(60);
+    expect(timelineClips(h.project)).toHaveLength(0);
+  });
+
+  it("lets an under-length plan commit when the footage is genuinely short", async () => {
+    // 10s of footage for a 30s request: the plan cannot be longer than the
+    // material, so the footage-short exemption stands the gate down.
+    const h = harness([
+      planResponse(
+        validPlan({
+          metadata: { targetDuration: 8, targetPlatform: "social", genre: "test", pacing: "fast", rationale: "all the footage there is" },
+        }),
+      ),
+    ]);
+    const result = await executeTool("plan_edit", { prompt: "make a 30s tiktok edit" }, h.host);
+
+    expect(result.ok).toBe(true);
+    expect(timelineClips(h.project)).toHaveLength(2);
+    const data = result.data as { editPlan: { segments: unknown[] } };
+    expect(data.editPlan.segments).toHaveLength(2);
   });
 
   it("retries a truncated plan call once instead of failing", async () => {
@@ -471,7 +698,9 @@ describe("plan_edit integrity", () => {
     // A populated 8s short-form plan: shots inside the first 2s, camera motion
     // on every shot, varied effect hits, text choreography, SFX, and a denser
     // final third so the density review sees evolution rather than a loop.
-    const durations = [0.5, 0.5, 0.6, 1.4, 0.6, 1.6, 0.5, 0.4];
+    // Durations sum to exactly 8s — the length gate holds plans to the
+    // contract target the prompt asks for (±10%).
+    const durations = [0.6, 0.6, 0.8, 1.6, 0.8, 1.8, 0.9, 0.9];
     const moves = ["snap-zoom", "slow-push", "handheld", "drift-left", "whip-shake", "breathe", "punch-in", "sway"];
     const effects = ["chromatic-aberration", "glow", "motion-blur", "grain"];
     let cursor = 0;
@@ -618,7 +847,8 @@ describe("plan_edit integrity", () => {
   });
 
   it("materializes second-wave transitions (crossZoom, lightLeak) onto the track", async () => {
-    const durations = [0.6, 0.5, 1.5, 0.6, 0.5, 1.6, 0.4, 0.4];
+    // Durations sum to exactly 8s to satisfy the contract length gate.
+    const durations = [0.7, 0.6, 1.8, 0.7, 0.6, 2.0, 0.8, 0.8];
     let cursor = 0;
     const segments = durations.map((duration, index) => {
       const start = cursor;

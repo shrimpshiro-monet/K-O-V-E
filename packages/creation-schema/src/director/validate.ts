@@ -483,6 +483,61 @@ export function computePlanPlacement(plan: EditPlan): number[] {
   return positions;
 }
 
+/** A single shot re-laid by {@link relayPlanSegmentsSequentially}. */
+export interface PlacementRepair {
+  segmentIndex: number;
+  from: number;
+  to: number;
+}
+
+/**
+ * Re-lay a plan's segments so no two shots overlap on the same track: in plan
+ * order, each shot starts at its own placement or where the previous shot on
+ * its track ended — whichever is later. Gaps the plan asked for are kept
+ * (only overlaps are pushed forward). Segments directly following a transition
+ * stay butt-joined to their predecessor — moving them would break the cut.
+ *
+ * This is the deterministic "repair shows the corrected plan" normalization:
+ * when a model stacks shots at one timestamp, the fix is pure arithmetic and
+ * must not cost an LLM round-trip. When `changes` is non-empty the returned
+ * plan is the same plan with explicit `targetPosition` written on every
+ * segment — the canonical layout to hand back to the model (or commit).
+ */
+export function relayPlanSegmentsSequentially(plan: EditPlan): {
+  plan: EditPlan;
+  changes: PlacementRepair[];
+} {
+  const base = computePlanPlacement(plan);
+  const transitionAfter = new Set(
+    plan.transitions.map((transition) => transition.afterSegmentIndex),
+  );
+  const runningEnd = new Map<number, number>();
+  const changes: PlacementRepair[] = [];
+  const positions: number[] = [];
+  plan.segments.forEach((segment, index) => {
+    const trackKey = Math.max(0, Math.floor(segment.trackIndex ?? 0));
+    const duration = Math.max(0, segment.sourceEndTime - segment.sourceStartTime);
+    const pinned = index > 0 && transitionAfter.has(index - 1);
+    const start = base[index] ?? 0;
+    const end0 = runningEnd.get(trackKey) ?? 0;
+    const position = !pinned && start < end0 - 1e-6 ? end0 : start;
+    if (position !== start) {
+      changes.push({ segmentIndex: index, from: start, to: position });
+    }
+    positions.push(position);
+    runningEnd.set(trackKey, Math.max(runningEnd.get(trackKey) ?? 0, position + duration));
+  });
+  if (changes.length === 0) return { plan, changes: [] };
+  const relayed: EditPlan = {
+    ...plan,
+    segments: plan.segments.map((segment, index) => ({
+      ...segment,
+      targetPosition: positions[index],
+    })),
+  };
+  return { plan: relayed, changes };
+}
+
 function rangesOverlap(left: PlannedSegment, right: PlannedSegment): boolean {
   const leftStart = left.targetPosition ?? 0;
   const rightStart = right.targetPosition ?? 0;

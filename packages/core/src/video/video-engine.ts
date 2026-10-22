@@ -6,6 +6,7 @@ import type {
   Transform,
   Subtitle,
 } from "../types/timeline";
+import { cssFilterForEffect } from "./effect-filter-css";
 import type {
   MediaItem,
   Project,
@@ -4032,24 +4033,7 @@ export class VideoEngine {
   }
 
   private buildFilterString(filter: Effect): string {
-    if (!filter.enabled) return "";
-
-    const params = filter.params as Record<string, number>;
-
-    switch (filter.type) {
-      case "brightness":
-        return `brightness(${1 + (params.value || 0)})`;
-      case "contrast":
-        return `contrast(${params.value || 1})`;
-      case "saturation":
-        return `saturate(${params.value || 1})`;
-      case "hue":
-        return `hue-rotate(${params.rotation || 0}deg)`;
-      case "blur":
-        return `blur(${params.radius || 0}px)`;
-      default:
-        return "";
-    }
+    return cssFilterForEffect(filter);
   }
 
   /**

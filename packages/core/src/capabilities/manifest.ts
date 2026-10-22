@@ -6,6 +6,8 @@ import {
   EFFECT_DEFINITIONS,
 } from "../types/effects";
 import type { EffectDefinition } from "../types/effects";
+import { CLIP_EFFECT_PARAM_SPECS } from "../types/clip-effect-params";
+import type { ClipEffectSpec } from "../types/clip-effect-params";
 import { SHAPE_TYPES } from "../graphics/types";
 import { EASING_TYPES } from "../types/timeline";
 import { FILTER_PRESETS } from "../video/filter-presets";
@@ -110,6 +112,11 @@ export interface CapabilityManifest {
   };
   readonly colorGrading: Readonly<Record<string, NumericRange>>;
   readonly effects: readonly EffectDefinition[];
+  /**
+   * The ONE true param scale for clip effects (add_video_effect / EditPlan
+   * effectSpecs). Model-facing effect-param docs are generated from this.
+   */
+  readonly clipEffectParams: readonly ClipEffectSpec[];
   readonly motion: MotionCapabilities;
   readonly creation: CreationCapabilities;
 }
@@ -355,6 +362,7 @@ export const CAPABILITY_MANIFEST: CapabilityManifest = {
   },
   colorGrading: COLOR_GRADING_RANGES,
   effects: EFFECT_DEFINITIONS,
+  clipEffectParams: CLIP_EFFECT_PARAM_SPECS,
   motion: MOTION_CAPABILITIES,
   creation: CREATION_CAPABILITIES,
 };

@@ -98,9 +98,10 @@ export {
   summarizeSegmentMap,
   summarizeEditPlan,
   computePlanPlacement,
+  relayPlanSegmentsSequentially,
 } from "./validate";
 
-export type { DirectorValidationIssue } from "./validate";
+export type { DirectorValidationIssue, PlacementRepair } from "./validate";
 
 export type { SignatureEffectDef } from "./shader-effects";
 

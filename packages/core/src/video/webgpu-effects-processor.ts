@@ -287,7 +287,9 @@ export class WebGPUEffectsProcessor {
 
       switch (effect.type) {
         case "brightness":
-          params.brightness += (effectParams.value as number) ?? 0;
+          // Storage is a percent offset (-100..100); the pipeline works in
+          // fractional deltas (1 + value/100).
+          params.brightness += ((effectParams.value as number) ?? 0) / 100;
           break;
         case "contrast":
           params.contrast *= (effectParams.value as number) ?? 1;
@@ -299,10 +301,10 @@ export class WebGPUEffectsProcessor {
           params.hue += (effectParams.rotation as number) ?? 0;
           break;
         case "temperature":
-          params.temperature += (effectParams.value as number) ?? 0;
+          params.temperature += ((effectParams.value as number) ?? 0) / 100;
           break;
         case "tint":
-          params.tint += (effectParams.value as number) ?? 0;
+          params.tint += ((effectParams.value as number) ?? 0) / 100;
           break;
         case "tonal":
           params.shadows += (effectParams.shadows as number) ?? 0;

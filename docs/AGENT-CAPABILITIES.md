@@ -282,9 +282,30 @@ The agent exposes **335 tools** spanning read/observe, project, track, clip, tra
 - **set_clip_blend_opacity** — Set a clip's blend opacity (0..1).
 
 ## effect
-- **add_video_effect** — Add a video effect to a clip. Standard effectType values include brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, shadow, glow, motion-blur, radial-blur, chromatic-aberration. Signature shader effects are named looks that are expensive to recreate by hand — vhs, scanlines, halftone, dither, posterize, duotone, gradient-map, prism, fisheye, wave-warp, edge-glow, speed-lines, glitch-blocks, light-leak, pixelate, kaleidoscope, mirror-tiles, swirl, crt-curve, echo — and take an optional 0..1 params.intensity. You may instead set effectType to 'shader' with params.shaderId for any other Motion shader (category 'effect'; use list_motion_shaders to discover ids) plus optional numeric params. Shader effects no-op gracefully when WebGL2 is unavailable.
+- **add_video_effect** — Add a video effect to a clip. Standard effectType values include brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, shadow, glow, motion-blur, radial-blur, chromatic-aberration. Signature shader effects are named looks that are expensive to recreate by hand — vhs, scanlines, halftone, dither, posterize, duotone, gradient-map, prism, fisheye, wave-warp, edge-glow, speed-lines, glitch-blocks, light-leak, pixelate, kaleidoscope, mirror-tiles, swirl, crt-curve, echo — and take an optional 0..1 params.intensity. You may instead set effectType to 'shader' with params.shaderId for any other Motion shader (category 'effect'; use list_motion_shaders to discover ids) plus optional numeric params. Shader effects no-op gracefully when WebGL2 is unavailable. Params follow the one true scale below (same table the capability manifest carries); numeric params outside these ranges are clamped:
+- brightness: { "value": -100..100 % (default 0; percent offset; 0 = unchanged (renders brightness(1 + value/100))) }
+- contrast: { "value": 0..2 x (default 1; CSS multiplier; 1 = unchanged (1.2 = +20% contrast)) } — NEVER a percent offset — contrast(50) blows the frame out
+- saturation: { "value": 0..2 x (default 1; CSS multiplier; 1 = unchanged (0 = grayscale)) } — NEVER a percent offset — saturate(50) blows the frame out
+- grayscale: { "amount": 0..1 (default 1; 0 = off, 1 = full gray) }
+- sepia: { "amount": 0..1 (default 1; 0 = off, 1 = full sepia) }
+- invert: { "amount": 0..1 (default 1; 0 = off, 1 = full invert) }
+- hue: { "rotation": -180..180 deg (default 0; hue rotation in degrees) }
+- blur: { "radius": 0..100 px (default 0; gaussian radius; keep hit blurs ≤10 (the GPU path clamps to 10)) }
+- sharpen: { "amount": 0..100 % (default 0; unsharp strength) }
+- vignette: { "amount": 0..100 % (default 0; edge darkening strength), "midpoint": 0..1 (default 0.5; where the falloff starts), "feather": 0..1 (default 0.3; falloff softness) }
+- grain: { "amount": 0..100 % (default 0; film-grain strength) }
+- temperature: { "value": -100..100 % (default 0; cool (-) to warm (+) percent shift; 0 = unchanged) }
+- tint: { "value": -100..100 % (default 0; green (-) to magenta (+) percent shift; 0 = unchanged) }
+- tonal: { "shadows": -1..1 x (default 0; shadow-band lift; 0 = unchanged), "midtones": -1..1 x (default 0; midtone-band lift; 0 = unchanged), "highlights": -1..1 x (default 0; highlight-band lift; 0 = unchanged) }
+- shadow: { "offsetX": -100..100 px (default 5; shadow x offset), "offsetY": -100..100 px (default 5; shadow y offset), "blur": 0..100 px (default 10; shadow softness), "opacity": 0..1 (default 0.8; shadow opacity) }
+- glow: { "radius": 0..100 px (default 10; glow spread), "intensity": 0..3 x (default 1; glow strength) }
+- motion-blur: { "distance": 0..100 px (default 20; smear distance), "angle": 0..360 deg (default 0; smear direction) }
+- radial-blur: { "amount": 0..100 % (default 20; blur strength), "centerX": 0..100 % (default 50; blur origin x), "centerY": 0..100 % (default 50; blur origin y) }
+- chromatic-aberration: { "amount": 0..50 px (default 0; RGB channel split) }
+- chromaKey: { "tolerance": 0..1 (default 0.3; key match width (keyColor is {r,g,b} 0..1)), "edgeSoftness": 0..1 (default 0.1; matte edge feather) }
+- colorGrade: { "contrast": 0.8..1.5 x (default 1; clip-grade multiplier; 1 = unchanged), "saturation": 0.8..1.5 x (default 1; clip-grade multiplier; 1 = unchanged), "brightness": 0.8..1.2 x (default 1; clip-grade multiplier; 1 = unchanged) } — clip color grading (routes to clip/setColorGrading) — NOT a filter effect
 - **remove_video_effect** — Remove a clip's video effect.
-- **update_video_effect** — Update a video effect's params.
+- **update_video_effect** — Update a video effect's params. Param scales are the same one true table documented on add_video_effect; numeric params outside those ranges are clamped.
 - **toggle_video_effect** — Enable/disable a video effect.
 - **set_effect_order** — Set the full effect order for a clip.
 
@@ -1056,11 +1077,11 @@ Available subagents:
           "key": "value",
           "label": "Contrast",
           "type": "number",
-          "min": -100,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "default": 0
+          "min": 0,
+          "max": 2,
+          "step": 0.01,
+          "unit": "x",
+          "default": 1
         }
       ]
     },
@@ -1073,11 +1094,11 @@ Available subagents:
           "key": "value",
           "label": "Saturation",
           "type": "number",
-          "min": -100,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "default": 0
+          "min": 0,
+          "max": 2,
+          "step": 0.01,
+          "unit": "x",
+          "default": 1
         }
       ]
     },
@@ -1407,6 +1428,396 @@ Available subagents:
           "default": 0
         }
       ]
+    }
+  ],
+  "clipEffectParams": [
+    {
+      "type": "brightness",
+      "params": [
+        {
+          "key": "value",
+          "min": -100,
+          "max": 100,
+          "default": 0,
+          "unit": "%",
+          "note": "percent offset; 0 = unchanged (renders brightness(1 + value/100))"
+        }
+      ]
+    },
+    {
+      "type": "contrast",
+      "params": [
+        {
+          "key": "value",
+          "min": 0,
+          "max": 2,
+          "default": 1,
+          "unit": "x",
+          "note": "CSS multiplier; 1 = unchanged (1.2 = +20% contrast)"
+        }
+      ],
+      "note": "NEVER a percent offset — contrast(50) blows the frame out"
+    },
+    {
+      "type": "saturation",
+      "params": [
+        {
+          "key": "value",
+          "min": 0,
+          "max": 2,
+          "default": 1,
+          "unit": "x",
+          "note": "CSS multiplier; 1 = unchanged (0 = grayscale)"
+        }
+      ],
+      "note": "NEVER a percent offset — saturate(50) blows the frame out"
+    },
+    {
+      "type": "grayscale",
+      "params": [
+        {
+          "key": "amount",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "unit": "mix",
+          "note": "0 = off, 1 = full gray"
+        }
+      ]
+    },
+    {
+      "type": "sepia",
+      "params": [
+        {
+          "key": "amount",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "unit": "mix",
+          "note": "0 = off, 1 = full sepia"
+        }
+      ]
+    },
+    {
+      "type": "invert",
+      "params": [
+        {
+          "key": "amount",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "unit": "mix",
+          "note": "0 = off, 1 = full invert"
+        }
+      ]
+    },
+    {
+      "type": "hue",
+      "params": [
+        {
+          "key": "rotation",
+          "min": -180,
+          "max": 180,
+          "default": 0,
+          "unit": "deg",
+          "note": "hue rotation in degrees"
+        }
+      ]
+    },
+    {
+      "type": "blur",
+      "params": [
+        {
+          "key": "radius",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "unit": "px",
+          "note": "gaussian radius; keep hit blurs ≤10 (the GPU path clamps to 10)"
+        }
+      ]
+    },
+    {
+      "type": "sharpen",
+      "params": [
+        {
+          "key": "amount",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "unit": "%",
+          "note": "unsharp strength"
+        }
+      ]
+    },
+    {
+      "type": "vignette",
+      "params": [
+        {
+          "key": "amount",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "unit": "%",
+          "note": "edge darkening strength"
+        },
+        {
+          "key": "midpoint",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "unit": "mix",
+          "note": "where the falloff starts"
+        },
+        {
+          "key": "feather",
+          "min": 0,
+          "max": 1,
+          "default": 0.3,
+          "unit": "mix",
+          "note": "falloff softness"
+        }
+      ]
+    },
+    {
+      "type": "grain",
+      "params": [
+        {
+          "key": "amount",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "unit": "%",
+          "note": "film-grain strength"
+        }
+      ]
+    },
+    {
+      "type": "temperature",
+      "params": [
+        {
+          "key": "value",
+          "min": -100,
+          "max": 100,
+          "default": 0,
+          "unit": "%",
+          "note": "cool (-) to warm (+) percent shift; 0 = unchanged"
+        }
+      ]
+    },
+    {
+      "type": "tint",
+      "params": [
+        {
+          "key": "value",
+          "min": -100,
+          "max": 100,
+          "default": 0,
+          "unit": "%",
+          "note": "green (-) to magenta (+) percent shift; 0 = unchanged"
+        }
+      ]
+    },
+    {
+      "type": "tonal",
+      "params": [
+        {
+          "key": "shadows",
+          "min": -1,
+          "max": 1,
+          "default": 0,
+          "unit": "x",
+          "note": "shadow-band lift; 0 = unchanged"
+        },
+        {
+          "key": "midtones",
+          "min": -1,
+          "max": 1,
+          "default": 0,
+          "unit": "x",
+          "note": "midtone-band lift; 0 = unchanged"
+        },
+        {
+          "key": "highlights",
+          "min": -1,
+          "max": 1,
+          "default": 0,
+          "unit": "x",
+          "note": "highlight-band lift; 0 = unchanged"
+        }
+      ]
+    },
+    {
+      "type": "shadow",
+      "params": [
+        {
+          "key": "offsetX",
+          "min": -100,
+          "max": 100,
+          "default": 5,
+          "unit": "px",
+          "note": "shadow x offset"
+        },
+        {
+          "key": "offsetY",
+          "min": -100,
+          "max": 100,
+          "default": 5,
+          "unit": "px",
+          "note": "shadow y offset"
+        },
+        {
+          "key": "blur",
+          "min": 0,
+          "max": 100,
+          "default": 10,
+          "unit": "px",
+          "note": "shadow softness"
+        },
+        {
+          "key": "opacity",
+          "min": 0,
+          "max": 1,
+          "default": 0.8,
+          "unit": "mix",
+          "note": "shadow opacity"
+        }
+      ]
+    },
+    {
+      "type": "glow",
+      "params": [
+        {
+          "key": "radius",
+          "min": 0,
+          "max": 100,
+          "default": 10,
+          "unit": "px",
+          "note": "glow spread"
+        },
+        {
+          "key": "intensity",
+          "min": 0,
+          "max": 3,
+          "default": 1,
+          "unit": "x",
+          "note": "glow strength"
+        }
+      ]
+    },
+    {
+      "type": "motion-blur",
+      "params": [
+        {
+          "key": "distance",
+          "min": 0,
+          "max": 100,
+          "default": 20,
+          "unit": "px",
+          "note": "smear distance"
+        },
+        {
+          "key": "angle",
+          "min": 0,
+          "max": 360,
+          "default": 0,
+          "unit": "deg",
+          "note": "smear direction"
+        }
+      ]
+    },
+    {
+      "type": "radial-blur",
+      "params": [
+        {
+          "key": "amount",
+          "min": 0,
+          "max": 100,
+          "default": 20,
+          "unit": "%",
+          "note": "blur strength"
+        },
+        {
+          "key": "centerX",
+          "min": 0,
+          "max": 100,
+          "default": 50,
+          "unit": "%",
+          "note": "blur origin x"
+        },
+        {
+          "key": "centerY",
+          "min": 0,
+          "max": 100,
+          "default": 50,
+          "unit": "%",
+          "note": "blur origin y"
+        }
+      ]
+    },
+    {
+      "type": "chromatic-aberration",
+      "params": [
+        {
+          "key": "amount",
+          "min": 0,
+          "max": 50,
+          "default": 0,
+          "unit": "px",
+          "note": "RGB channel split"
+        }
+      ]
+    },
+    {
+      "type": "chromaKey",
+      "params": [
+        {
+          "key": "tolerance",
+          "min": 0,
+          "max": 1,
+          "default": 0.3,
+          "unit": "mix",
+          "note": "key match width (keyColor is {r,g,b} 0..1)"
+        },
+        {
+          "key": "edgeSoftness",
+          "min": 0,
+          "max": 1,
+          "default": 0.1,
+          "unit": "mix",
+          "note": "matte edge feather"
+        }
+      ]
+    },
+    {
+      "type": "colorGrade",
+      "params": [
+        {
+          "key": "contrast",
+          "min": 0.8,
+          "max": 1.5,
+          "default": 1,
+          "unit": "x",
+          "note": "clip-grade multiplier; 1 = unchanged"
+        },
+        {
+          "key": "saturation",
+          "min": 0.8,
+          "max": 1.5,
+          "default": 1,
+          "unit": "x",
+          "note": "clip-grade multiplier; 1 = unchanged"
+        },
+        {
+          "key": "brightness",
+          "min": 0.8,
+          "max": 1.2,
+          "default": 1,
+          "unit": "x",
+          "note": "clip-grade multiplier; 1 = unchanged"
+        }
+      ],
+      "note": "clip color grading (routes to clip/setColorGrading) — NOT a filter effect"
     }
   ],
   "motion": {

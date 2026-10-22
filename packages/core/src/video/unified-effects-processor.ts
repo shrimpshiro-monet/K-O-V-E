@@ -1,4 +1,5 @@
 import type { Effect } from "../types/timeline";
+import { cssFilterForEffect } from "./effect-filter-css";
 import { isWebGPUSupported } from "./renderer-factory";
 
 export interface ColorGradingParams {
@@ -144,59 +145,17 @@ export class UnifiedEffectsProcessor {
     for (const effect of effects) {
       if (!effect.enabled) continue;
 
-      const params = effect.params as Record<string, number>;
-
-      switch (effect.type) {
-        case "brightness":
-          // Effect value typically -1 to 1, so map to 0 to 2
-          const brightness = 1 + (params.value ?? 0);
-          filters.push(`brightness(${brightness})`);
-          break;
-
-        case "contrast":
-          const contrast = 1 + (params.value ?? 0);
-          filters.push(`contrast(${contrast})`);
-          break;
-
-        case "saturation":
-          const saturation = 1 + (params.value ?? 0);
-          filters.push(`saturate(${saturation})`);
-          break;
-
-        case "blur":
-          const blur = params.radius ?? params.value ?? 0;
-          if (blur > 0) {
-            filters.push(`blur(${blur}px)`);
-          }
-          break;
-
-        case "hue":
-          const hue = params.value ?? 0;
-          filters.push(`hue-rotate(${hue * 360}deg)`);
-          break;
-
-        case "grayscale":
-          const grayscale = params.value ?? 1;
-          filters.push(`grayscale(${grayscale})`);
-          break;
-
-        case "sepia":
-          const sepia = params.value ?? 1;
-          filters.push(`sepia(${sepia})`);
-          break;
-
-        case "invert":
-          const invert = params.value ?? 1;
-          filters.push(`invert(${invert})`);
-          break;
+      const css = cssFilterForEffect(effect);
+      if (css) {
+        filters.push(css);
       }
     }
     if (colorGrading) {
       if (
         colorGrading.brightness !== undefined &&
-        colorGrading.brightness !== 0
+        colorGrading.brightness !== 1
       ) {
-        filters.push(`brightness(${1 + colorGrading.brightness})`);
+        filters.push(`brightness(${colorGrading.brightness})`);
       }
       if (colorGrading.contrast !== undefined && colorGrading.contrast !== 1) {
         filters.push(`contrast(${colorGrading.contrast})`);

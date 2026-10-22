@@ -6,6 +6,7 @@ import type { LabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import type { Action } from "@kove-advanced/core/types/actions";
 import { summarizeMeasureReport } from "@kove-advanced/core/qc/measure-export";
 import { listRegisteredActionTypes } from "@kove-advanced/core/actions/registry";
+import { clampClipEffectParams } from "@kove-advanced/core/types/clip-effect-params";
 import { HISTORY_TOOLS } from "./tools-history";
 import { AUDIO_ANALYSIS_TOOLS } from "./tools-audio-analysis";
 import { VISION_TOOLS } from "./tools-vision";
@@ -20,10 +21,10 @@ import {
 } from "./multicam-units";
 import { extractSegments as runFrameWorkerPipeline } from "@kove-advanced/frame-worker";
 import type { ExtractedFrame } from "@kove-advanced/frame-worker";
-import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId } from "./director/director-prompt";
+import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId, buildDensityContract, EFFECT_PARAM_BLOCK } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
-import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES } from "@kove-advanced/creation-schema";
+import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES, relayPlanSegmentsSequentially, type PlacementRepair } from "@kove-advanced/creation-schema";
 import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
@@ -2419,7 +2420,7 @@ async function materializeEditPlan(
       ...(effect.easing !== undefined ? { easing: effect.easing } : {}),
     };
     const resolvedEffectParams = isColorGrade
-      ? effect.params
+      ? clampClipEffectParams("colorGrade", effect.params ?? {})
       : signature
         ? {
             shaderId: signature.shaderId,
@@ -2427,7 +2428,7 @@ async function materializeEditPlan(
             ...timingParams,
           }
         : {
-            ...synthesizeEffectParams(effect.type, effect.params, effect.intensity),
+            ...clampClipEffectParams(effect.type, synthesizeEffectParams(effect.type, effect.params, effect.intensity)),
             ...(effect.intensity !== undefined ? { intensity: Math.max(0, Math.min(1, effect.intensity)) } : {}),
             ...timingParams,
           };
@@ -16570,7 +16571,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "effect",
     title: "Add effect",
     description:
-      `Add a video effect to a clip. Standard effectType values include brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, shadow, glow, motion-blur, radial-blur, chromatic-aberration. Signature shader effects are named looks that are expensive to recreate by hand — ${SIGNATURE_EFFECT_NAMES.join(", ")} — and take an optional 0..1 params.intensity. You may instead set effectType to 'shader' with params.shaderId for any other Motion shader (category 'effect'; use list_motion_shaders to discover ids) plus optional numeric params. Shader effects no-op gracefully when WebGL2 is unavailable.`,
+      `Add a video effect to a clip. Standard effectType values include brightness, contrast, saturation, blur, sharpen, vignette, grain, temperature, tint, shadow, glow, motion-blur, radial-blur, chromatic-aberration. Signature shader effects are named looks that are expensive to recreate by hand — ${SIGNATURE_EFFECT_NAMES.join(", ")} — and take an optional 0..1 params.intensity. You may instead set effectType to 'shader' with params.shaderId for any other Motion shader (category 'effect'; use list_motion_shaders to discover ids) plus optional numeric params. Shader effects no-op gracefully when WebGL2 is unavailable. Params follow the one true scale below (same table the capability manifest carries); numeric params outside these ranges are clamped:\n${EFFECT_PARAM_BLOCK}`,
     inputSchema: obj(
       { clipId: str, effectType: str, params: { type: "object" } },
       ["clipId", "effectType"],
@@ -16628,7 +16629,7 @@ const TOOLS: RegisteredTool[] = [
           signatureResult.error?.code ?? "ACTION_FAILED",
         );
       }
-      const params = baseParams;
+      const params = clampClipEffectParams(effectType, baseParams);
       if (effectType === "shader") {
         const shaderId = optionalString(params.shaderId);
         if (!shaderId) {
@@ -16649,7 +16650,7 @@ const TOOLS: RegisteredTool[] = [
         type: "effect/add",
         id: genId(),
         timestamp: Date.now(),
-        params: args,
+        params: { ...args, params },
       };
       const result = await host.applyAction(action);
       if (result.success) return ok("add_video_effect applied", { actionId: action.id });
@@ -16660,7 +16661,54 @@ const TOOLS: RegisteredTool[] = [
     },
   },
   actionTool({ name: "remove_video_effect", domain: "effect", actionType: "effect/remove", title: "Remove effect", description: "Remove a clip's video effect.", inputSchema: obj({ clipId: str, effectId: str }, ["clipId", "effectId"]) }),
-  actionTool({ name: "update_video_effect", domain: "effect", actionType: "effect/update", title: "Update effect", description: "Update a video effect's params.", inputSchema: obj({ clipId: str, effectId: str, params: { type: "object" } }, ["clipId", "effectId", "params"]) }),
+  {
+    name: "update_video_effect",
+    domain: "effect",
+    actionType: "effect/update",
+    title: "Update effect",
+    description: "Update a video effect's params. Param scales are the same one true table documented on add_video_effect; numeric params outside those ranges are clamped.",
+    inputSchema: obj({ clipId: str, effectId: str, params: { type: "object" } }, ["clipId", "effectId", "params"]),
+    readOnly: false,
+    destructive: false,
+    expensive: false,
+    handler: async (args, host) => {
+      host.requireOpenProject();
+      const clipId = optionalString(args.clipId);
+      const effectId = optionalString(args.effectId);
+      const rawParams =
+        typeof args.params === "object" && args.params !== null
+          ? (args.params as Record<string, unknown>)
+          : undefined;
+      if (!clipId || !effectId || !rawParams) {
+        return fail("clipId, effectId and params are required", "INVALID_PARAMS");
+      }
+      // Clamp against the STORED effect's type — the update payload carries
+      // only param values, and the one true table is keyed by effect type.
+      let effectType = "";
+      for (const track of host.getProject().timeline.tracks) {
+        for (const clip of track.clips) {
+          if (clip.id !== clipId) continue;
+          const effect = (clip.effects ?? []).find((e) => e.id === effectId);
+          if (effect) effectType = effect.type;
+        }
+      }
+      const result = await host.applyAction({
+        type: "effect/update",
+        id: genId(),
+        timestamp: Date.now(),
+        params: {
+          clipId,
+          effectId,
+          params: effectType ? clampClipEffectParams(effectType, rawParams) : rawParams,
+        },
+      });
+      if (result.success) return ok("update_video_effect applied", { actionId: result.actionId });
+      return fail(
+        result.error?.message ?? "update_video_effect failed",
+        result.error?.code ?? "ACTION_FAILED",
+      );
+    },
+  },
   actionTool({ name: "toggle_video_effect", domain: "effect", actionType: "effect/toggle", title: "Toggle effect", description: "Enable/disable a video effect.", inputSchema: obj({ clipId: str, effectId: str, enabled: bool }, ["clipId", "effectId", "enabled"]) }),
   actionTool({ name: "set_effect_order", domain: "effect", actionType: "effect/setOrder", title: "Reorder effects", description: "Set the full effect order for a clip.", inputSchema: obj({ clipId: str, effectIds: { type: "array" } }, ["clipId", "effectIds"]) }),
 
@@ -33805,6 +33853,53 @@ const TOOLS: RegisteredTool[] = [
         );
       }
 
+      // ---- C3: length is contract-checked, never model-claimed ----
+      // metadata.targetDuration is advice, not a decision: the one true target
+      // is inferred from the request (explicit duration in the prompt wins,
+      // otherwise the pacing default). Over +10% is always rejected; under
+      // -10% is rejected whenever the footage could have covered the target.
+      const lengthTargetSeconds = buildDensityContract(prompt, genre).targetDuration;
+      const availableVideoSeconds = resolvedMap.videos.reduce(
+        (sum, video) => sum + Math.max(0, video.duration || 0),
+        0,
+      );
+      const planSpanSeconds = (plan: EditPlan): number => {
+        const placement = computePlanPlacement(plan);
+        let span = 0;
+        plan.segments.forEach((segment, index) => {
+          const duration = Math.max(0, segment.sourceEndTime - segment.sourceStartTime);
+          span = Math.max(span, (placement[index] ?? 0) + duration);
+        });
+        return span;
+      };
+      const lengthGate = (plan: EditPlan): DirectorValidationIssue | null => {
+        const span = planSpanSeconds(plan);
+        const low = lengthTargetSeconds * 0.9;
+        const high = lengthTargetSeconds * 1.1;
+        if (span > high + 1e-6) {
+          return {
+            code: "plan_length_out_of_tolerance",
+            severity: "error",
+            message: `Plan spans ${span.toFixed(1)}s but the target is ${lengthTargetSeconds.toFixed(0)}s (allowed up to ${high.toFixed(1)}s). Trim shots or tighten source ranges — metadata.targetDuration is not the target.`,
+            path: "segments",
+          };
+        }
+        if (span < low - 1e-6 && availableVideoSeconds >= low) {
+          return {
+            code: "plan_length_out_of_tolerance",
+            severity: "error",
+            message: `Plan spans ${span.toFixed(1)}s but the target is ${lengthTargetSeconds.toFixed(0)}s (at least ${low.toFixed(1)}s) and the footage (${availableVideoSeconds.toFixed(1)}s) can cover it. Add shots or extend coverage — metadata.targetDuration is not the target.`,
+            path: "segments",
+          };
+        }
+        return null;
+      };
+
+      // `placementRepairs` always describes the plan that is about to commit:
+      // each preparePlan call replaces the previous plan wholesale, so the
+      // last relay's changes are the ones that matter for reporting.
+      let placementRepairs: readonly PlacementRepair[] = [];
+
       const preparePlan = (
         raw: unknown,
       ): { plan: EditPlan; issues: readonly DirectorValidationIssue[] } => {
@@ -33820,7 +33915,17 @@ const TOOLS: RegisteredTool[] = [
           },
           resolvedMap,
         );
-        return { plan: resolved, issues: validateEditPlan(resolved, resolvedMap) };
+        // Deterministic placement relay (C2): stacked same-track shots are
+        // re-laid by arithmetic — push-forward per track, gaps kept — before
+        // validation ever judges them. This is the "repair shows the corrected
+        // plan" normalization done in code; the model's repair turn is only
+        // for errors that are not pure timing arithmetic.
+        const relayed = relayPlanSegmentsSequentially(resolved);
+        placementRepairs = relayed.changes;
+        const issues: DirectorValidationIssue[] = [...validateEditPlan(relayed.plan, resolvedMap)];
+        const lengthIssue = lengthGate(relayed.plan);
+        if (lengthIssue) issues.unshift(lengthIssue);
+        return { plan: relayed.plan, issues };
       };
 
       const formatIssues = (issues: readonly DirectorValidationIssue[]): string =>
@@ -33835,13 +33940,17 @@ const TOOLS: RegisteredTool[] = [
       // ---- Bounded repair: feed structured validation errors back once ----
       if (blocking.length > 0) {
         repairAttempted = true;
+        const relayNote =
+          placementRepairs.length > 0
+            ? `Below is your plan with the timeline placement already corrected — every shot now starts where the previous shot on its track ends. Keep that placement; change only what the issues require.\n\nCorrected plan:`
+            : `Below is the rejected plan. Fix the issues above and resubmit it complete.`;
         try {
           const repairResponse = await requestPlan(
             `${directorPrompt}\n\n## Plan rejected — repair once\nYour EditPlan failed validation and was NOT applied to the timeline. Fix EVERY issue below and resubmit a complete plan via submit_edit_plan. Do not explain the fix.\n\nIssues:\n${formatIssues(blocking)}`,
             [
               {
                 role: "user",
-                content: `Your EditPlan was rejected for these reasons:\n${formatIssues(blocking)}\n\nResubmit the full corrected EditPlan now.\n\nRejected plan:\n${JSON.stringify(finalPlan)}`,
+                content: `Your EditPlan was rejected for these reasons:\n${formatIssues(blocking)}\n\n${relayNote}\n${JSON.stringify(finalPlan)}\n\nResubmit the complete EditPlan now.`,
               },
             ],
           );
@@ -33870,6 +33979,13 @@ const TOOLS: RegisteredTool[] = [
               issues: blocking,
               warnings: finalPlanIssues.filter((issue) => issue.severity === "warning"),
               repairAttempted,
+              placementRepairs,
+              plan: finalPlan,
+              durationCheck: {
+                targetSeconds: lengthTargetSeconds,
+                planSeconds: planSpanSeconds(finalPlan),
+                availableVideoSeconds,
+              },
             },
           );
         }
@@ -34042,6 +34158,9 @@ const TOOLS: RegisteredTool[] = [
         (previousCommit
           ? `, replacing revision ${previousCommit.revision} (${cleanup.removed} prior artifact(s) removed)`
           : "") +
+        (placementRepairs.length > 0
+          ? ` · placement relayed: ${placementRepairs.length} stacked shot(s) re-laid`
+          : "") +
         `. Style check: ${planReview.score.toFixed(2)} · density: ${planReview.density.score.toFixed(2)} (${planReview.density.summary}).`;
 
       const data = {
@@ -34052,6 +34171,7 @@ const TOOLS: RegisteredTool[] = [
         baseRevision: explicitBase ?? null,
         idempotencyKey,
         idempotentReplay: false,
+        placementRepairs,
         replacedPrevious: previousCommit
           ? { revision: previousCommit.revision, removedArtifacts: cleanup.removed }
           : null,

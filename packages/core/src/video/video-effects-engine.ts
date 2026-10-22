@@ -1,4 +1,5 @@
 import type { Effect } from "../types/timeline";
+import { cssFilterForEffect } from "./effect-filter-css";
 import {
   RendererFactory,
   type Renderer,
@@ -114,7 +115,7 @@ uniform float u_brightness;
 
 void main() {
  vec4 color = texture(u_texture, v_texCoord);
- vec3 rgb = color.rgb + u_brightness;
+ vec3 rgb = color.rgb * (1.0 + u_brightness);
  fragColor = vec4(clamp(rgb, 0.0, 1.0), color.a);
 }
 `;
@@ -917,7 +918,9 @@ export class VideoEffectsEngine {
     switch (filterType) {
       case "brightness": {
         const loc = shader.uniforms.get("u_brightness");
-        if (loc) gl.uniform1f(loc, readEffectNumber(params.value, 0));
+        // Storage is a percent offset (-100..100); the shader wants the
+        // fractional delta CSS brightness(1 + value/100) applies.
+        if (loc) gl.uniform1f(loc, readEffectNumber(params.value, 0) / 100);
         break;
       }
       case "contrast": {
@@ -997,12 +1000,14 @@ export class VideoEffectsEngine {
       // Color grading filters
       case "temperature": {
         const tempLoc = shader.uniforms.get("u_temperature");
-        if (tempLoc) gl.uniform1f(tempLoc, readEffectNumber(params.value, 0));
+        // Storage is a percent offset (-100..100); the shader works in -1..1.
+        if (tempLoc) gl.uniform1f(tempLoc, readEffectNumber(params.value, 0) / 100);
         break;
       }
       case "tint": {
         const tintLoc = shader.uniforms.get("u_tint");
-        if (tintLoc) gl.uniform1f(tintLoc, readEffectNumber(params.value, 0));
+        // Storage is a percent offset (-100..100); the shader works in -1..1.
+        if (tintLoc) gl.uniform1f(tintLoc, readEffectNumber(params.value, 0) / 100);
         break;
       }
       case "tonal": {
@@ -1770,25 +1775,8 @@ export class VideoEffectsEngine {
 
   private buildCSSFilter(effect: Effect): string {
     const params = effect.params as Record<string, number | string>;
-    const value = typeof params.value === "number" ? params.value : 0;
 
     switch (effect.type) {
-      case "brightness":
-        return `brightness(${1 + value / 100})`;
-      case "contrast":
-        return `contrast(${readEffectNumber(params.value, 1)})`;
-      case "saturation":
-        return `saturate(${readEffectNumber(params.value, 1)})`;
-      case "grayscale":
-        return `grayscale(${readEffectNumber(params.amount, 1)})`;
-      case "sepia":
-        return `sepia(${readEffectNumber(params.amount, 1)})`;
-      case "invert":
-        return `invert(${readEffectNumber(params.amount, 1)})`;
-      case "hue":
-        return `hue-rotate(${readEffectNumber(params.rotation, 0)}deg)`;
-      case "blur":
-        return `blur(${readEffectNumber(params.radius, 0)}px)`;
       case "shadow": {
         const color = this.toFilterColor(
           typeof params.color === "string" ? params.color : undefined,
@@ -1813,7 +1801,7 @@ export class VideoEffectsEngine {
         return `drop-shadow(0 0 ${radius}px ${primaryColor}) drop-shadow(0 0 ${Math.max(1, radius / 2)}px ${secondaryColor})`;
       }
       default:
-        return "";
+        return cssFilterForEffect(effect);
     }
   }
 

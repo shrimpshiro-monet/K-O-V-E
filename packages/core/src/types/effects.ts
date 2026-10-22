@@ -189,11 +189,11 @@ export const EFFECT_DEFINITIONS: EffectDefinition[] = [
         key: "value",
         label: "Contrast",
         type: "number",
-        min: -100,
-        max: 100,
-        step: 1,
-        unit: "%",
-        default: 0,
+        min: 0,
+        max: 2,
+        step: 0.01,
+        unit: "x",
+        default: 1,
       },
     ],
   },
@@ -206,11 +206,11 @@ export const EFFECT_DEFINITIONS: EffectDefinition[] = [
         key: "value",
         label: "Saturation",
         type: "number",
-        min: -100,
-        max: 100,
-        step: 1,
-        unit: "%",
-        default: 0,
+        min: 0,
+        max: 2,
+        step: 0.01,
+        unit: "x",
+        default: 1,
       },
     ],
   },
@@ -672,13 +672,13 @@ export interface EQBand {
 // Complete video filter parameter definitions
 export interface VideoFilterParams {
   brightness: {
-    value: number; // -1 to 1, default 0
+    value: number; // -100 to 100 percent offset, default 0 (renders 1 + value/100)
   };
   contrast: {
-    value: number; // 0 to 2, default 1
+    value: number; // 0 to 2 CSS multiplier, default 1
   };
   saturation: {
-    value: number; // 0 to 2, default 1
+    value: number; // 0 to 2 CSS multiplier, default 1
   };
   hue: {
     rotation: number; // -180 to 180 degrees
@@ -689,18 +689,18 @@ export interface VideoFilterParams {
     angle?: number; // For motion blur, 0-360
   };
   sharpen: {
-    amount: number; // 0 to 2
+    amount: number; // 0 to 100 percent strength
     radius: number; // 0.1 to 5
     threshold: number; // 0 to 255
   };
   vignette: {
-    amount: number; // 0 to 1
+    amount: number; // 0 to 100 percent strength
     midpoint: number; // 0 to 1
     roundness: number; // 0 to 1
     feather: number; // 0 to 1
   };
   grain: {
-    amount: number; // 0 to 1
+    amount: number; // 0 to 100 percent strength
     size: number; // 0.5 to 3
     roughness: number; // 0 to 1
     colored: boolean;

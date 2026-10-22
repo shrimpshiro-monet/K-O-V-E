@@ -375,7 +375,7 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
  }
 }
 fn applyBrightness(color: vec3<f32>, brightness: f32) -> vec3<f32> {
- return clamp(color + vec3<f32>(brightness), vec3<f32>(0.0), vec3<f32>(1.0));
+ return clamp(color * (1.0 + brightness), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 fn applyContrast(color: vec3<f32>, contrast: f32) -> vec3<f32> {
  return clamp((color - 0.5) * contrast + 0.5, vec3<f32>(0.0), vec3<f32>(1.0));
