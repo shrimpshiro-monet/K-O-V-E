@@ -88,13 +88,13 @@ describe("director prompt", () => {
     const genre = PRE_BAKED_GENRES.find((g) => g.id === "meme-compilation")!;
     const prompt = buildDirectorPrompt(segmentMap, "make a 20s meme edit", genre);
 
-    expect(prompt).toContain("## Signature effects (custom looks — deliberate, never wallpaper)");
+    expect(prompt).toContain("Signature effects (statements, not wallpaper):");
     // Every mirrored shader look is named, with its params.
     for (const name of ["vhs", "scanlines", "halftone", "dither", "posterize", "duotone", "gradient-map", "prism", "fisheye", "wave-warp", "edge-glow", "pixelate"]) {
       expect(prompt, name).toContain(`\`${name}\``);
     }
     expect(prompt).toContain("Params:");
-    expect(prompt).toContain("never the same look on consecutive shots");
+    expect(prompt).toContain("never on consecutive shots");
     // The genre's own suggestion rides along, scoped to moments.
     expect(prompt).toContain("Signature looks this genre reaches for: posterize, dither, halftone");
     expect(prompt).toContain("never on every shot");
@@ -111,12 +111,41 @@ describe("director prompt", () => {
 
   it("advertises the full transition vocabulary with craft guidance", () => {
     const prompt = buildDirectorPrompt(segmentMap, "make a 30s tiktok edit", PRE_BAKED_GENRES[0]);
-    expect(prompt).toContain("The full vocabulary:");
+    expect(prompt).toContain("Rendered transitions:");
     for (const name of ["crossZoom", "zoomBlur", "motionSmear", "strobeCut", "impactShake", "lumaWipe", "inkBleed", "tileFlip", "sliceSlide", "lightLeak", "vhsScan", "paperBurn", "pixelSort", "filmRoll"]) {
       expect(prompt, name).toContain(name);
     }
-    expect(prompt).toContain("Most junctions should stay hard cuts");
-    expect(prompt).toContain("never the same one twice in a row");
+    // v2 flips the old restraint rule: transitions are REQUIRED punctuation.
+    // (The baseline shipped 0 rendered transitions in 36/36 runs.)
+    expect(prompt).toContain("a plan with ZERO rendered transitions is incomplete");
+    expect(prompt).toContain("Hard cuts are the backbone");
+    expect(prompt).toContain("never the same type twice in a row");
+    expect(prompt).toContain("Put them in plan.transitions[]");
+  });
+
+  it("pins the v2 operating contract: plan-only, sequential layout, contract length", () => {
+    const prompt = buildDirectorPrompt(segmentMap, "make a 30s tiktok edit", PRE_BAKED_GENRES[0]);
+
+    // The phantom workflow is gone (audit contradiction 3): the director call
+    // only ever receives submit_edit_plan, so it must never be told to execute.
+    expect(prompt).toContain("You have ONE job: call submit_edit_plan");
+    expect(prompt).toContain("Do NOT call editing tools");
+    expect(prompt).not.toContain("IMMEDIATELY EXECUTE");
+    expect(prompt).not.toContain("split_clip");
+
+    // Placement and length are stated once, mechanically (C2/C3 enforce them).
+    expect(prompt).toContain("targetPosition of each shot = targetPosition + duration of the previous shot");
+    expect(prompt).toContain("Otherwise overlapping segments are a rejected plan");
+    expect(prompt).toContain("MUST equal metadata.targetDuration (the target in the density contract), within 5%");
+    expect(prompt).toContain("No gaps, no stacking");
+
+    // Craft is signal-anchored, not counted.
+    expect(prompt).toContain("No signal means no shot");
+    expect(prompt).toContain("an accent with no trigger is banned");
+
+    // C1: the param scales are the generated table, never hand-written prose.
+    expect(prompt).toContain('- contrast: { "value": 0..2 x (default 1');
+    expect(prompt).toContain('- brightness: { "value": -100..100 % (default 0');
   });
 
   it("passes analyzed segment signals into the director prompt", () => {
