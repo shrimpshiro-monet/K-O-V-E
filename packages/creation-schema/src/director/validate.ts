@@ -739,15 +739,52 @@ export function normalizeEditPlan(
 
     // Canonicalize effect names to what the renderer actually draws, so an
     // alias like "warmth" reaches materialize as "temperature" instead of
-    // being rejected (or silently dropped).
+    // being rejected (or silently dropped). Intensity contracts to 0..1 —
+    // models overshoot (glow at 1.5), and materialize clamps to 1 anyway,
+    // so clamping here is a no-op for the render and saves the plan from
+    // dying in validation over a cosmetic overdrive.
     const effectSpecs = segment.effectSpecs?.map((spec) => {
       const canonical = normalizeEffectType(spec.type);
-      return canonical ? { ...spec, type: canonical } : spec;
+      const intensity =
+        typeof spec.intensity === "number" && Number.isFinite(spec.intensity)
+          ? Math.min(1, Math.max(0, spec.intensity))
+          : spec.intensity;
+      return {
+        ...spec,
+        ...(typeof intensity === "number" ? { intensity } : {}),
+        ...(canonical ? { type: canonical } : {}),
+      };
     });
     const effects = segment.effects.map((type) => normalizeEffectType(type) ?? type);
     // Camera-move *shapes* are coerced here; unknown move ids are left in
     // place so validation can report them with the supported list.
     const cameraMoves = coerceCameraMoveShapes(segment.cameraMoves, end - start);
+    // Speed-ramp times are segment-relative (0..sourceDuration) — the shape
+    // the validator, fixtures and renderer all use. Models intuitively write
+    // absolute source time instead; promote it when unambiguously absolute
+    // (outside the relative range but inside [start, end]). Relative input
+    // passes through untouched, and genuinely bad values stay for the
+    // validator to report.
+    const sourceSpan = end - start;
+    const relativize = (time: number): number =>
+      Number.isFinite(time) && time > sourceSpan && time >= start && time <= end
+        ? time - start
+        : time;
+    const speedRamp = segment.speedRamp
+      ? {
+          ...segment.speedRamp,
+          keyframes: (segment.speedRamp.keyframes ?? []).map((keyframe) => ({
+            ...keyframe,
+            time: relativize(keyframe.time),
+          })),
+          freezeFrames: segment.speedRamp.freezeFrames
+            ? segment.speedRamp.freezeFrames.map((freeze) => ({
+                ...freeze,
+                sourceTime: relativize(freeze.sourceTime),
+              }))
+            : undefined,
+        }
+      : undefined;
 
     return {
       ...segment,
@@ -755,12 +792,21 @@ export function normalizeEditPlan(
       sourceEndTime: end,
       ...(effectSpecs ? { effectSpecs } : {}),
       ...(cameraMoves ? { cameraMoves } : {}),
+      ...(speedRamp ? { speedRamp } : {}),
       effects,
     };
   });
   const effects = plan.effects.map((effect) => {
     const canonical = normalizeEffectType(effect.type);
-    return canonical ? { ...effect, type: canonical } : effect;
+    const intensity =
+      typeof effect.intensity === "number" && Number.isFinite(effect.intensity)
+        ? Math.min(1, Math.max(0, effect.intensity))
+        : effect.intensity;
+    return {
+      ...effect,
+      ...(typeof intensity === "number" ? { intensity } : {}),
+      ...(canonical ? { type: canonical } : {}),
+    };
   });
 
   const transitions = plan.transitions.map((transition) => {

@@ -45,6 +45,79 @@ describe("director validation helpers", () => {
     expect(normalized.segments[0].sourceEndTime).toBe(12);
   });
 
+  it("relativizes absolute speed-ramp keyframes and leaves relative ones alone", () => {
+    const map: SegmentMap = {
+      videos: [{ videoId: "video-1", duration: 44, segments: [] }],
+    };
+    const withRamps: EditPlan = {
+      ...plan,
+      segments: [
+        {
+          ...plan.segments[0]!,
+          sourceStartTime: 40,
+          sourceEndTime: 44,
+          speedRamp: {
+            keyframes: [
+              { time: 40, speed: 1 },
+              { time: 41, speed: 3 },
+              { time: 44, speed: 1 },
+            ],
+            freezeFrames: [{ sourceTime: 43, startTime: 2, duration: 0.5 }],
+          },
+        },
+        {
+          ...plan.segments[0]!,
+          targetPosition: 4,
+          sourceStartTime: 10,
+          sourceEndTime: 14,
+          speedRamp: {
+            keyframes: [
+              { time: 0, speed: 1 },
+              { time: 2, speed: 0.5 },
+            ],
+          },
+        },
+      ],
+    };
+    const normalized = normalizeEditPlan(withRamps, map);
+    expect(normalized.segments[0].speedRamp?.keyframes.map((k) => k.time)).toEqual([0, 1, 4]);
+    expect(normalized.segments[0].speedRamp?.freezeFrames?.[0]?.sourceTime).toBe(3);
+    expect(normalized.segments[1].speedRamp?.keyframes.map((k) => k.time)).toEqual([0, 2]);
+    const issues = validateEditPlan(normalized, map).filter(
+      (issue) => issue.code === "speed_keyframe_out_of_range",
+    );
+    expect(issues).toEqual([]);
+  });
+
+  it("contracts effect intensity to 0..1 instead of rejecting cosmetic overdrive", () => {
+    const map: SegmentMap = {
+      videos: [{ videoId: "video-1", duration: 12, segments: [] }],
+    };
+    const withSpecs: EditPlan = {
+      ...plan,
+      segments: [
+        {
+          ...plan.segments[0]!,
+          sourceStartTime: 0,
+          sourceEndTime: 4,
+          effectSpecs: [
+            { type: "glow", params: { radius: 15 }, intensity: 1.5, rationale: "hit" },
+            { type: "vignette", params: {}, intensity: -0.2, rationale: "mood" },
+            { type: "contrast", params: {}, intensity: 0.6, rationale: "ok" },
+          ],
+        },
+      ],
+      effects: [{ type: "glow", params: {}, intensity: 2, rationale: "plan-level" }],
+    };
+    const normalized = normalizeEditPlan(withSpecs, map);
+    expect(normalized.segments[0].effectSpecs?.map((e) => e.intensity)).toEqual([1, 0, 0.6]);
+    expect(normalized.effects[0]?.intensity).toBe(1);
+    const issues = validateEditPlan(normalized, map).filter(
+      (issue) => issue.code === "effect_intensity_out_of_range",
+    );
+    expect(issues).toEqual([]);
+  });
+
   it("summarizes malformed durations without throwing", () => {
     const map = { videos: [{ videoId: "video-1", duration: undefined, segments: [] }] } as unknown as SegmentMap;
     expect(summarizeSegmentMap(map)).toContain("0.0s total");

@@ -2062,6 +2062,12 @@ function actionTool(spec: ActionToolSpec): RegisteredTool {
  * JSON parsing and surface as "no plan returned".
  */
 const DIRECTOR_PLAN_MAX_TOKENS = 16384;
+// Workers AI 408s wall-clock timeouts on very long generations (~235s
+// observed). Retries replay the same generation at pinned sampling, so the
+// retry must be *smaller* to have any chance of finishing in time. One
+// truncated retry is recoverable — the outer loop re-asks with a compactness
+// instruction at the full cap — while a second 408 is not.
+const DIRECTOR_PLAN_RETRY_TOKENS = [7168, 5120] as const;
 
 /**
  * Every timeline entity a single plan_edit commit creates. Filled as
@@ -33846,11 +33852,10 @@ const TOOLS: RegisteredTool[] = [
           : toOpenAITools(["submit_edit_plan"]);
 
       const requestPlan = async (system: string, messages: LoopMessage[]) => {
-        // Workers AI intermittently 408s on long generations; one quick retry
-        // turns a dead run into a pass. Quota (429/daily-allocation) never
-        // retries — it would just burn the clock until the report excludes it.
-        // Pinned sampling means an identical retry replays the same slow
-        // generation, so the retry carries a compactness steer instead.
+        // Workers AI intermittently 408s/fetch-drops on long generations;
+        // retries with a compactness steer and shrinking token caps turn a
+        // dead run into a pass. Quota (429/daily-allocation) never retries —
+        // it would just burn the clock until the report excludes it.
         let attemptMessages = messages;
         for (let attempt = 0; ; attempt++) {
           try {
@@ -33858,14 +33863,17 @@ const TOOLS: RegisteredTool[] = [
               system,
               messages: attemptMessages,
               tools: planTools,
-              maxTokens: DIRECTOR_PLAN_MAX_TOKENS,
+              maxTokens:
+                attempt === 0
+                  ? DIRECTOR_PLAN_MAX_TOKENS
+                  : DIRECTOR_PLAN_RETRY_TOKENS[Math.min(attempt - 1, DIRECTOR_PLAN_RETRY_TOKENS.length - 1)],
             });
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             const quota = /quota|allocation|used up|429|code.?:?4006/i.test(message);
             const transient = /408|timeout|timed out|5\d{2}|ECONNRESET|fetch failed/i.test(message);
-            if (quota || !transient || attempt >= 1) throw error;
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            if (quota || !transient || attempt >= DIRECTOR_PLAN_RETRY_TOKENS.length) throw error;
+            await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 2000 : 5000));
             attemptMessages = [
               ...messages,
               {
