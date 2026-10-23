@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SegmentMap } from "@kove-advanced/creation-schema";
 import {
+  DIRECTOR_SYSTEM_PROMPT,
   buildDensityContract,
   buildDirectorPrompt,
   buildExpansionPrompt,
@@ -193,5 +194,13 @@ describe("director prompt", () => {
     expect(prompt).toContain("beats=[2.1,2.6]");
     expect(prompt).toContain("segment-1");
     expect(prompt).toContain("high-energy action");
+  });
+
+  it("carves explicitly hard-cut requests out of the zero-transitions rule", () => {
+    expect(DIRECTOR_SYSTEM_PROMPT).toContain("ZERO rendered transitions is incomplete");
+    expect(DIRECTOR_SYSTEM_PROMPT).toContain(
+      "unless the request explicitly asks for hard cuts only or no transitions",
+    );
+    expect(DIRECTOR_SYSTEM_PROMPT).toContain("the request wins");
   });
 });

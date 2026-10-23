@@ -158,4 +158,12 @@ describe("registry wiring", () => {
       expect(getTool(name), `missing ${name}`).toBeTruthy();
     }
   });
+
+  it("declares cameraMoves with a move key on submit_edit_plan", () => {
+    const tool = getTool("submit_edit_plan");
+    expect(tool).toBeTruthy();
+    const schema = JSON.stringify(tool?.inputSchema);
+    expect(schema).toContain("cameraMoves");
+    expect(schema).toContain('"move"');
+  });
 });

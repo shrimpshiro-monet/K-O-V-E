@@ -543,6 +543,157 @@ describe("executeTool", () => {
     expect(idsAfterSecond).toEqual(idsAfterFirst);
   });
 
+  const regressionPlanInput = (
+    segmentExtras: Record<string, unknown> = {},
+    audioDecisions: unknown[] = [],
+  ) => ({
+    segments: [
+      {
+        sourceVideoId: "video-1",
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        trackIndex: 0,
+        targetPosition: 0,
+        speed: 1,
+        effects: [],
+        effectSpecs: [],
+        rationale: "clip 1",
+        ...segmentExtras,
+      },
+    ],
+    textElements: [],
+    effects: [],
+    transitions: [],
+    audioDecisions,
+    metadata: {
+      targetDuration: 4,
+      targetPlatform: "social",
+      genre: "highlight",
+      pacing: "fast",
+      rationale: "test",
+    },
+  });
+
+  const regressionMediaProject = (id: string, extraItems: unknown[] = []) =>
+    ({
+      ...makeEmptyProject(),
+      id,
+      mediaLibrary: {
+        items: [
+          { id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } },
+          ...extraItems,
+        ],
+      },
+    }) as ReturnType<typeof makeEmptyProject>;
+
+  it("resolves a bare music filename against a directory-prefixed library name", async () => {
+    const projectId = "bare-music-name-test";
+    _resetPlanState(projectId);
+    const project = regressionMediaProject(projectId, [
+      { id: "audio-9", name: "audio/21 Savage - a lot ft. J. Cole.mp3", type: "audio", metadata: { duration: 120 } },
+    ]);
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [
+            {
+              id: "plan-bare-music",
+              name: "submit_edit_plan",
+              input: regressionPlanInput({}, [
+                {
+                  type: "music",
+                  sourceVideoId: "21 Savage - a lot ft. J. Cole.mp3",
+                  sourceStartTime: 0,
+                  sourceEndTime: 4,
+                  startTime: 0,
+                  duration: 4,
+                  volume: 0.7,
+                  rationale: "request quotes the bare filename",
+                },
+              ]),
+            },
+          ],
+        }),
+      },
+    };
+
+    const result = await executeTool("plan_edit", { prompt: "use the music bed" }, host);
+    expect(result.ok, result.error?.message ?? "").toBe(true);
+    const musicTrack = host
+      .getProject()
+      .timeline.tracks.find(track => track.type === "audio" && track.name === "Music");
+    expect(musicTrack).toBeDefined();
+    expect(musicTrack?.clips).toHaveLength(1);
+    expect(musicTrack?.clips[0]?.mediaId).toBe("audio-9");
+    _resetPlanState(projectId);
+  });
+
+  it("retries a transient Workers AI 408 with a smaller token cap and a compactness steer", async () => {
+    const projectId = "plan-408-retry-test";
+    _resetPlanState(projectId);
+    const project = regressionMediaProject(projectId);
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    const requests: Array<{ maxTokens?: number; messages?: readonly { role: string; content?: unknown }[] }> = [];
+    let calls = 0;
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async req => {
+          requests.push(req);
+          calls += 1;
+          if (calls === 1) {
+            throw new Error(
+              'cloudflare-ai 408: {"errors":[{"message":"AiError: Request timeout (test)","code":3046}],"success":false}',
+            );
+          }
+          return {
+            text: "",
+            stopReason: "tool_use",
+            toolUses: [{ id: "plan-after-408", name: "submit_edit_plan", input: regressionPlanInput() }],
+          };
+        },
+      },
+    };
+
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(result.ok, result.error?.message ?? "").toBe(true);
+    expect(requests.map(r => r.maxTokens).slice(0, 2)).toEqual([16384, 7168]);
+    expect(JSON.stringify(requests[1]?.messages ?? [])).toContain("Respond compactly");
+    expect(calls).toBeGreaterThanOrEqual(2);
+    _resetPlanState(projectId);
+  }, 30_000);
+
+  it("accepts cameraMoves written with the model's habitual type key", async () => {
+    const projectId = "camera-type-alias-test";
+    _resetPlanState(projectId);
+    const project = regressionMediaProject(projectId);
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [
+            {
+              id: "plan-camera-type",
+              name: "submit_edit_plan",
+              input: regressionPlanInput({ cameraMoves: [{ type: "punch-in", intensity: 0.8 }] }),
+            },
+          ],
+        }),
+      },
+    };
+
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(result.ok, result.error?.message ?? "").toBe(true);
+    _resetPlanState(projectId);
+  });
+
   it("returns an error for an unknown tool", async () => {
     const host = new HeadlessHost(makeEmptyProject());
     const res = await executeTool("nope", {}, host);

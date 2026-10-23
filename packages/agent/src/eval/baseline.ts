@@ -511,6 +511,20 @@ interface PlanEditData {
   readonly planReview?: { score?: number };
 }
 
+/**
+ * transitionCount is the materializer's own count of successful
+ * transition/add calls; transitionIds is diff-detected and silently 0
+ * when that detection misses — prefer the authoritative one.
+ */
+export function resolveTransitionCount(
+  data:
+    | { readonly transitionCount?: number; readonly transitionIds?: readonly string[] }
+    | null
+    | undefined,
+): number {
+  return data?.transitionCount ?? data?.transitionIds?.length ?? 0;
+}
+
 function timelineClipIds(project: Project): Set<string> {
   const ids = new Set<string>();
   for (const track of project.timeline.tracks as readonly Track[]) {
@@ -641,10 +655,7 @@ export async function runBaselineCase(opts: {
       .sort((a, b) => a.startTime - b.startTime)
       .map(clip => clip.duration)
       .filter(duration => Number.isFinite(duration) && duration > 0);
-    // transitionCount is the materializer's own count of successful
-    // transition/add calls; transitionIds is diff-detected and silently 0
-    // when that detection misses — prefer the authoritative one.
-    const transitionCount = data?.transitionCount ?? data?.transitionIds?.length ?? 0;
+    const transitionCount = resolveTransitionCount(data);
     const effectCount = data?.effectCount ?? 0;
     const textCount = data?.textIds?.length ?? 0;
     const quality =

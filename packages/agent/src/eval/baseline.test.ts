@@ -13,6 +13,7 @@ import {
   isQuotaMessage,
   pinnedSend,
   runBaseline,
+  resolveTransitionCount,
   summarizeBaseline,
   REPO_ROOT,
 } from "./baseline";
@@ -262,6 +263,14 @@ describe("baseline harness helpers", () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+
+  it("prefers the materializer's transition count over diff-detected ids", () => {
+    expect(resolveTransitionCount(null)).toBe(0);
+    expect(resolveTransitionCount({})).toBe(0);
+    expect(resolveTransitionCount({ transitionIds: ["t1", "t2"] })).toBe(2);
+    expect(resolveTransitionCount({ transitionCount: 5, transitionIds: ["t1"] })).toBe(5);
+    expect(resolveTransitionCount({ transitionCount: 0, transitionIds: ["t1"] })).toBe(0);
   });
 });
 
