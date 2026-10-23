@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { extname, resolve } from "node:path";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Project, MediaItem } from "@kove-advanced/core/types/project";
 import type { Track } from "@kove-advanced/core/types/timeline";
@@ -32,6 +32,31 @@ export const CORPUS_DIR = resolve(REPO_ROOT, "evaluation-files");
 export const CORPUS_PATH = resolve(CORPUS_DIR, "projects.json");
 export const DEFAULT_REPORT_PATH = resolve(CORPUS_DIR, "baseline-v0.json");
 export const PLAN_DUMP_DIR = resolve(CORPUS_DIR, "plans");
+
+/**
+ * Durable per-row journal beside a report. The report JSON is written once at
+ * the end of a run, so a crash or a harness timeout used to lose every
+ * in-memory row; each result is also appended here the moment it settles, and
+ * resume reads this first (later lines win per `id|run`).
+ */
+export function rowsPathFor(reportPath: string): string {
+  return reportPath.replace(/\.json$/, ".rows.jsonl");
+}
+
+function loadRowsJournal(rowsPath: string): BaselineCaseResult[] {
+  if (!existsSync(rowsPath)) return [];
+  const byKey = new Map<string, BaselineCaseResult>();
+  for (const line of readFileSync(rowsPath, "utf8").split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const row = JSON.parse(line) as BaselineCaseResult;
+      if (row && typeof row.id === "string") byKey.set(`${row.id}|${row.run}`, row);
+    } catch {
+      // A torn final line from a mid-write kill is expected; skip it.
+    }
+  }
+  return [...byKey.values()];
+}
 
 /**
  * Persist the plan a run produced (accepted or rejected) so an audit can read
@@ -311,38 +336,93 @@ function aggregateOmniStream(raw: string): unknown {
   };
 }
 
-export function makeOmniRouteSend(cfg: OmniRouteConfig, opts: WorkersAIClientOptions = {}): LLMSend {
+export interface OmniTransportOptions extends WorkersAIClientOptions {
+  /** Whole-request cap. A generation that never ends must not pin a slot. */
+  readonly requestTimeoutMs?: number;
+  /** Max silence between SSE chunks before the stream is torn down. */
+  readonly idleTimeoutMs?: number;
+}
+
+export function makeOmniRouteSend(cfg: OmniRouteConfig, opts: OmniTransportOptions = {}): LLMSend {
   const fetchFn = opts.fetchFn ?? fetch;
+  const requestTimeoutMs = opts.requestTimeoutMs ?? 30 * 60 * 1000;
+  const idleTimeoutMs = opts.idleTimeoutMs ?? 120_000;
   const url = `${cfg.baseUrl}/chat/completions`;
   return async (body: unknown): Promise<unknown> => {
     const base = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
-    const res = await fetchFn(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cfg.apiKey}`,
-      },
-      body: JSON.stringify({ ...base, stream: true }),
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw llmHttpError(
-        "omniroute",
-        res.status,
-        text,
-        parseRetryAfterMs(res.headers.get("retry-after")),
-      );
+    const controller = new AbortController();
+    const totalTimer = setTimeout(() => controller.abort(), requestTimeoutMs);
+    try {
+      const res = await fetchFn(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cfg.apiKey}`,
+        },
+        body: JSON.stringify({ ...base, stream: true }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw llmHttpError(
+          "omniroute",
+          res.status,
+          text,
+          parseRetryAfterMs(res.headers.get("retry-after")),
+        );
+      }
+      const contentType = res.headers.get("content-type") ?? "";
+      if (contentType.includes("event-stream") && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let raw = "";
+        for (;;) {
+          let idleTimer: ReturnType<typeof setTimeout> | undefined;
+          const idle = new Promise<never>((_, reject) => {
+            idleTimer = setTimeout(() => {
+              controller.abort();
+              reject(llmHttpError("omniroute", 504, `omniroute stream idle for ${idleTimeoutMs}ms`));
+            }, idleTimeoutMs);
+          });
+          const read = reader.read();
+          // If the idle timer wins the race, controller.abort() makes this
+          // read reject shortly after — swallow it so it never surfaces as an
+          // unhandled rejection.
+          read.catch(() => undefined);
+          let chunk: ReadableStreamReadResult<Uint8Array>;
+          try {
+            chunk = await Promise.race([read, idle]);
+          } catch (error) {
+            if (error instanceof Error && "status" in error) throw error;
+            if (controller.signal.aborted) {
+              throw llmHttpError("omniroute", 504, `omniroute stream aborted: ${String(error)}`);
+            }
+            throw error;
+          } finally {
+            if (idleTimer) clearTimeout(idleTimer);
+          }
+          if (chunk.done) break;
+          raw += decoder.decode(chunk.value, { stream: true });
+        }
+        return aggregateOmniStream(raw);
+      }
+      return res.json();
+    } catch (error) {
+      if (controller.signal.aborted && !(error instanceof Error && "status" in error)) {
+        throw llmHttpError(
+          "omniroute",
+          504,
+          `omniroute request exceeded ${requestTimeoutMs}ms or was aborted`,
+        );
+      }
+      throw error;
+    } finally {
+      clearTimeout(totalTimer);
     }
-    const contentType = res.headers.get("content-type") ?? "";
-    if (contentType.includes("event-stream")) {
-      const raw = await res.text();
-      return aggregateOmniStream(raw);
-    }
-    return res.json();
   };
 }
 
-export function makeOmniRouteClient(cfg: OmniRouteConfig, opts: WorkersAIClientOptions = {}): LLMClient {
+export function makeOmniRouteClient(cfg: OmniRouteConfig, opts: OmniTransportOptions = {}): LLMClient {
   const sampling = opts.sampling === undefined ? PINNED_SAMPLING : opts.sampling;
   const send = sampling
     ? pinnedSend(makeOmniRouteSend(cfg, opts), sampling)
@@ -554,6 +634,10 @@ export interface ClipOverlap {
 export function clipOverlaps(project: Project, epsilon = 1e-6): ClipOverlap[] {
   const overlaps: ClipOverlap[] = [];
   for (const track of project.timeline.tracks as readonly Track[]) {
+    // Overlay tracks (graphics: motion moments; text: titles/captions) are
+    // designed to stack on top of primary footage — only video/image/audio
+    // tracks are sequential and subject to collision.
+    if (track.type === "graphics" || track.type === "text") continue;
     const clips = track.clips ?? [];
     for (let i = 0; i < clips.length; i++) {
       for (let j = i + 1; j < clips.length; j++) {
@@ -600,6 +684,12 @@ export interface BaselineCaseResult {
    * code 4006), not a model outcome. Excluded from gate rates.
    */
   readonly quotaExhausted: boolean;
+  /**
+   * True when the failure was transport/infra (fetch dropped, stream idle,
+   * gateway 5xx) rather than a model outcome. Excluded from gate rates and
+   * re-run on resume — a dead socket is not evidence about the model.
+   */
+  readonly infraFailure: boolean;
   readonly gates: BaselineGates;
   readonly failures: string[];
   /** Non-blocking validation warnings (do not fail a case). */
@@ -648,6 +738,8 @@ export interface BaselineSummary {
   readonly abortReason?: string;
   /** Case-runs excluded from gate rates because the provider returned quota errors. */
   readonly quotaExcluded: number;
+  /** Case-runs excluded from gate rates because of transport/infra failures. */
+  readonly infraExcluded: number;
   readonly gateRates: {
     readonly planValidates: GateRate;
     readonly materializes: GateRate;
@@ -675,6 +767,19 @@ export interface BaselineSummary {
 /** Workers AI daily-free-allocation exhaustion is transport, not a model result. */
 export function isQuotaMessage(text: string): boolean {
   return /\b429\b|used up your daily free allocation|code.?:?4006/.test(text);
+}
+
+/**
+ * Transport/infra failure signatures the director's own retry loop has
+ * already failed to recover from (see requestPlan in registry.ts). These
+ * rows say nothing about the model, so gate rates exclude them and resume
+ * re-runs them.
+ */
+export function isInfraFailureMessage(text: string): boolean {
+  if (isQuotaMessage(text)) return false;
+  return /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|EPIPE|socket hang up|stream idle|aborted|AbortError|omniroute 50[234]|cloudflare-ai 5\d\d|HTTP 408|\b408\b/i.test(
+    text,
+  );
 }
 
 interface PlanEditData {
@@ -834,8 +939,18 @@ export async function runBaselineCase(opts: {
       .sort((a, b) => a.startTime - b.startTime)
       .map(clip => clip.duration)
       .filter(duration => Number.isFinite(duration) && duration > 0);
-    const transitionCount = resolveTransitionCount(data);
-    const effectCount = data?.effectCount ?? 0;
+    // Craft counters are read back from the materialized project, never from
+    // the tool's self-report: a transition/effect that silently no-ops would
+    // otherwise inflate the numbers it is being graded on.
+    const transitionCount = tracks.reduce(
+      (sum, track) => sum + (track.transitions?.length ?? 0),
+      0,
+    );
+    const effectCount = tracks.reduce(
+      (sum, track) =>
+        sum + (track.clips ?? []).reduce((inner, clip) => inner + (clip.effects?.length ?? 0), 0),
+      0,
+    );
     const textCount = data?.textIds?.length ?? 0;
     const quality =
       opts.references && opts.references.length > 0 && clipDurationsSec.length > 0
@@ -856,6 +971,7 @@ export async function runBaselineCase(opts: {
     const passed = gates.planValidates && gates.materializes && gates.noClipOverlaps && toolOk;
     if (!passed && failures.length === 0) failures.push("one or more hard gates failed");
 
+    const failureText = failures.join("\n");
     return {
       id,
       run,
@@ -864,7 +980,8 @@ export async function runBaselineCase(opts: {
       promptType: opts.prompt.type,
       ok: passed,
       toolCode,
-      quotaExhausted: toolCode !== null && isQuotaMessage(failures.join("\n")),
+      quotaExhausted: toolCode !== null && isQuotaMessage(failureText),
+      infraFailure: toolCode !== null && isInfraFailureMessage(failureText),
       gates,
       failures,
       warnings,
@@ -897,6 +1014,7 @@ export async function runBaselineCase(opts: {
       ok: false,
       toolCode,
       quotaExhausted: toolCode !== null && isQuotaMessage(failures.join("\n")),
+      infraFailure: isInfraFailureMessage(failures.join("\n")),
       gates,
       failures,
       warnings,
@@ -960,18 +1078,19 @@ export interface SummarizeOptions {
   readonly status: "complete" | "aborted";
   readonly abortReason?: string;
   readonly quotaExcluded: number;
+  readonly infraExcluded: number;
 }
 
 /**
- * Builds the report summary. Quota-exhausted results are excluded from every
- * gate rate (transport failure ≠ model failure); determinism only considers
- * combinations with non-quota results.
+ * Builds the report summary. Quota-exhausted and infra-failed results are
+ * excluded from every gate rate (transport failure ≠ model failure);
+ * stability only considers combinations with real results.
  */
 export function summarizeBaseline(
   results: readonly BaselineCaseResult[],
   opts: SummarizeOptions,
 ): BaselineSummary {
-  const valid = results.filter(r => !r.quotaExhausted);
+  const valid = results.filter(r => !r.quotaExhausted && !r.infraFailure);
   const round = (n: number): number => Math.round(n * 10000) / 10000;
   const rate = (pick: (r: BaselineCaseResult) => boolean): GateRate => {
     const perRun: number[] = [];
@@ -1034,6 +1153,7 @@ export function summarizeBaseline(
     status: opts.status,
     ...(opts.abortReason ? { abortReason: opts.abortReason } : {}),
     quotaExcluded: opts.quotaExcluded,
+    infraExcluded: opts.infraExcluded,
     gateRates: {
       planValidates: rate(r => r.gates.planValidates),
       materializes: rate(r => r.gates.materializes),
@@ -1090,14 +1210,30 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
   const reportPath = opts.reportPath ?? DEFAULT_REPORT_PATH;
 
   let priorResults: BaselineCaseResult[] = [];
-  if (opts.resume && existsSync(reportPath)) {
-    try {
-      const prior = JSON.parse(readFileSync(reportPath, "utf8")) as BaselineSummary;
-      // Quota rows were never measured — they are exactly what a resume re-runs.
-      priorResults = (prior.results ?? []).filter(result => !result.quotaExhausted);
-    } catch {
-      // Unreadable prior report: fall through to a fresh full run.
-      priorResults = [];
+  let priorModel: string | null = null;
+  if (opts.resume) {
+    const fromJournal = loadRowsJournal(rowsPathFor(reportPath));
+    if (fromJournal.length > 0) priorResults = fromJournal;
+    if (existsSync(reportPath)) {
+      try {
+        const prior = JSON.parse(readFileSync(reportPath, "utf8")) as BaselineSummary;
+        priorModel = typeof prior.model === "string" ? prior.model : null;
+        if (priorResults.length === 0) {
+          priorResults = [...(prior.results ?? [])];
+        }
+      } catch {
+        // Unreadable prior report: journal (if any) still stands.
+      }
+    }
+    // Transport rows were never measured — they are exactly what a resume
+    // re-runs, alongside quota rows.
+    priorResults = priorResults.filter(result => !result.quotaExhausted && !result.infraFailure);
+    const nextModel = llmConfig?.config.model ?? null;
+    if (priorModel && nextModel && priorModel !== nextModel) {
+      throw new Error(
+        `Refusing to resume: ${reportPath} was measured with model "${priorModel}" but the current config is "${nextModel}". ` +
+          `One report per model — move the old report aside and start fresh.`,
+      );
     }
   }
   const done = new Set(priorResults.map(result => `${result.id}|${result.run}`));
@@ -1105,6 +1241,8 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
     .flatMap(combo => Array.from({ length: runsPerCombo }, (_, run) => ({ ...combo, run })))
     .filter(item => !done.has(`${item.entry.id}/${item.prompt.id}|${item.run}`));
   let quotaHit = false;
+  const rowsPath = rowsPathFor(reportPath);
+  if (work.length > 0) mkdirSync(dirname(rowsPath), { recursive: true });
   const fresh = await mapLimit(work, opts.concurrency ?? 3, async item => {
     // Stop scheduling as soon as the provider reports quota exhaustion: further
     // calls are guaranteed transport failures and would only pollute the report.
@@ -1118,6 +1256,13 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
       references,
     });
     if (result.quotaExhausted) quotaHit = true;
+    // Durable journal: a mid-run crash (or harness timeout) keeps every row
+    // that has already settled.
+    try {
+      appendFileSync(rowsPath, `${JSON.stringify(result)}\n`, "utf8");
+    } catch {
+      // The report at the end is the contract; the journal is best-effort.
+    }
     opts.onCase?.(result);
     return result;
   });
@@ -1128,20 +1273,24 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
 
   const expected = combos.length * runsPerCombo;
   const quotaExcluded = settled.filter(r => r.quotaExhausted).length;
+  const infraExcluded = settled.filter(r => !r.quotaExhausted && r.infraFailure).length;
   const summary = summarizeBaseline(settled, {
     model: llmConfig?.config.model ?? "injected-client",
     cases: combos.length,
     runsPerCombo,
-    status: settled.length === expected && quotaExcluded === 0 ? "complete" : "aborted",
-    ...(settled.length === expected && quotaExcluded === 0
+    status: settled.length === expected && quotaExcluded === 0 && infraExcluded === 0 ? "complete" : "aborted",
+    ...(settled.length === expected && quotaExcluded === 0 && infraExcluded === 0
       ? {}
       : {
           abortReason: quotaHit
             ? `Workers AI quota exhausted after ${settled.length}/${expected} case-runs ` +
                 `(${quotaExcluded} quota errors)`
-            : `stopped after ${settled.length}/${expected} case-runs`,
+            : infraExcluded > 0
+              ? `stopped after ${settled.length}/${expected} case-runs (${infraExcluded} infra failures)`
+              : `stopped after ${settled.length}/${expected} case-runs`,
         }),
     quotaExcluded,
+    infraExcluded,
   });
 
   writeFileSync(reportPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");

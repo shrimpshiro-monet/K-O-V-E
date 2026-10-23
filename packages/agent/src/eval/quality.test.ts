@@ -173,6 +173,7 @@ describe("baseline summary carries quality", () => {
     ok: true,
     toolCode: null,
     quotaExhausted: false,
+    infraFailure: false,
     gates: { planValidates: true, materializes: true, noClipOverlaps: true },
     failures: [],
     warnings: [],
@@ -200,7 +201,7 @@ describe("baseline summary carries quality", () => {
     const failing = { ...baseResult("p/d", null), ok: false };
     const summary = summarizeBaseline(
       [baseResult("p/d", quality), failing],
-      { model: "m", cases: 1, runsPerCombo: 1, status: "complete", quotaExcluded: 0 },
+      { model: "m", cases: 1, runsPerCombo: 1, status: "complete", quotaExcluded: 0, infraExcluded: 0 },
     );
     expect(summary.quality).toBeTruthy();
     expect(summary.quality!.meanOverall).toBeCloseTo(0.6778, 4);
@@ -210,7 +211,7 @@ describe("baseline summary carries quality", () => {
   it("omits quality when nothing scored", () => {
     const summary = summarizeBaseline(
       [baseResult("p/d", null)],
-      { model: "m", cases: 1, runsPerCombo: 1, status: "complete", quotaExcluded: 0 },
+      { model: "m", cases: 1, runsPerCombo: 1, status: "complete", quotaExcluded: 0, infraExcluded: 0 },
     );
     expect(summary.quality).toBeUndefined();
   });

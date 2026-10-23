@@ -15,6 +15,7 @@ import {
   makeOmniRouteSend,
   parseDevVars,
   isQuotaMessage,
+  isInfraFailureMessage,
   pinnedSend,
   resolveEvalLLMConfig,
   runBaseline,
@@ -165,6 +166,18 @@ describe("baseline harness helpers", () => {
     expect(isQuotaMessage("plan invalid [insufficient_speed_keyframes]")).toBe(false);
   });
 
+  it("recognizes infra/transport failures, and never confuses them with quota or model errors", () => {
+    expect(isInfraFailureMessage("plan_edit failed [TOOL_ERROR]: fetch failed")).toBe(true);
+    expect(isInfraFailureMessage("omniroute 504: omniroute stream idle for 120000ms")).toBe(true);
+    expect(isInfraFailureMessage("omniroute 502: upstream melted")).toBe(true);
+    expect(isInfraFailureMessage("cloudflare-ai 408: gateway timeout")).toBe(true);
+    // Quota rows carry their own flag; infra must not double-claim them.
+    expect(isInfraFailureMessage('cloudflare-ai 429: {"code":4006}')).toBe(false);
+    // Genuine model/validation failures are not infra.
+    expect(isInfraFailureMessage("plan invalid [overlap]: segments overlap")).toBe(false);
+    expect(isInfraFailureMessage("plan_edit failed [EDIT_PLAN_APPLY_FAILED]: rolled back")).toBe(false);
+  });
+
   it("excludes quota results from gate rates and marks aborted runs", () => {
     const stats = {
       durationMs: 1,
@@ -185,6 +198,7 @@ describe("baseline harness helpers", () => {
       ok,
       toolCode: quota ? "TOOL_ERROR" : null,
       quotaExhausted: quota,
+      infraFailure: false,
       gates: { planValidates: ok, materializes: ok, noClipOverlaps: true },
       failures: quota ? ["plan_edit failed [TOOL_ERROR]: cloudflare-ai 429 ..."] : [],
       warnings: [],
@@ -202,9 +216,10 @@ describe("baseline harness helpers", () => {
         make("c", 1, true, false),
         make("c", 2, true, false),
       ],
-      { model: "m", cases: 3, runsPerCombo: 3, status: "aborted", abortReason: "stopped early", quotaExcluded: 1 },
+      { model: "m", cases: 3, runsPerCombo: 3, status: "aborted", abortReason: "stopped early", quotaExcluded: 1, infraExcluded: 0 },
     );
     expect(summary.quotaExcluded).toBe(1);
+    expect(summary.infraExcluded).toBe(0);
     expect(summary.status).toBe("aborted");
     expect(summary.abortReason).toBe("stopped early");
     // planValidates over non-quota results: run0 2/2, run1 2/3, run2 3/3
@@ -419,6 +434,19 @@ describe("baseline harness helpers", () => {
     const cfg = { baseUrl: "http://localhost:20128/v1", apiKey: "omni-key", model: "vendor/model" };
     await expect(makeOmniRouteSend(cfg, { fetchFn: streamFetch })({})).rejects.toThrow("omniroute 502");
   });
+
+  it("tears down a stalled stream after the idle window instead of pinning the slot", async () => {
+    const hanging = new ReadableStream<Uint8Array>({});
+    const streamFetch = (async () =>
+      new Response(hanging, {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      })) as unknown as typeof fetch;
+    const cfg = { baseUrl: "http://localhost:20128/v1", apiKey: "omni-key", model: "vendor/model" };
+    await expect(
+      makeOmniRouteSend(cfg, { fetchFn: streamFetch, idleTimeoutMs: 40 })({}),
+    ).rejects.toThrow("omniroute 504");
+  });
 });
 
 describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
@@ -455,19 +483,20 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
       if (summary.status === "complete") {
         expect(summary.total).toBe(cases * RUNS);
         expect(summary.quotaExcluded).toBe(0);
+        expect(summary.infraExcluded).toBe(0);
       } else {
         console.log(`[baseline] ABORTED: ${summary.abortReason}`);
-        expect(summary.quotaExcluded).toBeGreaterThan(0);
+        expect(summary.quotaExcluded + summary.infraExcluded).toBeGreaterThan(0);
       }
       const writtenPath = reportPath ?? DEFAULT_REPORT_PATH;
       expect(existsSync(writtenPath), `report not written to ${writtenPath}`).toBe(true);
 
       // Baseline is a measurement, not a hard gate: assert harness correctness
       // and let the hard-gate rates land in the JSON report.
-      const valid = summary.results.filter(result => !result.quotaExhausted);
+      const valid = summary.results.filter(result => !result.quotaExhausted && !result.infraFailure);
       expect(summary.passed).toBe(valid.filter(result => result.ok).length);
       for (const result of summary.results) {
-        if (result.quotaExhausted) continue;
+        if (result.quotaExhausted || result.infraFailure) continue;
         expect(typeof result.gates.planValidates, result.id).toBe("boolean");
         expect(typeof result.gates.materializes, result.id).toBe("boolean");
         expect(typeof result.gates.noClipOverlaps, result.id).toBe("boolean");
@@ -507,6 +536,6 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
             : ""),
       );
     },
-    5_400_000,
+    43_200_000,
   );
-}, 5_400_000);
+}, 43_200_000);

@@ -309,6 +309,118 @@ describe("executeTool", () => {
     expect(host.getProject().motionCompositions?.[0]?.layers.some((layer) => layer.type === "particle")).toBe(true);
   });
 
+  it("places inserted motion moments on the Motion graphics track, never the video track", async () => {
+    const project = {
+      ...makeEmptyProject(),
+      mediaLibrary: {
+        items: [
+          {
+            id: "video-1",
+            name: "test.mp4",
+            type: "video",
+            metadata: { duration: 8 },
+          },
+        ],
+      },
+    } as ReturnType<typeof makeEmptyProject>;
+    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    host.llm = {
+      provider: "openai",
+      client: {
+        complete: async () => ({
+          text: "",
+          stopReason: "tool_use",
+          toolUses: [{
+            id: "plan-1",
+            name: "submit_edit_plan",
+            input: {
+              segments: [
+                {
+                  sourceVideoId: "video_0",
+                  sourceStartTime: 0,
+                  sourceEndTime: 4,
+                  trackIndex: 0,
+                  targetPosition: 0,
+                  speed: 1,
+                  effects: [],
+                  rationale: "opening",
+                },
+                {
+                  sourceVideoId: "video_0",
+                  sourceStartTime: 4,
+                  sourceEndTime: 8,
+                  trackIndex: 0,
+                  targetPosition: 4,
+                  speed: 1,
+                  effects: [],
+                  rationale: "payoff",
+                },
+              ],
+              textElements: [],
+              effects: [],
+              transitions: [],
+              audioDecisions: [],
+              metadata: {
+                targetDuration: 8,
+                targetPlatform: "social",
+                genre: "highlight",
+                pacing: "fast",
+                rationale: "test",
+              },
+              motionMoments: [
+                { move: "particle-burst-on-cut", atTime: 4, duration: 0.5, insertIntoEditor: true, rationale: "on the cut" },
+                { move: "3d-title-card", atTime: 7.2, duration: 1.2, insertIntoEditor: true, rationale: "end card overshoots the footage on purpose" },
+              ],
+            },
+          }],
+        }),
+      } as unknown as NonNullable<EditingHost["llm"]>["client"],
+    };
+
+    const result = await executeTool("plan_edit", { prompt: "make a highlight" }, host);
+    expect(result.ok).toBe(true);
+    const built = host.getProject();
+
+    const motionTrack = built.timeline.tracks.find(
+      (track) => track.type === "graphics" && track.name === "Motion",
+    );
+    expect(motionTrack, "motion clips must land on the engine's Motion graphics track").toBeDefined();
+    expect(motionTrack!.clips).toHaveLength(2);
+    for (const clip of motionTrack!.clips) {
+      expect(clip.id).toMatch(/^motion-clip-motion-instance-/);
+      expect(clip.metadata?.motionClip).toBe(true);
+    }
+
+    // No motion clip may pollute a video track — that was the D1 overlap bug.
+    for (const track of built.timeline.tracks) {
+      if (track.type !== "video") continue;
+      for (const clip of track.clips) {
+        expect(clip.metadata?.motionClip, `${clip.id} on video track ${track.id}`).toBeUndefined();
+      }
+    }
+
+    // The strict overlap gate (video/audio only) must be clean.
+    const { clipOverlaps } = await import("./eval/baseline");
+    expect(clipOverlaps(built)).toEqual([]);
+
+    // The overshooting end-card is clamped to the placed footage: an overlay
+    // must never push timeline duration past the edit's actual extent (8s).
+    const endCard = motionTrack!.clips.reduce((latest, clip) =>
+      clip.startTime > latest.startTime ? clip : latest,
+    );
+    expect(endCard.startTime).toBeGreaterThan(7);
+    expect(endCard.startTime + endCard.duration).toBeLessThanOrEqual(8 + 1e-6);
+    const extent = built.timeline.tracks.reduce(
+      (max, track) =>
+        (track.clips ?? []).reduce(
+          (inner, clip) => Math.max(inner, clip.startTime + clip.duration),
+          max,
+        ),
+      0,
+    );
+    expect(extent).toBeLessThanOrEqual(8 + 1e-6);
+  });
+
   it("materializes an effect spec with no params field", async () => {
     const project = {
       ...makeEmptyProject(),

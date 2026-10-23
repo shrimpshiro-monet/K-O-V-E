@@ -2659,14 +2659,33 @@ async function materializeMotionMoments(
   // a later failure leaves no untracked entities for compensation to miss.
 
   const project = host.getProject();
-  const targetTrackId = project.timeline.tracks.find((track) => track.type === "video")?.id;
   for (const [index, moment] of moments.entries()) {
     const segment = moment.segmentIndex === undefined ? undefined : clipIds[moment.segmentIndex];
     const sourceClip = segment
       ? project.timeline.tracks.flatMap((track) => track.clips).find((clip) => clip.id === segment)
       : undefined;
-    const startTime = Math.max(0, moment.atTime ?? sourceClip?.startTime ?? 0);
-    const duration = Math.max(0.1, moment.duration ?? sourceClip?.duration ?? 2);
+    // Overlays must not define the edit's duration: clamp so the moment never
+    // extends past the placed footage (otherwise a tail overlay silently
+    // inflates timeline.duration and blows the target-length gate).
+    const live = host.getProject();
+    const footageEnd = live.timeline.tracks.reduce(
+      (max, track) =>
+        track.type === "audio"
+          ? max
+          : (track.clips ?? []).reduce(
+              (inner, clip) => Math.max(inner, clip.startTime + clip.duration),
+              max,
+            ),
+      0,
+    );
+    let startTime = Math.max(0, moment.atTime ?? sourceClip?.startTime ?? 0);
+    let duration = Math.max(0.1, moment.duration ?? sourceClip?.duration ?? 2);
+    if (footageEnd > 0 && startTime + duration > footageEnd) {
+      duration = Math.max(0.1, footageEnd - startTime);
+      if (startTime + duration > footageEnd) {
+        startTime = Math.max(0, footageEnd - duration);
+      }
+    }
     const composition = motionEngine.createStarterComposition({
       name: `EditPlan Motion ${index + 1} - ${moment.move}`,
       width: project.settings.width,
@@ -2688,10 +2707,13 @@ async function materializeMotionMoments(
     owned?.motionCompositionIds.push(built.composition.id);
 
     if (moment.insertIntoEditor) {
+      // No trackId: the motion engine places the instance on its dedicated
+      // "Motion" graphics track (ensureGraphicsTrack). Pinning it to a video
+      // track made every inserted moment collide with the source clips the
+      // overlay is supposed to sit on top of.
       const instance = motionEngine.createInstance(built.composition, {
         startTime,
         duration,
-        trackId: targetTrackId,
         name: `Motion ${moment.move}`,
       });
       const inserted = await applyMotionAction(host, "motion/insertInstance", { instance });
