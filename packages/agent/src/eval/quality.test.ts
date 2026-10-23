@@ -164,31 +164,50 @@ describe("scoreProducedEdit", () => {
 });
 
 describe("baseline summary carries quality", () => {
-  const baseResult = (id: string, quality: QualityScore | null): BaselineCaseResult => ({
-    id,
-    run: 0,
-    projectId: id.split("/")[0]!,
-    promptId: id.split("/")[1]!,
-    promptType: "detailed",
-    ok: true,
-    toolCode: null,
-    quotaExhausted: false,
-    infraFailure: false,
-    gates: { planValidates: true, materializes: true, noClipOverlaps: true },
-    failures: [],
-    warnings: [],
-    stats: {
-      durationMs: 1000,
-      clipCount: 5,
-      transitionCount: 1,
-      effectCount: 0,
-      audioCount: 1,
-      textCount: 2,
-      planScore: null,
-      timelineDuration: 20.5,
-    },
-    quality,
-  });
+  const baseResult = (id: string, quality: QualityScore | null, ok = true): BaselineCaseResult => {
+    const gateResult = { passed: ok, reason: `Synthetic ${ok ? "pass" : "fail"}.` };
+    return {
+      id,
+      run: 0,
+      projectId: id.split("/")[0]!,
+      promptId: id.split("/")[1]!,
+      promptType: "detailed",
+      ok,
+      toolCode: null,
+      quotaExhausted: false,
+      infraFailure: false,
+      gates: {
+        planValidates: ok,
+        materializes: ok,
+        noClipOverlaps: ok,
+        noTimelineGaps: ok,
+        meetsTransitionMinimum: ok,
+        cameraMoveDensityOk: ok,
+        noConsecutiveIdenticalAccents: ok,
+        durationWithinTolerance: ok,
+      },
+      gateResults: {
+        noTimelineGaps: gateResult,
+        meetsTransitionMinimum: gateResult,
+        cameraMoveDensityOk: gateResult,
+        noConsecutiveIdenticalAccents: gateResult,
+        durationWithinTolerance: gateResult,
+      },
+      failures: [],
+      warnings: [],
+      stats: {
+        durationMs: 1000,
+        clipCount: 5,
+        transitionCount: 1,
+        effectCount: 0,
+        audioCount: 1,
+        textCount: 2,
+        planScore: null,
+        timelineDuration: 20.5,
+      },
+      quality,
+    };
+  };
 
   it("aggregates quality over passing results only", () => {
     const quality: QualityScore = {
@@ -198,7 +217,7 @@ describe("baseline summary carries quality", () => {
       craft: { score: 0.3333, detail: "" },
       overall: 0.6778,
     };
-    const failing = { ...baseResult("p/d", null), ok: false };
+    const failing = baseResult("p/d", null, false);
     const summary = summarizeBaseline(
       [baseResult("p/d", quality), failing],
       { model: "m", cases: 1, runsPerCombo: 1, status: "complete", quotaExcluded: 0, infraExcluded: 0 },

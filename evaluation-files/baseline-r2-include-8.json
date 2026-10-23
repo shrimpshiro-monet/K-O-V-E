@@ -70,17 +70,62 @@
       ]
     }
   },
-  "determinism": {
-    "allPass": 1,
-    "allFail": 4,
+  "gateSemanticsVersion": 1,
+  "spread": {
+    "all_pass": 1,
+    "all_fail": 4,
     "mixed": 3,
-    "mixedIds": [
-      "pod-02/pod-02-vague",
-      "game-01/game-01-vague",
-      "sport-01/sport-01-genre"
-    ],
     "incomplete": 0,
-    "incompleteIds": []
+    "byCombination": [
+      {
+        "id": "game-01/game-01-vague",
+        "outcome": "mixed",
+        "validRuns": 2,
+        "expectedRuns": 2
+      },
+      {
+        "id": "multi-01/multi-01-detailed",
+        "outcome": "all_fail",
+        "validRuns": 2,
+        "expectedRuns": 2
+      },
+      {
+        "id": "multi-01/multi-01-genre",
+        "outcome": "all_fail",
+        "validRuns": 2,
+        "expectedRuns": 2
+      },
+      {
+        "id": "multi-02/multi-02-vague",
+        "outcome": "all_fail",
+        "validRuns": 2,
+        "expectedRuns": 2
+      },
+      {
+        "id": "multi-03/multi-03-genre",
+        "outcome": "all_fail",
+        "validRuns": 2,
+        "expectedRuns": 2
+      },
+      {
+        "id": "pod-02/pod-02-vague",
+        "outcome": "mixed",
+        "validRuns": 2,
+        "expectedRuns": 2
+      },
+      {
+        "id": "sport-01/sport-01-detailed",
+        "outcome": "all_pass",
+        "validRuns": 2,
+        "expectedRuns": 2
+      },
+      {
+        "id": "sport-01/sport-01-genre",
+        "outcome": "mixed",
+        "validRuns": 2,
+        "expectedRuns": 2
+      }
+    ]
   },
   "results": [
     {

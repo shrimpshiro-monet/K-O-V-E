@@ -78,22 +78,95 @@
       ]
     }
   },
-  "determinism": {
-    "allPass": 3,
-    "allFail": 1,
+  "gateSemanticsVersion": 1,
+  "spread": {
+    "all_pass": 3,
+    "all_fail": 1,
     "mixed": 8,
-    "mixedIds": [
-      "pod-01/pod-01-detailed",
-      "pod-01/pod-01-vague",
-      "pod-01/pod-01-genre",
-      "pod-02/pod-02-detailed",
-      "pod-02/pod-02-vague",
-      "pod-02/pod-02-genre",
-      "multi-01/multi-01-detailed",
-      "game-01/game-01-detailed"
+    "incomplete": 1,
+    "byCombination": [
+      {
+        "id": "game-01/game-01-detailed",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "game-01/game-01-genre",
+        "outcome": "all_fail",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "game-01/game-01-vague",
+        "outcome": "all_pass",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-01/multi-01-detailed",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-01/multi-01-genre",
+        "outcome": "all_pass",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-01/multi-01-vague",
+        "outcome": "all_pass",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-02/multi-02-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-01/pod-01-detailed",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-01/pod-01-genre",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-01/pod-01-vague",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-02/pod-02-detailed",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-02/pod-02-genre",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-02/pod-02-vague",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      }
     ],
-    "incomplete": 0,
-    "incompleteIds": []
+    "legacyObservedOnly": true,
+    "unobservedCombinations": 14,
+    "scopeNote": "Legacy rows did not retain a full expected-combination ID list; only row-observed combinations are individually classified."
   },
   "results": [
     {

@@ -61,13 +61,32 @@
       ]
     }
   },
-  "determinism": {
-    "allPass": 2,
-    "allFail": 1,
+  "gateSemanticsVersion": 1,
+  "spread": {
+    "all_pass": 2,
+    "all_fail": 1,
     "mixed": 0,
-    "mixedIds": [],
     "incomplete": 0,
-    "incompleteIds": []
+    "byCombination": [
+      {
+        "id": "pod-01/pod-01-detailed",
+        "outcome": "all_fail",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "pod-01/pod-01-genre",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "pod-01/pod-01-vague",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      }
+    ]
   },
   "quality": {
     "references": [

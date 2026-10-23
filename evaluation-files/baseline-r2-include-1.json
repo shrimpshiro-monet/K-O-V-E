@@ -70,15 +70,20 @@
       ]
     }
   },
-  "determinism": {
-    "allPass": 0,
-    "allFail": 0,
+  "gateSemanticsVersion": 1,
+  "spread": {
+    "all_pass": 0,
+    "all_fail": 0,
     "mixed": 1,
-    "mixedIds": [
-      "multi-01/multi-01-detailed"
-    ],
     "incomplete": 0,
-    "incompleteIds": []
+    "byCombination": [
+      {
+        "id": "multi-01/multi-01-detailed",
+        "outcome": "mixed",
+        "validRuns": 2,
+        "expectedRuns": 2
+      }
+    ]
   },
   "results": [
     {

@@ -185,9 +185,9 @@ export interface SamplingPinning {
 }
 
 /**
- * Pinned sampling for reproducible evals. `temperature: 0` (greedy) plus a
- * fixed seed are injected into every request body; Workers AI accepts both
- * (verified: POST with temperature+seed returns 200).
+ * Requested sampling hints injected into every request body. A provider may
+ * ignore temperature/seed, so the report measures observed spread rather than
+ * assuming repeated calls produce the same plan.
  */
 export const PINNED_SAMPLING: SamplingPinning = { temperature: 0, seed: 1234 };
 
@@ -663,10 +663,338 @@ export function clipOverlaps(project: Project, epsilon = 1e-6): ClipOverlap[] {
   return overlaps;
 }
 
+export const TIMELINE_GAP_EPSILON_SECONDS = 0.25;
+export const CAMERA_MOVE_CLIP_SHARE_MAX = 0.7;
+export const TARGET_DURATION_TOLERANCE_RATIO = 0.1;
+/** Increment whenever hard-gate semantics change; resume refuses older reports. */
+export const BASELINE_GATE_SEMANTICS_VERSION = 2;
+
+export interface GateResult {
+  readonly passed: boolean;
+  /** Short, report-ready explanation of why this gate passed or failed. */
+  readonly reason: string;
+}
+
+export interface BaselineCraftGateResults {
+  readonly noTimelineGaps: GateResult;
+  readonly meetsTransitionMinimum: GateResult;
+  readonly cameraMoveDensityOk: GateResult;
+  readonly noConsecutiveIdenticalAccents: GateResult;
+  readonly durationWithinTolerance: GateResult;
+}
+
 export interface BaselineGates {
   readonly planValidates: boolean;
   readonly materializes: boolean;
   readonly noClipOverlaps: boolean;
+  readonly noTimelineGaps: boolean;
+  readonly meetsTransitionMinimum: boolean;
+  readonly cameraMoveDensityOk: boolean;
+  readonly noConsecutiveIdenticalAccents: boolean;
+  readonly durationWithinTolerance: boolean;
+}
+
+export type SpreadOutcome = "all_pass" | "all_fail" | "mixed" | "incomplete";
+
+export interface CombinationSpread {
+  readonly id: string;
+  readonly outcome: SpreadOutcome;
+  readonly validRuns: number;
+  readonly expectedRuns: number;
+}
+
+type TimelineClip = Track["clips"][number];
+
+function footageClips(track: Track): TimelineClip[] {
+  return (track.clips ?? []).filter(clip => clip.metadata?.motionClip !== true);
+}
+
+/**
+ * Selects the main placed-footage lane, not motion/text graphics overlays.
+ * The busiest footage track wins; ties prefer greater covered duration, then
+ * a video track over an image track, then the earlier timeline track.
+ */
+export function primaryFootageTrack(project: Project): Track | undefined {
+  const candidates = project.timeline.tracks
+    .map((track, index) => ({ track, index, clips: footageClips(track) }))
+    .filter(({ track, clips }) => (track.type === "video" || track.type === "image") && clips.length > 0);
+  candidates.sort((a, b) => {
+    const clipCountDifference = b.clips.length - a.clips.length;
+    if (clipCountDifference !== 0) return clipCountDifference;
+    const duration = (clips: readonly TimelineClip[]): number =>
+      clips.reduce((sum, clip) => sum + (Number.isFinite(clip.duration) && clip.duration > 0 ? clip.duration : 0), 0);
+    const durationDifference = duration(b.clips) - duration(a.clips);
+    if (durationDifference !== 0) return durationDifference;
+    const videoPriority = Number(a.track.type !== "video") - Number(b.track.type !== "video");
+    return videoPriority || a.index - b.index;
+  });
+  return candidates[0]?.track;
+}
+
+function orderedPrimaryFootageClips(project: Project): TimelineClip[] {
+  const track = primaryFootageTrack(project);
+  return track
+    ? footageClips(track).slice().sort((a, b) => a.startTime - b.startTime)
+    : [];
+}
+
+/** Maximum end time of any materialized clip, across every timeline track. */
+export function materializedTimelineDuration(project: Project): number {
+  return project.timeline.tracks.reduce(
+    (max, track) =>
+      (track.clips ?? []).reduce((inner, clip) => {
+        const end = clip.startTime + clip.duration;
+        return Number.isFinite(end) ? Math.max(inner, end) : inner;
+      }, max),
+    0,
+  );
+}
+
+const gateResult = (passed: boolean, reason: string): GateResult => ({ passed, reason });
+
+/** Checks leading and between-clip dead air on the primary footage track. */
+export function evaluateNoTimelineGaps(
+  project: Project | null,
+  epsilonSeconds = TIMELINE_GAP_EPSILON_SECONDS,
+): GateResult {
+  if (!project) return gateResult(false, "No materialized project is available to inspect for footage gaps.");
+  const track = primaryFootageTrack(project);
+  if (!track) return gateResult(false, "No primary video/image track with placed footage was materialized.");
+  const clips = footageClips(track).slice().sort((a, b) => a.startTime - b.startTime);
+  if (clips.length === 0) return gateResult(false, `Primary footage track "${track.name}" contains no clips.`);
+  for (const clip of clips) {
+    if (!Number.isFinite(clip.startTime) || !Number.isFinite(clip.duration) || clip.duration <= 0) {
+      return gateResult(false, `Primary footage clip "${clip.id}" has an invalid start or duration.`);
+    }
+  }
+
+  const first = clips[0]!;
+  const leadingGap = Math.max(0, first.startTime);
+  if (leadingGap > epsilonSeconds + 1e-9) {
+    return gateResult(
+      false,
+      `Primary footage track "${track.name}" starts ${leadingGap.toFixed(3)}s after timeline zero ` +
+        `(maximum allowed gap ${epsilonSeconds.toFixed(3)}s).`,
+    );
+  }
+  let largestGap = leadingGap;
+  for (let index = 1; index < clips.length; index += 1) {
+    const previous = clips[index - 1]!;
+    const current = clips[index]!;
+    const gap = current.startTime - (previous.startTime + previous.duration);
+    largestGap = Math.max(largestGap, gap);
+    if (gap > epsilonSeconds + 1e-9) {
+      return gateResult(
+        false,
+        `Primary footage has a ${gap.toFixed(3)}s gap between clips "${previous.id}" and "${current.id}" ` +
+          `(maximum allowed gap ${epsilonSeconds.toFixed(3)}s).`,
+      );
+    }
+  }
+  return gateResult(
+    true,
+    `Primary footage track "${track.name}" has ${clips.length} clip(s); largest uncovered gap ` +
+      `${Math.max(0, largestGap).toFixed(3)}s is within the ${epsilonSeconds.toFixed(3)}s limit.`,
+  );
+}
+
+function promptExplicitlyRequestsHardCuts(prompt: EvalPrompt): boolean {
+  return /\bhard[\s-]?cuts?\s+only\b|\b(?:no|zero)\s+(?:any\s+)?transitions?\b|\bwithout\s+(?:any\s+)?transitions?\b/i.test(
+    prompt.text,
+  );
+}
+
+function isDetailedSpeechProject(entry: Pick<EvalProject, "id" | "category">): boolean {
+  return entry.category.trim().toLowerCase() === "speech" && /^pod(?:cast)?-/i.test(entry.id);
+}
+
+/** Reads transition presence from the materialized timeline, never the tool result. */
+export function evaluateTransitionMinimum(
+  project: Project | null,
+  prompt: EvalPrompt,
+  entry: Pick<EvalProject, "id" | "category">,
+): GateResult {
+  if (!project) return gateResult(false, "No materialized project is available to inspect for transitions.");
+  const transitionCount = project.timeline.tracks.reduce(
+    (sum, track) => sum + (track.transitions?.length ?? 0),
+    0,
+  );
+  if (promptExplicitlyRequestsHardCuts(prompt)) {
+    return gateResult(
+      true,
+      `The prompt explicitly requests hard cuts/no transitions; the minimum is waived ` +
+        `(found ${transitionCount} materialized transition(s)).`,
+    );
+  }
+  if (prompt.type === "detailed" && isDetailedSpeechProject(entry)) {
+    return gateResult(
+      true,
+      `Detailed speech/podcast rows may use hard cuts; the minimum is waived ` +
+        `(found ${transitionCount} materialized transition(s)).`,
+    );
+  }
+  if (transitionCount >= 1) {
+    return gateResult(true, `Found ${transitionCount} materialized transition(s); the minimum is 1.`);
+  }
+  return gateResult(
+    false,
+    `Found 0 materialized transitions; this non-exempt ${prompt.type} row requires at least 1.`,
+  );
+}
+
+const CAMERA_MOVE_KEYFRAME_PROPERTIES = new Set(["position.x", "position.y", "scale.x", "scale.y", "rotation"]);
+
+function hasCompiledCameraMove(clip: TimelineClip): boolean {
+  const compilerIdPrefix = `${clip.id}-move-`;
+  return (clip.keyframes ?? []).some(
+    keyframe =>
+      typeof keyframe.id === "string" &&
+      keyframe.id.startsWith(compilerIdPrefix) &&
+      CAMERA_MOVE_KEYFRAME_PROPERTIES.has(keyframe.property),
+  );
+}
+
+/** Counts only camera keyframes emitted by the plan materializer's compiler. */
+export function evaluateCameraMoveDensity(
+  project: Project | null,
+  maximumShare = CAMERA_MOVE_CLIP_SHARE_MAX,
+): GateResult {
+  if (!project) return gateResult(false, "No materialized project is available to inspect for camera moves.");
+  const track = primaryFootageTrack(project);
+  if (!track) return gateResult(false, "No primary footage clips are available for the camera-move density check.");
+  const eligible = footageClips(track).filter(
+    clip => Number.isFinite(clip.duration) && clip.duration > 0,
+  );
+  if (eligible.length === 0) return gateResult(false, "No eligible primary footage clips were materialized.");
+  const moving = eligible.filter(hasCompiledCameraMove).length;
+  const share = moving / eligible.length;
+  const percentage = (share * 100).toFixed(1);
+  const limit = (maximumShare * 100).toFixed(1);
+  return gateResult(
+    share <= maximumShare + 1e-9,
+    `${moving}/${eligible.length} eligible primary clips carry compiler-authored camera moves ` +
+      `(${percentage}%; maximum ${limit}%).`,
+  );
+}
+
+function effectPresetKeys(clip: TimelineClip): string[] {
+  const keys = new Set<string>();
+  for (const effect of clip.effects ?? []) {
+    if (effect.enabled === false || typeof effect.type !== "string" || !effect.type.trim()) continue;
+    const type = effect.type.trim().toLowerCase();
+    const shaderId = effect.params?.["shaderId"];
+    keys.add(
+      typeof shaderId === "string" && shaderId.trim()
+        ? `${type}:${shaderId.trim().toLowerCase()}`
+        : type,
+    );
+  }
+  return [...keys];
+}
+
+function transitionTypesBetween(project: Project, leftId: string, rightId: string): string[] {
+  const types = new Set<string>();
+  for (const track of project.timeline.tracks) {
+    for (const transition of track.transitions ?? []) {
+      const joinsPair =
+        (transition.clipAId === leftId && transition.clipBId === rightId) ||
+        (transition.clipAId === rightId && transition.clipBId === leftId);
+      if (joinsPair && typeof transition.type === "string" && transition.type.trim()) {
+        types.add(transition.type.trim().toLowerCase());
+      }
+    }
+  }
+  return [...types];
+}
+
+/**
+ * Rejects identical materialized transition + outgoing-clip effect pairs on
+ * immediately adjacent cuts. A shader's shaderId is its preset identity.
+ */
+export function evaluateNoConsecutiveIdenticalAccents(project: Project | null): GateResult {
+  if (!project) return gateResult(false, "No materialized project is available to inspect for repeated accents.");
+  const clips = orderedPrimaryFootageClips(project);
+  if (clips.length < 3) {
+    return gateResult(true, "Fewer than two adjacent cuts exist; no repeated back-to-back accent can occur.");
+  }
+
+  const accentedCuts: Array<{ cutIndex: number; signatures: Map<string, { transition: string; effect: string }> }> = [];
+  for (let cutIndex = 0; cutIndex < clips.length - 1; cutIndex += 1) {
+    const outgoing = clips[cutIndex]!;
+    const incoming = clips[cutIndex + 1]!;
+    const transitions = transitionTypesBetween(project, outgoing.id, incoming.id);
+    const effects = effectPresetKeys(outgoing);
+    if (transitions.length === 0 || effects.length === 0) continue;
+    const signatures = new Map<string, { transition: string; effect: string }>();
+    for (const transition of transitions) {
+      for (const effect of effects) signatures.set(JSON.stringify([transition, effect]), { transition, effect });
+    }
+    accentedCuts.push({ cutIndex, signatures });
+  }
+
+  for (let index = 1; index < accentedCuts.length; index += 1) {
+    const previous = accentedCuts[index - 1]!;
+    const current = accentedCuts[index]!;
+    if (current.cutIndex !== previous.cutIndex + 1) continue;
+    for (const [signature, accent] of current.signatures) {
+      if (!previous.signatures.has(signature)) continue;
+      const previousLeft = clips[previous.cutIndex]!;
+      const previousRight = clips[previous.cutIndex + 1]!;
+      const currentRight = clips[current.cutIndex + 1]!;
+      return gateResult(
+        false,
+        `Consecutive cuts "${previousLeft.id}→${previousRight.id}" and ` +
+          `"${previousRight.id}→${currentRight.id}" repeat transition "${accent.transition}" ` +
+          `with effect preset "${accent.effect}".`,
+      );
+    }
+  }
+  return gateResult(
+    true,
+    `No adjacent accented cuts repeat both a materialized transition type and the outgoing clip's effect preset ` +
+      `(${accentedCuts.length} accented cut(s) inspected).`,
+  );
+}
+
+/** Compares materialized timeline extent with EditPlan.metadata.targetDuration (seconds). */
+export function evaluateDurationWithinTolerance(
+  project: Project | null,
+  plan: EditPlan | null,
+  actualDuration?: number,
+  toleranceRatio = TARGET_DURATION_TOLERANCE_RATIO,
+): GateResult {
+  if (!project) return gateResult(false, "No materialized project is available for the duration check.");
+  const target = plan?.metadata?.targetDuration;
+  if (typeof target !== "number" || !Number.isFinite(target) || target <= 0) {
+    return gateResult(false, "The EditPlan does not declare a positive metadata.targetDuration in seconds.");
+  }
+  const actual = actualDuration ?? materializedTimelineDuration(project);
+  const minimum = target * (1 - toleranceRatio);
+  const maximum = target * (1 + toleranceRatio);
+  const passed = Number.isFinite(actual) && actual >= minimum - 1e-6 && actual <= maximum + 1e-6;
+  return gateResult(
+    passed,
+    `Materialized timeline is ${Number.isFinite(actual) ? actual.toFixed(2) : String(actual)}s; ` +
+      `declared target is ${target.toFixed(2)}s (allowed ${minimum.toFixed(2)}–${maximum.toFixed(2)}s, ` +
+      `±${(toleranceRatio * 100).toFixed(0)}%).`,
+  );
+}
+
+/** Pure materialized-project craft checks; exported so fixtures need no LLM. */
+export function evaluateCraftGates(
+  project: Project | null,
+  plan: EditPlan | null,
+  prompt: EvalPrompt,
+  entry: Pick<EvalProject, "id" | "category">,
+  timelineDuration?: number,
+): BaselineCraftGateResults {
+  return {
+    noTimelineGaps: evaluateNoTimelineGaps(project),
+    meetsTransitionMinimum: evaluateTransitionMinimum(project, prompt, entry),
+    cameraMoveDensityOk: evaluateCameraMoveDensity(project),
+    noConsecutiveIdenticalAccents: evaluateNoConsecutiveIdenticalAccents(project),
+    durationWithinTolerance: evaluateDurationWithinTolerance(project, plan, timelineDuration),
+  };
 }
 
 export interface BaselineCaseResult {
@@ -691,6 +1019,8 @@ export interface BaselineCaseResult {
    */
   readonly infraFailure: boolean;
   readonly gates: BaselineGates;
+  /** Per-craft-gate pass status and report-ready reason. */
+  readonly gateResults: BaselineCraftGateResults;
   readonly failures: string[];
   /** Non-blocking validation warnings (do not fail a case). */
   readonly warnings: string[];
@@ -712,20 +1042,21 @@ export interface BaselineCaseResult {
 }
 
 export interface GateRate {
-  /** Mean pass rate across runs (0..1), over non-quota results only. */
+  /** Mean pass rate across runs (0..1), excluding quota and infra results. */
   readonly mean: number;
   readonly min: number;
   readonly max: number;
   readonly stdev: number;
   /** Pass rate at each run index. */
   readonly perRun: readonly number[];
-  /** Valid (non-quota) result count backing each perRun entry. */
+  /** Valid model-result count backing each perRun entry; quota and infra are excluded. */
   readonly validPerRun: readonly number[];
 }
 
 export interface BaselineSummary {
   readonly generatedAt: string;
   readonly model: string;
+  readonly gateSemanticsVersion: number;
   readonly sampling: SamplingPinning;
   readonly runsPerCombo: number;
   /** Distinct corpus combinations (independent of repeats). */
@@ -733,7 +1064,7 @@ export interface BaselineSummary {
   /** Case-runs attempted (cases × runsPerCombo when complete, fewer when aborted). */
   readonly total: number;
   readonly passed: number;
-  /** "complete" = every case-run attempted; "aborted" = stopped early (quota). */
+  /** "complete" = every case-run attempted; "aborted" = stopped early or transport rows remain. */
   readonly status: "complete" | "aborted";
   readonly abortReason?: string;
   /** Case-runs excluded from gate rates because the provider returned quota errors. */
@@ -744,23 +1075,26 @@ export interface BaselineSummary {
     readonly planValidates: GateRate;
     readonly materializes: GateRate;
     readonly noClipOverlaps: GateRate;
+    readonly noTimelineGaps: GateRate;
+    readonly meetsTransitionMinimum: GateRate;
+    readonly cameraMoveDensityOk: GateRate;
+    readonly noConsecutiveIdenticalAccents: GateRate;
+    readonly durationWithinTolerance: GateRate;
     readonly allGates: GateRate;
   };
   /**
-   * Per-combination agreement across runs: `allPass`/`allFail` are stable
-   * outcomes, `mixed` means the combination is sampling-sensitive.
+   * Observed spread across k samples. Every expected combination receives an
+   * explicit status; transport-only or missing samples are `incomplete`.
    */
-  readonly determinism: {
-    readonly allPass: number;
-    readonly allFail: number;
+  readonly spread: {
+    readonly all_pass: number;
+    readonly all_fail: number;
     readonly mixed: number;
-    readonly mixedIds: readonly string[];
-    /** Combinations with fewer than runsPerCombo valid results. */
     readonly incomplete: number;
-    readonly incompleteIds: readonly string[];
+    readonly byCombination: readonly CombinationSpread[];
   };
   readonly results: readonly BaselineCaseResult[];
-  /** Aggregate quality over passing, non-quota runs (absent when nothing scored). */
+  /** Aggregate quality over passing valid runs (absent when nothing scored). */
   readonly quality?: ReturnType<typeof summarizeQuality>;
 }
 
@@ -920,21 +1254,12 @@ export async function runBaselineCase(opts: {
 
     const clipCount = data?.clipIds?.length ?? 0;
     const tracks = project.timeline.tracks as readonly Track[];
-    const timelineDuration = tracks.reduce(
-      (max, track) =>
-        (track.clips ?? []).reduce(
-          (inner, clip) => Math.max(inner, clip.startTime + clip.duration),
-          max,
-        ),
-      0,
-    );
+    const timelineDuration = materializedTimelineDuration(project);
 
-    // Primary-track cut rhythm: the busiest non-audio/non-text track, in
-    // timeline order. This is what a viewer perceives as "the edit".
-    const primaryTrack = tracks
-      .filter(track => (track.clips ?? []).length > 0 && track.type !== "audio" && track.type !== "text")
-      .sort((a, b) => (b.clips?.length ?? 0) - (a.clips?.length ?? 0))[0];
-    const clipDurationsSec = (primaryTrack?.clips ?? [])
+    // Primary-track cut rhythm and footage gates use the same visual-footage
+    // lane; graphics/text overlays must never win because they contain many clips.
+    const primaryTrack = primaryFootageTrack(project);
+    const clipDurationsSec = (primaryTrack ? footageClips(primaryTrack) : [])
       .slice()
       .sort((a, b) => a.startTime - b.startTime)
       .map(clip => clip.duration)
@@ -967,8 +1292,34 @@ export async function runBaselineCase(opts: {
           )
         : null;
 
-    const gates: BaselineGates = { planValidates, materializes, noClipOverlaps: overlaps.length === 0 };
-    const passed = gates.planValidates && gates.materializes && gates.noClipOverlaps && toolOk;
+    const gateResults = evaluateCraftGates(
+      project,
+      data?.editPlan ?? data?.plan ?? null,
+      opts.prompt,
+      opts.entry,
+      timelineDuration,
+    );
+    const craftGateLabels: Record<keyof BaselineCraftGateResults, string> = {
+      noTimelineGaps: "no_timeline_gaps",
+      meetsTransitionMinimum: "meets_transition_minimum",
+      cameraMoveDensityOk: "camera_move_density_ok",
+      noConsecutiveIdenticalAccents: "no_consecutive_identical_accents",
+      durationWithinTolerance: "duration_within_tolerance",
+    };
+    for (const [name, gate] of Object.entries(gateResults) as [keyof BaselineCraftGateResults, GateResult][]) {
+      if (!gate.passed) failures.push(`${craftGateLabels[name]}: ${gate.reason}`);
+    }
+    const gates: BaselineGates = {
+      planValidates,
+      materializes,
+      noClipOverlaps: overlaps.length === 0,
+      noTimelineGaps: gateResults.noTimelineGaps.passed,
+      meetsTransitionMinimum: gateResults.meetsTransitionMinimum.passed,
+      cameraMoveDensityOk: gateResults.cameraMoveDensityOk.passed,
+      noConsecutiveIdenticalAccents: gateResults.noConsecutiveIdenticalAccents.passed,
+      durationWithinTolerance: gateResults.durationWithinTolerance.passed,
+    };
+    const passed = Object.values(gates).every(Boolean) && toolOk;
     if (!passed && failures.length === 0) failures.push("one or more hard gates failed");
 
     const failureText = failures.join("\n");
@@ -983,6 +1334,7 @@ export async function runBaselineCase(opts: {
       quotaExhausted: toolCode !== null && isQuotaMessage(failureText),
       infraFailure: toolCode !== null && isInfraFailureMessage(failureText),
       gates,
+      gateResults,
       failures,
       warnings,
       stats: {
@@ -1000,10 +1352,21 @@ export async function runBaselineCase(opts: {
   } catch (error) {
     failures.push(`threw: ${error instanceof Error ? error.message : String(error)}`);
     const overlaps = project ? clipOverlaps(project) : null;
+    const gateResults = evaluateCraftGates(
+      project,
+      data?.editPlan ?? data?.plan ?? null,
+      opts.prompt,
+      opts.entry,
+    );
     const gates: BaselineGates = {
       planValidates,
       materializes,
       noClipOverlaps: overlaps !== null && overlaps.length === 0,
+      noTimelineGaps: gateResults.noTimelineGaps.passed,
+      meetsTransitionMinimum: gateResults.meetsTransitionMinimum.passed,
+      cameraMoveDensityOk: gateResults.cameraMoveDensityOk.passed,
+      noConsecutiveIdenticalAccents: gateResults.noConsecutiveIdenticalAccents.passed,
+      durationWithinTolerance: gateResults.durationWithinTolerance.passed,
     };
     return {
       id,
@@ -1016,6 +1379,7 @@ export async function runBaselineCase(opts: {
       quotaExhausted: toolCode !== null && isQuotaMessage(failures.join("\n")),
       infraFailure: isInfraFailureMessage(failures.join("\n")),
       gates,
+      gateResults,
       failures,
       warnings,
       stats: {
@@ -1064,9 +1428,9 @@ export interface RunBaselineOptions {
   readonly referenceDir?: string;
   readonly onCase?: (result: BaselineCaseResult) => void;
   /**
-   * Merge the previous report at reportPath and skip case-runs that already
-   * produced a non-quota result. Quota-exhausted rows are dropped and re-run —
-   * this is how a corpus run survives daily Workers AI allocation resets.
+   * Merge the previous report at reportPath and skip measured case-runs.
+   * Quota and infra rows are dropped and re-run; reports from older gate
+   * semantics are rejected rather than silently mixed into a new campaign.
    */
   readonly resume?: boolean;
 }
@@ -1075,6 +1439,8 @@ export interface SummarizeOptions {
   readonly model: string;
   readonly cases: number;
   readonly runsPerCombo: number;
+  /** Full case ids, including combinations with no valid sample. */
+  readonly combinationIds?: readonly string[];
   readonly status: "complete" | "aborted";
   readonly abortReason?: string;
   readonly quotaExcluded: number;
@@ -1083,8 +1449,8 @@ export interface SummarizeOptions {
 
 /**
  * Builds the report summary. Quota-exhausted and infra-failed results are
- * excluded from every gate rate (transport failure ≠ model failure);
- * stability only considers combinations with real results.
+ * excluded from every gate rate (transport failure ≠ model failure). Every
+ * expected combination is listed in the spread table, including missing rows.
  */
 export function summarizeBaseline(
   results: readonly BaselineCaseResult[],
@@ -1115,27 +1481,37 @@ export function summarizeBaseline(
     };
   };
 
-  const byId = new Map<string, BaselineCaseResult[]>();
+  const expectedIds = opts.combinationIds ?? [...new Set(results.map(result => result.id))];
+  const byId = new Map<string, BaselineCaseResult[]>(expectedIds.map(id => [id, []]));
   for (const result of valid) {
-    const bucket = byId.get(result.id) ?? [];
-    bucket.push(result);
-    byId.set(result.id, bucket);
+    const bucket = byId.get(result.id);
+    if (bucket) bucket.push(result);
+    else byId.set(result.id, [result]);
   }
-  const mixedIds: string[] = [];
-  const incompleteIds: string[] = [];
-  let allPass = 0;
-  let allFail = 0;
+  const spreadCounts: Record<SpreadOutcome, number> = {
+    all_pass: 0,
+    all_fail: 0,
+    mixed: 0,
+    incomplete: 0,
+  };
+  const byCombination: CombinationSpread[] = [];
   for (const [id, group] of byId) {
-    // A single valid result is not evidence of stability — require the
-    // full k-run sample before classifying a combination.
-    if (group.length < opts.runsPerCombo) {
-      incompleteIds.push(id);
-      continue;
+    const samplesByRun = new Map<number, BaselineCaseResult>();
+    for (const result of group) {
+      if (result.run >= 0 && result.run < opts.runsPerCombo) samplesByRun.set(result.run, result);
     }
-    const passing = group.filter(r => r.ok).length;
-    if (passing === 0) allFail += 1;
-    else if (passing === group.length) allPass += 1;
-    else mixedIds.push(id);
+    const samples = [...samplesByRun.values()];
+    const passing = samples.filter(result => result.ok).length;
+    const outcome: SpreadOutcome =
+      samples.length < opts.runsPerCombo
+        ? "incomplete"
+        : passing === 0
+          ? "all_fail"
+          : passing === samples.length
+            ? "all_pass"
+            : "mixed";
+    spreadCounts[outcome] += 1;
+    byCombination.push({ id, outcome, validRuns: samples.length, expectedRuns: opts.runsPerCombo });
   }
 
   const qualitySummary = summarizeQuality(
@@ -1145,6 +1521,7 @@ export function summarizeBaseline(
   return {
     generatedAt: new Date().toISOString(),
     model: opts.model,
+    gateSemanticsVersion: BASELINE_GATE_SEMANTICS_VERSION,
     sampling: PINNED_SAMPLING,
     runsPerCombo: opts.runsPerCombo,
     cases: opts.cases,
@@ -1158,16 +1535,14 @@ export function summarizeBaseline(
       planValidates: rate(r => r.gates.planValidates),
       materializes: rate(r => r.gates.materializes),
       noClipOverlaps: rate(r => r.gates.noClipOverlaps),
+      noTimelineGaps: rate(r => r.gates.noTimelineGaps),
+      meetsTransitionMinimum: rate(r => r.gates.meetsTransitionMinimum),
+      cameraMoveDensityOk: rate(r => r.gates.cameraMoveDensityOk),
+      noConsecutiveIdenticalAccents: rate(r => r.gates.noConsecutiveIdenticalAccents),
+      durationWithinTolerance: rate(r => r.gates.durationWithinTolerance),
       allGates: rate(r => r.ok),
     },
-    determinism: {
-      allPass,
-      allFail,
-      mixed: mixedIds.length,
-      mixedIds,
-      incomplete: incompleteIds.length,
-      incompleteIds,
-    },
+    spread: { ...spreadCounts, byCombination },
     ...(qualitySummary ? { quality: qualitySummary } : {}),
     results,
   };
@@ -1211,13 +1586,18 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
 
   let priorResults: BaselineCaseResult[] = [];
   let priorModel: string | null = null;
+  let priorGateSemanticsVersion: number | null = null;
+  let priorReportParsed = false;
   if (opts.resume) {
     const fromJournal = loadRowsJournal(rowsPathFor(reportPath));
     if (fromJournal.length > 0) priorResults = fromJournal;
     if (existsSync(reportPath)) {
       try {
-        const prior = JSON.parse(readFileSync(reportPath, "utf8")) as BaselineSummary;
+        const prior = JSON.parse(readFileSync(reportPath, "utf8")) as Partial<BaselineSummary>;
+        priorReportParsed = true;
         priorModel = typeof prior.model === "string" ? prior.model : null;
+        priorGateSemanticsVersion =
+          typeof prior.gateSemanticsVersion === "number" ? prior.gateSemanticsVersion : null;
         if (priorResults.length === 0) {
           priorResults = [...(prior.results ?? [])];
         }
@@ -1225,9 +1605,22 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
         // Unreadable prior report: journal (if any) still stands.
       }
     }
+    if (priorReportParsed && priorGateSemanticsVersion !== BASELINE_GATE_SEMANTICS_VERSION) {
+      throw new Error(
+        `Refusing to resume: ${reportPath} uses gate semantics version ` +
+          `${priorGateSemanticsVersion ?? "unknown"}, not ${BASELINE_GATE_SEMANTICS_VERSION}. ` +
+          `Archive the old report and its rows journal, then start a fresh campaign.`,
+      );
+    }
     // Transport rows were never measured — they are exactly what a resume
     // re-runs, alongside quota rows.
     priorResults = priorResults.filter(result => !result.quotaExhausted && !result.infraFailure);
+    if (priorResults.some(result => !("gateResults" in result))) {
+      throw new Error(
+        `Refusing to resume: ${reportPath} contains rows from before the craft gates. ` +
+          `Archive the old report and its rows journal, then start a fresh campaign.`,
+      );
+    }
     const nextModel = llmConfig?.config.model ?? null;
     if (priorModel && nextModel && priorModel !== nextModel) {
       throw new Error(
@@ -1278,6 +1671,7 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
     model: llmConfig?.config.model ?? "injected-client",
     cases: combos.length,
     runsPerCombo,
+    combinationIds: combos.map(combo => `${combo.entry.id}/${combo.prompt.id}`),
     status: settled.length === expected && quotaExcluded === 0 && infraExcluded === 0 ? "complete" : "aborted",
     ...(settled.length === expected && quotaExcluded === 0 && infraExcluded === 0
       ? {}
