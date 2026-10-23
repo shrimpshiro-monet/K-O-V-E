@@ -29,8 +29,11 @@ all 81 pass every gate; this does not substitute raw counts for edit quality or 
   rerun on resume, and a one-model-per-report guard. Current reports include materialized
   craft gates and gate-semantics version 2; pre-v2 reports/journals must not be resumed.
 - **No live report exists for the new semantics.** Seven historical rows from the stopped
-  run predate the D1 fix. No gateway check or k=3 run has been done from this workspace;
-  the gateway is on the user's Mac.
+  run predate the D1 fix. A probe of sandbox `localhost:20128` returned connection refused;
+  this does not test the user's Mac-local gateway. This checkout also lacks `.dev.vars` and
+  all 21 corpus media/audio/reference assets, and the sandbox network allowlist excludes the
+  LLM provider. Do not start the live runner here; run the campaign on the user's Mac with
+  local credentials and media, or arrange an allowed, secure route plus the assets.
 - The gate implementation and synthetic tests are complete, and the full `src/eval/`
   verification is recorded under step 1. The next campaign actions are the later Mac-local
   gateway check and fresh k=3 campaign. Product-side rendering/latency work remains deferred.

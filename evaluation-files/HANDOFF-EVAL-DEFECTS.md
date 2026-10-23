@@ -11,8 +11,12 @@ zero-knowledge action plan. This file is the deep context behind it.
   Agent TypeScript check is clean; full `src/eval/` suite passed (42 passed, 71 skipped).
   Corpus-backed tests are skipped here because the media files are absent; effect goldens
   are also disabled by default.
-- No live report has been run for the new semantics. The gateway belongs to the user's
-  Mac-local environment and has not been checked from this workspace.
+- No live report has been run for the new semantics. A sandbox request to
+  `localhost:20128/api/health` was refused; that does not test the user's Mac-local gateway.
+  This checkout has no `.dev.vars` and is missing all 21 corpus media/audio/reference
+  assets. The sandbox outbound allowlist also excludes LLM providers, so do not launch the
+  live runner here; use the Mac-local campaign environment or arrange an allowed, secure
+  route and provide the assets.
 - Historical JSON reports now carry `gateSemanticsVersion: 1` and a renamed, observed-row
   `spread`; they predate craft gates and must not be resumed under the current version 2.
 - This document was written mid-campaign and then corrected after a full review. Its
