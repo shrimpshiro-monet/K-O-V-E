@@ -371,6 +371,54 @@ describe("baseline harness helpers", () => {
     const failing = makeOmniRouteSend(cfg, { fetchFn: limitedFetch });
     await expect(failing({})).rejects.toThrow("omniroute 429");
   });
+
+  it("requests stream:true and folds SSE chunks back into one OpenAI-shaped message", async () => {
+    const bodies: Array<Record<string, unknown>> = [];
+    const sse = [
+      'data: {"model":"vendor/model","choices":[{"index":0,"delta":{"role":"assistant","content":"I will call "}}]}',
+      "",
+      'data: {"choices":[{"index":0,"delta":{"content":"the tool."}}]}',
+      "",
+      'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"submit_edit_plan","arguments":"{\\"segments\\""}}]}}]}',
+      "",
+      'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":":[]}"}}]},"finish_reason":"tool_calls"}]}',
+      "",
+      "data: [DONE]",
+      "",
+    ].join("\n");
+    const streamFetch = (async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>);
+      return new Response(sse, {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      });
+    }) as unknown as typeof fetch;
+    const cfg = { baseUrl: "http://localhost:20128/v1", apiKey: "omni-key", model: "vendor/model" };
+    const raw = await makeOmniRouteSend(cfg, { fetchFn: streamFetch })({ model: "vendor/model", messages: [] });
+    expect(bodies[0]?.stream).toBe(true);
+    const choice = (raw as { choices?: Array<{ message?: Record<string, unknown>; finish_reason?: string }> })
+      .choices?.[0];
+    expect(choice?.finish_reason).toBe("tool_calls");
+    expect(choice?.message?.content).toBe("I will call the tool.");
+    expect(choice?.message?.tool_calls).toEqual([
+      {
+        id: "call_1",
+        type: "function",
+        function: { name: "submit_edit_plan", arguments: '{"segments":[]}' },
+      },
+    ]);
+  });
+
+  it("surfaces mid-stream upstream error events as omniroute transport failures", async () => {
+    const sse = ['data: {"error":{"message":"upstream melted"}}', "", "data: [DONE]", ""].join("\n");
+    const streamFetch = (async () =>
+      new Response(sse, {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      })) as unknown as typeof fetch;
+    const cfg = { baseUrl: "http://localhost:20128/v1", apiKey: "omni-key", model: "vendor/model" };
+    await expect(makeOmniRouteSend(cfg, { fetchFn: streamFetch })({})).rejects.toThrow("omniroute 502");
+  });
 });
 
 describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {

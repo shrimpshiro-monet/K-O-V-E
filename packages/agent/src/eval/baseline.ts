@@ -220,17 +220,109 @@ export function makeWorkersAIClient(cfg: WorkersAIConfig, opts: WorkersAIClientO
 }
 
 /** OpenAI-compatible transport for a self-hosted OmniRoute gateway (or any /v1 relay). */
+interface OmniStreamToolCallDelta {
+  readonly index?: number;
+  readonly id?: string;
+  readonly function?: { readonly name?: string; readonly arguments?: string };
+}
+
+interface OmniStreamChunk {
+  readonly model?: string;
+  readonly usage?: unknown;
+  readonly error?: unknown;
+  readonly choices?: Array<{
+    readonly delta?: {
+      readonly content?: string;
+      readonly tool_calls?: OmniStreamToolCallDelta[];
+    };
+    readonly message?: {
+      readonly content?: string;
+      readonly tool_calls?: OmniStreamToolCallDelta[];
+    };
+    readonly finish_reason?: string;
+  }>;
+}
+
+/**
+ * Alibaba (and most OpenAI-compatible relays) hard-terminate non-streaming
+ * requests once a big generation passes their sync window (~15 min), which
+ * killed every 16k-token plan_edit call as a bare "fetch failed". OmniRoute
+ * happily relays SSE, so the omni transport always asks for stream:true and
+ * folds the chunks back into the single JSON shape parseOpenAIResponse
+ * expects.
+ */
+function aggregateOmniStream(raw: string): unknown {
+  let content = "";
+  const toolCalls: Array<{ id?: string; name?: string; args: string }> = [];
+  let finishReason: string | undefined;
+  let model: string | undefined;
+  let usage: unknown;
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("data:")) continue;
+    const payload = trimmed.slice(5).trim();
+    if (!payload || payload === "[DONE]") continue;
+    let chunk: OmniStreamChunk;
+    try {
+      chunk = JSON.parse(payload) as OmniStreamChunk;
+    } catch {
+      continue;
+    }
+    if (chunk.error) {
+      throw llmHttpError("omniroute", 502, JSON.stringify(chunk.error), undefined);
+    }
+    model ??= chunk.model;
+    usage ??= chunk.usage;
+    const choice = chunk.choices?.[0];
+    if (!choice) continue;
+    const delta = choice.delta ?? choice.message;
+    if (typeof delta?.content === "string") content += delta.content;
+    for (const tc of delta?.tool_calls ?? []) {
+      const index = typeof tc.index === "number" ? tc.index : 0;
+      const slot = (toolCalls[index] ??= { args: "" });
+      if (typeof tc.id === "string" && tc.id && !slot.id) slot.id = tc.id;
+      const fnName = tc.function?.name;
+      if (typeof fnName === "string" && fnName && !slot.name) slot.name = fnName;
+      if (typeof tc.function?.arguments === "string") slot.args += tc.function.arguments;
+    }
+    if (choice.finish_reason) finishReason = choice.finish_reason;
+  }
+  const toolCallsOut = toolCalls
+    .map((tc, index) => ({
+      id: tc.id ?? `stream-tool-call-${index}`,
+      type: "function" as const,
+      function: { name: tc.name ?? "", arguments: tc.args },
+    }))
+    .filter(tc => tc.function.name);
+  return {
+    model,
+    usage,
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: "assistant",
+          ...(content ? { content } : {}),
+          ...(toolCallsOut.length > 0 ? { tool_calls: toolCallsOut } : {}),
+        },
+        finish_reason: finishReason ?? (toolCallsOut.length > 0 ? "tool_calls" : "stop"),
+      },
+    ],
+  };
+}
+
 export function makeOmniRouteSend(cfg: OmniRouteConfig, opts: WorkersAIClientOptions = {}): LLMSend {
   const fetchFn = opts.fetchFn ?? fetch;
   const url = `${cfg.baseUrl}/chat/completions`;
   return async (body: unknown): Promise<unknown> => {
+    const base = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
     const res = await fetchFn(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${cfg.apiKey}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...base, stream: true }),
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
@@ -240,6 +332,11 @@ export function makeOmniRouteSend(cfg: OmniRouteConfig, opts: WorkersAIClientOpt
         text,
         parseRetryAfterMs(res.headers.get("retry-after")),
       );
+    }
+    const contentType = res.headers.get("content-type") ?? "";
+    if (contentType.includes("event-stream")) {
+      const raw = await res.text();
+      return aggregateOmniStream(raw);
     }
     return res.json();
   };
