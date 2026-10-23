@@ -1,0 +1,596 @@
+{
+  "id": "multi-02/multi-02-vague",
+  "run": 0,
+  "projectId": "multi-02",
+  "promptId": "multi-02-vague",
+  "promptType": "vague",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 3 and 4 overlap in time on the same track (7.00-10.00s vs 9.00-12.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 6 overlap in time on the same track (12.00-15.00s vs 14.00-18.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 7 and 8 overlap in time on the same track (18.00-22.00s vs 20.00-23.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 9 and 10 overlap in time on the same track (23.00-26.00s vs 25.00-29.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 11 and 12 overlap in time on the same track (29.00-33.00s vs 31.00-35.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 13 and 14 overlap in time on the same track (35.00-39.00s vs 37.00-41.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 14 and 15 overlap in time on the same track (37.00-41.00s vs 40.00-44.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 16 and 17 overlap in time on the same track (44.00-49.00s vs 46.00-51.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 16 and 18 overlap in time on the same track (44.00-49.00s vs 48.00-52.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 17 and 19 overlap in time on the same track (46.00-51.00s vs 50.00-54.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 19 and 20 overlap in time on the same track (50.00-54.00s vs 52.00-56.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 20 and 21 overlap in time on the same track (52.00-56.00s vs 55.00-59.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 21 and 22 overlap in time on the same track (55.00-59.00s vs 57.00-62.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 22 and 23 overlap in time on the same track (57.00-62.00s vs 60.00-65.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 3 and 4 overlap in time on the same track (7.00-10.00s vs 9.00-12.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.4.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 5 and 6 overlap in time on the same track (12.00-15.00s vs 14.00-18.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.6.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 7 and 8 overlap in time on the same track (18.00-22.00s vs 20.00-23.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.8.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 9 and 10 overlap in time on the same track (23.00-26.00s vs 25.00-29.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.10.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 11 and 12 overlap in time on the same track (29.00-33.00s vs 31.00-35.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.12.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 13 and 14 overlap in time on the same track (35.00-39.00s vs 37.00-41.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.14.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 14 and 15 overlap in time on the same track (37.00-41.00s vs 40.00-44.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.15.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 16 and 17 overlap in time on the same track (44.00-49.00s vs 46.00-51.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.17.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 16 and 18 overlap in time on the same track (44.00-49.00s vs 48.00-52.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.18.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 17 and 19 overlap in time on the same track (46.00-51.00s vs 50.00-54.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.19.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 19 and 20 overlap in time on the same track (50.00-54.00s vs 52.00-56.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.20.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 20 and 21 overlap in time on the same track (52.00-56.00s vs 55.00-59.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.21.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 21 and 22 overlap in time on the same track (55.00-59.00s vs 57.00-62.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.22.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 22 and 23 overlap in time on the same track (57.00-62.00s vs 60.00-65.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.23.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Hook shot with high impact.",
+        "sourceEndTime": 2,
+        "sourceStartTime": 0,
+        "targetPosition": 0,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Quick follow-up to establish the second subject.",
+        "sourceEndTime": 2,
+        "sourceStartTime": 0,
+        "targetPosition": 2,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Establishing shot for breathing room.",
+        "sourceEndTime": 5,
+        "sourceStartTime": 2,
+        "targetPosition": 4,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "B-roll variety.",
+        "sourceEndTime": 5,
+        "sourceStartTime": 2,
+        "targetPosition": 7,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Adding raw energy.",
+        "sourceEndTime": 8,
+        "sourceStartTime": 5,
+        "targetPosition": 9,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Dynamic reveal.",
+        "sourceEndTime": 8,
+        "sourceStartTime": 5,
+        "targetPosition": 12,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Transitioning into the intensification phase.",
+        "sourceEndTime": 12,
+        "sourceStartTime": 8,
+        "targetPosition": 14,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Speed ramp for energy.",
+        "sourceEndTime": 12,
+        "sourceStartTime": 8,
+        "targetPosition": 17,
+        "sourceVideoId": "video-2",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "easing": "ease-in",
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "easing": "ease-out",
+              "speed": 2,
+              "time": 1
+            },
+            {
+              "speed": 1,
+              "time": 2
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Effect hit on the beat.",
+        "sourceEndTime": 15,
+        "sourceStartTime": 12,
+        "targetPosition": 20,
+        "sourceVideoId": "video-2",
+        "effectSpecs": [
+          {
+            "duration": 0.3,
+            "intensity": 0.8,
+            "params": {
+              "amount": 25
+            },
+            "rationale": "Punchy chromatic aberration hit.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Fast cut to maintain rhythm.",
+        "sourceEndTime": 15,
+        "sourceStartTime": 12,
+        "targetPosition": 23,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Mid-edit breathing room.",
+        "sourceEndTime": 19,
+        "sourceStartTime": 15,
+        "targetPosition": 25,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "tilt-up",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Visual variety.",
+        "sourceEndTime": 19,
+        "sourceStartTime": 15,
+        "targetPosition": 29,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Transition to the climax phase.",
+        "sourceEndTime": 23,
+        "sourceStartTime": 19,
+        "targetPosition": 31,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Signature effect for high impact.",
+        "sourceEndTime": 23,
+        "sourceStartTime": 19,
+        "targetPosition": 34,
+        "sourceVideoId": "video-2",
+        "effectSpecs": [
+          {
+            "duration": 0.8,
+            "intensity": 1,
+            "params": {
+              "amount": 20,
+              "blockSize": 15,
+              "rgbSplit": 10,
+              "speed": 5
+            },
+            "rationale": "Glitch block signature effect.",
+            "startOffset": 0,
+            "type": "glitch-blocks"
+          }
+        ],
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Dense climax sequence.",
+        "sourceEndTime": 27,
+        "sourceStartTime": 23,
+        "targetPosition": 37,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Rapid-fire cuts.",
+        "sourceEndTime": 27,
+        "sourceStartTime": 23,
+        "targetPosition": 40,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Building tension.",
+        "sourceEndTime": 32,
+        "sourceStartTime": 27,
+        "targetPosition": 42,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Expanding the frame.",
+        "sourceEndTime": 32,
+        "sourceStartTime": 27,
+        "targetPosition": 46,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Final impact hits.",
+        "sourceEndTime": 36,
+        "sourceStartTime": 32,
+        "targetPosition": 48,
+        "sourceVideoId": "video-2",
+        "effectSpecs": [
+          {
+            "duration": 0.2,
+            "intensity": 0.7,
+            "params": {
+              "value": 1.2
+            },
+            "rationale": "Brightness hit on the beat.",
+            "startOffset": 0,
+            "type": "brightness"
+          }
+        ],
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Fast cut.",
+        "sourceEndTime": 36,
+        "sourceStartTime": 32,
+        "targetPosition": 50,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Final build.",
+        "sourceEndTime": 40,
+        "sourceStartTime": 36,
+        "targetPosition": 52,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "wobble",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Playful beat before the end.",
+        "sourceEndTime": 40,
+        "sourceStartTime": 36,
+        "targetPosition": 55,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Deliberate landing.",
+        "sourceEndTime": 45,
+        "sourceStartTime": 40,
+        "targetPosition": 57,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Final resolve.",
+        "sourceEndTime": 45,
+        "sourceStartTime": 40,
+        "targetPosition": 60,
+        "sourceVideoId": "video-2",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "THE ULTIMATE",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Hook title.",
+        "startTime": 0,
+        "style": "title"
+      },
+      {
+        "animation": "bounce",
+        "content": "SHOWDOWN",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Hook title continuation.",
+        "startTime": 2,
+        "style": "title"
+      },
+      {
+        "animation": "slide-up",
+        "content": "UNSTOPPABLE",
+        "duration": 3,
+        "position": {
+          "x": 0.8,
+          "y": 0.5
+        },
+        "rationale": "Mid-edit callout.",
+        "startTime": 15,
+        "style": "callout"
+      },
+      {
+        "animation": "glitch",
+        "content": "LIMITLESS",
+        "duration": 3,
+        "position": {
+          "x": 0.2,
+          "y": 0.5
+        },
+        "rationale": "Climax callout.",
+        "startTime": 30,
+        "style": "callout"
+      },
+      {
+        "animation": "fade",
+        "content": "COMING SOON",
+        "duration": 5,
+        "position": {
+          "x": 0.5,
+          "y": 0.8
+        },
+        "rationale": "Final resolve text.",
+        "startTime": 40,
+        "style": "subtitle"
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 6,
+        "duration": 0.4,
+        "rationale": "Whip pan into intensification.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 12,
+        "duration": 0.5,
+        "rationale": "Glitch transition into climax.",
+        "type": "glitch"
+      },
+      {
+        "afterSegmentIndex": 15,
+        "duration": 0.3,
+        "rationale": "Flash transition for impact.",
+        "type": "flash"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "No music file provided in library; using silence as placeholder.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "silence"
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "hype montage",
+      "pacing": "medium",
+      "rationale": "A high-energy montage using b-roll from both sources, evolving from clean establishing shots to a dense, effect-heavy climax.",
+      "targetDuration": 45,
+      "targetPlatform": "social"
+    }
+  }
+}

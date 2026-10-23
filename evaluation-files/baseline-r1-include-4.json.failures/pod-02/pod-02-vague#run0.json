@@ -1,0 +1,395 @@
+{
+  "id": "pod-02/pod-02-vague",
+  "run": 0,
+  "projectId": "pod-02",
+  "promptId": "pod-02-vague",
+  "promptType": "vague",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [invalid_freeze_frame] Segment 8 freeze frame 0 is invalid."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "invalid_freeze_frame",
+      "message": "Segment 8 freeze frame 0 is invalid.",
+      "path": "segments.8.speedRamp.freezeFrames.0"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "High-impact hook to grab attention immediately.",
+        "sourceEndTime": 11.5,
+        "sourceStartTime": 10,
+        "sourceVideoId": "video-1",
+        "targetPosition": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Second hook shot to establish the comedic tone.",
+        "sourceEndTime": 46.5,
+        "sourceStartTime": 45,
+        "sourceVideoId": "video-1",
+        "targetPosition": 1.5,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Establishing the podcast setting with a clean shot.",
+        "sourceEndTime": 123,
+        "sourceStartTime": 120,
+        "sourceVideoId": "video-1",
+        "targetPosition": 3.5,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Emphasize an awkward silence or pause.",
+        "sourceEndTime": 153,
+        "sourceStartTime": 150,
+        "sourceVideoId": "video-1",
+        "targetPosition": 7,
+        "effects": []
+      },
+      {
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "easing": "ease-out",
+            "intensity": 0.8,
+            "params": {
+              "radius": 5,
+              "strength": 0.8
+            },
+            "rationale": "Goofy face distortion.",
+            "startOffset": 0,
+            "type": "fisheye"
+          }
+        ],
+        "rationale": "Highlight a funny facial expression.",
+        "sourceEndTime": 204,
+        "sourceStartTime": 200,
+        "sourceVideoId": "video-1",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 0.5,
+              "time": 0.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 10,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Reaction shot to a joke.",
+        "sourceEndTime": 254,
+        "sourceStartTime": 250,
+        "sourceVideoId": "video-1",
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "easing": "ease-out",
+            "intensity": 0.7,
+            "params": {
+              "amount": 25
+            },
+            "rationale": "Visual punch to the reaction.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "targetPosition": 14,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Fast-forward through a less interesting segment.",
+        "sourceEndTime": 304,
+        "sourceStartTime": 300,
+        "sourceVideoId": "video-1",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 2,
+              "time": 1
+            },
+            {
+              "speed": 1,
+              "time": 2
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 18,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 1
+          }
+        ],
+        "rationale": "The peak comedic moment.",
+        "sourceEndTime": 355,
+        "sourceStartTime": 350,
+        "sourceVideoId": "video-1",
+        "effectSpecs": [
+          {
+            "duration": 0.6,
+            "easing": "ease-in",
+            "intensity": 0.9,
+            "params": {
+              "amount": 0.5,
+              "blockSize": 20,
+              "rgbSplit": 0.5,
+              "speed": 1
+            },
+            "rationale": "Chaotic glitch for the big punchline.",
+            "startOffset": 0,
+            "type": "glitch-blocks"
+          }
+        ],
+        "targetPosition": 22,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Freeze frame on the perfect funny face.",
+        "sourceEndTime": 360,
+        "sourceStartTime": 355,
+        "sourceVideoId": "video-1",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 0.5,
+              "time": 1
+            }
+          ],
+          "freezeFrames": [
+            {
+              "duration": 1,
+              "sourceTime": 357,
+              "startTime": 29
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 27,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Intense, chaotic reaction.",
+        "sourceEndTime": 385,
+        "sourceStartTime": 380,
+        "sourceVideoId": "video-1",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "easing": "ease-out",
+            "intensity": 0.8,
+            "params": {
+              "amount": 0.7,
+              "angle": 45,
+              "mix": 1
+            },
+            "rationale": "Optical distortion for high energy.",
+            "startOffset": 0,
+            "type": "prism"
+          }
+        ],
+        "targetPosition": 32,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Clean landing and outro.",
+        "sourceEndTime": 457.56,
+        "sourceStartTime": 450,
+        "sourceVideoId": "video-1",
+        "targetPosition": 37,
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "DID HE JUST...?",
+        "duration": 1.5,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Hook text.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "bounce",
+        "content": "???",
+        "duration": 1.5,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Reaction text.",
+        "startTime": 2,
+        "style": "callout"
+      },
+      {
+        "animation": "slide-up",
+        "content": "Awkward...",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.8
+        },
+        "rationale": "Contextual joke.",
+        "startTime": 8,
+        "style": "caption"
+      },
+      {
+        "animation": "glitch",
+        "content": "OH NO!",
+        "duration": 1.5,
+        "position": {
+          "x": 0.5,
+          "y": 0.4
+        },
+        "rationale": "Climax text.",
+        "startTime": 23,
+        "style": "title"
+      },
+      {
+        "animation": "typewriter",
+        "content": "Subscribe for more chaos!",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.85
+        },
+        "rationale": "Outro call to action.",
+        "startTime": 40,
+        "style": "subtitle"
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 0,
+        "duration": 0.4,
+        "rationale": "Punchy transition into the second hook.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 3,
+        "duration": 0.5,
+        "rationale": "Smooth transition to the funny face.",
+        "type": "crossfade"
+      },
+      {
+        "afterSegmentIndex": 6,
+        "duration": 0.4,
+        "rationale": "Glitch transition for the climax.",
+        "type": "glitch"
+      },
+      {
+        "afterSegmentIndex": 9,
+        "duration": 0.5,
+        "rationale": "Fade to black for the end.",
+        "type": "dipToBlack"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "Upbeat, comedic background track to drive the energy.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.6
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Punchy impact for the opening hook.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Comedy",
+      "pacing": "medium",
+      "rationale": "A high-energy, comedic montage of podcast highlights. It uses rapid zooms, goofy signature effects like fisheye and prism, and punchy text callouts to emphasize funny reactions and awkward moments. The edit evolves from clean setups to a dense, chaotic climax.",
+      "targetDuration": 45,
+      "targetPlatform": "social"
+    }
+  }
+}

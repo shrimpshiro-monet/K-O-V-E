@@ -1,0 +1,138 @@
+{
+  "segments": [
+    {
+      "cameraMoves": [
+        {
+          "move": "snap-zoom",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "Strongest personal hook from video-2 to grab attention immediately.",
+      "sourceEndTime": 90,
+      "sourceStartTime": 0,
+      "targetPosition": 0,
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "animation": "fade",
+      "content": "The Truth About It All",
+      "duration": 4,
+      "position": {
+        "x": 0.5,
+        "y": 0.2
+      },
+      "rationale": "Title card for the emotional arc.",
+      "startTime": 1,
+      "style": "title"
+    },
+    {
+      "animation": "word-by-word",
+      "content": "It changed everything for me.",
+      "duration": 3,
+      "position": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "rationale": "Caption for hook.",
+      "startTime": 1,
+      "style": "caption"
+    },
+    {
+      "animation": "slide-up",
+      "content": "I never thought it would happen.",
+      "duration": 3,
+      "position": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "rationale": "Caption for build.",
+      "startTime": 12,
+      "style": "caption"
+    },
+    {
+      "animation": "slide-up",
+      "content": "The stakes were so high.",
+      "duration": 3,
+      "position": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "rationale": "Caption for build.",
+      "startTime": 20,
+      "style": "caption"
+    },
+    {
+      "animation": "pop",
+      "content": "Everything changed.",
+      "duration": 2,
+      "position": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "rationale": "Caption for climax.",
+      "startTime": 59,
+      "style": "caption"
+    },
+    {
+      "animation": "fade",
+      "content": "Thank you for listening.",
+      "duration": 4,
+      "position": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "rationale": "Outro text.",
+      "startTime": 86,
+      "style": "title"
+    }
+  ],
+  "effects": [
+    {
+      "params": {
+        "contrast": "1.1",
+        "saturation": "1.1"
+      },
+      "rationale": "Unified cinematic look for the podcast.",
+      "targetSegmentIndex": 0,
+      "type": "colorGrade"
+    }
+  ],
+  "transitions": [],
+  "audioDecisions": [
+    {
+      "duration": 90,
+      "rationale": "Main musical bed for the emotional arc.",
+      "sourceVideoId": "audio/Dave - Raindance (ft. Tems).mp3",
+      "startTime": 0,
+      "type": "music",
+      "volume": 0.6
+    },
+    {
+      "duration": 0.5,
+      "rationale": "Impact hit on the opening hook.",
+      "sourceStartTime": 0,
+      "type": "sfx",
+      "startTime": 0
+    },
+    {
+      "duration": 0.5,
+      "rationale": "Impact hit on the climax transition.",
+      "sourceStartTime": 0,
+      "type": "sfx",
+      "startTime": 45
+    }
+  ],
+  "captionTemplate": {},
+  "motionMoments": [],
+  "metadata": {
+    "genre": "Documentary/Podcast",
+    "pacing": "medium",
+    "rationale": "A continuous emotional arc interleaving two podcast episodes, driven by music beats and J-cuts.",
+    "targetDuration": 90,
+    "targetPlatform": "YouTube"
+  }
+}

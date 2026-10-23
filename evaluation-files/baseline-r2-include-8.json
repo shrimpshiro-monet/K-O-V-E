@@ -1,0 +1,552 @@
+{
+  "generatedAt": "2026-10-11T04:31:24.149Z",
+  "model": "@cf/google/gemma-4-26b-a4b-it-external",
+  "sampling": {
+    "temperature": 0,
+    "seed": 1234
+  },
+  "runsPerCombo": 2,
+  "corpusFingerprint": "546b64d0357c05db50c70133d9334bbe5037cfbd02745a255cfadc59d34448a3",
+  "cases": 8,
+  "total": 16,
+  "passed": 5,
+  "status": "complete",
+  "quotaExcluded": 0,
+  "gateRates": {
+    "planValidates": {
+      "mean": 0.4375,
+      "min": 0.25,
+      "max": 0.625,
+      "stdev": 0.2652,
+      "perRun": [
+        0.25,
+        0.625
+      ],
+      "validPerRun": [
+        8,
+        8
+      ]
+    },
+    "materializes": {
+      "mean": 0.3125,
+      "min": 0.125,
+      "max": 0.5,
+      "stdev": 0.2652,
+      "perRun": [
+        0.125,
+        0.5
+      ],
+      "validPerRun": [
+        8,
+        8
+      ]
+    },
+    "noClipOverlaps": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1,
+        1
+      ],
+      "validPerRun": [
+        8,
+        8
+      ]
+    },
+    "allGates": {
+      "mean": 0.3125,
+      "min": 0.125,
+      "max": 0.5,
+      "stdev": 0.2652,
+      "perRun": [
+        0.125,
+        0.5
+      ],
+      "validPerRun": [
+        8,
+        8
+      ]
+    }
+  },
+  "determinism": {
+    "allPass": 1,
+    "allFail": 4,
+    "mixed": 3,
+    "mixedIds": [
+      "pod-02/pod-02-vague",
+      "game-01/game-01-vague",
+      "sport-01/sport-01-genre"
+    ],
+    "incomplete": 0,
+    "incompleteIds": []
+  },
+  "results": [
+    {
+      "id": "pod-02/pod-02-vague",
+      "run": 0,
+      "projectId": "pod-02",
+      "promptId": "pod-02-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [invalid_freeze_frame] Segment 2 freeze frame 0 is invalid."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 197547,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/pod-02/pod-02-vague#run0.json"
+    },
+    {
+      "id": "pod-02/pod-02-vague",
+      "run": 1,
+      "projectId": "pod-02",
+      "promptId": "pod-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 110803,
+        "clipCount": 14,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 2,
+        "textCount": 4,
+        "planScore": 1,
+        "timelineDuration": 45
+      }
+    },
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "EDIT_PLAN_APPLY_FAILED",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [EDIT_PLAN_APPLY_FAILED]: EditPlan was valid but could not be applied: Could not add planned music: \"audio_dave_raindance\" is not a media library id or name. Available audio/video media: video-1 (podcast #1.mp4), video-2 (podcast 2.mp4), audio-1 (audio/Dave - Raindance (ft. Tems).mp3).. The timeline was left at its previous revision (9 partial artifact(s) removed)."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 74789,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/multi-01/multi-01-detailed#run0.json"
+    },
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 1,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "EDIT_PLAN_APPLY_FAILED",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [EDIT_PLAN_APPLY_FAILED]: EditPlan was valid but could not be applied: Could not add planned music: \"music_id\" is not a media library id or name. Available audio/video media: video-1 (podcast #1.mp4), video-2 (podcast 2.mp4), audio-1 (audio/Dave - Raindance (ft. Tems).mp3).. The timeline was left at its previous revision (10 partial artifact(s) removed)."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 74712,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/multi-01/multi-01-detailed#run1.json"
+    },
+    {
+      "id": "multi-01/multi-01-genre",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-genre",
+      "promptType": "genre",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 2 and 3 overlap in time on the same track (7.00-464.56s vs 12.00-469.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 2 and 5 overlap in time on the same track (7.00-464.56s vs 22.00-479.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 2 and 6 overlap in time on the same track (7.00-464.56s vs 27.00-484.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 4 and 7 overlap in time on the same track (469.56-927.12s vs 484.56-942.12s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 2 and 8 overlap in time on the same track (7.00-464.56s vs 34.00-491.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 4 and 9 overlap in time on the same track (469.56-927.12s vs 491.56-949.12s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 152429,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/multi-01/multi-01-genre#run0.json"
+    },
+    {
+      "id": "multi-01/multi-01-genre",
+      "run": 1,
+      "projectId": "multi-01",
+      "promptId": "multi-01-genre",
+      "promptType": "genre",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [invalid_text_timing] Text element 1 must have a positive duration."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 142448,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/multi-01/multi-01-genre#run1.json"
+    },
+    {
+      "id": "game-01/game-01-vague",
+      "run": 0,
+      "projectId": "game-01",
+      "promptId": "game-01-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [unsupported_transition] Transition \":<|\"|>whipPan<|\"|>\" is not supported by the renderer. Supported transitions: crossfade, dipToBlack, dipToWhite, wipe, slide, zoom, push, circleReveal, blur, whipPan, radialWipe, pixelate, glitch, blinds, diamondReveal, spin, flip, splitReveal, flash, filmBurn, mosaic, ripple, pageTurn, colorSplit, crossZoom, zoomBlur, motionSmear, strobeCut, impactShake, lumaWipe, inkBleed, tileFlip, sliceSlide, lightLeak, vhsScan, paperBurn, pixelSort, filmRoll. Hard cuts should be emitted as adjacent clips with no transition entry."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 210846,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/game-01/game-01-vague#run0.json"
+    },
+    {
+      "id": "game-01/game-01-vague",
+      "run": 1,
+      "projectId": "game-01",
+      "promptId": "game-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 82691,
+        "clipCount": 19,
+        "transitionCount": 0,
+        "effectCount": 6,
+        "audioCount": 6,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": 45
+      }
+    },
+    {
+      "id": "multi-02/multi-02-vague",
+      "run": 0,
+      "projectId": "multi-02",
+      "promptId": "multi-02-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 3 and 4 overlap in time on the same track (7.00-10.00s vs 9.00-12.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 6 overlap in time on the same track (12.00-15.00s vs 14.00-18.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 7 and 8 overlap in time on the same track (18.00-22.00s vs 20.00-23.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 9 and 10 overlap in time on the same track (23.00-26.00s vs 25.00-29.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 11 and 12 overlap in time on the same track (29.00-33.00s vs 31.00-35.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 13 and 14 overlap in time on the same track (35.00-39.00s vs 37.00-41.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 14 and 15 overlap in time on the same track (37.00-41.00s vs 40.00-44.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 16 and 17 overlap in time on the same track (44.00-49.00s vs 46.00-51.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 16 and 18 overlap in time on the same track (44.00-49.00s vs 48.00-52.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 17 and 19 overlap in time on the same track (46.00-51.00s vs 50.00-54.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 19 and 20 overlap in time on the same track (50.00-54.00s vs 52.00-56.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 20 and 21 overlap in time on the same track (52.00-56.00s vs 55.00-59.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 21 and 22 overlap in time on the same track (55.00-59.00s vs 57.00-62.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 22 and 23 overlap in time on the same track (57.00-62.00s vs 60.00-65.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 177254,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/multi-02/multi-02-vague#run0.json"
+    },
+    {
+      "id": "multi-02/multi-02-vague",
+      "run": 1,
+      "projectId": "multi-02",
+      "promptId": "multi-02-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [bad_target_duration] Target duration must be positive."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 202226,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/multi-02/multi-02-vague#run1.json"
+    },
+    {
+      "id": "sport-01/sport-01-detailed",
+      "run": 0,
+      "projectId": "sport-01",
+      "promptId": "sport-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 76702,
+        "clipCount": 3,
+        "transitionCount": 0,
+        "effectCount": 3,
+        "audioCount": 0,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": 45
+      }
+    },
+    {
+      "id": "sport-01/sport-01-detailed",
+      "run": 1,
+      "projectId": "sport-01",
+      "promptId": "sport-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 81057,
+        "clipCount": 9,
+        "transitionCount": 0,
+        "effectCount": 3,
+        "audioCount": 0,
+        "textCount": 4,
+        "planScore": 1,
+        "timelineDuration": 45
+      }
+    },
+    {
+      "id": "sport-01/sport-01-genre",
+      "run": 0,
+      "projectId": "sport-01",
+      "promptId": "sport-01-genre",
+      "promptType": "genre",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 1 and 2 overlap in time on the same track (1.50-3.50s vs 3.00-6.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 4 and 5 overlap in time on the same track (10.50-14.50s vs 13.50-17.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 6 and 7 overlap in time on the same track (17.00-20.50s vs 19.50-23.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 7 and 8 overlap in time on the same track (19.50-23.00s vs 22.50-26.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 8 and 9 overlap in time on the same track (22.50-26.00s vs 24.50-28.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 9 and 10 overlap in time on the same track (24.50-28.50s vs 27.50-30.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 278073,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/sport-01/sport-01-genre#run0.json"
+    },
+    {
+      "id": "sport-01/sport-01-genre",
+      "run": 1,
+      "projectId": "sport-01",
+      "promptId": "sport-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 177110,
+        "clipCount": 17,
+        "transitionCount": 0,
+        "effectCount": 5,
+        "audioCount": 2,
+        "textCount": 4,
+        "planScore": 1,
+        "timelineDuration": 45
+      }
+    },
+    {
+      "id": "multi-03/multi-03-genre",
+      "run": 0,
+      "projectId": "multi-03",
+      "promptId": "multi-03-genre",
+      "promptType": "genre",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 1 and 2 overlap in time on the same track (1.50-3.50s vs 3.00-6.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 6 overlap in time on the same track (15.00-87.83s vs 20.00-24.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 7 overlap in time on the same track (15.00-87.83s vs 24.00-96.83s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 8 overlap in time on the same track (15.00-87.83s vs 30.00-102.83s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 9 overlap in time on the same track (15.00-87.83s vs 35.00-38.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 10 overlap in time on the same track (15.00-87.83s vs 38.00-110.83s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 161721,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/multi-03/multi-03-genre#run0.json"
+    },
+    {
+      "id": "multi-03/multi-03-genre",
+      "run": 1,
+      "projectId": "multi-03",
+      "promptId": "multi-03-genre",
+      "promptType": "genre",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 12 and 15 overlap in time on the same track (41.00-45.00s vs 41.50-45.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 221449,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-8.json.failures/multi-03/multi-03-genre#run1.json"
+    }
+  ]
+}

@@ -1,0 +1,516 @@
+{
+  "segments": [
+    {
+      "cameraMoves": [
+        {
+          "move": "snap-zoom",
+          "intensity": 1
+        }
+      ],
+      "rationale": "hook, high energy, snap-zoom",
+      "sourceEndTime": 11,
+      "sourceStartTime": 10,
+      "targetPosition": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "hook, reaction, punch-in",
+      "sourceEndTime": 16.5,
+      "sourceStartTime": 15,
+      "targetPosition": 1,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "context, build, slow-push",
+      "sourceEndTime": 23,
+      "sourceStartTime": 20,
+      "targetPosition": 2.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "b-roll, build, drift-right",
+      "sourceEndTime": 33,
+      "sourceStartTime": 30,
+      "targetPosition": 5.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "talking head, build, handheld",
+      "sourceEndTime": 46.5,
+      "sourceStartTime": 40,
+      "targetPosition": 8.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, emphasis, punch-in",
+      "sourceEndTime": 51.5,
+      "sourceStartTime": 50,
+      "speedRamp": {
+        "keyframes": [
+          {
+            "easing": "ease-in",
+            "speed": 1,
+            "time": 0
+          },
+          {
+            "easing": "ease-out",
+            "speed": 2,
+            "time": 1
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "targetPosition": 15,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "climax, impact, whip-shake",
+      "sourceEndTime": 56,
+      "sourceStartTime": 55,
+      "targetPosition": 16.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "climax, reveal, punch-out",
+      "sourceEndTime": 57,
+      "sourceStartTime": 56,
+      "targetPosition": 17.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, beat, punch-in",
+      "sourceEndTime": 58,
+      "sourceStartTime": 57,
+      "targetPosition": 18.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "climax, impact, whip-shake",
+      "sourceEndTime": 59,
+      "sourceStartTime": 58,
+      "targetPosition": 19.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, beat, punch-in",
+      "sourceEndTime": 60,
+      "sourceStartTime": 59,
+      "targetPosition": 20.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "climax, b-roll, drift-left",
+      "sourceEndTime": 61,
+      "sourceStartTime": 60,
+      "targetPosition": 21.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, beat, punch-in",
+      "sourceEndTime": 62,
+      "sourceStartTime": 61,
+      "targetPosition": 22.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "climax, impact, whip-shake",
+      "sourceEndTime": 63,
+      "sourceStartTime": 62,
+      "targetPosition": 23.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, beat, punch-in",
+      "sourceEndTime": 64,
+      "sourceStartTime": 63,
+      "targetPosition": 24.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "climax, reveal, punch-out",
+      "sourceEndTime": 65,
+      "sourceStartTime": 64,
+      "targetPosition": 25.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, beat, punch-in",
+      "sourceEndTime": 66,
+      "sourceStartTime": 65,
+      "targetPosition": 26.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "climax, impact, whip-shake",
+      "sourceEndTime": 67,
+      "sourceStartTime": 66,
+      "targetPosition": 27.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, beat, punch-in",
+      "sourceEndTime": 68,
+      "sourceStartTime": 67,
+      "targetPosition": 28.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "climax, b-roll, drift-right",
+      "sourceEndTime": 69,
+      "sourceStartTime": 68,
+      "targetPosition": 29.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, beat, punch-in",
+      "sourceEndTime": 70,
+      "sourceStartTime": 69,
+      "targetPosition": 30.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "climax, impact, whip-shake",
+      "sourceEndTime": 71,
+      "sourceStartTime": 70,
+      "targetPosition": 31.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, beat, punch-in",
+      "sourceEndTime": 72,
+      "sourceStartTime": 71,
+      "targetPosition": 32.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "climax, reveal, punch-out",
+      "sourceEndTime": 73,
+      "sourceStartTime": 72,
+      "targetPosition": 33.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, beat, punch-in",
+      "sourceEndTime": 74,
+      "sourceStartTime": 73,
+      "targetPosition": 34.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "climax, impact, whip-shake",
+      "sourceEndTime": 75,
+      "sourceStartTime": 74,
+      "targetPosition": 35.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax, beat, punch-in",
+      "sourceEndTime": 76,
+      "sourceStartTime": 75,
+      "targetPosition": 36.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "landing, final thought, pull-back",
+      "sourceEndTime": 165,
+      "sourceStartTime": 160,
+      "targetPosition": 37.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "landing, final hold, slow-push",
+      "sourceEndTime": 172.5,
+      "sourceStartTime": 170,
+      "targetPosition": 42.5,
+      "sourceVideoId": "video-1",
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "animation": "pop",
+      "animationInSec": 0.1,
+      "color": "#FFFFFF",
+      "content": "THE TRUTH ABOUT...",
+      "duration": 2,
+      "fontSize": 64,
+      "position": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "rationale": "Hook text to grab attention.",
+      "startTime": 0.5,
+      "style": "title"
+    },
+    {
+      "animation": "slide-up",
+      "animationInSec": 0.3,
+      "color": "#FFFF00",
+      "content": "INSANE!",
+      "duration": 2,
+      "fontSize": 48,
+      "position": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "rationale": "Callout for emphasis.",
+      "startTime": 17,
+      "style": "callout"
+    },
+    {
+      "animation": "bounce",
+      "animationInSec": 0.5,
+      "color": "#FFFFFF",
+      "content": "WATCH UNTIL END",
+      "duration": 3,
+      "fontSize": 40,
+      "position": {
+        "x": 0.5,
+        "y": 0.15
+      },
+      "rationale": "Retention driver.",
+      "startTime": 30,
+      "style": "callout"
+    }
+  ],
+  "effects": [],
+  "transitions": [
+    {
+      "afterSegmentIndex": 4,
+      "duration": 0.4,
+      "rationale": "Transition from build to climax.",
+      "type": "glitch"
+    },
+    {
+      "afterSegmentIndex": 26,
+      "duration": 0.5,
+      "rationale": "Transition from climax to landing.",
+      "type": "zoom"
+    }
+  ],
+  "audioDecisions": [
+    {
+      "duration": 45,
+      "rationale": "Driving podcast energy for the entire clip.",
+      "sourceVideoId": "video-1",
+      "type": "music",
+      "volume": 0.7
+    },
+    {
+      "duration": 0.2,
+      "rationale": "Accentuate the hook snap-zoom.",
+      "sourceStartTime": 0,
+      "type": "sfx"
+    },
+    {
+      "duration": 0.3,
+      "rationale": "Accentuate whip-shake transitions.",
+      "sourceStartTime": 16.5,
+      "type": "sfx"
+    }
+  ],
+  "motionMoments": [],
+  "metadata": {
+    "genre": "podcast",
+    "pacing": "medium",
+    "rationale": "High-energy viral podcast clip with fast-paced climax and dynamic text.",
+    "targetDuration": 45,
+    "targetPlatform": "9:16"
+  }
+}

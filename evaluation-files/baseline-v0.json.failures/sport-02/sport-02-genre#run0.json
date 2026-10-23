@@ -1,0 +1,35 @@
+{
+  "id": "sport-02/sport-02-genre",
+  "run": 0,
+  "projectId": "sport-02",
+  "promptId": "sport-02-genre",
+  "promptType": "genre",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [bad_target_duration] Target duration must be positive."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "bad_target_duration",
+      "message": "Target duration must be positive.",
+      "path": "metadata.targetDuration"
+    }
+  ],
+  "editPlan": {
+    "segments": [],
+    "textElements": [],
+    "effects": [],
+    "transitions": [],
+    "audioDecisions": [],
+    "motionMoments": [],
+    "metadata": {
+      "targetDuration": 0,
+      "targetPlatform": "unknown",
+      "genre": "unknown",
+      "pacing": "medium",
+      "rationale": ""
+    }
+  }
+}

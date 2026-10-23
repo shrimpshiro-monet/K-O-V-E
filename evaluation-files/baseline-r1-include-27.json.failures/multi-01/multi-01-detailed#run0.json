@@ -1,0 +1,295 @@
+{
+  "id": "multi-01/multi-01-detailed",
+  "run": 0,
+  "projectId": "multi-01",
+  "promptId": "multi-01-detailed",
+  "promptType": "detailed",
+  "toolCode": "EDIT_PLAN_APPLY_FAILED",
+  "failures": [
+    "plan_edit failed [EDIT_PLAN_APPLY_FAILED]: EditPlan was valid but could not be applied: Could not add planned music: \"music_1\" is not a media library id or name. Available audio/video media: video-1 (podcast #1.mp4), video-2 (podcast 2.mp4), audio-1 (audio/Dave - Raindance (ft. Tems).mp3).. The timeline was left at its previous revision (12 partial artifact(s) removed)."
+  ],
+  "warnings": [],
+  "issues": [],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Cold open with the strongest emotional hook from Podcast 2.",
+        "sourceEndTime": 310,
+        "sourceStartTime": 300,
+        "targetPosition": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Establishing the first perspective from Podcast 1. J-cut: audio leads.",
+        "sourceEndTime": 190,
+        "sourceStartTime": 180,
+        "targetPosition": 10,
+        "trackIndex": 1,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Continuing the build with Podcast 2.",
+        "sourceEndTime": 320,
+        "sourceStartTime": 310,
+        "targetPosition": 20,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Intensifying the dialogue with Podcast 1.",
+        "sourceEndTime": 200,
+        "sourceStartTime": 190,
+        "targetPosition": 30,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Transitioning into the interleaved phase.",
+        "sourceEndTime": 330,
+        "sourceStartTime": 320,
+        "targetPosition": 40,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Interleaving Podcast 1.",
+        "sourceEndTime": 210,
+        "sourceStartTime": 200,
+        "targetPosition": 50,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Rhythmic beat hit.",
+        "sourceEndTime": 335,
+        "sourceStartTime": 330,
+        "targetPosition": 60,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Rapid interleaving begins.",
+        "sourceEndTime": 215,
+        "sourceStartTime": 210,
+        "targetPosition": 65,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Reaction shot.",
+        "sourceEndTime": 340,
+        "sourceStartTime": 335,
+        "targetPosition": 70,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Quick cut.",
+        "sourceEndTime": 220,
+        "sourceStartTime": 215,
+        "targetPosition": 75,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax: High energy beat.",
+        "sourceEndTime": 345,
+        "sourceStartTime": 340,
+        "targetPosition": 80,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Final emotional resolution.",
+        "sourceEndTime": 225,
+        "sourceStartTime": 220,
+        "targetPosition": 85,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "The Human Connection",
+        "duration": 4,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "style": "title",
+        "startTime": 2
+      },
+      {
+        "animation": "typewriter",
+        "content": "Podcast Series: Reflections",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.85
+        },
+        "style": "caption",
+        "startTime": 5
+      },
+      {
+        "animation": "slide-up",
+        "content": "\"It changed everything...\"",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.85
+        },
+        "style": "caption",
+        "startTime": 15
+      },
+      {
+        "animation": "slide-up",
+        "content": "\"I never thought I'd say this.\"",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.85
+        },
+        "style": "caption",
+        "startTime": 45
+      },
+      {
+        "animation": "fade",
+        "content": "End of Episode 1 & 2",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "style": "subtitle",
+        "startTime": 85
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 3,
+        "duration": 0.5,
+        "rationale": "Smooth transition into the interleaved section.",
+        "type": "crossfade"
+      },
+      {
+        "afterSegmentIndex": 6,
+        "duration": 0.3,
+        "rationale": "Punchy transition for the rhythmic section.",
+        "type": "flash"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 90,
+        "rationale": "Emotional underscore for the entire arc.",
+        "sourceVideoId": "music_1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.3
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Syncing a beat hit to the first major transition.",
+        "sourceVideoId": "music_1",
+        "startTime": 30,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Documentary/Podcast",
+      "pacing": "medium",
+      "rationale": "A 90-second emotional journey interleaving two podcast episodes, using rhythmic cuts and J-cuts to build tension and intimacy.",
+      "targetDuration": 90,
+      "targetPlatform": "YouTube"
+    }
+  }
+}

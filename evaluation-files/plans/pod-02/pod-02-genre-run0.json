@@ -1,0 +1,84 @@
+{
+  "segments": [
+    {
+      "cameraMoves": [
+        {
+          "move": "snap-zoom",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "hook: intense facial expression, high energy beat@0.5s",
+      "sourceEndTime": 45,
+      "sourceStartTime": 0,
+      "targetPosition": 0,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "animation": "pop",
+      "animationInSec": 0.2,
+      "content": "THE TRUTH ABOUT...",
+      "duration": 2,
+      "position": {
+        "x": 0.5,
+        "y": 0.3
+      },
+      "rationale": "hook text, high visibility",
+      "startTime": 0.5,
+      "style": "title"
+    },
+    {
+      "animation": "word-by-word",
+      "content": "\"It was absolutely insane.\"",
+      "duration": 3,
+      "position": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "rationale": "dynamic captions for engagement",
+      "startTime": 12,
+      "style": "caption"
+    },
+    {
+      "animation": "slide-up",
+      "content": "FOLLOW FOR MORE",
+      "duration": 4,
+      "position": {
+        "x": 0.5,
+        "y": 0.15
+      },
+      "rationale": "call to action, end of clip",
+      "startTime": 41,
+      "style": "callout"
+    }
+  ],
+  "effects": [],
+  "transitions": [],
+  "audioDecisions": [
+    {
+      "duration": 45,
+      "rationale": "driving podcast energy",
+      "sourceVideoId": "video-1",
+      "startTime": 0,
+      "type": "music"
+    },
+    {
+      "duration": 1,
+      "rationale": "impact on hook",
+      "sourceVideoId": "video-1",
+      "startTime": 0.5,
+      "type": "sfx"
+    }
+  ],
+  "motionMoments": [],
+  "metadata": {
+    "genre": "podcast",
+    "pacing": "medium",
+    "rationale": "high-energy viral podcast clip with dynamic text and zooms",
+    "targetDuration": 45,
+    "targetPlatform": "9:16"
+  }
+}

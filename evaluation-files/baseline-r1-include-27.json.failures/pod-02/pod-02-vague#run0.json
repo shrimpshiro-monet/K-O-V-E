@@ -1,0 +1,359 @@
+{
+  "id": "pod-02/pod-02-vague",
+  "run": 0,
+  "projectId": "pod-02",
+  "promptId": "pod-02-vague",
+  "promptType": "vague",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [invalid_freeze_frame] Segment 10 freeze frame 0 is invalid."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "invalid_freeze_frame",
+      "message": "Segment 10 freeze frame 0 is invalid.",
+      "path": "segments.10.speedRamp.freezeFrames.0"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Hook: immediate visual impact with a snap zoom.",
+        "sourceEndTime": 3,
+        "sourceStartTime": 0,
+        "sourceVideoId": "video-1",
+        "targetPosition": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Establishing the scene.",
+        "sourceEndTime": 7,
+        "sourceStartTime": 3,
+        "sourceVideoId": "video-1",
+        "targetPosition": 3,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 0.8,
+            "params": {
+              "radius": 50,
+              "strength": 0.8
+            },
+            "rationale": "Exaggerate the funny face.",
+            "startOffset": 0,
+            "type": "fisheye"
+          }
+        ],
+        "rationale": "First comedic beat with a fisheye distortion.",
+        "sourceEndTime": 10,
+        "sourceStartTime": 7,
+        "sourceVideoId": "video-1",
+        "targetPosition": 7,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "wobble",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Playful reaction shot.",
+        "sourceEndTime": 14,
+        "sourceStartTime": 10,
+        "sourceVideoId": "video-1",
+        "targetPosition": 10,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.7
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.3,
+            "intensity": 0.9,
+            "params": {
+              "amount": 20
+            },
+            "rationale": "Glitchy hit on the beat.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "rationale": "Increasing energy with handheld movement and a chromatic hit.",
+        "sourceEndTime": 18,
+        "sourceStartTime": 14,
+        "sourceVideoId": "video-1",
+        "targetPosition": 14,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Building tension.",
+        "sourceEndTime": 22,
+        "sourceStartTime": 18,
+        "sourceVideoId": "video-1",
+        "targetPosition": 18,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 1
+          }
+        ],
+        "rationale": "High energy impact.",
+        "sourceEndTime": 26,
+        "sourceStartTime": 22,
+        "sourceVideoId": "video-1",
+        "targetPosition": 22,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Brief moment of breathing room.",
+        "sourceEndTime": 30,
+        "sourceStartTime": 26,
+        "sourceVideoId": "video-1",
+        "targetPosition": 26,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Quick transition shot.",
+        "sourceEndTime": 34,
+        "sourceStartTime": 30,
+        "sourceVideoId": "video-1",
+        "targetPosition": 30,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.9
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.6,
+            "intensity": 0.9,
+            "params": {
+              "radius": 60,
+              "strength": 0.9
+            },
+            "rationale": "Extreme distortion for the punchline.",
+            "startOffset": 0,
+            "type": "fisheye"
+          }
+        ],
+        "rationale": "The main punchline with extreme fisheye.",
+        "sourceEndTime": 38,
+        "sourceStartTime": 34,
+        "sourceVideoId": "video-1",
+        "targetPosition": 34,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Freeze frame payoff.",
+        "sourceEndTime": 42,
+        "sourceStartTime": 38,
+        "sourceVideoId": "video-1",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 0.2,
+              "time": 0.5
+            },
+            {
+              "speed": 1,
+              "time": 2.5
+            }
+          ],
+          "freezeFrames": [
+            {
+              "duration": 2,
+              "sourceTime": 39,
+              "startTime": 0.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 38,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Clean resolution.",
+        "sourceEndTime": 45,
+        "sourceStartTime": 42,
+        "sourceVideoId": "video-1",
+        "targetPosition": 42,
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "POV: The Podcast",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Hook title.",
+        "startTime": 0,
+        "style": "title"
+      },
+      {
+        "animation": "typewriter",
+        "content": "Wait...",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Setup text.",
+        "startTime": 7,
+        "style": "callout"
+      },
+      {
+        "animation": "bounce",
+        "content": "BRUH",
+        "duration": 4,
+        "position": {
+          "x": 0.5,
+          "y": 0.8
+        },
+        "rationale": "Punchline text.",
+        "startTime": 34,
+        "style": "callout"
+      },
+      {
+        "animation": "zoom-blur",
+        "content": "LMAO",
+        "duration": 4,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Final reaction.",
+        "startTime": 38,
+        "style": "title"
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 2,
+        "duration": 0.4,
+        "rationale": "Punchy transition.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 6,
+        "duration": 0.3,
+        "rationale": "Glitchy transition.",
+        "type": "glitch"
+      },
+      {
+        "afterSegmentIndex": 9,
+        "duration": 0.5,
+        "rationale": "Bright flash for the punchline.",
+        "type": "flash"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "Upbeat comedic background music.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.6
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Comedic 'boing' sound for the fisheye reveal.",
+        "sourceVideoId": "video-1",
+        "startTime": 7,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Heavy 'thud' for the BRUH moment.",
+        "sourceVideoId": "video-1",
+        "startTime": 34,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Comedy",
+      "pacing": "medium",
+      "rationale": "Created a comedic montage using rapid cuts, exaggerated camera moves (fisheye, wobble), and punchy text callouts to highlight 'funny' moments in the podcast footage.",
+      "targetDuration": 45,
+      "targetPlatform": "TikTok/Reels"
+    }
+  }
+}

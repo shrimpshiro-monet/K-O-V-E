@@ -1,0 +1,202 @@
+{
+  "generatedAt": "2026-10-22T15:41:19.048Z",
+  "model": "@cf/google/gemma-4-26b-a4b-it",
+  "sampling": {
+    "temperature": 0,
+    "seed": 1234
+  },
+  "runsPerCombo": 1,
+  "cases": 3,
+  "total": 3,
+  "passed": 2,
+  "status": "complete",
+  "quotaExcluded": 0,
+  "gateRates": {
+    "planValidates": {
+      "mean": 0.6667,
+      "min": 0.6667,
+      "max": 0.6667,
+      "stdev": 0,
+      "perRun": [
+        0.6667
+      ],
+      "validPerRun": [
+        3
+      ]
+    },
+    "materializes": {
+      "mean": 0.6667,
+      "min": 0.6667,
+      "max": 0.6667,
+      "stdev": 0,
+      "perRun": [
+        0.6667
+      ],
+      "validPerRun": [
+        3
+      ]
+    },
+    "noClipOverlaps": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1
+      ],
+      "validPerRun": [
+        3
+      ]
+    },
+    "allGates": {
+      "mean": 0.6667,
+      "min": 0.6667,
+      "max": 0.6667,
+      "stdev": 0,
+      "perRun": [
+        0.6667
+      ],
+      "validPerRun": [
+        3
+      ]
+    }
+  },
+  "determinism": {
+    "allPass": 2,
+    "allFail": 1,
+    "mixed": 0,
+    "mixedIds": [],
+    "incomplete": 0,
+    "incompleteIds": []
+  },
+  "quality": {
+    "references": [
+      "real-captain-price-profile.json",
+      "real-spiderman-profile.json"
+    ],
+    "scored": 2,
+    "meanOverall": 0.4248,
+    "byReference": {
+      "real-spiderman-profile.json": 0.6929,
+      "real-captain-price-profile.json": 0.1566
+    }
+  },
+  "results": [
+    {
+      "id": "pod-01/pod-01-detailed",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "TOOL_ERROR",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [TOOL_ERROR]: cloudflare-ai 408: {\"errors\":[{\"message\":\"AiError: AiError: Request timeout (6f5d1e68-e17b-44dd-a81e-364304caf2d0)\",\"code\":3046}],\"success\":false,\"result\":{},\"messages\":[]}"
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 474040,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    },
+    {
+      "id": "pod-01/pod-01-vague",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 123025,
+        "clipCount": 19,
+        "transitionCount": 2,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 4,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.8261,
+          "detail": "19 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5859,
+          "detail": "mean cut 2.26s vs 2.03s, spread(cv) 0.47 vs 1.69"
+        },
+        "craft": {
+          "score": 0.6667,
+          "detail": "transitions=2 effects=0 texts=4"
+        },
+        "overall": 0.6929
+      }
+    },
+    {
+      "id": "pod-01/pod-01-genre",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 93625,
+        "clipCount": 1,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.1111,
+          "detail": "1 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.0253,
+          "detail": "mean cut 45.00s vs 2.28s, spread(cv) 0.00 vs 1.32"
+        },
+        "craft": {
+          "score": 0.3333,
+          "detail": "transitions=0 effects=0 texts=3"
+        },
+        "overall": 0.1566
+      }
+    }
+  ]
+}

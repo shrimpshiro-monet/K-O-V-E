@@ -1,0 +1,227 @@
+[
+  {
+    "id": "pod-01",
+    "category": "speech",
+    "media": ["podcast #1.mp4"],
+    "music": "audio/21 Savage - a lot ft. J. Cole.mp3",
+    "reference": null,
+    "notes": "Tests structured educational extraction from a single podcast with music underneath.",
+    "prompts": [
+      {
+        "id": "pod-01-detailed",
+        "type": "detailed",
+        "text": "Cut a 45-second YouTube Short from podcast #1.mp4 that teaches one clear idea. Pick the 3 sharpest explanatory points in the file and present them as a numbered top-3, keeping just enough setup before each point that it still makes sense with no prior context. Remove filler words, long pauses, and tangents with jump cuts, keep the speaker's original wording exactly, hit roughly one point every 12-15 seconds, and burn in open captions synced to speech. Lay audio/21 Savage - a lot ft. J. Cole.mp3 low under the whole cut, drop the music entirely on the final point, and use hard cuts only with no transitions."
+      },
+      {
+        "id": "pod-01-vague",
+        "type": "vague",
+        "text": "make the best clip possible"
+      },
+      {
+        "id": "pod-01-genre",
+        "type": "genre",
+        "text": "podcast-clips"
+      }
+    ]
+  },
+  {
+    "id": "pod-02",
+    "category": "speech",
+    "media": ["podcast 2.mp4"],
+    "music": null,
+    "reference": null,
+    "notes": "Tests single-joke cold-open/payoff structuring and word-boundary cutting on one long episode.",
+    "prompts": [
+      {
+        "id": "pod-02-detailed",
+        "type": "detailed",
+        "text": "Make a 30-second TikTok from podcast 2.mp4 that lands exactly one joke. Cold-open on the single funniest line or reaction in the file with zero setup, then cut back to the context and build-up that makes it pay off, ending on the punchline beat. Snap every cut to word boundaries so the dialogue stays clean, cut everything that is not serving that one bit, keep the delivery deadpan with no effect styling, and burn in captions. No music, no transitions, hard cuts only."
+      },
+      {
+        "id": "pod-02-vague",
+        "type": "vague",
+        "text": "make it funny"
+      },
+      {
+        "id": "pod-02-genre",
+        "type": "genre",
+        "text": "viral-podcast-clip"
+      }
+    ]
+  },
+  {
+    "id": "multi-01",
+    "category": "multi",
+    "media": ["podcast #1.mp4", "podcast 2.mp4"],
+    "music": "audio/Dave - Raindance (ft. Tems).mp3",
+    "reference": null,
+    "notes": "Tests cross-file selection and ordering across two podcast uploads with a scored emotional arc.",
+    "prompts": [
+      {
+        "id": "multi-01-detailed",
+        "type": "detailed",
+        "text": "Build a 90-second YouTube long-form video from podcast #1.mp4 and podcast 2.mp4 as one continuous emotional arc across both episodes. Pull the most personal moment from each file, open cold on the stronger of the two with no intro, then interleave the two conversations so the second half raises the stakes of the first. Use J-cuts so audio from the next clip leads the picture by a few frames, remove tangents and filler, keep original wording throughout, and burn in captions. Score it with audio/Dave - Raindance (ft. Tems).mp3 under the dialogue at low level, and hard cut between every beat."
+      },
+      {
+        "id": "multi-01-vague",
+        "type": "vague",
+        "text": "find the good stuff"
+      },
+      {
+        "id": "multi-01-genre",
+        "type": "genre",
+        "text": "interview-clips"
+      }
+    ]
+  },
+  {
+    "id": "game-01",
+    "category": "game",
+    "media": ["milesmorales.mp4.mp4"],
+    "music": "audio/Timeless (w_ adlibs).mp3",
+    "reference": "reference videos (priority, needs to look LIKE or BETTER than)/SPIDERMAN (IMPORTANT).MP4",
+    "notes": "Tests a beat-synced single-moment game clip with music plus the top-priority blind reference.",
+    "prompts": [
+      {
+        "id": "game-01-detailed",
+        "type": "detailed",
+        "text": "Cut a 15-second TikTok from milesmorales.mp4.mp4 built around one single clutch moment: the best kill, finisher, or impossible play in the file. Cold-open on the instant the moment starts, hold the full payoff, and end right after it lands. Cut strictly on the beat of audio/Timeless (w_ adlibs).mp3, keep in-game audio and sound effects audible under the track, and do not add captions, commentary, or context. No transitions, total runtime exactly 15 seconds."
+      },
+      {
+        "id": "game-01-vague",
+        "type": "vague",
+        "text": "make it go hard"
+      },
+      {
+        "id": "game-01-genre",
+        "type": "genre",
+        "text": "game-highlight"
+      }
+    ]
+  },
+  {
+    "id": "multi-02",
+    "category": "multi",
+    "media": ["milesmorales.mp4.mp4", "MikeRoss.mp4"],
+    "music": null,
+    "reference": "reference videos (priority, needs to look LIKE or BETTER than)/captain price (2nd priority).MP4",
+    "notes": "Tests cross-source montage ordering between a game VOD and a stream VOD with match-cut structure.",
+    "prompts": [
+      {
+        "id": "multi-02-detailed",
+        "type": "detailed",
+        "text": "Create a 60-second Instagram Reels cut using milesmorales.mp4.mp4 and MikeRoss.mp4 together. Cold-open on a 2-second teaser of the single best moment across both files, then run a montage of 5-6 beats total with at least two pulled from each file, ordered so intensity builds, and finish on a one-beat button that echoes the cold-open as a match-cut. Match-cut between the two sources wherever the on-screen action lines up, drop any beat that repeats an idea, keep in-game and mic audio for texture, no music, no captions, hard cuts everywhere else."
+      },
+      {
+        "id": "multi-02-vague",
+        "type": "vague",
+        "text": "do your thing"
+      },
+      {
+        "id": "multi-02-genre",
+        "type": "genre",
+        "text": "game-montage"
+      }
+    ]
+  },
+  {
+    "id": "stream-01",
+    "category": "stream",
+    "media": ["MikeRoss.mp4"],
+    "music": null,
+    "reference": null,
+    "notes": "Tests deadpan single-moment extraction with zero-styling hard cuts on a stream VOD.",
+    "prompts": [
+      {
+        "id": "stream-01-detailed",
+        "type": "detailed",
+        "text": "Make a 15-second Twitch clip from MikeRoss.mp4 of the driest, most deadpan moment in the file: a flat reaction, an anti-climax, or a dry one-liner. Start about 2 seconds before the line so it lands cold, hold on the silence after it, and end there. Hard cuts only, no captions, no music, no zoom, no effects, and keep the original mic and room audio exactly as recorded."
+      },
+      {
+        "id": "stream-01-vague",
+        "type": "vague",
+        "text": "just make it cool"
+      },
+      {
+        "id": "stream-01-genre",
+        "type": "genre",
+        "text": "stream-clip"
+      }
+    ]
+  },
+  {
+    "id": "sport-01",
+    "category": "sport",
+    "media": ["High Quality Steph Curry Clips for Edits! (2024-25).mp4"],
+    "music": null,
+    "reference": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+    "notes": "Tests top-3 countdown selection out of a raw multi-clip sports dump against a same-player reference.",
+    "prompts": [
+      {
+        "id": "sport-01-detailed",
+        "type": "detailed",
+        "text": "Cut a 45-second TikTok from High Quality Steph Curry Clips for Edits! (2024-25).mp4 as a top-3 countdown. Find the three most spectacular makes in the dump and present them 3, 2, 1 with a burned-in number card on each. Start every clip on the gather so the shot builds, hold the release and the full swish each time, and hard cut between entries with no transitions. No music, no voiceover, keep the natural crowd audio, total runtime exactly 45 seconds."
+      },
+      {
+        "id": "sport-01-vague",
+        "type": "vague",
+        "text": "make the hype one"
+      },
+      {
+        "id": "sport-01-genre",
+        "type": "genre",
+        "text": "sports-montage"
+      }
+    ]
+  },
+  {
+    "id": "sport-02",
+    "category": "sport",
+    "media": ["High Quality Steph Curry Clips for Edits! (2024-25).mp4"],
+    "music": null,
+    "reference": "2025 Italian Grand Prix Highlights.mp4",
+    "notes": "Tests chronological build and escalation pacing against a fast-cut event-highlights reference.",
+    "prompts": [
+      {
+        "id": "sport-02-detailed",
+        "type": "detailed",
+        "text": "Cut a 60-second YouTube long-form highlight from High Quality Steph Curry Clips for Edits! (2024-25).mp4 that runs like a single-game comeback. Start cold on a miss or a quiet stretch, then sequence the makes in escalating order so the last shot is the hardest one. Keep each clip long enough to read the setup, strip all dead time between plays with hard cuts, slow only the final make to half speed, and end on it. No music, no voiceover, no captions, natural crowd audio only."
+      },
+      {
+        "id": "sport-02-vague",
+        "type": "vague",
+        "text": "make it feel epic"
+      },
+      {
+        "id": "sport-02-genre",
+        "type": "genre",
+        "text": "player-highlights"
+      }
+    ]
+  },
+  {
+    "id": "multi-03",
+    "category": "multi",
+    "media": ["High Quality Steph Curry Clips for Edits! (2024-25).mp4", "milesmorales.mp4.mp4"],
+    "music": "audio/Outfit (with 21 Savage).mp3",
+    "reference": "reference videos (priority, needs to look LIKE or BETTER than)/SPIDERMAN (IMPORTANT).MP4",
+    "notes": "Full-pipeline run: cross-category multi-upload plus music plus top-priority reference in one pass.",
+    "prompts": [
+      {
+        "id": "multi-03-detailed",
+        "type": "detailed",
+        "text": "Cut a 45-second Instagram Reels edit that pulls the best 3 moments across High Quality Steph Curry Clips for Edits! (2024-25).mp4 and milesmorales.mp4.mp4 and orders them for a hype build. Cold-open on the single most ridiculous of the three for 1 second, then run them 3, 2, 1 with the switch from real footage to gameplay as the escalation, and end on a hard button where the audio drops out for the final half second. Cut on the beat of audio/Outfit (with 21 Savage).mp3, keep crowd and game audio under the track, burn in the countdown numbers, and stay at exactly 45 seconds."
+      },
+      {
+        "id": "multi-03-vague",
+        "type": "vague",
+        "text": "make something sick"
+      },
+      {
+        "id": "multi-03-genre",
+        "type": "genre",
+        "text": "hype-montage"
+      }
+    ]
+  }
+]

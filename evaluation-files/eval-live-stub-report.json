@@ -1,0 +1,2320 @@
+{
+  "generatedAt": "2026-10-13T03:29:09.910Z",
+  "model": "@cf/google/gemma-4-26b-a4b-it",
+  "sampling": {
+    "temperature": 0,
+    "seed": 1234
+  },
+  "runsPerCombo": 3,
+  "corpusFingerprint": "546b64d0357c05db50c70133d9334bbe5037cfbd02745a255cfadc59d34448a3",
+  "cases": 27,
+  "total": 81,
+  "passed": 81,
+  "status": "complete",
+  "quotaExcluded": 0,
+  "gateRates": {
+    "planValidates": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1,
+        1,
+        1
+      ],
+      "validPerRun": [
+        27,
+        27,
+        27
+      ]
+    },
+    "materializes": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1,
+        1,
+        1
+      ],
+      "validPerRun": [
+        27,
+        27,
+        27
+      ]
+    },
+    "noClipOverlaps": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1,
+        1,
+        1
+      ],
+      "validPerRun": [
+        27,
+        27,
+        27
+      ]
+    },
+    "allGates": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1,
+        1,
+        1
+      ],
+      "validPerRun": [
+        27,
+        27,
+        27
+      ]
+    }
+  },
+  "determinism": {
+    "allPass": 27,
+    "allFail": 0,
+    "mixed": 0,
+    "mixedIds": [],
+    "incomplete": 0,
+    "incompleteIds": []
+  },
+  "results": [
+    {
+      "id": "pod-01/pod-01-detailed",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~45s brief (mentions found: \"45-second\", \"12-15 seconds\")"
+      ],
+      "stats": {
+        "durationMs": 230,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-01/pod-01-detailed",
+      "run": 1,
+      "projectId": "pod-01",
+      "promptId": "pod-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~45s brief (mentions found: \"45-second\", \"12-15 seconds\")"
+      ],
+      "stats": {
+        "durationMs": 181,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-01/pod-01-detailed",
+      "run": 2,
+      "projectId": "pod-01",
+      "promptId": "pod-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~45s brief (mentions found: \"45-second\", \"12-15 seconds\")"
+      ],
+      "stats": {
+        "durationMs": 180,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-01/pod-01-vague",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 183,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-01/pod-01-vague",
+      "run": 1,
+      "projectId": "pod-01",
+      "promptId": "pod-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 182,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-01/pod-01-vague",
+      "run": 2,
+      "projectId": "pod-01",
+      "promptId": "pod-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 175,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-01/pod-01-genre",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 176,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-01/pod-01-genre",
+      "run": 1,
+      "projectId": "pod-01",
+      "promptId": "pod-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 177,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-01/pod-01-genre",
+      "run": 2,
+      "projectId": "pod-01",
+      "promptId": "pod-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 177,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-02/pod-02-detailed",
+      "run": 0,
+      "projectId": "pod-02",
+      "promptId": "pod-02-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~30s brief (mentions found: \"30-second\")"
+      ],
+      "stats": {
+        "durationMs": 101,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-02/pod-02-detailed",
+      "run": 1,
+      "projectId": "pod-02",
+      "promptId": "pod-02-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~30s brief (mentions found: \"30-second\")"
+      ],
+      "stats": {
+        "durationMs": 103,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-02/pod-02-detailed",
+      "run": 2,
+      "projectId": "pod-02",
+      "promptId": "pod-02-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~30s brief (mentions found: \"30-second\")"
+      ],
+      "stats": {
+        "durationMs": 103,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-02/pod-02-vague",
+      "run": 0,
+      "projectId": "pod-02",
+      "promptId": "pod-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 105,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-02/pod-02-vague",
+      "run": 1,
+      "projectId": "pod-02",
+      "promptId": "pod-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 103,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-02/pod-02-vague",
+      "run": 2,
+      "projectId": "pod-02",
+      "promptId": "pod-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 103,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-02/pod-02-genre",
+      "run": 0,
+      "projectId": "pod-02",
+      "promptId": "pod-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 103,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-02/pod-02-genre",
+      "run": 1,
+      "projectId": "pod-02",
+      "promptId": "pod-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 104,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "pod-02/pod-02-genre",
+      "run": 2,
+      "projectId": "pod-02",
+      "promptId": "pod-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 103,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~90s brief (mentions found: \"90-second\")"
+      ],
+      "stats": {
+        "durationMs": 266,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 1,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~90s brief (mentions found: \"90-second\")"
+      ],
+      "stats": {
+        "durationMs": 267,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 2,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~90s brief (mentions found: \"90-second\")"
+      ],
+      "stats": {
+        "durationMs": 271,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-01/multi-01-vague",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 270,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-01/multi-01-vague",
+      "run": 1,
+      "projectId": "multi-01",
+      "promptId": "multi-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 266,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-01/multi-01-vague",
+      "run": 2,
+      "projectId": "multi-01",
+      "promptId": "multi-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 266,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-01/multi-01-genre",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 274,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-01/multi-01-genre",
+      "run": 1,
+      "projectId": "multi-01",
+      "promptId": "multi-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 277,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-01/multi-01-genre",
+      "run": 2,
+      "projectId": "multi-01",
+      "promptId": "multi-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 266,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "game-01/game-01-detailed",
+      "run": 0,
+      "projectId": "game-01",
+      "promptId": "game-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 258,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "game-01/game-01-detailed",
+      "run": 1,
+      "projectId": "game-01",
+      "promptId": "game-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 248,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "game-01/game-01-detailed",
+      "run": 2,
+      "projectId": "game-01",
+      "promptId": "game-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 254,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "game-01/game-01-vague",
+      "run": 0,
+      "projectId": "game-01",
+      "promptId": "game-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 249,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "game-01/game-01-vague",
+      "run": 1,
+      "projectId": "game-01",
+      "promptId": "game-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 291,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "game-01/game-01-vague",
+      "run": 2,
+      "projectId": "game-01",
+      "promptId": "game-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 251,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "game-01/game-01-genre",
+      "run": 0,
+      "projectId": "game-01",
+      "promptId": "game-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 251,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "game-01/game-01-genre",
+      "run": 1,
+      "projectId": "game-01",
+      "promptId": "game-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 251,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "game-01/game-01-genre",
+      "run": 2,
+      "projectId": "game-01",
+      "promptId": "game-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 254,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-02/multi-02-detailed",
+      "run": 0,
+      "projectId": "multi-02",
+      "promptId": "multi-02-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~60s brief (mentions found: \"60-second\", \"2-second\")"
+      ],
+      "stats": {
+        "durationMs": 246,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-02/multi-02-detailed",
+      "run": 1,
+      "projectId": "multi-02",
+      "promptId": "multi-02-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~60s brief (mentions found: \"60-second\", \"2-second\")"
+      ],
+      "stats": {
+        "durationMs": 247,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-02/multi-02-detailed",
+      "run": 2,
+      "projectId": "multi-02",
+      "promptId": "multi-02-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~60s brief (mentions found: \"60-second\", \"2-second\")"
+      ],
+      "stats": {
+        "durationMs": 246,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-02/multi-02-vague",
+      "run": 0,
+      "projectId": "multi-02",
+      "promptId": "multi-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 246,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-02/multi-02-vague",
+      "run": 1,
+      "projectId": "multi-02",
+      "promptId": "multi-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 254,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-02/multi-02-vague",
+      "run": 2,
+      "projectId": "multi-02",
+      "promptId": "multi-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 251,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-02/multi-02-genre",
+      "run": 0,
+      "projectId": "multi-02",
+      "promptId": "multi-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 251,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-02/multi-02-genre",
+      "run": 1,
+      "projectId": "multi-02",
+      "promptId": "multi-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 250,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-02/multi-02-genre",
+      "run": 2,
+      "projectId": "multi-02",
+      "promptId": "multi-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 250,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "stream-01/stream-01-detailed",
+      "run": 0,
+      "projectId": "stream-01",
+      "promptId": "stream-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 96,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "stream-01/stream-01-detailed",
+      "run": 1,
+      "projectId": "stream-01",
+      "promptId": "stream-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 94,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "stream-01/stream-01-detailed",
+      "run": 2,
+      "projectId": "stream-01",
+      "promptId": "stream-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 95,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "stream-01/stream-01-vague",
+      "run": 0,
+      "projectId": "stream-01",
+      "promptId": "stream-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 93,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "stream-01/stream-01-vague",
+      "run": 1,
+      "projectId": "stream-01",
+      "promptId": "stream-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 93,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "stream-01/stream-01-vague",
+      "run": 2,
+      "projectId": "stream-01",
+      "promptId": "stream-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 91,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "stream-01/stream-01-genre",
+      "run": 0,
+      "projectId": "stream-01",
+      "promptId": "stream-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 94,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "stream-01/stream-01-genre",
+      "run": 1,
+      "projectId": "stream-01",
+      "promptId": "stream-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 94,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "stream-01/stream-01-genre",
+      "run": 2,
+      "projectId": "stream-01",
+      "promptId": "stream-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 96,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-01/sport-01-detailed",
+      "run": 0,
+      "projectId": "sport-01",
+      "promptId": "sport-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~45s brief (mentions found: \"45-second\", \"45 seconds\")"
+      ],
+      "stats": {
+        "durationMs": 164,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-01/sport-01-detailed",
+      "run": 1,
+      "projectId": "sport-01",
+      "promptId": "sport-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~45s brief (mentions found: \"45-second\", \"45 seconds\")"
+      ],
+      "stats": {
+        "durationMs": 161,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-01/sport-01-detailed",
+      "run": 2,
+      "projectId": "sport-01",
+      "promptId": "sport-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~45s brief (mentions found: \"45-second\", \"45 seconds\")"
+      ],
+      "stats": {
+        "durationMs": 165,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-01/sport-01-vague",
+      "run": 0,
+      "projectId": "sport-01",
+      "promptId": "sport-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 162,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-01/sport-01-vague",
+      "run": 1,
+      "projectId": "sport-01",
+      "promptId": "sport-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 165,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-01/sport-01-vague",
+      "run": 2,
+      "projectId": "sport-01",
+      "promptId": "sport-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 160,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-01/sport-01-genre",
+      "run": 0,
+      "projectId": "sport-01",
+      "promptId": "sport-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 160,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-01/sport-01-genre",
+      "run": 1,
+      "projectId": "sport-01",
+      "promptId": "sport-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 162,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-01/sport-01-genre",
+      "run": 2,
+      "projectId": "sport-01",
+      "promptId": "sport-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 161,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-02/sport-02-detailed",
+      "run": 0,
+      "projectId": "sport-02",
+      "promptId": "sport-02-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~60s brief (mentions found: \"60-second\")"
+      ],
+      "stats": {
+        "durationMs": 172,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-02/sport-02-detailed",
+      "run": 1,
+      "projectId": "sport-02",
+      "promptId": "sport-02-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~60s brief (mentions found: \"60-second\")"
+      ],
+      "stats": {
+        "durationMs": 176,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-02/sport-02-detailed",
+      "run": 2,
+      "projectId": "sport-02",
+      "promptId": "sport-02-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~60s brief (mentions found: \"60-second\")"
+      ],
+      "stats": {
+        "durationMs": 181,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-02/sport-02-vague",
+      "run": 0,
+      "projectId": "sport-02",
+      "promptId": "sport-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 176,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-02/sport-02-vague",
+      "run": 1,
+      "projectId": "sport-02",
+      "promptId": "sport-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 176,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-02/sport-02-vague",
+      "run": 2,
+      "projectId": "sport-02",
+      "promptId": "sport-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 175,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-02/sport-02-genre",
+      "run": 0,
+      "projectId": "sport-02",
+      "promptId": "sport-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 177,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-02/sport-02-genre",
+      "run": 1,
+      "projectId": "sport-02",
+      "promptId": "sport-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 174,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "sport-02/sport-02-genre",
+      "run": 2,
+      "projectId": "sport-02",
+      "promptId": "sport-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 218,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-03/multi-03-detailed",
+      "run": 0,
+      "projectId": "multi-03",
+      "promptId": "multi-03-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~45s brief (mentions found: \"45-second\", \"1 second\", \"45 seconds\")"
+      ],
+      "stats": {
+        "durationMs": 318,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-03/multi-03-detailed",
+      "run": 1,
+      "projectId": "multi-03",
+      "promptId": "multi-03-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~45s brief (mentions found: \"45-second\", \"1 second\", \"45 seconds\")"
+      ],
+      "stats": {
+        "durationMs": 311,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-03/multi-03-detailed",
+      "run": 2,
+      "projectId": "multi-03",
+      "promptId": "multi-03-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [
+        "[duration_fidelity] timeline 7s vs ~45s brief (mentions found: \"45-second\", \"1 second\", \"45 seconds\")"
+      ],
+      "stats": {
+        "durationMs": 311,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-03/multi-03-vague",
+      "run": 0,
+      "projectId": "multi-03",
+      "promptId": "multi-03-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 312,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-03/multi-03-vague",
+      "run": 1,
+      "projectId": "multi-03",
+      "promptId": "multi-03-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 310,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-03/multi-03-vague",
+      "run": 2,
+      "projectId": "multi-03",
+      "promptId": "multi-03-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 310,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-03/multi-03-genre",
+      "run": 0,
+      "projectId": "multi-03",
+      "promptId": "multi-03-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 312,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-03/multi-03-genre",
+      "run": 1,
+      "projectId": "multi-03",
+      "promptId": "multi-03-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 309,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    },
+    {
+      "id": "multi-03/multi-03-genre",
+      "run": 2,
+      "projectId": "multi-03",
+      "promptId": "multi-03-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 310,
+        "clipCount": 2,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 1,
+        "planScore": 1,
+        "timelineDuration": 7
+      }
+    }
+  ]
+}

@@ -1,0 +1,898 @@
+{
+  "segments": [
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "strong hook, visual impact, motionPeak .8",
+      "sourceEndTime": 11.5,
+      "sourceStartTime": 10,
+      "targetPosition": 0,
+      "targetIndex": "0",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "establishing shot, build, motionPeak .5",
+      "sourceEndTime": 7,
+      "sourceStartTime": 5,
+      "targetPosition": 1.5,
+      "targetIndex": "1",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "reaction, build, motionPeak .6",
+      "sourceEndTime": 47,
+      "sourceStartTime": 45,
+      "targetPosition": 3.5,
+      "targetIndex": "2",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "breathe",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "dialogue, build, motionPeak .4",
+      "sourceEndTime": 102.5,
+      "sourceStartTime": 100,
+      "targetPosition": 5.5,
+      "targetIndex": "3",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "context, build, motionPeak .5",
+      "sourceEndTime": 153,
+      "sourceStartTime": 150,
+      "targetPosition": 8,
+      "targetIndex": "4",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "context, build, motionPeak .5",
+      "sourceEndTime": 203,
+      "sourceStartTime": 200,
+      "targetPosition": 11,
+      "targetIndex": "5",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "transition shot, build, motionPeak .6",
+      "sourceEndTime": 251.5,
+      "sourceStartTime": 250,
+      "targetPosition": 14,
+      "targetIndex": "6",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.6
+        }
+      ],
+      "rationale": "beat, build, motionPeak .7",
+      "sourceEndTime": 301.5,
+      "sourceStartTime": 300,
+      "targetPosition": 15.5,
+      "targetIndex": "7",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.6
+        }
+      ],
+      "rationale": "beat, build, motionPeak .7",
+      "sourceEndTime": 311.5,
+      "sourceStartTime": 310,
+      "targetPosition": 17,
+      "targetIndex": "8",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.6
+        }
+      ],
+      "rationale": "beat, build, motionPeak .7",
+      "sourceEndTime": 321.5,
+      "sourceStartTime": 320,
+      "targetPosition": 18.5,
+      "targetIndex": "9",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 331,
+      "sourceStartTime": 330,
+      "speedRamp": {
+        "keyframes": [
+          {
+            "easing": "ease-in-out",
+            "speed": 1,
+            "time": 0
+          },
+          {
+            "easing": "ease-in-out",
+            "speed": 2,
+            "time": 0.5
+          },
+          {
+            "easing": "ease-in-out",
+            "speed": 1,
+            "time": 1
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "targetPosition": 20,
+      "targetIndex": "10",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 341,
+      "sourceStartTime": 340,
+      "targetPosition": 21,
+      "targetIndex": "11",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "radius": "10",
+            "intensity": "1.5"
+          },
+          "rationale": "glow hit",
+          "type": "glow"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 351,
+      "sourceStartTime": 350,
+      "targetPosition": 22,
+      "targetIndex": "12",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 361,
+      "sourceStartTime": 360,
+      "targetPosition": 23,
+      "targetIndex": "13",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "radius": "10",
+            "intensity": "1.5"
+          },
+          "rationale": "glow hit",
+          "type": "glow"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 371,
+      "sourceStartTime": 370,
+      "targetPosition": 24,
+      "targetIndex": "14",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 381,
+      "sourceStartTime": 380,
+      "targetPosition": 25,
+      "targetIndex": "15",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "radius": "10",
+            "intensity": "1.5"
+          },
+          "rationale": "glow hit",
+          "type": "glow"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 391,
+      "sourceStartTime": 390,
+      "targetPosition": 26,
+      "targetIndex": "16",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 396,
+      "sourceStartTime": 395,
+      "targetPosition": 27,
+      "targetIndex": "17",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "radius": "10",
+            "intensity": "1.5"
+          },
+          "rationale": "glow hit",
+          "type": "glow"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 401,
+      "sourceStartTime": 400,
+      "targetPosition": 28,
+      "targetIndex": "18",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 406,
+      "sourceStartTime": 405,
+      "targetPosition": 29,
+      "targetIndex": "19",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "radius": "10",
+            "intensity": "1.5"
+          },
+          "rationale": "glow hit",
+          "type": "glow"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 411,
+      "sourceStartTime": 410,
+      "targetPosition": 30,
+      "targetIndex": "20",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 416,
+      "sourceStartTime": 415,
+      "targetPosition": 31,
+      "targetIndex": "21",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "radius": "10",
+            "intensity": "1.5"
+          },
+          "rationale": "glow hit",
+          "type": "glow"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 11,
+      "sourceStartTime": 10,
+      "targetPosition": 32,
+      "targetIndex": "22",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 21,
+      "sourceStartTime": 20,
+      "targetPosition": 33,
+      "targetIndex": "23",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "radius": "10",
+            "intensity": "1.5"
+          },
+          "rationale": "glow hit",
+          "type": "glow"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 31,
+      "sourceStartTime": 30,
+      "targetPosition": 34,
+      "targetIndex": "24",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 41,
+      "sourceStartTime": 40,
+      "targetPosition": 35,
+      "targetIndex": "25",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "radius": "10",
+            "intensity": "1.5"
+          },
+          "rationale": "glow hit",
+          "type": "glow"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 51,
+      "sourceStartTime": 50,
+      "targetPosition": 36,
+      "targetIndex": "26",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 61,
+      "sourceStartTime": 60,
+      "targetPosition": 37,
+      "targetIndex": "27",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "radius": "10",
+            "intensity": "1.5"
+          },
+          "rationale": "glow hit",
+          "type": "glow"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 71,
+      "sourceStartTime": 70,
+      "targetPosition": 38,
+      "targetIndex": "28",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 81,
+      "sourceStartTime": 80,
+      "targetPosition": 39,
+      "targetIndex": "29",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "radius": "10",
+            "intensity": "1.5"
+          },
+          "rationale": "glow hit",
+          "type": "glow"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 91,
+      "sourceStartTime": 90,
+      "targetPosition": 40,
+      "targetIndex": "30",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "intensity": 1,
+          "params": {
+            "amount": "15"
+          },
+          "rationale": "chromatic aberration hit",
+          "type": "chromatic-aberration"
+        }
+      ],
+      "rationale": "climax hit, peak energy, motionPeak .9",
+      "sourceEndTime": 101,
+      "sourceStartTime": 100,
+      "targetPosition": 41,
+      "targetIndex": "31",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.4
+        }
+      ],
+      "effectSpecs": [
+        {
+          "duration": 1,
+          "intensity": 1,
+          "params": {
+            "amount": "50",
+            "midpoint": "0.5",
+            "feather": "0.3"
+          },
+          "rationale": "vignette landing",
+          "type": "vignette"
+        }
+      ],
+      "rationale": "landing, final beat, motionPeak .5",
+      "sourceEndTime": 413,
+      "sourceStartTime": 410,
+      "targetPosition": 42,
+      "targetIndex": "32",
+      "trackIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "animation": "pop",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.2,
+      "color": "#FFFFFF",
+      "content": "THE BEST OF PODCASTS",
+      "duration": 2,
+      "fontFamily": "sans-serif",
+      "fontSize": 48,
+      "position": {
+        "x": 0.5,
+        "y": 0.3
+      },
+      "rationale": "hook text, pop animation",
+      "startTime": 0.5,
+      "style": "title"
+    },
+    {
+      "animation": "slide-up",
+      "animationInSec": 0.3,
+      "animationOutSec": 0.3,
+      "color": "#FFFFFF",
+      "content": "MOMENTS",
+      "duration": 1.5,
+      "fontFamily": "sans-serif",
+      "fontSize": 36,
+      "position": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "rationale": "build text, slide-up animation",
+      "startTime": 15.5,
+      "style": "callout"
+    },
+    {
+      "animation": "fade",
+      "animationInSec": 0.5,
+      "animationOutSec": 0.5,
+      "color": "#FFFFFF",
+      "content": "WATCH MORE",
+      "duration": 2.5,
+      "fontFamily": "sans-serif",
+      "fontSize": 24,
+      "position": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "rationale": "landing text, fade animation",
+      "startTime": 42,
+      "style": "subtitle"
+    }
+  ],
+  "effects": [],
+  "transitions": [
+    {
+      "afterSegmentIndex": 6,
+      "duration": 0.3,
+      "rationale": "chapter change transition",
+      "type": "glitch"
+    },
+    {
+      "afterSegmentIndex": 31,
+      "duration": 0.5,
+      "rationale": "landing transition",
+      "type": "crossfade"
+    }
+  ],
+  "audioDecisions": [
+    {
+      "duration": 45,
+      "rationale": "podcast audio as bed",
+      "sourceVideoId": "video-1",
+      "type": "music",
+      "volume": 0.7
+    },
+    {
+      "duration": 0.2,
+      "rationale": "impact hit on climax beat",
+      "sourceVideoId": "video-1",
+      "startTime": 20,
+      "type": "sfx"
+    }
+  ],
+  "motionMoments": [],
+  "metadata": {
+    "genre": "podcast highlight",
+    "pacing": "medium",
+    "rationale": "A high-energy highlight reel curated from two podcast episodes, featuring rapid cuts and rhythmic emphasis during the climax.",
+    "targetDuration": 45,
+    "targetPlatform": "social-media"
+  }
+}

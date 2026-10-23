@@ -1,0 +1,185 @@
+{
+  "segments": [
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "establishing build, setup for clutch, motionPeak .45",
+      "sourceEndTime": 121,
+      "sourceStartTime": 118,
+      "targetPosition": 0,
+      "sourceVideoId": "video-1",
+      "speed": 1,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "tension build, approaching impact, motionPeak .55",
+      "sourceEndTime": 123.5,
+      "sourceStartTime": 121,
+      "targetPosition": 3,
+      "sourceVideoId": "video-1",
+      "speed": 1,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "the hit, climax of action, motionPeak .92 beat@124.0",
+      "sourceEndTime": 124.5,
+      "sourceStartTime": 123.5,
+      "targetPosition": 5.5,
+      "sourceVideoId": "video-1",
+      "speed": 1,
+      "speedRamp": {
+        "keyframes": [
+          {
+            "easing": "ease-in-out",
+            "speed": 1,
+            "time": 0
+          },
+          {
+            "easing": "ease-in-out",
+            "speed": 2,
+            "time": 0.5
+          },
+          {
+            "easing": "ease-in-out",
+            "speed": 1,
+            "time": 1
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "the kill, payoff, motionPeak .95 beat@124.5",
+      "sourceEndTime": 125.5,
+      "sourceStartTime": 124.5,
+      "targetPosition": 6.5,
+      "sourceVideoId": "video-1",
+      "speed": 1,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "breathe",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "immediate reaction, release of tension, motionPeak .30",
+      "sourceEndTime": 127,
+      "sourceStartTime": 125.5,
+      "targetPosition": 7.5,
+      "sourceVideoId": "video-1",
+      "speed": 1,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "wobble",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "secondary reaction, rhythmic variation, motionPeak .25",
+      "sourceEndTime": 128,
+      "sourceStartTime": 127,
+      "targetPosition": 9,
+      "sourceVideoId": "video-1",
+      "speed": 1,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.6
+        }
+      ],
+      "rationale": "final landing, holding the victory, motionPeak .10",
+      "sourceEndTime": 133,
+      "sourceStartTime": 128,
+      "targetPosition": 10,
+      "sourceVideoId": "video-1",
+      "speed": 1,
+      "effects": []
+    }
+  ],
+  "textElements": [],
+  "effects": [
+    {
+      "params": {
+        "amount": 20
+      },
+      "rationale": "Impact hit on the strike.",
+      "targetSegmentIndex": 2,
+      "type": "chromatic-aberration"
+    },
+    {
+      "params": {
+        "intensity": 1.5,
+        "radius": 15
+      },
+      "rationale": "Visual punch on the kill.",
+      "targetSegmentIndex": 3,
+      "type": "glow"
+    },
+    {
+      "params": {
+        "amount": 30
+      },
+      "rationale": "Subtle focus on the final victory hold.",
+      "targetSegmentIndex": 6,
+      "type": "vignette"
+    }
+  ],
+  "transitions": [],
+  "audioDecisions": [
+    {
+      "duration": 15,
+      "rationale": "Main music bed for the TikTok.",
+      "sourceVideoId": "audio/Timeless (w_ adlibs).mp3",
+      "startTime": 0,
+      "type": "music",
+      "volume": 0.7
+    },
+    {
+      "duration": 1,
+      "rationale": "Highlighting the kill sound effect.",
+      "sourceStartTime": 124.5,
+      "sourceVideoId": "video-1",
+      "startTime": 6.5,
+      "type": "sfx",
+      "volume": 1
+    }
+  ],
+  "motionMoments": [],
+  "metadata": {
+    "genre": "Gaming/Clutch",
+    "pacing": "medium",
+    "rationale": "A high-intensity 15s TikTok focusing on a single clutch moment, cold-opening on the action and holding the payoff.",
+    "targetDuration": 15,
+    "targetPlatform": "TikTok"
+  }
+}

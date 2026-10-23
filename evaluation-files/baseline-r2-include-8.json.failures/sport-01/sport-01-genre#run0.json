@@ -1,0 +1,482 @@
+{
+  "id": "sport-01/sport-01-genre",
+  "run": 0,
+  "projectId": "sport-01",
+  "promptId": "sport-01-genre",
+  "promptType": "genre",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 1 and 2 overlap in time on the same track (1.50-3.50s vs 3.00-6.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 4 and 5 overlap in time on the same track (10.50-14.50s vs 13.50-17.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 6 and 7 overlap in time on the same track (17.00-20.50s vs 19.50-23.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 7 and 8 overlap in time on the same track (19.50-23.00s vs 22.50-26.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 8 and 9 overlap in time on the same track (22.50-26.00s vs 24.50-28.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 9 and 10 overlap in time on the same track (24.50-28.50s vs 27.50-30.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 1 and 2 overlap in time on the same track (1.50-3.50s vs 3.00-6.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.2.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 4 and 5 overlap in time on the same track (10.50-14.50s vs 13.50-17.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.5.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 6 and 7 overlap in time on the same track (17.00-20.50s vs 19.50-23.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.7.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 7 and 8 overlap in time on the same track (19.50-23.00s vs 22.50-26.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.8.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 8 and 9 overlap in time on the same track (22.50-26.00s vs 24.50-28.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.9.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 9 and 10 overlap in time on the same track (24.50-28.50s vs 27.50-30.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.10.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "High-impact hook to grab attention.",
+        "sourceEndTime": 1.5,
+        "sourceStartTime": 0,
+        "targetPosition": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Fast-paced follow-up to the hook.",
+        "sourceEndTime": 3.5,
+        "sourceStartTime": 1.5,
+        "targetPosition": 1.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Establishing shot to set the scene.",
+        "sourceEndTime": 7,
+        "sourceStartTime": 3.5,
+        "targetPosition": 3,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Smooth b-roll to build momentum.",
+        "sourceEndTime": 11,
+        "sourceStartTime": 7,
+        "targetPosition": 6.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Adding raw energy to the sequence.",
+        "sourceEndTime": 15,
+        "sourceStartTime": 11,
+        "targetPosition": 10.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Speed ramp to emphasize the shot attempt.",
+        "sourceEndTime": 18.5,
+        "sourceStartTime": 15,
+        "targetPosition": 13.5,
+        "sourceVideoId": "video-1",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 2,
+              "time": 0.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Revealing the result of the play with a chromatic hit.",
+        "effectSpecs": [
+          {
+            "duration": 0.3,
+            "easing": "linear",
+            "intensity": 0.8,
+            "params": {
+              "amount": 30
+            },
+            "rationale": "Visual hit on the beat.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "sourceEndTime": 22,
+        "sourceStartTime": 18.5,
+        "targetPosition": 16.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "wobble",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Playful beat.",
+        "sourceEndTime": 25.5,
+        "sourceStartTime": 22,
+        "targetPosition": 19.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "tilt-up",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Building tension.",
+        "sourceEndTime": 29,
+        "sourceStartTime": 25.5,
+        "targetPosition": 22.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Intensifying the montage with a glitch hit.",
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "easing": "ease-out",
+            "intensity": 0.7,
+            "params": {
+              "amount": 20,
+              "blockSize": 10,
+              "rgbSplit": 15,
+              "speed": 1
+            },
+            "rationale": "Glitch hit.",
+            "startOffset": 0,
+            "type": "glitch-blocks"
+          }
+        ],
+        "sourceEndTime": 33,
+        "sourceStartTime": 29,
+        "targetPosition": 24.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Fast cut for energy.",
+        "sourceEndTime": 36,
+        "sourceStartTime": 33,
+        "targetPosition": 27.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Impact frame with prism effect.",
+        "effectSpecs": [
+          {
+            "duration": 0.3,
+            "easing": "ease-in-out",
+            "intensity": 0.9,
+            "params": {
+              "amount": 25,
+              "angle": 45,
+              "mix": 0.8
+            },
+            "rationale": "Prism hit.",
+            "startOffset": 0,
+            "type": "prism"
+          }
+        ],
+        "sourceEndTime": 38.5,
+        "sourceStartTime": 36,
+        "targetPosition": 30.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax buildup.",
+        "sourceEndTime": 41,
+        "sourceStartTime": 38.5,
+        "targetPosition": 33.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax: maximum energy and effects.",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "easing": "ease-out",
+            "intensity": 0.7,
+            "params": {
+              "color": "0xFFFFFF",
+              "radius": 15,
+              "strength": 0.8
+            },
+            "rationale": "Edge glow hit.",
+            "startOffset": 0,
+            "type": "edge-glow"
+          }
+        ],
+        "sourceEndTime": 44,
+        "sourceStartTime": 41,
+        "targetPosition": 36.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Deliberate landing to resolve the edit.",
+        "sourceEndTime": 45,
+        "sourceStartTime": 44,
+        "targetPosition": 40.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "STEPH CURRY",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Main title hook.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "slide-up",
+        "content": "THE CHEF",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Character callout.",
+        "startTime": 11.5,
+        "style": "callout"
+      },
+      {
+        "animation": "zoom-blur",
+        "content": "UNSTOPPABLE",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Emphasis on skill.",
+        "startTime": 22.5,
+        "style": "callout"
+      },
+      {
+        "animation": "typewriter",
+        "content": "GOLDEN STATE",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.8
+        },
+        "rationale": "Team branding.",
+        "startTime": 41.5,
+        "style": "lower-third"
+      }
+    ],
+    "effects": [
+      {
+        "params": {
+          "amount": 30
+        },
+        "rationale": "Adding texture to the opening.",
+        "targetSegmentIndex": 0,
+        "type": "grain"
+      },
+      {
+        "params": {
+          "amount": 50
+        },
+        "rationale": "Clean finish.",
+        "targetSegmentIndex": 14,
+        "type": "vignette"
+      }
+    ],
+    "transitions": [
+      {
+        "afterSegmentIndex": 0,
+        "duration": 0.3,
+        "rationale": "Punchy transition for the hook.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 5,
+        "duration": 0.4,
+        "rationale": "Glitch transition to signal intensity increase.",
+        "type": "glitch"
+      },
+      {
+        "afterSegmentIndex": 13,
+        "duration": 0.5,
+        "rationale": "Smooth fade to end.",
+        "type": "dipToBlack"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "High-energy hip-hop track to drive the sports montage.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.7
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on the opening snap-zoom.",
+        "sourceVideoId": "video-1",
+        "startTime": 1.5,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on the chromatic aberration effect.",
+        "sourceVideoId": "video-1",
+        "startTime": 18.5,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on the glitch transition/effect.",
+        "sourceVideoId": "video-1",
+        "startTime": 33,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on the prism effect.",
+        "sourceVideoId": "video-1",
+        "startTime": 36,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on the final edge-glow climax.",
+        "sourceVideoId": "video-1",
+        "startTime": 41,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "sports-montage",
+      "pacing": "fast",
+      "rationale": "A high-energy Steph Curry montage that evolves from clean establishing shots to a dense, effect-heavy climax.",
+      "targetDuration": 45,
+      "targetPlatform": "social-media"
+    }
+  }
+}

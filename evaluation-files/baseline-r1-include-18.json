@@ -1,0 +1,163 @@
+{
+  "generatedAt": "2026-10-09T16:58:27.872Z",
+  "model": "@cf/google/gemma-4-26b-a4b-it",
+  "sampling": {
+    "temperature": 0,
+    "seed": 1234
+  },
+  "runsPerCombo": 1,
+  "corpusFingerprint": "546b64d0357c05db50c70133d9334bbe5037cfbd02745a255cfadc59d34448a3",
+  "cases": 18,
+  "total": 3,
+  "passed": 0,
+  "status": "aborted",
+  "abortReason": "Workers AI quota exhausted after 3/18 case-runs (3 quota errors)",
+  "quotaExcluded": 3,
+  "gateRates": {
+    "planValidates": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "stdev": 0,
+      "perRun": [
+        0
+      ],
+      "validPerRun": [
+        0
+      ]
+    },
+    "materializes": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "stdev": 0,
+      "perRun": [
+        0
+      ],
+      "validPerRun": [
+        0
+      ]
+    },
+    "noClipOverlaps": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "stdev": 0,
+      "perRun": [
+        0
+      ],
+      "validPerRun": [
+        0
+      ]
+    },
+    "allGates": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "stdev": 0,
+      "perRun": [
+        0
+      ],
+      "validPerRun": [
+        0
+      ]
+    }
+  },
+  "determinism": {
+    "allPass": 0,
+    "allFail": 0,
+    "mixed": 0,
+    "mixedIds": [],
+    "incomplete": 0,
+    "incompleteIds": []
+  },
+  "results": [
+    {
+      "id": "game-01/game-01-detailed",
+      "run": 0,
+      "projectId": "game-01",
+      "promptId": "game-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "TOOL_ERROR",
+      "quotaExhausted": true,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [TOOL_ERROR]: cloudflare-ai 429: {\"errors\":[{\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage. (0b36f989-9cae-4780-be26-dabf57ca457c)\",\"code\":4006}],\"success\":false,\"result\":{},\"messages\":[]}"
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 4210,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      }
+    },
+    {
+      "id": "game-01/game-01-vague",
+      "run": 0,
+      "projectId": "game-01",
+      "promptId": "game-01-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": "TOOL_ERROR",
+      "quotaExhausted": true,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [TOOL_ERROR]: cloudflare-ai 429: {\"errors\":[{\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage. (ac3ab3cb-4490-4e15-b865-bc80911a9c08)\",\"code\":4006}],\"success\":false,\"result\":{},\"messages\":[]}"
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 4014,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      }
+    },
+    {
+      "id": "game-01/game-01-genre",
+      "run": 0,
+      "projectId": "game-01",
+      "promptId": "game-01-genre",
+      "promptType": "genre",
+      "ok": false,
+      "toolCode": "TOOL_ERROR",
+      "quotaExhausted": true,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [TOOL_ERROR]: cloudflare-ai 429: {\"errors\":[{\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage. (0891a4d2-eb15-45d7-8587-1dd1de3a7012)\",\"code\":4006}],\"success\":false,\"result\":{},\"messages\":[]}"
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 3099,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      }
+    }
+  ]
+}

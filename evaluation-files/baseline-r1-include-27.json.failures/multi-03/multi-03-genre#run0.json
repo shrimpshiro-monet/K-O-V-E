@@ -1,0 +1,419 @@
+{
+  "id": "multi-03/multi-03-genre",
+  "run": 0,
+  "projectId": "multi-03",
+  "promptId": "multi-03-genre",
+  "promptType": "genre",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 5 and 6 overlap in time on the same track (12.00-16.00s vs 15.00-18.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 5 and 6 overlap in time on the same track (12.00-16.00s vs 15.00-18.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.6.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Hook shot: high energy snap-zoom with chromatic aberration.",
+        "sourceEndTime": 1.5,
+        "sourceStartTime": 0,
+        "targetPosition": 0,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Hook shot: smooth drift to establish Miles Morales.",
+        "sourceEndTime": 1.5,
+        "sourceStartTime": 0,
+        "targetPosition": 1.5,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Establishing Curry's presence.",
+        "sourceEndTime": 7,
+        "sourceStartTime": 5,
+        "targetPosition": 3,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "B-roll of Miles Morales movement.",
+        "sourceEndTime": 13,
+        "sourceStartTime": 10,
+        "targetPosition": 6,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 0.8,
+            "params": {
+              "intensity": 1.5,
+              "radius": 30
+            },
+            "rationale": "Glow hit on the beat.",
+            "startOffset": 0,
+            "type": "glow"
+          }
+        ],
+        "rationale": "Intensifying the edit with a punch-in and glow effect.",
+        "sourceEndTime": 18,
+        "sourceStartTime": 15,
+        "targetPosition": 9,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "tilt-up",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Dynamic upward movement for Miles Morales.",
+        "sourceEndTime": 24,
+        "sourceStartTime": 20,
+        "targetPosition": 12,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "wobble",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Playful movement for Curry's celebration.",
+        "sourceEndTime": 28,
+        "sourceStartTime": 25,
+        "targetPosition": 15,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.9
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 0.9,
+            "params": {
+              "amount": 30,
+              "blockSize": 10,
+              "rgbSplit": 15,
+              "speed": 2
+            },
+            "rationale": "Heavy glitch-blocks signature effect for phase transition.",
+            "startOffset": 0,
+            "type": "glitch-blocks"
+          }
+        ],
+        "rationale": "Transition to phase 3: heavy glitch and whip-shake.",
+        "sourceEndTime": 34,
+        "sourceStartTime": 30,
+        "targetPosition": 18,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.8
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 0.8,
+            "params": {
+              "amount": 20,
+              "angle": 45,
+              "mix": 0.8
+            },
+            "rationale": "Prism split on the speed ramp peak.",
+            "startOffset": 0,
+            "type": "prism"
+          }
+        ],
+        "rationale": "Climax: speed ramp combined with a prism effect.",
+        "sourceEndTime": 37,
+        "sourceStartTime": 35,
+        "targetPosition": 22,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Revealing the action after the ramp.",
+        "sourceEndTime": 40,
+        "sourceStartTime": 38,
+        "targetPosition": 25,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "intensity": 0.7,
+            "params": {
+              "levels": 8,
+              "scale": 2
+            },
+            "rationale": "Dither effect for texture.",
+            "startOffset": 0,
+            "type": "dither"
+          }
+        ],
+        "rationale": "Rapid-fire cut with dither texture.",
+        "sourceEndTime": 43,
+        "sourceStartTime": 41,
+        "targetPosition": 28,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Pulling back from the action.",
+        "sourceEndTime": 44,
+        "sourceStartTime": 42,
+        "targetPosition": 31,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Breathing room before the final hit.",
+        "sourceEndTime": 52,
+        "sourceStartTime": 50,
+        "targetPosition": 34,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Final action beat.",
+        "sourceEndTime": 62,
+        "sourceStartTime": 60,
+        "targetPosition": 37,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.6
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 5,
+            "intensity": 0.5,
+            "params": {
+              "intensity": 0.5,
+              "jitter": 0.5,
+              "scanlines": 0.5
+            },
+            "rationale": "VHS treatment for the final landing.",
+            "startOffset": 0,
+            "type": "vhs"
+          }
+        ],
+        "rationale": "Final resolution with a VHS look.",
+        "sourceEndTime": 67,
+        "sourceStartTime": 65,
+        "targetPosition": 40,
+        "sourceVideoId": "video-2",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "THE GOAT",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.1
+        },
+        "rationale": "Hook title.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "slide-up",
+        "content": "SPIDER-MAN",
+        "duration": 3,
+        "position": {
+          "x": 0.1,
+          "y": 0.8
+        },
+        "rationale": "Character callout.",
+        "startTime": 10,
+        "style": "lower-third"
+      },
+      {
+        "animation": "glitch",
+        "content": "UNSTOPPABLE",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Climax text.",
+        "startTime": 25,
+        "style": "title"
+      },
+      {
+        "animation": "zoom-blur",
+        "content": "WATCH THIS",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Final punchy text.",
+        "startTime": 38,
+        "style": "title"
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 1,
+        "duration": 0.4,
+        "rationale": "Whip pan between hooks.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 6,
+        "duration": 0.3,
+        "rationale": "Flash transition to phase 3.",
+        "type": "flash"
+      },
+      {
+        "afterSegmentIndex": 10,
+        "duration": 0.4,
+        "rationale": "Glitch transition for rhythm.",
+        "type": "glitch"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "No music provided in library.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "silence"
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact on hook shot.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "sfx"
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Glitch transition hit.",
+        "sourceVideoId": "video-1",
+        "startTime": 18,
+        "type": "sfx"
+      },
+      {
+        "duration": 0.4,
+        "rationale": "Beat hit on speed ramp.",
+        "sourceVideoId": "video-1",
+        "startTime": 22,
+        "type": "sfx"
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact on dither effect.",
+        "sourceVideoId": "video-1",
+        "startTime": 28,
+        "type": "sfx"
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "hype-montage",
+      "pacing": "fast",
+      "rationale": "A high-energy montage combining Steph Curry and Miles Morales with rapid cuts, heavy effects, and evolving intensity.",
+      "targetDuration": 45,
+      "targetPlatform": "social-media"
+    }
+  }
+}

@@ -1,0 +1,361 @@
+{
+  "id": "pod-02/pod-02-vague",
+  "run": 0,
+  "projectId": "pod-02",
+  "promptId": "pod-02-vague",
+  "promptType": "vague",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [invalid_freeze_frame] Segment 2 freeze frame 0 is invalid."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "invalid_freeze_frame",
+      "message": "Segment 2 freeze frame 0 is invalid.",
+      "path": "segments.2.speedRamp.freezeFrames.0"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Hook with a sudden zoom on a weird statement.",
+        "sourceEndTime": 2,
+        "sourceStartTime": 0,
+        "sourceVideoId": "video-1",
+        "targetPosition": 0,
+        "effectSpecs": [
+          {
+            "intensity": 1,
+            "params": {
+              "brightness": 1,
+              "contrast": 1.2,
+              "saturation": 1.3
+            },
+            "rationale": "Coherent color grade for the whole edit.",
+            "type": "colorGrade"
+          }
+        ],
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Reaction shot with text callout.",
+        "sourceEndTime": 8,
+        "sourceStartTime": 5,
+        "sourceVideoId": "video-1",
+        "targetPosition": 2,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Awkward silence freeze frame.",
+        "sourceEndTime": 18,
+        "sourceStartTime": 15,
+        "speedRamp": {
+          "keyframes": [
+            {
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 0.1,
+              "time": 0.5
+            },
+            {
+              "speed": 1,
+              "time": 2
+            }
+          ],
+          "freezeFrames": [
+            {
+              "duration": 1,
+              "sourceTime": 15.5,
+              "startTime": 0.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "sourceVideoId": "video-1",
+        "targetPosition": 5,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "wobble",
+            "intensity": 0.8
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 3,
+            "intensity": 1,
+            "params": {
+              "radius": 50,
+              "strength": 0.8
+            },
+            "type": "fisheye"
+          }
+        ],
+        "rationale": "Funny face distortion.",
+        "sourceEndTime": 28,
+        "sourceStartTime": 25,
+        "sourceVideoId": "video-1",
+        "targetPosition": 8,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "High energy transition shot.",
+        "sourceEndTime": 38,
+        "sourceStartTime": 35,
+        "sourceVideoId": "video-1",
+        "targetPosition": 11,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Reaction with text.",
+        "sourceEndTime": 48,
+        "sourceStartTime": 45,
+        "sourceVideoId": "video-1",
+        "targetPosition": 14,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Quick reaction.",
+        "sourceEndTime": 58,
+        "sourceStartTime": 55,
+        "sourceVideoId": "video-1",
+        "targetPosition": 17,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Raw, shaky reaction.",
+        "sourceEndTime": 73,
+        "sourceStartTime": 70,
+        "sourceVideoId": "video-1",
+        "targetPosition": 20,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "intensity": 0.8,
+            "params": {
+              "amount": 30
+            },
+            "type": "chromatic-aberration"
+          }
+        ],
+        "rationale": "Punchline emphasis with chromatic aberration.",
+        "sourceEndTime": 88,
+        "sourceStartTime": 85,
+        "sourceVideoId": "video-1",
+        "targetPosition": 23,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 1
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 2,
+            "intensity": 1,
+            "params": {
+              "amount": 0.5,
+              "blockSize": 20,
+              "rgbSplit": 15,
+              "speed": 1
+            },
+            "type": "glitch-blocks"
+          }
+        ],
+        "rationale": "Climax with heavy glitch effect.",
+        "sourceEndTime": 105,
+        "sourceStartTime": 100,
+        "sourceVideoId": "video-1",
+        "targetPosition": 26,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Final reaction.",
+        "sourceEndTime": 118,
+        "sourceStartTime": 115,
+        "sourceVideoId": "video-1",
+        "targetPosition": 31,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Final fade out.",
+        "sourceEndTime": 129,
+        "sourceStartTime": 120,
+        "sourceVideoId": "video-1",
+        "targetPosition": 34,
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "Wait, what?",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.3
+        },
+        "rationale": "Hook text.",
+        "startTime": 1,
+        "style": "callout"
+      },
+      {
+        "animation": "fade",
+        "content": "...",
+        "duration": 1.5,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Awkward silence text.",
+        "startTime": 16,
+        "style": "caption"
+      },
+      {
+        "animation": "bounce",
+        "content": "LOL!",
+        "duration": 1.5,
+        "position": {
+          "x": 0.8,
+          "y": 0.2
+        },
+        "rationale": "Reaction text.",
+        "startTime": 46,
+        "style": "callout"
+      },
+      {
+        "animation": "typewriter",
+        "content": "THE END",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.8
+        },
+        "rationale": "Outro text.",
+        "startTime": 43,
+        "style": "title"
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 3,
+        "duration": 0.4,
+        "rationale": "Punchy transition to the funny face.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 8,
+        "duration": 0.5,
+        "rationale": "Glitch transition into the climax.",
+        "type": "glitch"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "Quirky, upbeat music to set a comedic tone.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.6
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Emphasize the awkward silence.",
+        "sourceVideoId": "video-1",
+        "startTime": 15,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Punchline hit.",
+        "sourceVideoId": "video-1",
+        "startTime": 35,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Comedy/Short-form",
+      "pacing": "medium",
+      "rationale": "Using comedic editing tropes like snap-zooms, awkward freeze frames, fisheye distortions, and punchy text to highlight funny moments in the podcast.",
+      "targetDuration": 45,
+      "targetPlatform": "TikTok/Reels"
+    }
+  }
+}

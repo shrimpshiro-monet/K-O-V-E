@@ -1,0 +1,327 @@
+{
+  "id": "multi-01/multi-01-genre",
+  "run": 0,
+  "projectId": "multi-01",
+  "promptId": "multi-01-genre",
+  "promptType": "genre",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [unsupported_effect] Effect \"undefined\" is not supported by the renderer. Supported effects: brightness, contrast, saturation, grayscale, sepia, invert, hue, blur, sharpen, vignette, grain, temperature, tint, tonal, chromaKey, shadow, glow, motion-blur, radial-blur, chromatic-aberration, shader (colorGrade also maps to clip color grading). Signature shader effects: vhs, scanlines, halftone, dither, posterize, duotone, gradient-map, prism, fisheye, wave-warp, edge-glow, speed-lines, glitch-blocks, light-leak, pixelate, kaleidoscope, mirror-tiles, swirl, crt-curve, echo."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "unsupported_effect",
+      "message": "Effect \"undefined\" is not supported by the renderer. Supported effects: brightness, contrast, saturation, grayscale, sepia, invert, hue, blur, sharpen, vignette, grain, temperature, tint, tonal, chromaKey, shadow, glow, motion-blur, radial-blur, chromatic-aberration, shader (colorGrade also maps to clip color grading). Signature shader effects: vhs, scanlines, halftone, dither, posterize, duotone, gradient-map, prism, fisheye, wave-warp, edge-glow, speed-lines, glitch-blocks, light-leak, pixelate, kaleidoscope, mirror-tiles, swirl, crt-curve, echo.",
+      "path": "effects.2.type"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "High-impact hook to grab attention immediately.",
+        "sourceEndTime": 2,
+        "sourceStartTime": 0,
+        "sourceVideoId": "video-2",
+        "targetPosition": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Secondary hook shot to establish the second subject.",
+        "sourceEndTime": 2,
+        "sourceStartTime": 0,
+        "sourceVideoId": "video-2",
+        "targetPosition": 2,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Clean establishment of the first speaker.",
+        "sourceEndTime": 16,
+        "sourceStartTime": 10,
+        "sourceVideoId": "video-2",
+        "targetPosition": 4,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Adding organic movement to the interview footage.",
+        "sourceEndTime": 28,
+        "sourceStartTime": 20,
+        "sourceVideoId": "video-2",
+        "targetPosition": 16,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "B-roll transition to break up the talking heads.",
+        "sourceEndTime": 57,
+        "sourceStartTime": 50,
+        "sourceVideoId": "video-2",
+        "targetPosition": 28,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Intensifying the pace with a sudden movement and speed ramp.",
+        "sourceEndTime": 67,
+        "sourceStartTime": 60,
+        "sourceVideoId": "video-2",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "easing": "ease-in",
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "easing": "ease-out",
+              "speed": 2,
+              "time": 0.5
+            },
+            {
+              "speed": 1,
+              "time": 1.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 35,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax shot with heavy visual treatment and glitch effects.",
+        "sourceEndTime": 108,
+        "sourceStartTime": 100,
+        "sourceVideoId": "video-2",
+        "targetPosition": 42,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Deliberate landing to resolve the edit.",
+        "sourceEndTime": 125,
+        "sourceStartTime": 120,
+        "sourceVideoId": "video-2",
+        "targetPosition": 50,
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "animationInSec": 0.2,
+        "color": "#FFFFFF",
+        "content": "THE DEEP DIVE",
+        "duration": 3,
+        "fontSize": 72,
+        "position": {
+          "x": 0.5,
+          "y": 0.3
+        },
+        "rationale": "Main title hook.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "slide-up",
+        "animationInSec": 0.3,
+        "color": "#EEEEEE",
+        "content": "Expert Perspectives",
+        "duration": 4,
+        "fontSize": 40,
+        "position": {
+          "x": 0.5,
+          "y": 0.8
+        },
+        "rationale": "Contextual subtitle.",
+        "startTime": 5,
+        "style": "subtitle"
+      },
+      {
+        "animation": "typewriter",
+        "animationInSec": 0.5,
+        "color": "#FFFFFF",
+        "content": "Breaking Down the Details...",
+        "duration": 3,
+        "fontSize": 32,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Mid-roll caption.",
+        "startTime": 20,
+        "style": "caption"
+      },
+      {
+        "animation": "bounce",
+        "animationInSec": 0.2,
+        "color": "#FFD700",
+        "content": "UNBELIEVABLE!",
+        "duration": 2,
+        "fontSize": 60,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "High-energy callout on the climax.",
+        "startTime": 32,
+        "style": "callout"
+      },
+      {
+        "animation": "fade",
+        "animationInSec": 0.5,
+        "color": "#FFFFFF",
+        "content": "Watch Full Episode",
+        "duration": 5,
+        "fontSize": 36,
+        "position": {
+          "x": 0.5,
+          "y": 0.9
+        },
+        "rationale": "Final call to action.",
+        "startTime": 40,
+        "style": "lower-third"
+      }
+    ],
+    "effects": [
+      {
+        "params": {
+          "value": 20
+        },
+        "rationale": "Brighten the hook for visual pop.",
+        "targetSegmentIndex": 0,
+        "type": "brightness"
+      },
+      {
+        "params": {
+          "amount": 30
+        },
+        "rationale": "Chromatic aberration on the beat for energy.",
+        "targetSegmentIndex": 5,
+        "type": "chromatic-aberration"
+      },
+      {
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 0.8,
+            "params": {
+              "blockSize": 20,
+              "rgbSplit": 15,
+              "speed": 2
+            },
+            "rationale": "Signature glitch effect for the climax.",
+            "type": "glitch-blocks"
+          },
+          {
+            "duration": 0.4,
+            "intensity": 1.5,
+            "params": {
+              "radius": 20
+            },
+            "rationale": "Glow hit on the climax.",
+            "type": "glow"
+          }
+        ],
+        "targetSegmentIndex": 6
+      }
+    ],
+    "transitions": [
+      {
+        "afterSegmentIndex": 0,
+        "duration": 0.3,
+        "rationale": "Flash transition for the hook.",
+        "type": "flash"
+      },
+      {
+        "afterSegmentIndex": 1,
+        "duration": 0.5,
+        "rationale": "Smooth transition into the body.",
+        "type": "crossfade"
+      },
+      {
+        "afterSegmentIndex": 4,
+        "duration": 0.4,
+        "rationale": "Whip pan to signal the intensity shift.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 6,
+        "duration": 0.6,
+        "rationale": "Clean fade to black for the resolution.",
+        "type": "dipToBlack"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "Driving rhythmic bed for the interview montage.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.6
+      },
+      {
+        "duration": 0.4,
+        "rationale": "Impact hit for the glitch transition and text reveal.",
+        "sourceVideoId": "video-2",
+        "startTime": 32,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Interview/Podcast",
+      "pacing": "medium",
+      "rationale": "A dynamic, high-energy montage of interview highlights designed for social media engagement. It evolves from a clean establishment to a high-intensity climax with glitch effects and speed ramps.",
+      "targetDuration": 45,
+      "targetPlatform": "Social Media (Reels/TikTok)"
+    }
+  }
+}

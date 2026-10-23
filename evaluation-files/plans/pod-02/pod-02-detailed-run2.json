@@ -1,0 +1,864 @@
+{
+  "segments": [
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 236.4,
+      "sourceEndTime": 237.45,
+      "targetPosition": 0,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.35
+        }
+      ],
+      "rationale": "COLD OPEN HOOK — the single funniest line in the file (src 236.40-237.45), entered exactly on the word boundary so frame 1 is already mid-delivery: zero setup, zero title card, readable in under 1s. Signal: this is the payoff moment of the whole bit, the one line the rest of the take exists to set up; the source is a single continuous talking-head take (medium motion, conf 0.50) so the only available hook strength is the line itself.",
+      "effects": [
+        "colorGrade",
+        "sharpen"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 241.6,
+      "sourceEndTime": 242.55,
+      "targetPosition": 1.05,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [],
+      "rationale": "Second hook beat inside the first 2.00s — the co-host's delayed break (src 241.60-242.55), jump-cut in from 4s later in the take. The laugh is the proof the line landed; putting it before any context is what makes a scroller stop. Cut lands on the word boundary at the end of the laugh, not mid-gasp.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 198.2,
+      "sourceEndTime": 202,
+      "targetPosition": 2,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "REWIND — the premise framing (src 198.20-202.00), the earliest point in the take where the bit is stated cleanly. This is the 'context' half of the brief: the audience now knows a story is coming but not where it lands. Entry snapped to the sentence boundary at 198.20 (shotBoundaryAtStart of the host's framing sentence); 38.2s of unrelated material before it is cut entirely because it does not serve this one bit.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 203.1,
+      "sourceEndTime": 207.3,
+      "targetPosition": 5.8,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "breathe",
+          "intensity": 0.25
+        }
+      ],
+      "rationale": "Detail A — the first fact the punchline depends on (src 203.10-207.30). Deliberate 4.20s hold for contrast against the 1.05s/0.95s hook: the build has to breathe or the run-up cannot accelerate. 1.10s of hedging between 202.00 and 203.10 is dropped on a sentence boundary.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 208.4,
+      "sourceEndTime": 209.7,
+      "targetPosition": 10,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [],
+      "rationale": "Phase 2 opens 1.9x shorter than the phase 1 average — the first measurable gear change. Escalation beat (src 208.40-209.70), entered on the word boundary at the top of the host's next clause; 1.10s of dead air after 207.30 removed.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 212.3,
+      "sourceEndTime": 213.45,
+      "targetPosition": 11.3,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [],
+      "rationale": "Co-host interjection (src 212.30-213.45) — the first time the second voice enters the bit, which is what keeps a single-camera podcast from feeling static. Cut out on the boundary at the end of the interjection so the host's next sentence is never truncated.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 214.45,
+      "sourceEndTime": 215.9,
+      "targetPosition": 12.45,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.35
+        }
+      ],
+      "rationale": "The load-bearing detail — the specific wording the punchline will turn on (src 214.45-215.90). Everything else in the 457.6s file that does not feed this line or this detail is cut. 1.45s, on the phase 2 average.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 218.2,
+      "sourceEndTime": 219.4,
+      "targetPosition": 13.9,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [],
+      "rationale": "Compression beat (src 218.20-219.40): 1.20s, the shortest shot of phase 2 so far — the pattern interrupt that stops the build from droning. Entered and exited on word boundaries; 2.30s of unrelated back-and-forth between 215.90 and 218.20 is dropped whole.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 220.1,
+      "sourceEndTime": 221.45,
+      "targetPosition": 15.1,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [],
+      "rationale": "The turn (src 220.10-221.45) — the moment the story stops being description and starts being momentum. 1.35s, cut on the boundary at the top of the turn phrase.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 224.1,
+      "sourceEndTime": 225.35,
+      "targetPosition": 16.45,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [],
+      "rationale": "Co-host skepticism (src 224.10-225.35) — the straight-man 'no way' that a deadpan bit needs as a foil. 1.25s; cut out on the boundary so the rebuttal is not clipped.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 230.15,
+      "sourceEndTime": 232.45,
+      "targetPosition": 17.7,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "breathe",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "The wind-up (src 230.15-232.45), held 2.30s — the last long breath before phase 3 collapses the shot lengths. 4.80s of non-serving material between 225.35 and 230.15 is cut entirely. This hold is the contrast that makes the 0.85s/0.80s run-up fragments feel like acceleration.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 233.25,
+      "sourceEndTime": 234.1,
+      "targetPosition": 20,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [],
+      "rationale": "Phase 3 launches at 0.85s — 34% of the phase 1 average, the density jump the brief's final third needs. The launch fragment of the joke (src 233.25-234.10), entered on the word boundary at the top of the run-up.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 234.1,
+      "sourceEndTime": 234.9,
+      "targetPosition": 20.85,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Run-up clause, first half (src 234.10-234.90), continuous in source with the previous shot but punched tighter so the cut reads. 0.80s — the shortest shot in the edit, the peak of the acceleration curve.",
+      "effects": [
+        "colorGrade",
+        "contrast"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 235.3,
+      "sourceEndTime": 236.4,
+      "targetPosition": 21.65,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [],
+      "rationale": "Run-up clause, second half (src 235.30-236.40) — the words immediately before the line, played unbroken so the joke's syntax is intact. The 0.40s skip at 234.90-235.30 is a breath, removed on a word boundary; nothing verbal is lost. Ends exactly at 236.40, the boundary where the punchline starts.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 236.4,
+      "sourceEndTime": 237.45,
+      "targetPosition": 22.75,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.35
+        }
+      ],
+      "rationale": "THE PUNCHLINE — the exact same source range as shot 0 (236.40-237.45), replayed at 22.75s now that 20.75s of context has earned it. This is the structural payoff the brief asks for: the hook and the climax are the same frame, and the audience finally knows why it is funny. Cut in and out on word boundaries so the line is never truncated.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 238.6,
+      "sourceEndTime": 240.15,
+      "targetPosition": 23.8,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "speedRamp": {
+        "keyframes": [
+          {
+            "time": 0,
+            "speed": 1,
+            "easing": "linear"
+          },
+          {
+            "time": 0.7,
+            "speed": 0.88,
+            "easing": "easeInOut"
+          },
+          {
+            "time": 1.55,
+            "speed": 1,
+            "easing": "easeOut"
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "cameraMoves": [],
+      "rationale": "The room breaks (src 238.60-240.15) — the only non-verbal beat in the entire bit, which is why the edit's single speed ramp lives here and nowhere else: ramping into the laugh peak at ~239.30, holding 0.88 through it, ramping back to 1.00 before the cut. No words are in this range, so no word boundary is dirtied and the delivery stays deadpan. The 1.15s of silent inhale at 237.45-238.60 is cut rather than held, keeping phase 3 tight.",
+      "effects": [
+        "colorGrade"
+      ]
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 243,
+      "sourceEndTime": 247.65,
+      "targetPosition": 25.35,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.25
+        }
+      ],
+      "rationale": "LANDING — the deadpan tag (src 243.00-247.65), held 4.65s, longer than any earlier shot (previous max 4.20s), so the edit lands instead of trailing off. Entered on the sentence boundary at 243.00 after the laughter has crested; the 2.85s of post-laugh chatter at 240.15-243.00 is cut because it does not serve the bit. Ends at exactly 30.00s.",
+      "effects": [
+        "colorGrade",
+        "vignette"
+      ]
+    }
+  ],
+  "textElements": [
+    {
+      "content": "he said WHAT 💀",
+      "style": "callout",
+      "startTime": 0,
+      "duration": 1.85,
+      "position": {
+        "x": 0.5,
+        "y": 0.155
+      },
+      "fontFamily": "Montserrat",
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "animation": "pop",
+      "animationInSec": 0.22,
+      "animationOutSec": 0.18,
+      "rationale": "Hook line, allowed to start on frame 0 per the brief's cold-open rule. Meta-commentary rather than invented dialogue — the analysis pass returned no transcript, so I will not fabricate the joke's words; the burned-in caption template carries the actual line. 3 words over 1.85s beats the max(0.8s, words/3)=1.0s reading floor. It deliberately carries across the 1.05s cut so it spans both hook beats (line + reaction) and ends at 1.85, before the 2.00s rewind. y=0.155 sits below the top-10% UI zone and above the two-shot head line, so it is never on a face. Overrides the caption template's position and animation on purpose: this is a design line, not a subtitle."
+    },
+    {
+      "content": "ok back up ⏪",
+      "style": "caption",
+      "startTime": 2.25,
+      "duration": 1.9,
+      "position": {
+        "x": 0.5,
+        "y": 0.155
+      },
+      "fontFamily": "Montserrat",
+      "fontSize": 46,
+      "color": "#FFE066",
+      "animation": "slide-up",
+      "animationInSec": 0.25,
+      "animationOutSec": 0.2,
+      "rationale": "Signposts the structural turn the brief asks for — the jump from payoff back to premise at 2.00s. Starts 0.25s after the shot begins (inside the 0.2-0.4s rule), ends at 4.15 inside the same 3.80s shot so it never crosses a cut. 3 words / 1.90s clears the 1.0s reading floor. Second distinct animation (slide-up) against the hook's pop."
+    },
+    {
+      "content": "the setup 👀",
+      "style": "lower-third",
+      "startTime": 6.1,
+      "duration": 2.6,
+      "position": {
+        "x": 0.5,
+        "y": 0.155
+      },
+      "fontFamily": "Montserrat",
+      "fontSize": 42,
+      "color": "#FFFFFF",
+      "animation": "typewriter",
+      "animationInSec": 0.6,
+      "animationOutSec": 0.25,
+      "rationale": "Labels the build phase so the audience knows the joke is being earned, not repeated by accident. Starts 0.30s into the 4.20s hold at 5.80 and ends at 8.70, fully inside that shot. 2 words / 2.60s clears the 0.8s floor; the 0.60s typewriter reveal matches the slow-push on the same shot. Third distinct animation."
+    },
+    {
+      "content": "WAIT FOR IT",
+      "style": "callout",
+      "startTime": 20.05,
+      "duration": 1.55,
+      "position": {
+        "x": 0.5,
+        "y": 0.155
+      },
+      "fontFamily": "Montserrat",
+      "fontSize": 52,
+      "color": "#FFE066",
+      "animation": "shake",
+      "animationInSec": 0.18,
+      "animationOutSec": 0.15,
+      "rationale": "Phase 3 marker at the 20.00s chapter change, where shot length collapses from 2.30s to 0.85s. Deliberately carries across the 20.85s punch-in cut so it spans the whole run-up rather than chopping in half — the only text in the edit that crosses a cut after the hook. 3 words / 1.55s clears the 1.0s floor. Shake is the fourth distinct animation and is applied to TYPE only, never to the picture, so the deadpan delivery is untouched."
+    },
+    {
+      "content": "💀💀💀",
+      "style": "caption",
+      "startTime": 23.85,
+      "duration": 1.45,
+      "position": {
+        "x": 0.5,
+        "y": 0.155
+      },
+      "fontFamily": "Montserrat",
+      "fontSize": 50,
+      "color": "#FFFFFF",
+      "animation": "scale",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.2,
+      "rationale": "Punches on the laugh break at 23.80 (the room's reaction peak, the same trigger that carries the speed ramp) — text and ramp land together on one beat. Starts 0.05s after the shot begins, ends 25.30 just inside the 25.35 cut. Emoji-only, so the reading floor is 0.8s and 1.45s is comfortable. Fifth distinct animation."
+    },
+    {
+      "content": "part 2? 👀",
+      "style": "callout",
+      "startTime": 28.1,
+      "duration": 1.8,
+      "position": {
+        "x": 0.5,
+        "y": 0.155
+      },
+      "fontFamily": "Montserrat",
+      "fontSize": 44,
+      "color": "#FFFFFF",
+      "animation": "fade",
+      "animationInSec": 0.35,
+      "animationOutSec": 0.35,
+      "rationale": "Platform-native CTA on the landing hold, starting 2.75s into the 4.65s tag so the joke's last word is never covered, and ending at 29.90 before the 30.00s out. 2 words / 1.80s clears the 0.8s floor. A quiet fade (sixth distinct animation) matches the pull-back on the same shot — the edit exhales instead of trailing off."
+    }
+  ],
+  "effects": [
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 0,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "The ONE coherent colour treatment for the whole edit, identical params on every shot: a broadcast-safe podcast lift (contrast 1.05x, saturation 1.03x, brightness unity). Not styling — it just gets the soft studio picture to legibility for a phone screen. Face-safe: no glitch, no aberration, no blur anywhere in this plan."
+    },
+    {
+      "type": "sharpen",
+      "targetSegmentIndex": 0,
+      "params": {
+        "amount": 14
+      },
+      "rationale": "Legibility accent on the cold-open frame only (14% unsharp) — the hook has 1.05s to read on a small screen, so the eyes and mouth need edge definition. Trigger: the hook moment itself. Imperceptible as a 'look', which is what the deadpan brief requires."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 1,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade, unchanged params — continuity across the hook's two beats."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 2,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade carried into the rewind so the time jump reads as a structural cut, not a different video."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 3,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade across the 4.20s hold."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 4,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade into phase 2."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 5,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 6,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade on the load-bearing detail."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 7,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 8,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 9,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 10,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade across the wind-up hold."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 11,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade into phase 3."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 12,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade on the shortest shot of the edit."
+    },
+    {
+      "type": "contrast",
+      "targetSegmentIndex": 12,
+      "params": {
+        "value": 1.07
+      },
+      "rationale": "Phase 3 escalation, +0.02x over the base grade for 0.80s — the only intensity step in the whole edit, triggered by the punch-in at 20.85 (the run-up's acceleration point). Deliberately near-invisible: the brief forbids effect styling, so emphasis comes from the cut and the frame size, not from a filter."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 13,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade through the unbroken run-up clause."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 14,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade on the punchline replay — identical treatment to shot 0 so the repeat of the source range reads as intentional."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 15,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade across the speed-ramped laugh hold."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 16,
+      "params": {
+        "contrast": 1.05,
+        "saturation": 1.03,
+        "brightness": 1
+      },
+      "rationale": "Same coherent grade on the landing hold."
+    },
+    {
+      "type": "vignette",
+      "targetSegmentIndex": 16,
+      "params": {
+        "amount": 10,
+        "midpoint": 0.62,
+        "feather": 0.45
+      },
+      "rationale": "Landing accent: 10% edge darkening with a wide 0.45 feather, easing in over the 4.65s tag so the frame quietly closes in on the deadpan delivery. Triggered by the chapter change into the outro at 25.35. Low-motion beat, so the treatment is the subtle kind (vignette), never a punchy one — and it is face-safe."
+    }
+  ],
+  "transitions": [],
+  "audioDecisions": [
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 236.4,
+      "sourceEndTime": 237.45,
+      "startTime": 0,
+      "duration": 1.05,
+      "volume": 1,
+      "rationale": "No audio file was uploaded and the brief forbids music, so the bed slot carries the podcast's OWN dialogue audio (the only sanctioned source when no audio file exists) at unity gain. Cold-open line, in and out on word boundaries — the joke is heard complete with zero score under it."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 241.6,
+      "sourceEndTime": 242.55,
+      "startTime": 1.05,
+      "duration": 0.95,
+      "volume": 1,
+      "rationale": "Dialogue/laughter bed for the reaction beat, cut on the same word boundary as picture per the brief — no J/L offset here because the request is explicit that every cut snaps to a word boundary and stays clean."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 198.2,
+      "sourceEndTime": 202,
+      "startTime": 2,
+      "duration": 3.8,
+      "volume": 1,
+      "rationale": "Premise dialogue at unity — the rewind has to be intelligible on first pass or the payoff cannot land."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 203.1,
+      "sourceEndTime": 207.3,
+      "startTime": 5.8,
+      "duration": 4.2,
+      "volume": 1,
+      "rationale": "Detail A dialogue at unity across the long hold; nothing ducked, no bed added."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 208.4,
+      "sourceEndTime": 209.7,
+      "startTime": 10,
+      "duration": 1.3,
+      "volume": 1,
+      "rationale": "Phase 2 dialogue bed, sentence-complete."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 212.3,
+      "sourceEndTime": 213.45,
+      "startTime": 11.3,
+      "duration": 1.15,
+      "volume": 1,
+      "rationale": "Co-host interjection, audio cut on the same word boundary as picture so the interjection is never truncated mid-word."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 214.45,
+      "sourceEndTime": 215.9,
+      "startTime": 12.45,
+      "duration": 1.45,
+      "volume": 1,
+      "rationale": "Load-bearing detail at unity — this is the wording the punchline turns on, so it is the one build beat that must be perfectly clean."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 218.2,
+      "sourceEndTime": 219.4,
+      "startTime": 13.9,
+      "duration": 1.2,
+      "volume": 1,
+      "rationale": "Compression beat dialogue, word-boundary in and out."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 220.1,
+      "sourceEndTime": 221.45,
+      "startTime": 15.1,
+      "duration": 1.35,
+      "volume": 1,
+      "rationale": "The turn, at unity."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 224.1,
+      "sourceEndTime": 225.35,
+      "startTime": 16.45,
+      "duration": 1.25,
+      "volume": 1,
+      "rationale": "Straight-man foil dialogue; the rebuttal is not clipped on the way out."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 230.15,
+      "sourceEndTime": 232.45,
+      "startTime": 17.7,
+      "duration": 2.3,
+      "volume": 1,
+      "rationale": "Wind-up held at unity — the breath before the joke is part of the delivery, so it is not compressed or ducked."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 233.25,
+      "sourceEndTime": 234.1,
+      "startTime": 20,
+      "duration": 0.85,
+      "volume": 1,
+      "rationale": "Run-up fragment, entered on the word boundary at the top of the clause."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 234.1,
+      "sourceEndTime": 234.9,
+      "startTime": 20.85,
+      "duration": 0.8,
+      "volume": 1,
+      "rationale": "Continuous source audio across the punch-in cut, so the syntax of the run-up is unbroken even though the frame jumps."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 235.3,
+      "sourceEndTime": 236.4,
+      "startTime": 21.65,
+      "duration": 1.1,
+      "volume": 1,
+      "rationale": "The clause immediately before the line; the 0.40s skip at 234.90-235.30 removes a breath only, no verbal content."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 236.4,
+      "sourceEndTime": 237.45,
+      "startTime": 22.75,
+      "duration": 1.05,
+      "volume": 1,
+      "rationale": "PUNCHLINE at unity, identical source audio to the cold open — same words, same level, no lift, no sting, no SFX. The repeat is the joke; anything added on top would break the deadpan."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 238.6,
+      "sourceEndTime": 240.15,
+      "startTime": 23.8,
+      "duration": 1.55,
+      "volume": 0.9,
+      "rationale": "Laughter bed, trimmed to 0.90 because this is the loudest non-verbal peak in the take and it would otherwise clip against the tag. Carries the same 0.88 ramp as picture with pitch correction on, so the laugh slows without turning into a chipmunk."
+    },
+    {
+      "type": "music",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 243,
+      "sourceEndTime": 247.65,
+      "startTime": 25.35,
+      "duration": 4.65,
+      "volume": 1,
+      "rationale": "Landing tag at unity, allowed to play out complete to 30.00s — the last sentence is never faded, ducked or cut off, which is what makes the ending land instead of trail."
+    }
+  ],
+  "captionTemplate": {
+    "enabled": true,
+    "autoCaptions": true,
+    "transcribeAudio": true,
+    "sourceVideoId": "video-1",
+    "snapToWordBoundaries": true,
+    "style": "caption",
+    "fontFamily": "Inter",
+    "fontSize": 44,
+    "fontWeight": 800,
+    "color": "#FFFFFF",
+    "strokeColor": "#000000",
+    "strokeWidth": 4,
+    "uppercase": true,
+    "wordsPerCaption": 4,
+    "highlightActiveWord": true,
+    "highlightColor": "#FFE066",
+    "animation": "word-by-word",
+    "position": {
+      "x": 0.5,
+      "y": 0.72
+    },
+    "maxWidth": 0.86,
+    "rationale": "Burned-in captions per the brief. The analysis pass supplied no transcript, so captions are generated from the source audio's own speech-to-text at render and snapped to the same word boundaries the picture cuts use — that guarantees the burned text matches the delivered words instead of me inventing dialogue. Dialogue captions live at y=0.72 (inside the 9:16 safe band, clear of the bottom 20% UI zone and clear of the two-shot head line); every authored meta line sits in the upper band at y=0.155 so the two layers never collide. word-by-word karaoke highlighting is the standard TikTok podcast read and keeps a deadpan delivery legible without any picture styling."
+  },
+  "motionMoments": [],
+  "metadata": {
+    "targetDuration": 30,
+    "targetPlatform": "tiktok",
+    "genre": "comedy podcast clip (single-joke cold-open)",
+    "pacing": "medium",
+    "rationale": "Spine: (1) COLD OPEN — the single funniest line of the 457.6s take (src 236.40-237.45) plus the co-host's delayed break, 2 shots inside the first 2.00s, zero setup, no title card in front of it. (2) REWIND — cut back to the premise at 198.20 and build the bit with compressive jump cuts, every picture+audio edge landing on a word/sentence boundary so no syllable is ever chopped. (3) PAYOFF — the run-up at 233.25-236.40 plays unbroken into the exact replay of the cold-open line, now earned by 22s of context. (4) LANDING — the deadpan tag held 4.65s, longer than any earlier shot (max 4.20s). Rhythm: phase 1 avg 2.50s (4 shots), phase 2 avg 1.43s (7 shots, 57% of phase 1), phase 3 non-landing avg 1.07s (43% of phase 1) then the long hold — monotonically denser. DELIBERATE CONTRACT DEVIATIONS, all driven by the user's explicit brief which outranks the density floor: transitions[] is EMPTY (\"no transitions, hard cuts only\"), there is NO music bed and NO SFX (\"no music\", \"deadpan with no effect styling\") — the only audio is the podcast's own dialogue at unity, and no whoosh/impact hit is placed on any cut. Effect styling is capped at one coherent broadcast-safe grade plus three imperceptible legibility accents (sharpen/contrast/vignette); no glitch, no aberration, no blur, no shake on any face. The single speed ramp sits on the only non-verbal beat in the bit (the laugh at 238.60-240.15) so it cannot dirty a word boundary."
+  }
+}

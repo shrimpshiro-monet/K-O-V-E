@@ -1,0 +1,196 @@
+{
+  "id": "game-01/game-01-detailed",
+  "run": 0,
+  "projectId": "game-01",
+  "promptId": "game-01-detailed",
+  "promptType": "detailed",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [effect_intensity_out_of_range] Segment 4 effect 0 intensity must be between 0 and 1.; [overlapping_timeline_segments] Segments 2 and 3 overlap in time on the same track (2.00-6.00s vs 3.00-9.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 2 and 4 overlap in time on the same track (2.00-6.00s vs 4.00-7.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "effect_intensity_out_of_range",
+      "message": "Segment 4 effect 0 intensity must be between 0 and 1.",
+      "path": "segments.4.effectSpecs.0.intensity"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 2 and 3 overlap in time on the same track (2.00-6.00s vs 3.00-9.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.3.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 2 and 4 overlap in time on the same track (2.00-6.00s vs 4.00-7.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.4.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 1,
+            "intensity": 0.5,
+            "params": {
+              "amount": 40
+            },
+            "rationale": "Focus the viewer on the start of the action.",
+            "type": "vignette"
+          }
+        ],
+        "rationale": "Cold open: establishing the start of the play.",
+        "sourceEndTime": 101,
+        "sourceStartTime": 100,
+        "targetPosition": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.5
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 1,
+            "intensity": 0.3,
+            "params": {
+              "value": 10
+            },
+            "rationale": "Subtle brightness pop to keep energy up.",
+            "type": "brightness"
+          }
+        ],
+        "rationale": "Quick setup shot to build tension.",
+        "sourceEndTime": 102,
+        "sourceStartTime": 101,
+        "targetPosition": 1,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.4
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 4,
+            "intensity": 0.4,
+            "params": {
+              "amount": 20
+            },
+            "rationale": "Add raw, gritty texture to the buildup.",
+            "type": "grain"
+          }
+        ],
+        "rationale": "Buildup: increasing the tension before the hit.",
+        "sourceEndTime": 106,
+        "sourceStartTime": 102,
+        "targetPosition": 2,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "intensity": 0.8,
+            "params": {
+              "amount": 30
+            },
+            "rationale": "Visual impact of the kill/hit.",
+            "type": "chromatic-aberration"
+          }
+        ],
+        "rationale": "The Climax: the actual clutch moment with a speed ramp and impact effect.",
+        "sourceEndTime": 112,
+        "sourceStartTime": 106,
+        "targetPosition": 3,
+        "speedRamp": {
+          "keyframes": [
+            {
+              "time": 0,
+              "speed": 1
+            },
+            {
+              "time": 1,
+              "speed": 0.4
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.7
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 3,
+            "intensity": 1.5,
+            "params": {
+              "intensity": 1.5,
+              "radius": 20
+            },
+            "rationale": "Glorify the successful play.",
+            "type": "glow"
+          }
+        ],
+        "rationale": "The Payoff: holding the victory moment.",
+        "sourceEndTime": 115,
+        "sourceStartTime": 112,
+        "targetPosition": 4,
+        "sourceVideoId": "video-1",
+        "effects": []
+      }
+    ],
+    "textElements": [],
+    "effects": [],
+    "transitions": [],
+    "audioDecisions": [
+      {
+        "duration": 15,
+        "rationale": "Driving beat for the clutch moment.",
+        "sourceVideoId": "audio-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.6
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Gaming Highlight",
+      "pacing": "fast",
+      "rationale": "A high-intensity 15s TikTok focusing on a single clutch moment, using rhythmic cuts, speed ramps, and impact effects to maximize engagement.",
+      "targetDuration": 15,
+      "targetPlatform": "TikTok"
+    }
+  }
+}

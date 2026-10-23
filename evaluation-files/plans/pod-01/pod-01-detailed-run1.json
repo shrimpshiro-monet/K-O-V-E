@@ -1,0 +1,1057 @@
+{
+  "segments": [
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 24.8,
+      "sourceEndTime": 25.7,
+      "targetPosition": 0,
+      "duration": 0.9,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "snap-zoom",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "HOOK 1/2 — the sharpest thesis line in the intro block ('nobody talks about the boring part'), face centered and readable in under a second; entered at the breath boundary src 24.8 so no word is clipped; snap-zoom 0.9 on frame 0 because the hook is the one place intensity goes to the top of the range.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 33.2,
+      "sourceEndTime": 34.3,
+      "targetPosition": 0.9,
+      "duration": 1.1,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "HOOK 2/2 — the promise line that frames the top-3, giving two shots inside the first 2.0s before any title card; cut at 0.9s on the bed's first downbeat; punch-in 0.8 tightens on the promise and varies the neighbor move.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 61.4,
+      "sourceEndTime": 64.2,
+      "targetPosition": 2,
+      "duration": 2.8,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "No-context setup for point 01 ('most people quit right before it compounds') — the minimum framing a cold viewer needs; entered on the exhale at src 61.4; slow-push 0.3 is the subtle talking-head move that keeps a 2.8s hold intentional without drifting off the face.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 68,
+      "sourceEndTime": 71.2,
+      "targetPosition": 4.8,
+      "duration": 3.2,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.25
+        }
+      ],
+      "rationale": "POINT 01 statement — chapter change at 4.8s, the first of the three numbered beats; cut on the bed downbeat and on the consonant boundary at src 68.0; handheld 0.25 adds presence under the claim, and the vignette hit lands here (see effectSpecs).",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 74.5,
+      "sourceEndTime": 75.4,
+      "targetPosition": 8,
+      "duration": 0.9,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "Jump cut that deletes the filler ('you know, like, sort of') between src 71.2 and 74.5 — the 0.9s emphatic clause is all that survives; entered at the audioEnergy dip after the breath; punch-in 0.5 snaps the stress word closer, a pattern interrupt 3.2s into phase 1.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 82,
+      "sourceEndTime": 86.1,
+      "targetPosition": 8.9,
+      "duration": 4.1,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.35
+        }
+      ],
+      "rationale": "Point 01 payoff/example — the longest hold of phase 1 (4.1s) placed right after the 0.9s insert so the rhythm breathes; cut at src 82.0 on the start of the illustrative sentence; slow-push 0.35 creeps in across the whole explanation.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 96.3,
+      "sourceEndTime": 98.3,
+      "targetPosition": 13,
+      "duration": 2,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Point 01 close plus the spoken bridge into point 02 ('second thing, and this one's quieter') — closes the first 12-15s block on schedule; pull-back 0.3 releases the section and signals a chapter is ending.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 148.2,
+      "sourceEndTime": 149.8,
+      "targetPosition": 15,
+      "duration": 1.6,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "POINT 02 statement opens the second block — chapter change at exactly 15.0s, on the bed downbeat, keeping the one-point-every-12-15s cadence; the tangent between src 98.3 and 148.2 is dropped whole; drift-right 0.3 re-frames the new argument and breaks the pull-back.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 154,
+      "sourceEndTime": 155.8,
+      "targetPosition": 16.6,
+      "duration": 1.8,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.55
+        }
+      ],
+      "rationale": "The second half of point 02's claim ('you need more reps') — jump cut removes the restart at src 152; punch-in 0.55 lands on the word 'reps', the emphasis of the whole point.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 160.5,
+      "sourceEndTime": 161.2,
+      "targetPosition": 18.4,
+      "duration": 0.7,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "Tightest shot of phase 2 (0.7s) — two filler-free words kept from a 4s ramble; entered on the audioEnergy dip at src 160.5; whip-shake 0.5 settles in 0.25s so it is safe to cut out of, and it is the pattern interrupt that opens the dense run.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 165.3,
+      "sourceEndTime": 167.2,
+      "targetPosition": 19.1,
+      "duration": 1.9,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Point 02's supporting clause — the argument stays in source order so the logic reads unbroken despite the jump cuts; slow-push 0.3 contrasts the whip-shake next to it.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 172,
+      "sourceEndTime": 173,
+      "targetPosition": 21,
+      "duration": 0.8,
+      "speed": 1.25,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.2
+        }
+      ],
+      "speedRamp": {
+        "keyframes": [
+          {
+            "time": 0,
+            "speed": 1,
+            "easing": "ease-in"
+          },
+          {
+            "time": 0.35,
+            "speed": 1.45,
+            "easing": "linear"
+          },
+          {
+            "time": 0.8,
+            "speed": 1.1,
+            "easing": "ease-out"
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "rationale": "The edit's single speed ramp, placed on a wordless 1.0s breath-and-gesture pause (src 172.0-173.0) so no syllable is touched: ramps up into the gesture peak at 172.35 and eases back out, compressing dead air to 0.8s and slingshotting the payoff line. pitchCorrection true keeps the voice natural; duration = 1.0s source / 1.25 average speed.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 178.4,
+      "sourceEndTime": 180.2,
+      "targetPosition": 22,
+      "duration": 1.8,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.6
+        }
+      ],
+      "rationale": "Point 02 payoff, arriving straight out of the ramp — the ramp-out at 21.8s is the trigger for the brightness hit; punch-in 0.6 punches the conclusion closer.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 186,
+      "sourceEndTime": 187.5,
+      "targetPosition": 23.799999999999983,
+      "duration": 1.5,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Counterpoint clause that finishes the 'advice vs reps' contrast; jump cut skips the 5s tangent at src 181-186; drift-left 0.3 mirrors the earlier drift-right for variety.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 193.2,
+      "sourceEndTime": 194.5,
+      "targetPosition": 25.299999999999983,
+      "duration": 1.3,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "breathe",
+          "intensity": 0.25
+        }
+      ],
+      "rationale": "Short 1.3s connector inside the dense phase-2 run; entered on the breath at src 193.2; breathe 0.25 keeps a static frame alive without a zoom that would fight the neighboring drift.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 200.6,
+      "sourceEndTime": 202.6,
+      "targetPosition": 26.599999999999994,
+      "duration": 2,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.35
+        }
+      ],
+      "rationale": "Point 02's closing sentence, the one 2.0s hold that gives phase 2 shape before the bridge; slow-push 0.35 leans into the wrap.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 207,
+      "sourceEndTime": 208.6,
+      "targetPosition": 28.599999999999994,
+      "duration": 1.6,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Bridge into the final point ('into the last one, which is the hardest one') — sets up the music drop 1.6s before it happens; pull-back 0.3 opens the frame so the drop has somewhere to land.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 268.4,
+      "sourceEndTime": 269.6,
+      "targetPosition": 30.19999999999999,
+      "duration": 1.2,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "snap-zoom",
+          "intensity": 0.85
+        }
+      ],
+      "rationale": "POINT 03 — chapter change at 30.0s where the 21 Savage bed hard-stops, so the voice arrives naked; snap-zoom 0.85 is the 'moment the music breaks' move, and the contrast hit lands on this same frame (see effectSpecs).",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 273,
+      "sourceEndTime": 274.1,
+      "targetPosition": 31.400000000000034,
+      "duration": 1.1,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.6
+        }
+      ],
+      "rationale": "The final point's claim, delivered a cappella; 1.1s phase-3 shot length; punch-in 0.6 stresses 'nobody's watching you work'.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 277.5,
+      "sourceEndTime": 278.3,
+      "targetPosition": 32.50000000000006,
+      "duration": 0.8,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.45
+        }
+      ],
+      "rationale": "0.8s jump cut removing the 'um, I mean' restart at src 275-277.5; whip-shake 0.45 marks the interrupt and settles before the cut out.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 281.2,
+      "sourceEndTime": 282.5,
+      "targetPosition": 33.30000000000007,
+      "duration": 1.3,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "The reasoning clause ('exactly why the invisible reps count') — keeps the final point self-contained for a viewer with no prior context; slow-push 0.3 steadies the argument.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 286,
+      "sourceEndTime": 286.9,
+      "targetPosition": 34.60000000000008,
+      "duration": 0.9,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "Stress-word insert at the audioEnergy peak on 'count' (src 286.0) — the trigger for the saturation hit; punch-in 0.5 doubles the emphasis without a heavy effect on the face.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 290.4,
+      "sourceEndTime": 291.7,
+      "targetPosition": 35.50000000000006,
+      "duration": 1.3,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.25
+        }
+      ],
+      "rationale": "Phase-3 density continues at 1.3s; the aside at src 288-290 is cut out; handheld 0.25 keeps the a-cappella section from feeling frozen.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 295.8,
+      "sourceEndTime": 296.7,
+      "targetPosition": 36.80000000000007,
+      "duration": 0.9,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "0.9s cutaway-free insert on the turn of the sentence; entered at the breath at src 295.8; drift-right 0.3 varies the neighbor after handheld.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 300.2,
+      "sourceEndTime": 301.6,
+      "targetPosition": 37.700000000000045,
+      "duration": 1.4,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.65
+        }
+      ],
+      "rationale": "The instruction line of the final point ('do the boring rep twice') — the practical takeaway a first-time viewer keeps; punch-in 0.65 is the strongest move of phase 3 short of the hook.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 305.5,
+      "sourceEndTime": 306.4,
+      "targetPosition": 39.10000000000008,
+      "duration": 0.9,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "breathe",
+          "intensity": 0.25
+        }
+      ],
+      "rationale": "Short 0.9s beat that lets the instruction sit before the thesis returns; breathe 0.25 holds the face without a hard zoom.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 310,
+      "sourceEndTime": 311.7,
+      "targetPosition": 40.00000000000006,
+      "duration": 1.7,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Thesis restated, the payoff of the whole 45s — 1.7s, slightly longer than its neighbors so the line can finish; slow-push 0.4 carries it into the landing; vignette hit at 39.8s frames the sentence.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 396.2,
+      "sourceEndTime": 399.49999999999994,
+      "targetPosition": 41.700000000000045,
+      "duration": 3.5,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.35
+        }
+      ],
+      "rationale": "LANDING — the episode's own closing sentence used as the outro so the edit lands instead of trailing off; 3.5s is the longest hold in the cut and the only shot longer than 3.5s of phase 1's 4.1s payoff aside; pull-back 0.35 eases out of the frame on the final word, still a cappella.",
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "content": "3 things that actually move the needle",
+      "style": "callout",
+      "startTime": 0.2,
+      "duration": 2.4,
+      "position": {
+        "x": 0.5,
+        "y": 0.13
+      },
+      "fontSize": 60,
+      "fontFamily": "Archivo Black",
+      "color": "#FFD84D",
+      "animation": "pop",
+      "animationInSec": 0.3,
+      "animationOutSec": 0.2,
+      "rationale": "The one hook line, 0.2s after frame 0 so the two hook shots land first (no title card before the hook). 7 words over 2.4s clears the words/3 reading floor; it deliberately carries across the 2.0s cut. y=0.13 stays out of the top 10% UI zone and well above the face band; the caption track sits at y=0.74 so nothing stacks."
+    },
+    {
+      "content": "01",
+      "style": "title",
+      "startTime": 4.8,
+      "duration": 1.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.16
+      },
+      "fontSize": 120,
+      "fontFamily": "Archivo Black",
+      "color": "#FFD84D",
+      "animation": "scale",
+      "animationInSec": 0.25,
+      "animationOutSec": 0.2,
+      "rationale": "Numbered top-3 marker 1, punched in on the 4.8s chapter change with the vignette hit — the numeral does the counting so the caption track can stay verbatim speech. Ends before the 8.0s cut."
+    },
+    {
+      "content": "02",
+      "style": "title",
+      "startTime": 15,
+      "duration": 1.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.16
+      },
+      "fontSize": 120,
+      "fontFamily": "Archivo Black",
+      "color": "#FFD84D",
+      "animation": "drop",
+      "animationInSec": 0.25,
+      "animationOutSec": 0.2,
+      "rationale": "Numbered top-3 marker 2 on the 15.0s chapter change, coincident with the sfx impact and the tonal hit; 'drop' animation varies the preset from marker 1."
+    },
+    {
+      "content": "03",
+      "style": "title",
+      "startTime": 30,
+      "duration": 1.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.16
+      },
+      "fontSize": 120,
+      "fontFamily": "Archivo Black",
+      "color": "#FFFFFF",
+      "animation": "pop",
+      "animationInSec": 0.25,
+      "animationOutSec": 0.2,
+      "rationale": "Numbered top-3 marker 3 at 30.0s. Deliberate template override to white: the accent yellow belonged to the music-backed sections, and the colour change plus the missing bed signals the final point is the intimate one."
+    },
+    {
+      "content": "nobody talks about the boring part",
+      "style": "caption",
+      "startTime": 0,
+      "duration": 2,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 1/15, verbatim across hook shots 0-1 (6 words in 2.0s = 3.0 wps, at the top of natural speech rate). Starts on frame 0 with the first syllable; inherits the template."
+    },
+    {
+      "content": "most people quit right before it compounds",
+      "style": "caption",
+      "startTime": 2,
+      "duration": 2.8,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 2/15 covering the no-context setup shot (7 words / 2.8s). Zero gap from caption 1 so the burn-in reads as continuous speech."
+    },
+    {
+      "content": "the first thing is showing up on flat days",
+      "style": "caption",
+      "startTime": 4.8,
+      "duration": 3.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 3/15 — point 01's claim, starting exactly on the 4.8s chapter change under the '01' numeral (different y, no stacking). 9 words / 3.2s."
+    },
+    {
+      "content": "not the easy ones — the flat days are where compounding starts",
+      "style": "caption",
+      "startTime": 8,
+      "duration": 5,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 4/15 spans the 0.9s jump-cut insert and the 4.1s payoff hold on purpose — the line is one spoken sentence, so letting it carry across the cut keeps the burn-in synced to speech instead of chopping with picture. 11 words / 5.0s."
+    },
+    {
+      "content": "second thing, and this one's quieter",
+      "style": "caption",
+      "startTime": 13,
+      "duration": 2,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 5/15 on the bridge shot (6 words / 2.0s) — the spoken handoff into point 02."
+    },
+    {
+      "content": "you don't need more information, you need more reps",
+      "style": "caption",
+      "startTime": 15,
+      "duration": 3.4,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 6/15 spans shots 7-8, the full point-02 claim across the jump cut (9 words / 3.4s)."
+    },
+    {
+      "content": "ten reps beats ten more videos",
+      "style": "caption",
+      "startTime": 18.4,
+      "duration": 2.6,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 7/15 across the 0.7s whip-shake insert and the following clause (6 words / 2.6s)."
+    },
+    {
+      "content": "the lesson is inside the rep itself",
+      "style": "caption",
+      "startTime": 21,
+      "duration": 2.6,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 8/15 — starts at 21.0s over the wordless ramped pause and resolves on the payoff line at 21.8s, so the burn-in never shows words nobody is saying (7 words / 2.6s)."
+    },
+    {
+      "content": "not the advice about it — that's the bridge",
+      "style": "caption",
+      "startTime": 23.6,
+      "duration": 2.8,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 9/15 across shots 13-14 (8 words / 2.8s)."
+    },
+    {
+      "content": "into the last one, which is the hardest one",
+      "style": "caption",
+      "startTime": 26.4,
+      "duration": 3.6,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 10/15 — the last caption under music, running to exactly 30.0s where the bed stops (9 words / 3.6s)."
+    },
+    {
+      "content": "third thing — nobody's watching you work",
+      "style": "caption",
+      "startTime": 30,
+      "duration": 2.3,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "slide-up",
+      "rationale": "Open caption 11/15, first line of the a-cappella section. Deliberate animation override to slide-up: the change of preset plus the missing music marks the final point as a different register (6 words / 2.3s)."
+    },
+    {
+      "content": "which is exactly why the invisible reps count",
+      "style": "caption",
+      "startTime": 32.3,
+      "duration": 3,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 12/15 across the dense 0.8s / 1.3s / 0.9s phase-3 run — one sentence, three jump cuts, so the caption holds steady while picture accelerates (8 words / 3.0s)."
+    },
+    {
+      "content": "they're the ones that hold when the motivation doesn't",
+      "style": "caption",
+      "startTime": 35.3,
+      "duration": 3.6,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "word-by-word",
+      "rationale": "Open caption 13/15 across shots 22-24 (9 words / 3.6s)."
+    },
+    {
+      "content": "so let the results make the noise",
+      "style": "caption",
+      "startTime": 38.9,
+      "duration": 2.6,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "fade",
+      "rationale": "Open caption 14/15 — animation eases down to fade as the edit starts resolving toward the landing (7 words / 2.6s)."
+    },
+    {
+      "content": "consistency is the whole idea, that's it",
+      "style": "caption",
+      "startTime": 41.5,
+      "duration": 3.5,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "animation": "fade",
+      "rationale": "Open caption 15/15 on the 3.5s landing hold, ending exactly at 45.0s with the last word — fade delivery matches the pull-back and the sustained grain (7 words / 3.5s, slowest rate in the edit)."
+    }
+  ],
+  "effects": [
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 0,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "The edit's single coherent look, applied verbatim from the hook frame: warm-neutral podcast contrast that separates the speaker from the room without stylising the face."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 2,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Same grade spec as every other anchor shot — one treatment for the whole edit, not a per-shot look; carries phase 1's setup."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 5,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Identical grade on the phase-1 payoff hold so the 4.1s shot matches the hook and the point statement exactly."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 6,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Identical grade across the bridge shot — keeps the seam between point 01 and point 02 invisible."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 10,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Grade continues into phase 2's dense run so the acceleration reads as cutting, not as a style change."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 13,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Same spec, phase 2 counterpoint shot — coherence across the runtime thirds."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 15,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Same spec on the point-02 wrap hold."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 16,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Same spec on the bridge into the final point, so the only change at 30.0s is the missing music."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 20,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Grade carries into phase 3 — the a-cappella section keeps the identical look, which is what makes the music drop feel like an editorial decision rather than a different video."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 22,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Same spec, phase-3 handheld beat."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 24,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Same spec on the takeaway line."
+    },
+    {
+      "type": "colorGrade",
+      "targetSegmentIndex": 25,
+      "params": {
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "brightness": 1.02
+      },
+      "rationale": "Same spec on the pre-landing beat, closing the grade chain that runs hook to landing."
+    }
+  ],
+  "transitions": [],
+  "audioDecisions": [
+    {
+      "type": "music",
+      "sourceVideoId": "audio/21 Savage - a lot ft. J. Cole.mp3",
+      "sourceStartTime": 42,
+      "sourceEndTime": 72,
+      "startTime": 0,
+      "duration": 30,
+      "volume": 0.18,
+      "rationale": "The requested bed, laid low (0.18, deliberately under the default 0.6-0.8 because it must sit under continuous speech) from frame 0 to 30.0s. Starts at 42.0s of the track, a settled groove pocket, so the grid locks to the 0.0s hook and to the 15.0s and 30.0s chapter changes. It hard-stops at exactly 30.0s — the start of POINT 03 — so the final point plays with no music at all, as requested; the cut at 30.0s is the drop."
+    },
+    {
+      "type": "sfx",
+      "sourceVideoId": "audio/21 Savage - a lot ft. J. Cole.mp3",
+      "sourceStartTime": 12.4,
+      "sourceEndTime": 12.65,
+      "startTime": 0,
+      "duration": 0.25,
+      "volume": 0.35,
+      "rationale": "One-shot 808 impact sliced from the same file, landed on frame 0 with the snap-zoom hook — the only accent on the cold open, tied to the hook trigger."
+    },
+    {
+      "type": "sfx",
+      "sourceVideoId": "audio/21 Savage - a lot ft. J. Cole.mp3",
+      "sourceStartTime": 28,
+      "sourceEndTime": 28.3,
+      "startTime": 15,
+      "duration": 0.3,
+      "volume": 0.3,
+      "rationale": "One-shot impact on the 15.0s chapter change into POINT 02, coincident with the tonal hit and the '02' numeral punch — a reveal accent, not decoration on every cut."
+    },
+    {
+      "type": "sfx",
+      "sourceVideoId": "audio/21 Savage - a lot ft. J. Cole.mp3",
+      "sourceStartTime": 55.5,
+      "sourceEndTime": 55.8,
+      "startTime": 30,
+      "duration": 0.3,
+      "volume": 0.32,
+      "rationale": "Single impact marking the music drop and the 30.0s chapter change into POINT 03 — the last non-dialogue sound in the edit, so the following 15s of a-cappella speech stays clean and the drop reads as intentional."
+    }
+  ],
+  "captionTemplate": {
+    "fontFamily": "Inter",
+    "fontSize": 46,
+    "color": "#FFFFFF",
+    "style": "caption",
+    "position": {
+      "x": 0.5,
+      "y": 0.74
+    },
+    "animation": "word-by-word",
+    "animationInSec": 0.2,
+    "animationOutSec": 0.12,
+    "strokeColor": "#000000",
+    "strokeWidth": 4,
+    "textTransform": "lowercase",
+    "maxWidthPct": 0.86,
+    "safeArea": {
+      "top": 0.1,
+      "bottom": 0.2
+    },
+    "rationale": "Single template for all 15 open captions: word-by-word karaoke reveal keeps the burn-in locked to the speaker's delivery, heavy black stroke holds legibility over the graded frame, y=0.74 stays above the Shorts caption/UI zone and below the face band. Elements inherit this and only override deliberately (numerals, hook callout, the music-drop line, the landing lines)."
+  },
+  "motionMoments": [],
+  "metadata": {
+    "targetDuration": 45,
+    "targetPlatform": "youtube-shorts (9:16, 1080x1920)",
+    "genre": "educational podcast short — talking-head teach, numbered top-3",
+    "pacing": "medium",
+    "rationale": "One clear idea (consistency beats intensity) delivered as a numbered top-3 from podcast #1.mp4. Spine: 0.0-2.0 two-shot cold-open hook (thesis line + the promise of three), 2.0-4.8 no-context setup, POINT 01 at 4.8-13.0, bridge 13.0-15.0, POINT 02 at 15.0-28.4, bridge 28.4-30.0, POINT 03 at 30.0-45.0 with the music dropped entirely and a 3.5s held landing. Point spacing 4.8 / 15.0 / 30.0 = roughly one point every 12-15s as requested. All 28 cuts are hard cuts — transitions[] is intentionally EMPTY because the request explicitly forbids transitions. Every cut lands on a breath/consonant boundary (audioEnergy dip) so no word is truncated and the speaker's original wording survives exactly; picture and audio cut together because the request demands jump cuts plus captions synced to speech (a J/L offset would desync the burn-ins). Rhythm: phase 1 avg 2.14s (7 shots), phase 2 avg 1.50s = 70% (10 shots), phase 3 avg 1.36s = 64% overall and 1.15s = 54% across the 10-shot body before the 3.5s landing hold, which is longer than any earlier shot. Look: ONE coherent grade (colorGrade contrast 1.10 / saturation 1.05 / brightness 1.02) reused verbatim on 12 anchor shots across all three phases — warm-neutral podcast contrast, no per-shot styling. All 8 accent hits are grade-family only (brightness, vignette, tonal, contrast, saturation, grain) because this is a face-forward talking head: no glitch, no aberration, no blur on the speaker. Hits escalate 0.5 -> 0.9 intensity across phases and each is triggered by the hook beat, a numbered-point chapter change, the post-ramp payoff, or the music drop. Audio: 21 Savage 'a lot' bed at 0.18 from 0.0-30.0 (low under dialogue per request, overriding the default 0.6-0.8 bed level), hard-stopped at 30.0 so the final point plays a cappella; three low 808 slices from the same file act as impacts on the hook and the two chapter changes. 19 text elements: 1 hook callout, 3 big numerals, 15 continuous open captions covering 0.0-45.0 with zero gaps, each sized to >= words/3 reading time at ~2.6 words/sec so they read as verbatim speech; captions sit at y=0.74 (clear of the bottom 20% UI) and numerals at y=0.16 (clear of the top 10%), never over the face band."
+  }
+}

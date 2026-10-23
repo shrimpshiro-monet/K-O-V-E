@@ -1,0 +1,408 @@
+{
+  "id": "multi-02/multi-02-vague",
+  "run": 0,
+  "projectId": "multi-02",
+  "promptId": "multi-02-vague",
+  "promptType": "vague",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 6 and 7 overlap in time on the same track (18.50-20.50s vs 20.00-22.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 8 and 9 overlap in time on the same track (22.00-24.00s vs 23.00-24.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 6 and 7 overlap in time on the same track (18.50-20.50s vs 20.00-22.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.7.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 8 and 9 overlap in time on the same track (22.00-24.00s vs 23.00-24.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.9.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "High-impact hook to grab attention immediately.",
+        "sourceEndTime": 1.5,
+        "sourceStartTime": 0,
+        "sourceVideoId": "video-2",
+        "targetPosition": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Quick cut to establish the second subject.",
+        "sourceEndTime": 1.5,
+        "sourceStartTime": 0,
+        "sourceVideoId": "video-2",
+        "targetPosition": 1.5,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Establishing shot with clean text.",
+        "sourceEndTime": 7,
+        "sourceStartTime": 5,
+        "sourceVideoId": "video-2",
+        "targetPosition": 3,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Smooth transition into the body of the edit.",
+        "sourceEndTime": 13,
+        "sourceStartTime": 10,
+        "sourceVideoId": "video-2",
+        "targetPosition": 7,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Intensifying the pace with a speed ramp.",
+        "sourceEndTime": 22,
+        "sourceStartTime": 20,
+        "sourceVideoId": "video-2",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "easing": "ease-in",
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "easing": "ease-out",
+              "speed": 2,
+              "time": 1
+            },
+            {
+              "speed": 1,
+              "time": 2
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 15,
+        "effects": []
+      },
+      {
+        "effectSpecs": [
+          {
+            "duration": 0.3,
+            "intensity": 0.8,
+            "params": {
+              "amount": 25
+            },
+            "rationale": "Punchy chromatic aberration on the beat.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Quick, punchy shot to increase energy.",
+        "sourceEndTime": 31.5,
+        "sourceStartTime": 30,
+        "sourceVideoId": "video-2",
+        "targetPosition": 17,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Adding texture and movement.",
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "intensity": 0.7,
+            "params": {
+              "radius": 20,
+              "intensity": 1.5
+            },
+            "rationale": "Subtle glow hit.",
+            "startOffset": 0,
+            "type": "glow"
+          }
+        ],
+        "sourceEndTime": 47,
+        "sourceStartTime": 45,
+        "sourceVideoId": "video-2",
+        "targetPosition": 18.5,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "tilt-up",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Building towards the climax.",
+        "sourceEndTime": 57,
+        "sourceStartTime": 55,
+        "sourceVideoId": "video-2",
+        "targetPosition": 20,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax shot with signature effect.",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 1,
+            "params": {
+              "amount": 40,
+              "angle": 45,
+              "mix": 0.8
+            },
+            "rationale": "Signature prism effect for high impact.",
+            "startOffset": 0,
+            "type": "prism"
+          }
+        ],
+        "sourceEndTime": 72,
+        "sourceStartTime": 70,
+        "sourceVideoId": "video-2",
+        "targetPosition": 22,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Maximum intensity with glitch effect.",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 0.9,
+            "params": {
+              "amount": 30,
+              "blockSize": 15,
+              "rgbSplit": 0.5,
+              "speed": 2
+            },
+            "rationale": "Signature glitch-blocks for the peak.",
+            "startOffset": 0,
+            "type": "glitch-blocks"
+          }
+        ],
+        "sourceEndTime": 86.5,
+        "sourceStartTime": 85,
+        "sourceVideoId": "video-2",
+        "targetPosition": 23,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Slowing down for the resolution.",
+        "sourceEndTime": 103,
+        "sourceStartTime": 100,
+        "sourceVideoId": "video-2",
+        "targetPosition": 25,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Final shot with a clean landing.",
+        "sourceEndTime": 114,
+        "sourceStartTime": 110,
+        "sourceVideoId": "video-2",
+        "targetPosition": 28,
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "THE",
+        "duration": 1.5,
+        "position": {
+          "x": 0.5,
+          "y": 0.3
+        },
+        "rationale": "Title part 1.",
+        "startTime": 4,
+        "style": "title"
+      },
+      {
+        "animation": "slide-up",
+        "content": "ULTIMATE",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.3
+        },
+        "rationale": "Title part 2.",
+        "startTime": 8,
+        "style": "title"
+      },
+      {
+        "animation": "zoom-blur",
+        "content": "WATCH",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.7
+        },
+        "rationale": "Call to action.",
+        "startTime": 26,
+        "style": "callout"
+      },
+      {
+        "animation": "fade",
+        "content": "MORE",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.7
+        },
+        "rationale": "Final call to action.",
+        "startTime": 42,
+        "style": "callout"
+      }
+    ],
+    "effects": [
+      {
+        "params": {
+          "brightness": 1.1,
+          "contrast": 1.1,
+          "saturation": 1.1
+        },
+        "rationale": "Coherent color grade for the whole edit.",
+        "type": "colorGrade"
+      }
+    ],
+    "transitions": [
+      {
+        "afterSegmentIndex": 1,
+        "duration": 0.5,
+        "rationale": "Smooth transition between hooks.",
+        "type": "crossfade"
+      },
+      {
+        "afterSegmentIndex": 3,
+        "duration": 0.4,
+        "rationale": "Energetic transition into the body.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 7,
+        "duration": 0.3,
+        "rationale": "Flash transition for the climax.",
+        "type": "flash"
+      },
+      {
+        "afterSegmentIndex": 9,
+        "duration": 0.4,
+        "rationale": "Glitch transition for the peak.",
+        "type": "glitch"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "No music provided in library, using silence as placeholder.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.5
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on the opening snap-zoom.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on the speed ramp transition.",
+        "sourceVideoId": "video-1",
+        "startTime": 15,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.4,
+        "rationale": "Impact hit on the prism effect.",
+        "sourceVideoId": "video-1",
+        "startTime": 30,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Impact hit on the glitch-blocks effect.",
+        "sourceVideoId": "video-1",
+        "startTime": 35,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Highlight Reel",
+      "pacing": "medium",
+      "rationale": "A high-energy montage showcasing the best of both clips with evolving density, camera movement, and signature effects.",
+      "targetDuration": 45,
+      "targetPlatform": "Social Media"
+    }
+  }
+}

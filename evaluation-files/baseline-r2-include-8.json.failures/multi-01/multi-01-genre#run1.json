@@ -1,0 +1,348 @@
+{
+  "id": "multi-01/multi-01-genre",
+  "run": 1,
+  "projectId": "multi-01",
+  "promptId": "multi-01-genre",
+  "promptType": "genre",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [invalid_text_timing] Text element 1 must have a positive duration."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "invalid_text_timing",
+      "message": "Text element 1 must have a positive duration.",
+      "path": "textElements.1.duration"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Hook: clean establishment.",
+        "sourceEndTime": 3,
+        "sourceStartTime": 0,
+        "targetPosition": 0,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Hook: secondary visual.",
+        "sourceEndTime": 3,
+        "sourceStartTime": 0,
+        "targetPosition": 3,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Establishing the scene.",
+        "sourceEndTime": 14,
+        "sourceStartTime": 10,
+        "targetPosition": 6,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Intensifying the focus.",
+        "effectSpecs": [
+          {
+            "duration": 0.3,
+            "intensity": 0.8,
+            "params": {
+              "amount": 25
+            },
+            "rationale": "Punchy chromatic aberration on the hit.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "sourceEndTime": 24,
+        "sourceStartTime": 20,
+        "targetPosition": 10,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Speed ramp through transitionary footage.",
+        "sourceEndTime": 105,
+        "sourceStartTime": 100,
+        "targetPosition": 14,
+        "sourceVideoId": "video-2",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "easing": "ease-in",
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "easing": "ease-out",
+              "speed": 2,
+              "time": 1.5
+            },
+            {
+              "easing": "ease-in",
+              "speed": 1,
+              "time": 3.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Dynamic shift.",
+        "sourceEndTime": 154,
+        "sourceStartTime": 150,
+        "targetPosition": 19,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "tilt-up",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Building momentum.",
+        "sourceEndTime": 204,
+        "sourceStartTime": 200,
+        "targetPosition": 23,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax: high energy hit.",
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "intensity": 0.9,
+            "params": {
+              "blockSize": 10,
+              "rgbSplit": 15,
+              "speed": 5
+            },
+            "rationale": "Glitch block hit on the snap-zoom.",
+            "startOffset": 0,
+            "type": "glitch-blocks"
+          }
+        ],
+        "sourceEndTime": 304,
+        "sourceStartTime": 300,
+        "targetPosition": 27,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Climax: sustained energy.",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 0.8,
+            "params": {
+              "intensity": 2,
+              "radius": 40
+            },
+            "rationale": "Glow effect to emphasize the peak.",
+            "startOffset": 0,
+            "type": "glow"
+          }
+        ],
+        "sourceEndTime": 355,
+        "sourceStartTime": 350,
+        "targetPosition": 31,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Resolution: calming the edit.",
+        "effectSpecs": [
+          {
+            "duration": 4,
+            "intensity": 0.7,
+            "params": {
+              "amount": 60
+            },
+            "rationale": "Subtle vignette for the landing.",
+            "startOffset": 0,
+            "type": "vignette"
+          }
+        ],
+        "sourceEndTime": 409,
+        "sourceStartTime": 400,
+        "targetPosition": 36,
+        "sourceVideoId": "video-2",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "The Deep Dive",
+        "duration": 3.5,
+        "position": {
+          "x": 0.5,
+          "y": 0.15
+        },
+        "rationale": "Main title hook.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "slide-up",
+        "content": "Podcast Series",
+        "duration": "",
+        "position": {
+          "x": 0.1,
+          "y": 0.85
+        },
+        "rationale": "Contextual subtitle.",
+        "startTime": 5,
+        "style": "subtitle"
+      },
+      {
+        "animation": "scale",
+        "content": "Key Insights",
+        "duration": 4,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Mid-edit callout.",
+        "startTime": 20,
+        "style": "callout"
+      },
+      {
+        "animation": "typewriter",
+        "content": "Subscribe for more",
+        "duration": 5,
+        "position": {
+          "x": 0.5,
+          "y": 0.9
+        },
+        "rationale": "Final CTA.",
+        "startTime": 40,
+        "style": "caption"
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 1,
+        "duration": 1.5,
+        "rationale": "Smooth transition between hooks.",
+        "type": "crossfade"
+      },
+      {
+        "afterSegmentIndex": 4,
+        "duration": 0.3,
+        "rationale": "Whip into the ramp.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 7,
+        "duration": 0.3,
+        "rationale": "Glitch transition for the climax.",
+        "type": "glitch"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "Using podcast audio as a rhythmic bed.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.5
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on punch-in.",
+        "sourceVideoId": "video-2",
+        "startTime": 10,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on snap-zoom.",
+        "sourceVideoId": "video-2",
+        "startTime": 27,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on climax.",
+        "sourceVideoId": "video-2",
+        "startTime": 31,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Podcast/Interview",
+      "pacing": "medium",
+      "rationale": "A professional montage of interview highlights, evolving from clean establishment to high-energy impact.",
+      "targetDuration": 45,
+      "targetPlatform": "Social Media"
+    }
+  }
+}

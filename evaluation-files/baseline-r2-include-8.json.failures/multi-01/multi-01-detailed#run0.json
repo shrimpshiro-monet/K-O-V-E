@@ -1,0 +1,255 @@
+{
+  "id": "multi-01/multi-01-detailed",
+  "run": 0,
+  "projectId": "multi-01",
+  "promptId": "multi-01-detailed",
+  "promptType": "detailed",
+  "toolCode": "EDIT_PLAN_APPLY_FAILED",
+  "failures": [
+    "plan_edit failed [EDIT_PLAN_APPLY_FAILED]: EditPlan was valid but could not be applied: Could not add planned music: \"audio_dave_raindance\" is not a media library id or name. Available audio/video media: video-1 (podcast #1.mp4), video-2 (podcast 2.mp4), audio-1 (audio/Dave - Raindance (ft. Tems).mp3).. The timeline was left at its previous revision (9 partial artifact(s) removed)."
+  ],
+  "warnings": [],
+  "issues": [],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Cold open with the strongest emotional hook from podcast #1.",
+        "sourceEndTime": 8,
+        "sourceStartTime": 0,
+        "targetPosition": 0,
+        "targetTrackIndex": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Transition into podcast #2 using a J-cut (audio leads).",
+        "sourceEndTime": 13,
+        "sourceStartTime": 5,
+        "targetPosition": 8,
+        "targetTrackIndex": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Interleaving conversation to build the narrative.",
+        "sourceEndTime": 28,
+        "sourceStartTime": 20,
+        "targetPosition": 16,
+        "targetTrackIndex": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Raising the stakes by alternating perspectives.",
+        "sourceEndTime": 43,
+        "sourceStartTime": 35,
+        "targetPosition": 24,
+        "targetTrackIndex": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Intensifying the emotional weight.",
+        "sourceEndTime": 58,
+        "sourceStartTime": 50,
+        "targetPosition": 32,
+        "targetTrackIndex": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax: High energy, high emotion.",
+        "sourceEndTime": 68,
+        "sourceStartTime": 60,
+        "targetPosition": 40,
+        "targetTrackIndex": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Climax: Rapid-fire emotional beats.",
+        "sourceEndTime": 78,
+        "sourceStartTime": 70,
+        "targetPosition": 48,
+        "targetTrackIndex": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax: Peak intensity.",
+        "sourceEndTime": 83,
+        "sourceStartTime": 75,
+        "targetPosition": 56,
+        "targetTrackIndex": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Resolution: A deliberate landing on the final thought.",
+        "sourceEndTime": 90,
+        "sourceStartTime": 82,
+        "targetPosition": 64,
+        "targetTrackIndex": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "A Journey Inward",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Hook title.",
+        "startTime": 0.5,
+        "style": "title"
+      }
+    ],
+    "effects": [
+      {
+        "params": {
+          "brightness": 0.9,
+          "contrast": 1.1,
+          "saturation": 0.9
+        },
+        "rationale": "Subtle cinematic color grade for emotional depth.",
+        "targetSegmentIndex": 0,
+        "type": "colorGrade"
+      },
+      {
+        "duration": 0.4,
+        "intensity": 0.7,
+        "params": {
+          "amount": 25
+        },
+        "rationale": "Visual hit on the climax beat.",
+        "targetSegmentIndex": 5,
+        "type": "chromatic-aberration"
+      },
+      {
+        "duration": 0.4,
+        "intensity": 0.8,
+        "params": {
+          "amount": 30
+        },
+        "rationale": "Visual hit on the climax beat.",
+        "targetSegmentIndex": 7,
+        "type": "chromatic-aberration"
+      }
+    ],
+    "transitions": [
+      {
+        "afterSegmentIndex": 3,
+        "duration": 0.5,
+        "rationale": "Smooth transition into the interleaved section.",
+        "type": "crossfade"
+      },
+      {
+        "afterSegmentIndex": 5,
+        "duration": 0.3,
+        "rationale": "Punchy transition for the climax.",
+        "type": "whipPan"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 90,
+        "rationale": "Emotional underscore for the entire arc.",
+        "sourceVideoId": "audio_dave_raindance",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.3
+      },
+      {
+        "duration": 8,
+        "rationale": "Dialogue from the first podcast to establish the hook.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 8,
+        "rationale": "J-cut: Audio from the second podcast leads the visual transition.",
+        "sourceVideoId": "video-2",
+        "startTime": 5,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Podcast/Documentary",
+      "pacing": "medium",
+      "rationale": "Creating a continuous emotional arc by interleaving two podcast episodes, using J-cuts and rhythmic editing to build tension and resolve.",
+      "targetDuration": 90,
+      "targetPlatform": "YouTube"
+    }
+  }
+}

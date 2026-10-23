@@ -1,0 +1,582 @@
+{
+  "segments": [
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "Strong visual hook, punchy start, motionPeak .45 beat@0.5s",
+      "sourceEndTime": 1,
+      "sourceStartTime": 0,
+      "sourceVideoId": "video-1",
+      "targetPosition": 0,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "High energy transition, hook payoff, motionPeak .60 beat@1.5s",
+      "sourceEndTime": 2,
+      "sourceStartTime": 1,
+      "sourceVideoId": "video-1",
+      "targetPosition": 1,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Establishing the vibe, build phase, stable shot",
+      "sourceEndTime": 4,
+      "sourceStartTime": 2,
+      "sourceVideoId": "video-1",
+      "targetPosition": 2,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "B-roll movement, build phase, drift motion",
+      "sourceEndTime": 6,
+      "sourceStartTime": 4,
+      "sourceVideoId": "video-1",
+      "targetPosition": 4,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "Adding raw energy, build phase, handheld jitter",
+      "sourceEndTime": 8,
+      "sourceStartTime": 6,
+      "sourceVideoId": "video-1",
+      "targetPosition": 6,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "breathe",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Rhythmic contrast, build phase, breathing motion",
+      "sourceEndTime": 10,
+      "sourceStartTime": 8,
+      "sourceVideoId": "video-1",
+      "targetPosition": 8,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "tilt-up",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Dynamic reveal, build phase, upward motion",
+      "sourceEndTime": 12.5,
+      "sourceStartTime": 10,
+      "sourceVideoId": "video-1",
+      "targetPosition": 10,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Lateral movement, build phase, drift motion",
+      "sourceEndTime": 15,
+      "sourceStartTime": 12.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 12.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "snap-zoom",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "Climax trigger, speed ramp start, high energy beat@15.0s",
+      "sourceEndTime": 16,
+      "sourceStartTime": 15,
+      "sourceVideoId": "video-1",
+      "speedRamp": {
+        "keyframes": [
+          {
+            "easing": "ease-in",
+            "speed": 1,
+            "time": 0
+          },
+          {
+            "easing": "ease-out",
+            "speed": 2,
+            "time": 0.5
+          },
+          {
+            "easing": "ease-in",
+            "speed": 1,
+            "time": 1
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "targetPosition": 15,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "Rapid cut, climax intensity, motionPeak .70 beat@16.5s",
+      "sourceEndTime": 16.8,
+      "sourceStartTime": 16,
+      "sourceVideoId": "video-1",
+      "targetPosition": 16,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "Aggressive emphasis, climax, beat@17.2s",
+      "sourceEndTime": 17.5,
+      "sourceStartTime": 16.8,
+      "sourceVideoId": "video-1",
+      "targetPosition": 16.8,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "Rhythmic bounce, climax, beat@18.0s",
+      "sourceEndTime": 18.2,
+      "sourceStartTime": 17.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 17.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "High impact, climax, beat@18.8s",
+      "sourceEndTime": 19,
+      "sourceStartTime": 18.2,
+      "sourceVideoId": "video-1",
+      "targetPosition": 18.2,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "Aggressive emphasis, climax, beat@19.6s",
+      "sourceEndTime": 19.8,
+      "sourceStartTime": 19,
+      "sourceVideoId": "video-1",
+      "targetPosition": 19,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "Rhythmic bounce, climax, beat@20.4s",
+      "sourceEndTime": 20.6,
+      "sourceStartTime": 19.8,
+      "sourceVideoId": "video-1",
+      "targetPosition": 19.8,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "High impact, climax, beat@21.2s",
+      "sourceEndTime": 21.5,
+      "sourceStartTime": 20.6,
+      "sourceVideoId": "video-1",
+      "targetPosition": 20.6,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Pattern interrupt, climax, drift motion",
+      "sourceEndTime": 22.5,
+      "sourceStartTime": 21.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 21.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Pattern interrupt, climax, drift motion",
+      "sourceEndTime": 23.5,
+      "sourceStartTime": 22.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 22.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "tilt-up",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "Dynamic movement, climax, upward motion",
+      "sourceEndTime": 24.5,
+      "sourceStartTime": 23.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 23.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "tilt-down",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "Dynamic movement, climax, downward motion",
+      "sourceEndTime": 25.5,
+      "sourceStartTime": 24.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 24.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "Aggressive emphasis, climax, beat@26.0s",
+      "sourceEndTime": 26.5,
+      "sourceStartTime": 25.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 25.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-out",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "Rhythmic bounce, climax, beat@27.0s",
+      "sourceEndTime": 27.5,
+      "sourceStartTime": 26.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 26.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "High impact, climax, beat@28.0s",
+      "sourceEndTime": 28.5,
+      "sourceStartTime": 27.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 27.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "snap-zoom",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "Climax peak, high energy beat@29.0s",
+      "sourceEndTime": 30.5,
+      "sourceStartTime": 28.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 28.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "High impact, climax, beat@31.0s",
+      "sourceEndTime": 32,
+      "sourceStartTime": 30.5,
+      "sourceVideoId": "video-1",
+      "targetPosition": 30.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Transitioning out of climax, build-down, stable shot",
+      "sourceEndTime": 35,
+      "sourceStartTime": 32,
+      "sourceVideoId": "video-1",
+      "targetPosition": 32,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Landing, final hold, intentional shot",
+      "sourceEndTime": 40,
+      "sourceStartTime": 35,
+      "sourceVideoId": "video-1",
+      "targetPosition": 35,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Final landing, end of sequence, pull-back motion",
+      "sourceEndTime": 45,
+      "sourceStartTime": 40,
+      "sourceVideoId": "video-1",
+      "targetPosition": 40,
+      "trackIndex": 0,
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "animation": "pop",
+      "animationInSec": 0.2,
+      "color": "#FFFFFF",
+      "content": "MILES",
+      "duration": 1,
+      "fontSize": 72,
+      "position": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "rationale": "Hook text, immediate impact",
+      "startTime": 0.5,
+      "style": "title"
+    },
+    {
+      "animation": "glitch",
+      "animationInSec": 0.1,
+      "color": "#FFFFFF",
+      "content": "GO HARD",
+      "duration": 2,
+      "fontSize": 80,
+      "position": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "rationale": "Climax text, high energy accent",
+      "startTime": 15.5,
+      "style": "title"
+    },
+    {
+      "animation": "fade",
+      "animationInSec": 1,
+      "color": "#FFFFFF",
+      "content": "FINISH",
+      "duration": 3,
+      "fontSize": 40,
+      "position": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "rationale": "Landing text, subtle end",
+      "startTime": 36,
+      "style": "subtitle"
+    }
+  ],
+  "effects": [
+    {
+      "params": {
+        "amount": "15"
+      },
+      "rationale": "Visual accent on high energy beat, climax intensity",
+      "targetSegmentIndex": 9,
+      "type": "chromatic-aberration"
+    },
+    {
+      "params": {
+        "amount": "0.5",
+        "blockSize": "20",
+        "rgbSplit": "10",
+        "speed": "1"
+      },
+      "rationale": "Glitch hit on climax beat, high energy accent",
+      "targetSegmentIndex": 12,
+      "type": "glitch-blocks"
+    },
+    {
+      "params": {
+        "amount": "15"
+      },
+      "rationale": "Visual accent on high energy beat, climax intensity",
+      "targetSegmentIndex": 15,
+      "type": "chromatic-aberration"
+    },
+    {
+      "params": {
+        "amount": "0.5",
+        "blockSize": "20",
+        "rgbSplit": "10",
+        "speed": "1"
+      },
+      "rationale": "Glitch hit on climax beat, high energy accent",
+      "targetSegmentIndex": 18,
+      "type": "glitch-blocks"
+    },
+    {
+      "params": {
+        "amount": "15"
+      },
+      "rationale": "Visual accent on high energy beat, climax intensity",
+      "targetSegmentIndex": 21,
+      "type": "chromatic-aberration"
+    },
+    {
+      "params": {
+        "amount": "0.5",
+        "blockSize": "20",
+        "rgbSplit": "10",
+        "speed": "1"
+      },
+      "rationale": "Glitch hit on climax beat, high energy accent",
+      "targetSegmentIndex": 24,
+      "type": "glitch-blocks"
+    }
+  ],
+  "transitions": [
+    {
+      "afterSegmentIndex": 7,
+      "duration": 0.3,
+      "rationale": "Glitch transition into climax phase",
+      "type": "glitch"
+    },
+    {
+      "afterSegmentIndex": 26,
+      "duration": 0.5,
+      "rationale": "Smooth zoom transition into landing phase",
+      "type": "zoom"
+    }
+  ],
+  "audioDecisions": [
+    {
+      "duration": 45,
+      "rationale": "Music bed for the entire edit to drive energy.",
+      "sourceVideoId": "video-1",
+      "startTime": 0,
+      "type": "music",
+      "volume": 0.7
+    }
+  ],
+  "motionMoments": [],
+  "metadata": {
+    "genre": "Action/Hype",
+    "pacing": "fast",
+    "rationale": "Aggressive, high-energy edit with rapid cuts, heavy effects, and rhythmic camera moves to fulfill the 'make it go hard' request.",
+    "targetDuration": 45,
+    "targetPlatform": "social_media_vertical"
+  }
+}

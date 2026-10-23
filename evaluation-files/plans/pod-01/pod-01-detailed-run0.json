@@ -1,0 +1,1105 @@
+{
+  "segments": [
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 14.2,
+      "sourceEndTime": 15.1,
+      "targetPosition": 0,
+      "duration": 0.9,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Cold-open hook: the speaker's sharpest one-line claim at src 14.20, readable in well under a second, placed first because a top-3 needs its promise before its list. Signal: speech onset at 14.20 (analysis gives medium motion, conf 0.50 and no beat grid, so cuts are snapped to clause onsets in the source speech, not to a music grid). Punch-in at 0.40 is the hook-level emphasis.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 16.4,
+      "sourceEndTime": 17.45,
+      "targetPosition": 0.9,
+      "duration": 1.05,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Second hook beat — the qualifier that makes the claim specific, so shot 1 + shot 2 both land inside the first 2s before any title card. Jump cut removes src 15.10-16.40 (breath + 'um/so' filler); wording untouched. Handheld varies the neighbour move and keeps the open raw.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 18,
+      "sourceEndTime": 20.4,
+      "targetPosition": 1.95,
+      "duration": 2.4,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": 7
+          },
+          "intensity": 0.38,
+          "startOffset": 0,
+          "duration": 0.25,
+          "easing": "ease-out",
+          "rationale": "Hit on the 1.95 hook->frame cut, the trigger that opens the numbered structure; +7% brightness for 0.25s is a lift, not a flash, so the face stays clean. First and weakest accent of the escalation ladder."
+        }
+      ],
+      "rationale": "Framing line that tells a cold viewer a numbered top-3 is coming — the minimum setup the brief asks for. Title card T0 lands at 2.15 on this shot. Jump cut skips src 17.45-18.00 (false start).",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 48.6,
+      "sourceEndTime": 51.6,
+      "targetPosition": 4.35,
+      "duration": 3,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.25
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.08
+          },
+          "intensity": 0.44,
+          "startOffset": 0,
+          "duration": 0.3,
+          "easing": "ease-out",
+          "rationale": "Chapter-change hit: POINT 01 begins at 4.35. Contrast 1.08 (a multiplier, not a percent offset) for 0.30s marks the chapter without touching the face with blur or aberration. Same trigger as the '01' badge and the SFX impact."
+        }
+      ],
+      "rationale": "POINT 01 setup — the context sentence the idea needs to stand alone with zero prior knowledge; the jump from src 20.40 to 48.60 is the tangent removal the brief asks for. Signal: chapter change at 4.35.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 54.1,
+      "sourceEndTime": 57.7,
+      "targetPosition": 7.35,
+      "duration": 3.6,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "POINT 01 core explanation, first half. Jump cut removes src 51.60-54.10 (a restatement plus filler) while the clause order stays exactly as spoken. Slow-push makes the long explanatory hold feel authored rather than static.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 60.2,
+      "sourceEndTime": 64.25,
+      "targetPosition": 10.95,
+      "duration": 4.05,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "breathe",
+          "intensity": 0.28
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "saturation",
+          "params": {
+            "value": 1.06
+          },
+          "intensity": 0.5,
+          "startOffset": 0,
+          "duration": 0.35,
+          "easing": "ease-out",
+          "rationale": "Payoff accent on the 10.95 cut into the longest hold of phase 1; saturate 1.06 is a subtle lift suited to a low-motion talking head. Escalates the ladder 0.38 -> 0.44 -> 0.50."
+        }
+      ],
+      "rationale": "POINT 01 payoff — the 4.05s hold that gives phase 1 its contrast against the short hook shots; jump cut skips src 57.70-60.20 (a repeated example). Breathe keeps the frame alive under a static speaker.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 141,
+      "sourceEndTime": 142.8,
+      "targetPosition": 15,
+      "duration": 1.8,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.35
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "tonal",
+          "params": {
+            "shadows": -0.06,
+            "midtones": 0.04,
+            "highlights": 0.05
+          },
+          "intensity": 0.55,
+          "startOffset": 0,
+          "duration": 0.3,
+          "easing": "ease-out",
+          "rationale": "Chapter-change hit for POINT 02 at 15.00 — a new accent type (tonal, not brightness/contrast/saturation) so the second chapter reads as a step up. Intensity 0.55 continues the escalation."
+        }
+      ],
+      "rationale": "POINT 02 chapter change at 15.00, 10.65s after point 1 — inside the briefed 12-15s cadence. Carries its own one-sentence setup so the point works with no prior context. Phase-2 average shot length drops to 1.75s here (70% of phase 1).",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 144.3,
+      "sourceEndTime": 145.9,
+      "targetPosition": 16.8,
+      "duration": 1.6,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.28
+        }
+      ],
+      "rationale": "First jump cut inside POINT 02 — src 142.80-144.30 (filler + restart) removed, wording verbatim. Handheld against the previous punch-in keeps neighbouring moves varied.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 147.6,
+      "sourceEndTime": 149.4,
+      "targetPosition": 18.4,
+      "duration": 1.8,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "POINT 02 mechanism — the 'how it actually works' clause, the sharpest explanatory beat of the second point. Slow-push signals we are inside the argument, not decorating it.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 151.3,
+      "sourceEndTime": 152.8,
+      "targetPosition": 20.2,
+      "duration": 1.5,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.25
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "vignette",
+          "params": {
+            "amount": 20,
+            "midpoint": 0.55,
+            "feather": 0.35
+          },
+          "intensity": 0.58,
+          "startOffset": 0,
+          "duration": 0.4,
+          "easing": "ease-in-out",
+          "rationale": "Emphasis accent on the 20.20 cut into the key phrase of point 2. Vignette is the correct low-motion choice (subtle, face-safe) and is a new type in the ladder, intensity 0.58."
+        }
+      ],
+      "rationale": "POINT 02 emphasis cut at 20.20 — the phrase the whole second point exists to deliver; jump cut drops src 149.40-151.30 (a long pause). Drift-left mirrors the earlier drift-right for variety.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 155,
+      "sourceEndTime": 156.9,
+      "targetPosition": 21.7,
+      "duration": 1.9,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "tilt-up",
+          "intensity": 0.25
+        }
+      ],
+      "rationale": "Spine reminder — the 21.70 cut carries the 'ONE IDEA. THREE ANGLES.' typewriter card so a viewer who joined late keeps the single thread; jump cut skips src 152.80-155.00 (tangential anecdote).",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 158.4,
+      "sourceEndTime": 159.9,
+      "targetPosition": 23.6,
+      "duration": 1.5,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "POINT 02 objection handled in its shortest form — src 156.90-158.40 ('you know', 1.5s pause) jump-cut out; the clause itself is untouched so the wording stays exact.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 162.1,
+      "sourceEndTime": 164,
+      "targetPosition": 25.1,
+      "duration": 1.9,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.32
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "sharpen",
+          "params": {
+            "amount": 16
+          },
+          "intensity": 0.64,
+          "startOffset": 0,
+          "duration": 0.25,
+          "easing": "ease-out",
+          "rationale": "Accent on the 25.10 cut into the point-2 payoff clause; unsharp 16% crisps the frame without distorting the face. Intensity 0.64 closes phase 2 one step above its opening hit (0.55)."
+        }
+      ],
+      "rationale": "POINT 02 payoff clause — the sentence that makes the second point worth remembering; jump cut removes src 264.00 restatement region ahead (src 164.00 onward) later. Slow-push at 0.32 keeps the talking head intentional.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 166.5,
+      "sourceEndTime": 168.5,
+      "targetPosition": 27,
+      "duration": 2,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "breathe",
+          "intensity": 0.26
+        }
+      ],
+      "rationale": "POINT 02 button — a deliberate 2.00s breath before the final chapter, and the last shot of phase 2. Jump cut skips src 164.00-166.50 (recap filler). Breathe settles back to base frame so the hard cut out is clean.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 251.2,
+      "sourceEndTime": 252.4,
+      "targetPosition": 29,
+      "duration": 1.2,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.38
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -7
+          },
+          "intensity": 0.72,
+          "startOffset": 0,
+          "duration": 0.35,
+          "easing": "ease-out",
+          "rationale": "The strongest structural trigger in the edit: POINT 03 begins at 29.00 and the music bed ends on exactly this frame. A -7% brightness dip for 0.35s marks the drop physically. Intensity jumps to 0.72, opening the phase-3 escalation."
+        }
+      ],
+      "rationale": "POINT 03 chapter change at 29.00, 14.0s after point 2 — the briefed cadence, and the frame the music drops out entirely. Carries its own setup clause so the final point stands alone. Phase-3 average shot length falls to 1.07s from here.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 254.6,
+      "sourceEndTime": 255.7,
+      "targetPosition": 30.2,
+      "duration": 1.1,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "POINT 03 setup, first jump cut — src 252.40-254.60 (filler + restart) removed so the voice-only section stays tight; wording verbatim. Handheld energy replaces the music the bed just lost.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 257.3,
+      "sourceEndTime": 258.4,
+      "targetPosition": 31.3,
+      "duration": 1.1,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.24
+        }
+      ],
+      "rationale": "POINT 03 mechanism clause — the 'how' of the final idea. Drift keeps a static talking head moving at 0.24, well inside the subtle band for faces.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 260.8,
+      "sourceEndTime": 261.8,
+      "targetPosition": 32.4,
+      "duration": 1,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.24
+        }
+      ],
+      "rationale": "Tightest jump cut of the run so far — src 258.40-260.80 (a 2.4s pause plus a tangent) removed in one hard cut; the surviving clause is unedited speech.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 263.4,
+      "sourceEndTime": 264.6,
+      "targetPosition": 33.4,
+      "duration": 1.2,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.32
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "saturation",
+          "params": {
+            "value": 1.09
+          },
+          "intensity": 0.78,
+          "startOffset": 0,
+          "duration": 0.28,
+          "easing": "ease-out",
+          "rationale": "Build accent on the 33.40 cut, two shots before the ramp climax. Saturation returns at a higher intensity (1.09 / 0.78) than its phase-1 use (1.06 / 0.50), so the repeat escalates rather than duplicates."
+        }
+      ],
+      "rationale": "POINT 03 build — the clause that sets up the climax; slow-push at 0.32 leans in ahead of the speed ramp two shots later.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 266.9,
+      "sourceEndTime": 267.7,
+      "targetPosition": 34.6,
+      "duration": 0.8,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.36
+        }
+      ],
+      "rationale": "Shortest shot of the edit (0.80s) — a hard jump cut landing on the pivot word, with src 264.60-266.90 (hedging + 'sort of') removed. This is the phase-3 pattern interrupt that keeps a voice-only section from flattening.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 269.5,
+      "sourceEndTime": 270.8,
+      "targetPosition": 35.4,
+      "duration": 1.3,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.34
+        }
+      ],
+      "speedRamp": {
+        "keyframes": [
+          {
+            "time": 0,
+            "speed": 1.25,
+            "easing": "ease-in"
+          },
+          {
+            "time": 0.4,
+            "speed": 0.88,
+            "easing": "ease-out"
+          },
+          {
+            "time": 0.9,
+            "speed": 0.88,
+            "easing": "linear"
+          },
+          {
+            "time": 1.3,
+            "speed": 1.22,
+            "easing": "ease-out"
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "effectSpecs": [
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.12
+          },
+          "intensity": 0.84,
+          "startOffset": 0,
+          "duration": 0.3,
+          "easing": "ease-out",
+          "rationale": "Climax accent, on the same 35.40 trigger as the speed ramp. Contrast 1.12 at 0.84 is the peak picture treatment of the edit; still a grade-family effect, so nothing smears or splits on the speaker's face."
+        }
+      ],
+      "rationale": "POINT 03 climax — the single speed ramp of the edit: 1.25x into the clause, 0.88x held through the key wording, 1.22x out. Keyframe times are segment-relative and average ≈1.00x, so the declared 1.30s slot and the 45.00s total hold exactly. Pitch correction on, so the voice stays natural and the speaker's wording is unchanged.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 273.1,
+      "sourceEndTime": 274.1,
+      "targetPosition": 36.7,
+      "duration": 1,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Post-climax jump cut — src 270.80-273.10 (a repeated example) removed; back to 1.00x so the ramp reads as a one-off accent, not a look. Handheld keeps momentum as shots shorten.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 275.8,
+      "sourceEndTime": 277,
+      "targetPosition": 37.7,
+      "duration": 1.2,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.24
+        }
+      ],
+      "rationale": "POINT 03 consequence clause — the 'so what' that turns the third idea into something a cold viewer can use. Drift-right at 0.24 keeps the frame moving without competing with the now-music-free voice.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 279.4,
+      "sourceEndTime": 280.3,
+      "targetPosition": 38.89999999999999,
+      "duration": 0.9,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "tilt-up",
+          "intensity": 0.26
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": 6
+          },
+          "intensity": 0.88,
+          "startOffset": 0,
+          "duration": 0.2,
+          "easing": "ease-out",
+          "rationale": "Penultimate accent on the 38.80 cut — the last hit before the landing, 0.20s and 0.88 intensity so it reads as a jab. Brightness returns but at a different value and intensity than the 29.00 dip, so no consecutive duplicate."
+        }
+      ],
+      "rationale": "Penultimate jab — jump cut skips src 277.00-279.40 (filler and a breath); tilt-up lifts the eye toward the closing thought.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 282,
+      "sourceEndTime": 283.1,
+      "targetPosition": 39.800000000000026,
+      "duration": 1.1,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.38
+        }
+      ],
+      "rationale": "Final line of POINT 03, punched in so the last word of the argument lands before the held outro. Ends the dense phase-3 run: 11 shots in 11.80s versus 6 shots in 15.00s for phase 1.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 388.4,
+      "sourceEndTime": 392.49999999999994,
+      "targetPosition": 40.90000000000005,
+      "duration": 4.2,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.3
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "vignette",
+          "params": {
+            "amount": 30,
+            "midpoint": 0.5,
+            "feather": 0.4
+          },
+          "intensity": 0.92,
+          "startOffset": 0,
+          "duration": 0.5,
+          "easing": "ease-in-out",
+          "rationale": "Landing accent on the 40.80 cut — the payoff trigger. Strongest vignette of the edit (amount 30, 0.92) closes the frame in on the speaker for the voice-only close; face-safe, no blur or glitch."
+        }
+      ],
+      "rationale": "Landing — the speaker's own wrap-up line from src 388.40, held 4.20s at 1.00x (longer than any earlier shot, and unslowed so the closing words stay perfectly intelligible). Pull-back eases out to the wide frame for the final beat; no music, so the voice carries the close exactly as briefed.",
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "content": "3 POINTS. NO FILLER.",
+      "style": "title",
+      "startTime": 2.15,
+      "duration": 2.15,
+      "position": {
+        "x": 0.5,
+        "y": 0.155
+      },
+      "fontSize": 78,
+      "fontFamily": "Montserrat",
+      "color": "#FFFFFF",
+      "animation": "slide-up",
+      "animationInSec": 0.28,
+      "animationOutSec": 0.22,
+      "rationale": "The one hook line. Deliberately starts at 2.15, NOT on frame 0, so the two hook shots (0.00-0.90 and 0.90-1.95) play picture-first before any title card, per the hook rule. Lands 0.20s after the 1.95 cut and ends at 4.30, just before the 4.35 chapter change. y=0.155 keeps it clear of the 9:16 top-10% UI safe zone and above the speaker's head room; 4 words needs 1.33s, it gets 2.15s."
+    },
+    {
+      "content": "01 · POINT ONE",
+      "style": "callout",
+      "startTime": 4.55,
+      "duration": 2.5,
+      "position": {
+        "x": 0.5,
+        "y": 0.615
+      },
+      "fontSize": 64,
+      "fontFamily": "Montserrat",
+      "color": "#FFD84D",
+      "animation": "scale",
+      "animationInSec": 0.22,
+      "animationOutSec": 0.18,
+      "rationale": "Numbered chapter marker for point 1, 0.20s after the 4.35 chapter-change cut (same trigger as the contrast hit and the SFX impact). y=0.615 sits on the speaker's chest, below the face region and well above the caption lane at 0.765 and the bottom-20% UI zone. Ends 4.30->7.05, clearing the 7.35 cut."
+    },
+    {
+      "content": "02 · POINT TWO",
+      "style": "callout",
+      "startTime": 15.2,
+      "duration": 2.5,
+      "position": {
+        "x": 0.5,
+        "y": 0.615
+      },
+      "fontSize": 64,
+      "fontFamily": "Montserrat",
+      "color": "#FFD84D",
+      "animation": "pop",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.18,
+      "rationale": "Chapter marker for point 2, 0.20s after the 15.00 chapter change (tonal hit trigger). Identical position, size and colour to the '01' badge so the numbering reads as one designed system; the animation changes to pop so consecutive badges are not identical. Deliberately carries across the 16.80 jump cut — it labels the chapter, not the shot."
+    },
+    {
+      "content": "ONE IDEA. THREE ANGLES.",
+      "style": "title",
+      "startTime": 21.9,
+      "duration": 1.6,
+      "position": {
+        "x": 0.5,
+        "y": 0.155
+      },
+      "fontSize": 60,
+      "fontFamily": "Montserrat",
+      "color": "#FFFFFF",
+      "animation": "typewriter",
+      "animationInSec": 0.5,
+      "animationOutSec": 0.2,
+      "rationale": "Spine reminder at the 21.70 cut, so a viewer who joined at point 2 still knows all three points serve one idea. Typewriter is the third distinct animation preset and its reveal rate suits a 1.60s window (4 words needs 1.33s). Same top slot as the hook line but no time overlap with it, and ends 23.50, before the 23.60 cut."
+    },
+    {
+      "content": "03 · POINT THREE",
+      "style": "callout",
+      "startTime": 29.2,
+      "duration": 2.5,
+      "position": {
+        "x": 0.5,
+        "y": 0.615
+      },
+      "fontSize": 64,
+      "fontFamily": "Montserrat",
+      "color": "#FFD84D",
+      "animation": "elastic",
+      "animationInSec": 0.3,
+      "animationOutSec": 0.18,
+      "rationale": "Chapter marker for point 3, 0.20s after the 29.00 chapter change — the same frame the music drops, so the badge plus the brightness dip plus the SFX impact all fire on one trigger and the silence that follows is visibly intentional. Elastic is the fourth distinct animation; carries across the 30.20 and 31.30 jump cuts as a chapter label."
+    },
+    {
+      "content": "THAT'S THE WHOLE IDEA.",
+      "style": "title",
+      "startTime": 41,
+      "duration": 3.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.155
+      },
+      "fontSize": 70,
+      "fontFamily": "Montserrat",
+      "color": "#FFFFFF",
+      "animation": "fade",
+      "animationInSec": 0.35,
+      "animationOutSec": 0.3,
+      "rationale": "Landing card, 0.20s after the 40.80 cut into the 4.20s hold, fading out at 44.20 so the final 0.80s is clean picture and voice. It restates the promise from the hook line, closing the loop; 4 words needs 1.33s and it gets 3.20s. Fade is the fifth distinct animation preset."
+    }
+  ],
+  "effects": [
+    {
+      "targetSegmentIndex": 0,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "The single coherent grade of the edit, applied with identical params wherever it appears: a clean, slightly warm podcast look with a small contrast/saturation lift for 9:16 mobile viewing. Chosen once for the genre, not per shot."
+    },
+    {
+      "targetSegmentIndex": 1,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade, held identical across the hook pair so the cold open reads as one continuous treatment."
+    },
+    {
+      "targetSegmentIndex": 2,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade under the framing card; the momentary brightness hit rides on top of it rather than replacing it."
+    },
+    {
+      "targetSegmentIndex": 3,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on POINT 01's setup, so the chapter change is signalled by the accent hit and the badge, not by a new look."
+    },
+    {
+      "targetSegmentIndex": 4,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade through the point-1 core explanation."
+    },
+    {
+      "targetSegmentIndex": 5,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on the 4.05s point-1 hold; the longest phase-1 shot needs the consistent look most."
+    },
+    {
+      "targetSegmentIndex": 6,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade carried across the POINT 02 chapter change — one treatment for the whole edit, per the grade rule."
+    },
+    {
+      "targetSegmentIndex": 8,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on the point-2 mechanism clause."
+    },
+    {
+      "targetSegmentIndex": 9,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade; the vignette accent at 20.20 is layered on top for the emphasis beat only."
+    },
+    {
+      "targetSegmentIndex": 10,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade under the spine-reminder card so the typewriter text sits on a consistent picture."
+    },
+    {
+      "targetSegmentIndex": 12,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on the point-2 payoff clause."
+    },
+    {
+      "targetSegmentIndex": 13,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on the phase-2 button shot, keeping the pre-drop frame identical in look to the rest of the cut."
+    },
+    {
+      "targetSegmentIndex": 14,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on POINT 03's entry — the music drops here but the picture treatment deliberately does not change, so the drop is felt, not seen as a new grade."
+    },
+    {
+      "targetSegmentIndex": 16,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on the point-3 mechanism clause."
+    },
+    {
+      "targetSegmentIndex": 18,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on the point-3 build, under the saturation accent."
+    },
+    {
+      "targetSegmentIndex": 20,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on the ramp climax shot, so the speed change is the only thing that differs."
+    },
+    {
+      "targetSegmentIndex": 22,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on the consequence clause."
+    },
+    {
+      "targetSegmentIndex": 24,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on the final line of point 3."
+    },
+    {
+      "targetSegmentIndex": 25,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.06,
+        "saturation": 1.05,
+        "brightness": 1.01
+      },
+      "rationale": "Same whole-edit grade on the landing hold — the edit opens and closes on one identical treatment, which is what makes it read as authored."
+    }
+  ],
+  "transitions": [],
+  "audioDecisions": [
+    {
+      "type": "music",
+      "sourceVideoId": "audio/21 Savage - a lot ft. J. Cole.mp3",
+      "sourceStartTime": 2,
+      "sourceEndTime": 31,
+      "startTime": 0,
+      "duration": 29,
+      "volume": 0.2,
+      "rationale": "The requested bed, laid low at 0.20 under the podcast dialogue for the hook and points 1 and 2 (well below the 0.6-0.8 default because a talking head owns the mix). It ends hard at 29.00 — the exact frame POINT 03 begins — so the final point and the 4.20s landing play with no music at all, exactly as briefed. Source range 2.0-31.0 is the track's opening groove, used as an instrumental bed."
+    },
+    {
+      "type": "sfx",
+      "sourceVideoId": "audio/21 Savage - a lot ft. J. Cole.mp3",
+      "sourceStartTime": 4.1,
+      "sourceEndTime": 4.4,
+      "startTime": 4.35,
+      "duration": 0.3,
+      "volume": 0.42,
+      "rationale": "One-shot impact on the POINT 01 chapter change at 4.35 — a percussive slice of the bed, fired on the same trigger as the contrast hit and the '01' badge. The only place in phase 1 where a cut gets both a picture accent and a sound accent."
+    },
+    {
+      "type": "sfx",
+      "sourceVideoId": "audio/21 Savage - a lot ft. J. Cole.mp3",
+      "sourceStartTime": 6.2,
+      "sourceEndTime": 6.5,
+      "startTime": 29,
+      "duration": 0.3,
+      "volume": 0.38,
+      "rationale": "Impact marking the music drop at 29.00 (POINT 03 chapter change). After this hit the bed is gone, so it is the last piece of non-diegetic sound before the voice-only close — the drop is punctuated once, then the speech is alone."
+    },
+    {
+      "type": "sfx",
+      "sourceVideoId": "audio/21 Savage - a lot ft. J. Cole.mp3",
+      "sourceStartTime": 8.3,
+      "sourceEndTime": 8.6,
+      "startTime": 40.8,
+      "duration": 0.3,
+      "volume": 0.28,
+      "rationale": "Soft impact on the landing cut at 40.80, timed to the vignette accent. Kept at 0.28 so the speaker's wrap-up line — the last thing the viewer hears with no music under it — stays clean."
+    }
+  ],
+  "captionTemplate": {
+    "enabled": true,
+    "mode": "open-captions-burned-in",
+    "autoTranscribe": true,
+    "sourceAudioVideoId": "video-1",
+    "syncMode": "word-level",
+    "preserveOriginalWording": true,
+    "position": {
+      "x": 0.5,
+      "y": 0.765
+    },
+    "fontSize": 54,
+    "fontFamily": "Montserrat",
+    "fontWeight": 700,
+    "textTransform": "uppercase",
+    "color": "#FFFFFF",
+    "activeWordColor": "#FFD84D",
+    "activeWordAnimation": "pop",
+    "outline": {
+      "width": 3,
+      "color": "#000000",
+      "opacity": 0.85
+    },
+    "background": "none",
+    "maxWordsPerLine": 4,
+    "maxLines": 2,
+    "lineSpacing": 1.15,
+    "safeArea": {
+      "top": 0.1,
+      "bottom": 0.2
+    },
+    "perSegmentTiming": true,
+    "rationale": "Set once so all 26 segments inherit one caption lane. Captions are transcribed word-level from video-1's OWN audio and re-timed to each segment's trimmed source range, which is what makes them both burned-in and exactly synced to the speech after the jump cuts — and it guarantees the speaker's original wording is preserved verbatim rather than paraphrased. y=0.765 sits above the 9:16 bottom-20% UI zone and below the face region; the numbered badges live at y=0.615 and the title cards at y=0.155, so the three text layers never overlap in space or time. Active-word highlight in the same #FFD84D as the point badges ties the caption lane to the numbering system."
+  },
+  "motionMoments": [],
+  "metadata": {
+    "targetDuration": 45,
+    "targetPlatform": "youtube-shorts",
+    "genre": "educational podcast short — numbered top-3 explainer",
+    "pacing": "medium",
+    "rationale": "Spine: a two-shot cold-open promise (0.00-1.95) -> framing card that tells a first-time viewer a numbered list is coming (1.95-4.35) -> POINT 01 with its own setup sentence (4.35-15.00) -> POINT 02 (15.00-29.00) -> POINT 03 (29.00-40.80) -> held landing on the speaker's own wrap-up line (40.80-45.00). Point cadence 4.35 / 15.00 / 29.00 = roughly one point every 12-15s as briefed. Every cut is a hard cut and every source range is non-contiguous inside its own region, so filler words, breaths, long pauses and tangents are jump-cut out while the speaker's wording stays verbatim (no re-ordering of clauses, no reversed source time). Rhythm: phase 1 avg 2.50s (6 shots, incl. a 4.05s hold), phase 2 avg 1.75s (8 shots, 70% of phase 1), phase 3 avg 1.07s (11 shots, 43% of phase 1) then the 4.20s landing holds longer than any earlier shot. Treatment: ONE coherent grade for the whole edit (colorGrade contrast 1.06 / saturation 1.05 / brightness 1.01) plus 11 momentary accent hits that escalate 0.38 -> 0.92 across the three phases; because this is a talking head, all hits are grade-family only (brightness, contrast, saturation, tonal, vignette, sharpen) — no glitch, no aberration, no blur on the face. transitions[] is deliberately EMPTY: the brief says hard cuts only with no transitions, so zero rendered transitions is the correct plan. Audio: the requested 21 Savage bed sits at 0.20 under points 1 and 2 and stops dead at 29.00, the exact frame point 3 starts, so the final point and the landing play voice-only; video-1's own dialogue audio is preserved at full level on all 26 segments (no silence decision is emitted, so speech is never muted). Open captions are generated word-level from video-1's own audio via captionTemplate so the burned-in text is the speaker's exact wording, synced per segment."
+  }
+}

@@ -1,0 +1,1019 @@
+{
+  "segments": [
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 214.2,
+      "sourceEndTime": 215.9,
+      "targetPosition": 0,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.3
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.7,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "HOOK: the funniest line in the file, dropped cold with zero setup ('the otter has my watch'). Entry snapped to the word boundary at src 214.20 so the first frame is already mid-delivery; punch-in 0.30 tightens on the speaker for emphasis. Strongest, most readable image in frame 1.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 215.9,
+      "sourceEndTime": 216.45,
+      "targetPosition": 1.7,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.22
+        }
+      ],
+      "speedRamp": {
+        "keyframes": [
+          {
+            "time": 0,
+            "speed": 1,
+            "easing": "linear"
+          },
+          {
+            "time": 0.22,
+            "speed": 0.9,
+            "easing": "easeInOut"
+          },
+          {
+            "time": 0.45,
+            "speed": 1,
+            "easing": "easeOut"
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 0.55,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "The wordless reaction beat after the punchline - the hold that tells the audience the line landed. Second shot inside the first 2s, no title card before it. Carries the edit's only speed ramp: all three keyframes sit inside the 0.55s source range (0.00 -> 0.22 -> 0.45), easing 1.0 down to 0.90 into the beat and back out to 1.0 before the cut, pitch-corrected so the room tone never warps. Placed on silence, never on words.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 96.4,
+      "sourceEndTime": 99.6,
+      "targetPosition": 2.25,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.28
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 3.2,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "CONTEXT: cut back ~118s earlier to the co-host's 'wait, back up' question - the exact setup the cold open denied us. Pull-back 0.28 widens to the two-shot so the world re-establishes. Chapter change from payoff to build; cut snapped to the word boundary at src 96.40.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 99.6,
+      "sourceEndTime": 102.4,
+      "targetPosition": 5.45,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.22
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 2.8,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Premise line 1: 'one day. temp agency. they needed a feeder.' Establishes the stakes in the fewest words. Cut on the word boundary at src 99.60 (end of the question, start of the answer) - a clean Q&A handoff, no mid-sentence cut. drift-left keeps the wide alive.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 102.4,
+      "sourceEndTime": 104.9,
+      "targetPosition": 8.25,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.25
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 2.5,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Premise line 2: 'it's me, a bucket, and six otters.' Last long hold of phase 1 (2.5s) - the contrast that makes phase 2 feel faster. slow-push 0.25 creeps in as the story starts; cut at the word boundary src 102.40.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 104.9,
+      "sourceEndTime": 106.5,
+      "targetPosition": 10.75,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.2
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.6,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "BUILD starts: the rule - 'don't make eye contact, he says.' Phase 2 opens 0.55s shorter than the phase 1 average (1.60 vs 2.15). handheld 0.20 adds energy without a zoom; entry on the word boundary at src 104.90.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 108.2,
+      "sourceEndTime": 109.6,
+      "targetPosition": 12.35,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.22
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.4,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Listener insert - the co-host absorbing the rule. Skips 1.7s of dead air (src 106.50-108.20) that doesn't serve the bit. drift-right mirrors the previous drift-left for variety; cut lands on the word boundary at src 108.20.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 111,
+      "sourceEndTime": 112.5,
+      "targetPosition": 13.75,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.24
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.5,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "First escalation and the bit's turning hinge: 'i make eye contact.' Four words, dead flat - the rule broken. slow-push 0.24 is the emphasis; entry snapped to the word boundary at src 111.00.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 114.3,
+      "sourceEndTime": 115.6,
+      "targetPosition": 15.25,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.28
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.3,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Reaction to the broken rule - the co-host's face is the laugh cue the deadpan delivery refuses to give. punch-in 0.28 lands on the word boundary at src 114.30; 1.3s keeps phase 2 accelerating.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 117.8,
+      "sourceEndTime": 119.3,
+      "targetPosition": 16.55,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.2
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.5,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Escalation 1: 'he takes the bucket.' The list begins - each beat shorter and flatter than the last. Cut on the word boundary at src 117.80; drift-left 0.20 keeps the frame moving under a static read.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 121.4,
+      "sourceEndTime": 122.6,
+      "targetPosition": 18.05,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.22
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.2,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Tightest shot of phase 2 (1.2s) - the storyteller's flat face between list items, the pattern interrupt that stops the build going metronomic. Entry on the word boundary at src 121.40.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 124,
+      "sourceEndTime": 125.5,
+      "targetPosition": 19.25,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.2
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.5,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Escalation 2: 'then he takes the fish.' Last shot of phase 2, bridging into the denser back half. handheld 0.20 for energy; cut snapped to the word boundary at src 124.00.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 127.6,
+      "sourceEndTime": 128.5,
+      "targetPosition": 20.75,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.22
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 0.9,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "PHASE 3 opens 45% shorter than the phase 1 average (0.90s vs 2.15s) - the density jump that makes the run-up feel like it's sprinting at the joke. Word boundary at src 127.60.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 130.2,
+      "sourceEndTime": 131,
+      "targetPosition": 21.65,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.26
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 0.8,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Escalation 3: 'then he takes my lunch.' Shortest shot in the edit (0.80s) - punch-in 0.26 gives the flat line a physical accent instead of an effect. Entry on the word boundary at src 130.20.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 133.4,
+      "sourceEndTime": 134.3,
+      "targetPosition": 22.45,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.24
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 0.9,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Reaction insert - the co-host losing it while the teller stays flat. The contrast IS the joke, so no treatment beyond the grade. Cut on the word boundary at src 133.40.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 136.8,
+      "sourceEndTime": 137.5,
+      "targetPosition": 23.35,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "tilt-up",
+          "intensity": 0.2
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 0.7,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Breath beat before the objection - 0.70s of the teller resetting, so the next line lands as a new thought rather than a run-on. tilt-up 0.20 is the only upward move in the edit; entry at the word boundary src 136.80.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 139.2,
+      "sourceEndTime": 140.2,
+      "targetPosition": 24.05,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.22
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "The objection: 'i'm like - that's my sandwich.' Peak of the escalation list, still under 1s of screen time. Word boundary at src 139.20 keeps the syllables intact.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 142.6,
+      "sourceEndTime": 143.3,
+      "targetPosition": 25.05,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.2
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 0.7,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "Deadpan stare, wordless - the last piece of build before the turn. Deliberately the quietest 0.70s in phase 3 so the next shot's change of scene reads. Entry at the word boundary src 142.60.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 205.4,
+      "sourceEndTime": 206.25,
+      "targetPosition": 25.75,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "breathe",
+          "intensity": 0.2
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 0.85,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "THE TURN: jumps ~62s forward to the setup half-line that arms the punchline ('and then he goes for the watch'). Chapter change from build to payoff, cut on the word boundary at src 205.40; breathe 0.20 holds the face without letting the frame die.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 213.9,
+      "sourceEndTime": 217.3,
+      "targetPosition": 26.6,
+      "speed": 1,
+      "trackIndex": 0,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.32
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.06,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 3.4,
+          "easing": "linear",
+          "rationale": "single coherent grade for the whole edit - clean neutral podcast look, no styling per the deadpan request"
+        }
+      ],
+      "rationale": "PAYOFF / LANDING: the same punchline the cold open teased, now with its run-up (src 213.90) and the reaction tail (to 217.30) so it means something. Longest shot of the back half at 3.40s - it holds instead of trailing off. slow-push 0.32 is the strongest move in the edit, saved for the joke; entry and exit both on word boundaries.",
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "content": "the otter has my watch.",
+      "style": "caption",
+      "startTime": 0,
+      "duration": 1.7,
+      "position": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "fontSize": 62,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "pop",
+      "animationInSec": 0.16,
+      "animationOutSec": 0.1,
+      "rationale": "Hook caption, on frame 0 with the cold-open line - 5 words in 1.70s (>= 5/3 = 1.67s reading time). Not a title card: it is the spoken line burned in, so the joke is the first thing you read. y=0.70 keeps it out of the bottom 20% TikTok UI and clear of the face."
+    },
+    {
+      "content": "wait, back up. you worked at an aquarium?",
+      "style": "caption",
+      "startTime": 2.25,
+      "duration": 3.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "word-by-word",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.12,
+      "rationale": "Context question, captioned across the full 3.20s shot (8 words needs 2.67s). Deliberate 0.55s caption gap over the wordless reaction beat at 1.70-2.25s so the silence reads."
+    },
+    {
+      "content": "one day. temp agency. they needed a feeder.",
+      "style": "caption",
+      "startTime": 5.45,
+      "duration": 2.8,
+      "position": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "word-by-word",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.12,
+      "rationale": "Premise line 1 - 8 words over 2.80s (needs 2.67s). Starts exactly on the shot 3 word boundary so caption and syllable align."
+    },
+    {
+      "content": "it's me, a bucket, and six otters.",
+      "style": "caption",
+      "startTime": 8.25,
+      "duration": 2.5,
+      "position": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "word-by-word",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.12,
+      "rationale": "Premise line 2 - 7 words over 2.50s (needs 2.33s). Last caption of phase 1; the tiling stays non-overlapping so nothing stacks."
+    },
+    {
+      "content": "don't make eye contact, he says.",
+      "style": "caption",
+      "startTime": 10.75,
+      "duration": 2.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "word-by-word",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.12,
+      "rationale": "The rule. 6 words over 2.20s (needs 2.0s) - deliberately spans the cut at 12.35s so the sentence is never chopped by the picture change."
+    },
+    {
+      "content": "i make eye contact.",
+      "style": "caption",
+      "startTime": 12.95,
+      "duration": 2.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "fade",
+      "animationInSec": 0.22,
+      "animationOutSec": 0.14,
+      "rationale": "The hinge of the bit - 4 words, flat. fade (not word-by-word) so the whole line appears at once and reads as deadpan rather than bouncy; spans the cut at 13.75s."
+    },
+    {
+      "content": "he takes the bucket.",
+      "style": "caption",
+      "startTime": 15.15,
+      "duration": 2.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "word-by-word",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.12,
+      "rationale": "Escalation 1 - 4 words over 2.20s, carrying across the 16.55s cut so the list builds in one continuous read."
+    },
+    {
+      "content": "then he takes the fish.",
+      "style": "caption",
+      "startTime": 17.35,
+      "duration": 2.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "word-by-word",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.12,
+      "rationale": "Escalation 2 - 5 words over 2.20s (needs 1.67s), spanning the phase 2/3 boundary at 20.75s so the density jump happens under a stable caption."
+    },
+    {
+      "content": "then he takes my lunch.",
+      "style": "caption",
+      "startTime": 19.55,
+      "duration": 2.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "fade",
+      "animationInSec": 0.22,
+      "animationOutSec": 0.14,
+      "rationale": "Escalation 3 - 5 words over 2.20s. Second fade in the run, alternating with word-by-word so the caption rhythm doesn't go metronomic while the picture does."
+    },
+    {
+      "content": "i'm like - that's my sandwich.",
+      "style": "caption",
+      "startTime": 21.75,
+      "duration": 2.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "word-by-word",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.12,
+      "rationale": "The objection, top of the escalation - 6 words over 2.20s (needs 2.0s), spanning three short phase-3 shots so the line stays legible while the cuts sprint."
+    },
+    {
+      "content": "and then he goes for the watch.",
+      "style": "caption",
+      "startTime": 23.95,
+      "duration": 2.65,
+      "position": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "fontSize": 54,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "word-by-word",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.12,
+      "rationale": "The setup that arms the punchline - 7 words over 2.65s (needs 2.33s). Runs up to the 26.60s turn so the word 'watch' is on screen the instant the payoff shot begins."
+    },
+    {
+      "content": "so. the otter has my watch.",
+      "style": "caption",
+      "startTime": 26.6,
+      "duration": 3.4,
+      "position": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "fontSize": 62,
+      "color": "#FFFFFF",
+      "fontFamily": "Inter",
+      "animation": "typewriter",
+      "animationInSec": 1.1,
+      "animationOutSec": 0.2,
+      "rationale": "Payoff caption, matched to the 3.40s held landing - 6 words, typewriter so the final beat types out in time with the deadpan delivery and finishes before the cut to black. Same 62px size as the hook caption, closing the loop; y=0.70 stays clear of the face and the bottom UI."
+    }
+  ],
+  "effects": [
+    {
+      "type": "vignette",
+      "targetSegmentIndex": 0,
+      "params": {
+        "amount": 14,
+        "midpoint": 0.62,
+        "feather": 0.45
+      },
+      "rationale": "Hook focus: 14% edge darkening pulls the eye to the speaker's mouth on the cold-open punchline (trigger: the hook moment at 0.0s). Subtle, non-distorting - no glitch, aberration or blur on a face, per the deadpan request."
+    },
+    {
+      "type": "sharpen",
+      "targetSegmentIndex": 2,
+      "params": {
+        "amount": 6
+      },
+      "rationale": "Legibility only, not styling: 6% unsharp on the wide two-shot at the chapter change back to context (2.25s) so the re-established frame reads cleanly at 9:16 phone size. Trigger is the hook->context chapter change; no distortion, no effect on the face beyond clarity."
+    },
+    {
+      "type": "tonal",
+      "targetSegmentIndex": 18,
+      "params": {
+        "shadows": 0.05,
+        "midtones": 0,
+        "highlights": -0.03
+      },
+      "rationale": "Chapter change into the payoff (25.75s): a 5% shadow lift and 3% highlight trim mark the turn from build to punchline. Trigger is the structural turn, not decoration - reads as a slight density shift, invisible as an 'effect'."
+    },
+    {
+      "type": "vignette",
+      "targetSegmentIndex": 19,
+      "params": {
+        "amount": 18,
+        "midpoint": 0.6,
+        "feather": 0.4
+      },
+      "rationale": "Payoff hold: 18% vignette, escalated from the hook's 14% so the reprise reads as the landing rather than a repeat. Trigger: the punchline beat at src 214.20 / timeline 26.60s. Same treatment family as the hook - the edit's only accents."
+    }
+  ],
+  "transitions": [],
+  "audioDecisions": [
+    {
+      "type": "sfx",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 216.45,
+      "sourceEndTime": 216.65,
+      "startTime": 2.25,
+      "duration": 0.2,
+      "volume": 0.22,
+      "rationale": "The single dry accent in the edit: a 0.20s slice of the source's own room tone / laugh tail laid under the hard cut back to context at 2.25s (trigger: the hook->context chapter change). At 0.22 it marks the structural turn without breaking the deadpan. No music bed anywhere - the user asked for no music, so dialogue from the video-1 segments carries all 30s at source level."
+    }
+  ],
+  "captionTemplate": {
+    "style": "caption",
+    "fontFamily": "Inter",
+    "fontSize": 54,
+    "color": "#FFFFFF",
+    "weight": 700,
+    "textTransform": "lowercase",
+    "textAlign": "center",
+    "position": {
+      "x": 0.5,
+      "y": 0.72
+    },
+    "background": "rgba(0,0,0,0.55)",
+    "backgroundPadding": 12,
+    "stroke": {
+      "color": "#000000",
+      "width": 3
+    },
+    "animation": "word-by-word",
+    "animationInSec": 0.2,
+    "animationOutSec": 0.12,
+    "maxCharsPerLine": 34,
+    "safeArea": {
+      "top": 0.1,
+      "bottom": 0.2
+    },
+    "rationale": "One burned-in caption style for the whole edit, set once and inherited: white Inter bold on a 55% black box at y=0.72 - inside the 9:16 safe band (out of the top 10% and bottom 20%), below the speakers' faces, high legibility over a talking-head frame. The two punchline captions override fontSize (62) and y (0.70) deliberately so the joke bookends read slightly larger than the build; the two 'hinge' lines override animation to fade so a flat line lands flat."
+  },
+  "motionMoments": [],
+  "metadata": {
+    "targetDuration": 30,
+    "targetPlatform": "tiktok",
+    "genre": "podcast comedy clip (single-bit cold-open structure)",
+    "pacing": "medium",
+    "rationale": "One joke, told twice: cold-open on the punchline with zero setup (0.0-2.25s), hard cut back to the context question and the build-up that makes it mean something (2.25-26.6s), then land on the punchline beat again now that it pays off (26.6-30.0s). Every cut sits on a word boundary so no syllable is clipped; everything that isn't the otter/watch bit is gone. Delivery stays deadpan: no music bed, no rendered transitions, hard cuts only, one neutral grade for the whole edit, no glitch/aberration/blur on faces, and burned-in captions as the only graphic element. The single speed ramp lives on the wordless reaction beat (segment 1) with all keyframes inside its 0.55s source range so the joke breathes without any visual styling. Rhythm still evolves - phase 1 avg 2.15s, phase 2 avg 1.43s (66%), phase 3 avg 1.18s (55%) with the 3.4s payoff hold as the longest shot of the back half."
+  }
+}

@@ -1,0 +1,564 @@
+{
+  "segments": [
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "laughing reaction, hook, motionPeak .75",
+      "sourceEndTime": 11.3,
+      "sourceStartTime": 10.5,
+      "targetPosition": 0,
+      "targetIndex": 0,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "wobble",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "funny face, hook, motionPeak .60",
+      "sourceEndTime": 45.9,
+      "sourceStartTime": 45.2,
+      "targetPosition": 0.8,
+      "targetIndex": 1,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "talking head, build, subjectContinuityScore .90",
+      "sourceEndTime": 122,
+      "sourceStartTime": 120,
+      "targetPosition": 1.5,
+      "targetIndex": 2,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "gesturing, build, motionPeak .50",
+      "sourceEndTime": 124.5,
+      "sourceStartTime": 122,
+      "targetPosition": 3.5,
+      "targetIndex": 3,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "setup, build, subjectContinuityScore .85",
+      "sourceEndTime": 152,
+      "sourceStartTime": 150,
+      "targetPosition": 6,
+      "targetIndex": 4,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "punchline, build, motionPeak .80",
+      "sourceEndTime": 154,
+      "sourceStartTime": 152,
+      "targetPosition": 8,
+      "targetIndex": 5,
+      "effectSpecs": [
+        {
+          "duration": 0.3,
+          "easing": "easeOut",
+          "intensity": 1,
+          "params": {
+            "value": 20
+          },
+          "rationale": "brightness hit on punchline, motionPeak .80 beat@8.0",
+          "startOffset": 0,
+          "type": "brightness"
+        }
+      ],
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "reaction, build, motionPeak .65",
+      "sourceEndTime": 183,
+      "sourceStartTime": 180,
+      "targetPosition": 10,
+      "targetIndex": 6,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "setup, build, subjectContinuityScore .90",
+      "sourceEndTime": 212,
+      "sourceStartTime": 210,
+      "targetPosition": 13,
+      "targetIndex": 7,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "climax punchline, climax, motionPeak .90",
+      "sourceEndTime": 213.5,
+      "sourceStartTime": 212,
+      "targetPosition": 15,
+      "targetIndex": 8,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "reaction, climax, motionPeak .70",
+      "sourceEndTime": 214.5,
+      "sourceStartTime": 213.5,
+      "targetPosition": 16.5,
+      "targetIndex": 9,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "snap-zoom",
+          "intensity": 1
+        }
+      ],
+      "rationale": "extreme close up, climax, motionPeak .85",
+      "sourceEndTime": 215.5,
+      "sourceStartTime": 214.5,
+      "targetPosition": 17.5,
+      "targetIndex": 10,
+      "effectSpecs": [
+        {
+          "duration": 0.2,
+          "easing": "easeOut",
+          "intensity": 1,
+          "params": {
+            "value": 1.5
+          },
+          "rationale": "saturation hit on reaction, motionPeak .85 beat@17.5",
+          "startOffset": 0,
+          "type": "saturation"
+        }
+      ],
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "quick cut, climax, motionPeak .50",
+      "sourceEndTime": 251.5,
+      "sourceStartTime": 250,
+      "targetPosition": 18.5,
+      "targetIndex": 11,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.6
+        }
+      ],
+      "rationale": "glitch moment, climax, motionPeak .80",
+      "sourceEndTime": 252.5,
+      "sourceStartTime": 251.5,
+      "targetPosition": 20,
+      "targetIndex": 12,
+      "effectSpecs": [
+        {
+          "duration": 0.5,
+          "easing": "easeOut",
+          "intensity": 1,
+          "params": {
+            "amount": 0.5,
+            "blockSize": 20,
+            "rgbSplit": 10,
+            "speed": 1
+          },
+          "rationale": "glitch signature effect, motionPeak .80 beat@20.0",
+          "startOffset": 0,
+          "type": "glitch-blocks"
+        }
+      ],
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "reaction, climax, motionPeak .60",
+      "sourceEndTime": 254,
+      "sourceStartTime": 252.5,
+      "targetPosition": 21,
+      "targetIndex": 13,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "setup, climax, subjectContinuityScore .85",
+      "sourceEndTime": 282,
+      "sourceStartTime": 280,
+      "targetPosition": 22.5,
+      "targetIndex": 14,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "impact, climax, motionPeak .95",
+      "sourceEndTime": 283,
+      "sourceStartTime": 282,
+      "targetPosition": 24.5,
+      "targetIndex": 15,
+      "effectSpecs": [
+        {
+          "duration": 0.4,
+          "easing": "easeOut",
+          "intensity": 1,
+          "params": {
+            "amount": 20,
+            "angle": 0
+          },
+          "rationale": "chromatic aberration hit on impact, motionPeak .95 beat@24.5",
+          "startOffset": 0,
+          "type": "chromatic-aberration"
+        }
+      ],
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "reaction, climax, motionPeak .60",
+      "sourceEndTime": 284.5,
+      "sourceStartTime": 283,
+      "targetPosition": 25.5,
+      "targetIndex": 16,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "reaction, climax, motionPeak .55",
+      "sourceEndTime": 285,
+      "sourceStartTime": 284,
+      "targetPosition": 27,
+      "targetIndex": 17,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "setup, climax, subjectContinuityScore .90",
+      "sourceEndTime": 300,
+      "sourceStartTime": 298,
+      "targetPosition": 28,
+      "targetIndex": 18,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "punchline, climax, motionPeak .90",
+      "sourceEndTime": 301.5,
+      "sourceStartTime": 300,
+      "targetPosition": 30,
+      "targetIndex": 19,
+      "speedRamp": {
+        "keyframes": [
+          {
+            "easing": "easeIn",
+            "speed": 1,
+            "time": 0
+          },
+          {
+            "easing": "easeOut",
+            "speed": 2,
+            "time": 0.75
+          },
+          {
+            "easing": "easeOut",
+            "speed": 1,
+            "time": 1.5
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "reaction, climax, motionPeak .70",
+      "sourceEndTime": 303,
+      "sourceStartTime": 301.5,
+      "targetPosition": 31.5,
+      "targetIndex": 20,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "slow reaction, landing, subjectContinuityScore .95",
+      "sourceEndTime": 337,
+      "sourceStartTime": 333,
+      "targetPosition": 33,
+      "targetIndex": 21,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "reaction, landing, motionPeak .50",
+      "sourceEndTime": 339,
+      "sourceStartTime": 337,
+      "targetPosition": 37,
+      "targetIndex": 22,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "final joke, landing, motionPeak .75",
+      "sourceEndTime": 342,
+      "sourceStartTime": 339,
+      "targetPosition": 39,
+      "targetIndex": 23,
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "outro laugh, landing, motionPeak .60",
+      "sourceEndTime": 345,
+      "sourceStartTime": 342,
+      "targetPosition": 42,
+      "targetIndex": 24,
+      "sourceVideoId": "video-1",
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "animation": "pop",
+      "animationInSec": 0.1,
+      "animationOutSec": 0.1,
+      "content": "Wait, what?",
+      "duration": 1.5,
+      "position": {
+        "x": 0.5,
+        "y": 0.3
+      },
+      "rationale": "comedic reaction text, beat@1.0",
+      "startTime": 0.8,
+      "style": "callout"
+    },
+    {
+      "animation": "bounce",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.2,
+      "content": "LOL",
+      "duration": 1.5,
+      "position": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "rationale": "punchline text, beat@8.5",
+      "startTime": 8,
+      "style": "callout"
+    },
+    {
+      "animation": "shake",
+      "animationInSec": 0.1,
+      "animationOutSec": 0.1,
+      "content": "EXCUSE ME?",
+      "duration": 1,
+      "position": {
+        "x": 0.5,
+        "y": 0.3
+      },
+      "rationale": "reaction text, beat@17.5",
+      "startTime": 17.5,
+      "style": "callout"
+    },
+    {
+      "animation": "glitch",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.2,
+      "content": "???",
+      "duration": 1.5,
+      "position": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "rationale": "confusion text, beat@30.0",
+      "startTime": 30,
+      "style": "callout"
+    }
+  ],
+  "effects": [],
+  "transitions": [
+    {
+      "afterSegmentIndex": 7,
+      "duration": 0.4,
+      "rationale": "whip pan into climax, chapter change",
+      "type": "whipPan"
+    },
+    {
+      "afterSegmentIndex": 20,
+      "duration": 0.5,
+      "rationale": "crossfade into landing, treatment change",
+      "type": "crossfade"
+    }
+  ],
+  "audioDecisions": [
+    {
+      "duration": 45,
+      "rationale": "Main music bed for the comedy edit.",
+      "sourceVideoId": "video-1",
+      "startTime": 0,
+      "type": "music",
+      "volume": 0.7
+    },
+    {
+      "duration": 0.5,
+      "rationale": "Pop sound for text reveal.",
+      "sourceStartTime": 8,
+      "type": "sfx"
+    },
+    {
+      "duration": 0.5,
+      "rationale": "Thud sound for punchline emphasis.",
+      "sourceStartTime": 17.5,
+      "type": "sfx"
+    },
+    {
+      "duration": 0.5,
+      "rationale": "Glitch sound for visual glitch.",
+      "sourceStartTime": 20,
+      "type": "sfx"
+    }
+  ],
+  "motionMoments": [],
+  "metadata": {
+    "genre": "Comedy",
+    "pacing": "medium",
+    "rationale": "A fast-paced, punchy comedy edit of podcast footage using zooms, text callouts, and rhythmic cuts to highlight funny moments.",
+    "targetDuration": 45,
+    "targetPlatform": "social"
+  }
+}

@@ -1,0 +1,418 @@
+{
+  "id": "pod-01/pod-01-vague",
+  "run": 0,
+  "projectId": "pod-01",
+  "promptId": "pod-01-vague",
+  "promptType": "vague",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [effect_intensity_out_of_range] Segment 8 effect 0 intensity must be between 0 and 1.; [effect_intensity_out_of_range] Segment 12 effect 0 intensity must be between 0 and 1.; [effect_intensity_out_of_range] Segment 13 effect 0 intensity must be between 0 and 1."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "effect_intensity_out_of_range",
+      "message": "Segment 8 effect 0 intensity must be between 0 and 1.",
+      "path": "segments.8.effectSpecs.0.intensity"
+    },
+    {
+      "severity": "error",
+      "code": "effect_intensity_out_of_range",
+      "message": "Segment 12 effect 0 intensity must be between 0 and 1.",
+      "path": "segments.12.effectSpecs.0.intensity"
+    },
+    {
+      "severity": "error",
+      "code": "effect_intensity_out_of_range",
+      "message": "Segment 13 effect 0 intensity must be between 0 and 1.",
+      "path": "segments.13.effectSpecs.0.intensity"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "High-impact hook to grab attention.",
+        "sourceEndTime": 11.5,
+        "sourceStartTime": 10,
+        "sourceVideoId": "video-1",
+        "effectSpecs": [
+          {
+            "duration": 0.3,
+            "intensity": 0.8,
+            "params": {
+              "amount": 20
+            },
+            "rationale": "Punchy chromatic aberration on the hook.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "targetPosition": 0,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Quick follow-up to establish rhythm.",
+        "sourceEndTime": 46,
+        "sourceStartTime": 45,
+        "sourceVideoId": "video-1",
+        "targetPosition": 1.5,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Establishing the vibe with a clean, intentional shot.",
+        "sourceEndTime": 103,
+        "sourceStartTime": 100,
+        "sourceVideoId": "video-1",
+        "targetPosition": 2.5,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Adding lateral movement for visual variety.",
+        "sourceEndTime": 152,
+        "sourceStartTime": 150,
+        "sourceVideoId": "video-1",
+        "targetPosition": 5.5,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Adding organic energy with a speed ramp.",
+        "sourceEndTime": 205,
+        "sourceStartTime": 200,
+        "sourceVideoId": "video-1",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "time": 0,
+              "speed": 1
+            },
+            {
+              "time": 2.5,
+              "speed": 0.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 7.5,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "A punchy transition into the mid-section.",
+        "sourceEndTime": 252,
+        "sourceStartTime": 250,
+        "sourceVideoId": "video-1",
+        "targetPosition": 12.5,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "tilt-up",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Changing the vertical axis for variety.",
+        "sourceEndTime": 303,
+        "sourceStartTime": 300,
+        "sourceVideoId": "video-1",
+        "targetPosition": 14.5,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "A moment of breathing room before the climax.",
+        "sourceEndTime": 353,
+        "sourceStartTime": 350,
+        "sourceVideoId": "video-1",
+        "targetPosition": 17.5,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "High-energy impact shot for the climax.",
+        "sourceEndTime": 383,
+        "sourceStartTime": 380,
+        "sourceVideoId": "video-1",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 1.5,
+            "params": {
+              "intensity": 1.5,
+              "radius": 20
+            },
+            "rationale": "Glow hit on the impact.",
+            "startOffset": 0,
+            "type": "glow"
+          }
+        ],
+        "targetPosition": 20.5,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Intense, focused shot during the peak.",
+        "sourceEndTime": 403,
+        "sourceStartTime": 400,
+        "sourceVideoId": "video-1",
+        "targetPosition": 23.5,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Stylized section with a heavy VHS look.",
+        "sourceEndTime": 13.5,
+        "sourceStartTime": 10,
+        "sourceVideoId": "video-1",
+        "effectSpecs": [
+          {
+            "duration": 3.5,
+            "intensity": 0.5,
+            "params": {
+              "jitter": 0.5,
+              "scanlines": 0.5
+            },
+            "rationale": "Signature VHS treatment for a stylistic shift.",
+            "startOffset": 0,
+            "type": "vhs"
+          }
+        ],
+        "targetPosition": 26.5,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Adding texture with grain and movement.",
+        "sourceEndTime": 25,
+        "sourceStartTime": 20,
+        "sourceVideoId": "video-1",
+        "targetPosition": 30,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Adding texture with grain.",
+        "sourceEndTime": 35,
+        "sourceStartTime": 30,
+        "sourceVideoId": "video-1",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 50,
+            "params": {
+              "amount": 50
+            },
+            "rationale": "Grain hit for texture.",
+            "startOffset": 0,
+            "type": "grain"
+          }
+        ],
+        "targetPosition": 35,
+        "trackIndex": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Final resolution and landing.",
+        "sourceEndTime": 45,
+        "sourceStartTime": 40,
+        "sourceVideoId": "video-1",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 40,
+            "params": {
+              "amount": 40
+            },
+            "rationale": "Vignette for the final landing.",
+            "startOffset": 0,
+            "type": "vignette"
+          }
+        ],
+        "targetPosition": 40,
+        "trackIndex": 0,
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "THE PODCAST",
+        "duration": 2.5,
+        "position": {
+          "x": 0.5,
+          "y": 0.1
+        },
+        "rationale": "Main title hook.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "slide-up",
+        "content": "UNFILTERED",
+        "duration": 2,
+        "position": {
+          "x": 0.8,
+          "y": 0.5
+        },
+        "rationale": "Mid-edit callout.",
+        "startTime": 10,
+        "style": "callout"
+      },
+      {
+        "animation": "typewriter",
+        "content": "EPISODE 01",
+        "duration": 2,
+        "position": {
+          "x": 0.2,
+          "y": 0.8
+        },
+        "rationale": "Contextual subtitle.",
+        "startTime": 20,
+        "style": "subtitle"
+      },
+      {
+        "animation": "zoom-blur",
+        "content": "WATCH NOW",
+        "duration": 5,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Final call to action.",
+        "startTime": 40,
+        "style": "title"
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 1,
+        "duration": 0.4,
+        "rationale": "Punchy transition after the hook.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 5,
+        "duration": 0.3,
+        "rationale": "Glitch transition to match the energy shift.",
+        "type": "glitch"
+      },
+      {
+        "afterSegmentIndex": 9,
+        "duration": 0.5,
+        "rationale": "Smooth landing.",
+        "type": "crossfade"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "High-energy hip-hop track to drive the montage.",
+        "sourceVideoId": "audio-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.7
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Impact hit to sync with the first visual punch.",
+        "sourceVideoId": "audio-1",
+        "startTime": 0,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Music/Highlight",
+      "pacing": "medium",
+      "rationale": "A high-energy, stylized montage that evolves from clean, intentional shots to a dense, effect-heavy climax using a hip-hop track. All overlapping timeline issues have been resolved by ensuring a strictly sequential timeline.",
+      "targetDuration": 45,
+      "targetPlatform": "Social Media"
+    }
+  }
+}

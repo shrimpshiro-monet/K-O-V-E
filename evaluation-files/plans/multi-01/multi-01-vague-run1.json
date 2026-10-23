@@ -1,0 +1,512 @@
+{
+  "segments": [
+    {
+      "cameraMoves": [
+        {
+          "move": "snap-zoom",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "Strong visual, hook, motionPeak .6",
+      "sourceEndTime": 11,
+      "sourceStartTime": 10,
+      "sourceVideoId": "video-2",
+      "targetPosition": 0,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Complementary shot, build, motionPeak .4",
+      "sourceEndTime": 46,
+      "sourceStartTime": 45,
+      "sourceVideoId": "video-2",
+      "targetPosition": 1,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Establishing shot, build, motionPeak .3",
+      "sourceEndTime": 102,
+      "sourceStartTime": 100,
+      "sourceVideoId": "video-2",
+      "targetPosition": 2,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "B-roll sequence, build, motionPeak .5",
+      "sourceEndTime": 203,
+      "sourceStartTime": 200,
+      "sourceVideoId": "video-2",
+      "targetPosition": 4,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Atmospheric shot, build, motionPeak .4",
+      "sourceEndTime": 302.5,
+      "sourceStartTime": 300,
+      "sourceVideoId": "video-2",
+      "targetPosition": 7,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Quick cut, build, motionPeak .5",
+      "sourceEndTime": 51,
+      "sourceStartTime": 50,
+      "sourceVideoId": "video-2",
+      "targetPosition": 9.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Visual variety, build, motionPeak .4",
+      "sourceEndTime": 151.5,
+      "sourceStartTime": 150,
+      "sourceVideoId": "video-2",
+      "targetPosition": 10.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Steady shot, build, motionPeak .3",
+      "sourceEndTime": 352,
+      "sourceStartTime": 350,
+      "sourceVideoId": "video-2",
+      "targetPosition": 12,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "Energy shift, build, motionPeak .6",
+      "sourceEndTime": 401.5,
+      "sourceStartTime": 400,
+      "sourceVideoId": "video-2",
+      "targetPosition": 14,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Fast cut, build, motionPeak .5",
+      "sourceEndTime": 16.5,
+      "sourceStartTime": 15,
+      "sourceVideoId": "video-2",
+      "targetPosition": 15.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Subject focus, build, motionPeak .4",
+      "sourceEndTime": 27,
+      "sourceStartTime": 25,
+      "sourceVideoId": "video-2",
+      "targetPosition": 17,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "B-roll, build, motionPeak .3",
+      "sourceEndTime": 121.5,
+      "sourceStartTime": 120,
+      "sourceVideoId": "video-2",
+      "targetPosition": 19,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Visual variety, build, motionPeak .4",
+      "sourceEndTime": 222,
+      "sourceStartTime": 220,
+      "sourceVideoId": "video-2",
+      "targetPosition": 20.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "Impact frame, ramp start, motionPeak .8",
+      "sourceEndTime": 381,
+      "sourceStartTime": 380,
+      "sourceVideoId": "video-2",
+      "targetPosition": 22.5,
+      "speed": 1.5,
+      "speedRamp": {
+        "keyframes": [
+          {
+            "easing": "ease-in",
+            "speed": 2,
+            "time": 0
+          },
+          {
+            "easing": "ease-out",
+            "speed": 1,
+            "time": 1
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Ramp end, transition, motionPeak .5",
+      "sourceEndTime": 451,
+      "sourceStartTime": 450,
+      "sourceVideoId": "video-2",
+      "targetPosition": 23.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Quick reaction, build, motionPeak .6",
+      "sourceEndTime": 30.5,
+      "sourceStartTime": 30,
+      "sourceVideoId": "video-2",
+      "targetPosition": 24.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Quick cut, build, motionPeak .4",
+      "sourceEndTime": 80.5,
+      "sourceStartTime": 80,
+      "sourceVideoId": "video-2",
+      "targetPosition": 25,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Quick cut, build, motionPeak .4",
+      "sourceEndTime": 180.5,
+      "sourceStartTime": 180,
+      "sourceVideoId": "video-2",
+      "targetPosition": 25.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "sway",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Stylized b-roll, build, motionPeak .3",
+      "sourceEndTime": 351,
+      "sourceStartTime": 350,
+      "sourceVideoId": "video-2",
+      "targetPosition": 26,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Steady shot, build, motionPeak .4",
+      "sourceEndTime": 252,
+      "sourceStartTime": 250,
+      "sourceVideoId": "video-2",
+      "targetPosition": 27,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Establishing shot, build, motionPeak .3",
+      "sourceEndTime": 12,
+      "sourceStartTime": 10,
+      "sourceVideoId": "video-2",
+      "targetPosition": 29,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "Climax hit, motionPeak .9",
+      "sourceEndTime": 382,
+      "sourceStartTime": 381,
+      "sourceVideoId": "video-2",
+      "targetPosition": 31,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Fast cut, climax, motionPeak .5",
+      "sourceEndTime": 41,
+      "sourceStartTime": 40,
+      "sourceVideoId": "video-2",
+      "targetPosition": 32,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Rapid cut, climax, motionPeak .4",
+      "sourceEndTime": 100.5,
+      "sourceStartTime": 100,
+      "sourceVideoId": "video-2",
+      "targetPosition": 33,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Rapid cut, climax, motionPeak .4",
+      "sourceEndTime": 200.5,
+      "sourceStartTime": 200,
+      "sourceVideoId": "video-2",
+      "targetPosition": 33.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Rapid cut, climax, motionPeak .4",
+      "sourceEndTime": 300.5,
+      "sourceStartTime": 300,
+      "sourceVideoId": "video-2",
+      "targetPosition": 34,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Rapid cut, climax, motionPeak .4",
+      "sourceEndTime": 50.5,
+      "sourceStartTime": 50,
+      "sourceVideoId": "video-2",
+      "targetPosition": 34.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Rapid cut, climax, motionPeak .4",
+      "sourceEndTime": 150.5,
+      "sourceStartTime": 150,
+      "sourceVideoId": "video-2",
+      "targetPosition": 35,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Rapid cut, climax, motionPeak .4",
+      "sourceEndTime": 350.5,
+      "sourceStartTime": 350,
+      "sourceVideoId": "video-2",
+      "targetPosition": 35.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Rapid cut, climax, motionPeak .4",
+      "sourceEndTime": 351,
+      "sourceStartTime": 350,
+      "sourceVideoId": "video-2",
+      "targetPosition": 36,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "Rapid cut, climax, motionPeak .4",
+      "sourceEndTime": 451,
+      "sourceStartTime": 450,
+      "sourceVideoId": "video-2",
+      "targetPosition": 37,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "pull-back",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "Final landing, hold, motionPeak .3",
+      "sourceEndTime": 207,
+      "sourceStartTime": 200,
+      "sourceVideoId": "video-2",
+      "targetPosition": 38,
+      "trackIndex": 0,
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "animation": "pop",
+      "animationInSec": 0.2,
+      "content": "THE BEST OF",
+      "duration": 2,
+      "position": {
+        "x": 0.5,
+        "y": 0.2
+      },
+      "rationale": "Hook text.",
+      "startTime": 0.5,
+      "style": "title"
+    },
+    {
+      "animation": "fade",
+      "animationInSec": 0.5,
+      "content": "PODCAST HIGHLIGHTS",
+      "duration": 2.5,
+      "position": {
+        "x": 0.5,
+        "y": 0.3
+      },
+      "rationale": "Title card.",
+      "startTime": 2.5,
+      "style": "subtitle"
+    },
+    {
+      "animation": "slide-up",
+      "animationInSec": 0.3,
+      "content": "SUBSCRIBE",
+      "duration": 4,
+      "position": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "rationale": "Outro call to action.",
+      "startTime": 41,
+      "style": "callout"
+    }
+  ],
+  "effects": [
+    {
+      "params": {
+        "amount": "20",
+        "rgbSplit": "0.5",
+        "speed": "1"
+      },
+      "rationale": "Glitch hit on the climax transition.",
+      "targetSegmentIndex": 21,
+      "type": "glitch-blocks"
+    },
+    {
+      "params": {
+        "intensity": "0.5",
+        "radius": "10",
+        "type": "chromatic-aberration"
+      },
+      "rationale": "Visual punch on the speed ramp hit.",
+      "targetSegmentIndex": 13,
+      "type": "chromatic-aberration"
+    }
+  ],
+  "transitions": [
+    {
+      "afterSegmentIndex": 0,
+      "duration": 0.3,
+      "rationale": "Smooth transition into build.",
+      "type": "crossfade"
+    },
+    {
+      "afterSegmentIndex": 20,
+      "duration": 0.4,
+      "rationale": "Transition into high-energy climax.",
+      "type": "glitch"
+    }
+  ],
+  "audioDecisions": [
+    {
+      "duration": 45,
+      "rationale": "Using video-1 as the primary audio bed for the montage.",
+      "sourceVideoId": "video-1",
+      "type": "music",
+      "volume": 0.7
+    },
+    {
+      "duration": 0.5,
+      "rationale": "Impact hit on the climax transition.",
+      "sourceVideoId": "video-1",
+      "startTime": 22.5,
+      "type": "sfx"
+    },
+    {
+      "duration": 0.5,
+      "rationale": "Impact hit on the second climax beat.",
+      "sourceVideoId": "video-2",
+      "startTime": 31,
+      "type": "sfx"
+    }
+  ],
+  "motionMoments": [],
+  "metadata": {
+    "genre": "Podcast Highlights",
+    "pacing": "medium",
+    "rationale": "A high-energy montage of the best moments from both podcast videos, using rhythmic cuts and visual accents to maintain engagement.",
+    "targetDuration": 45,
+    "targetPlatform": "social_media"
+  }
+}

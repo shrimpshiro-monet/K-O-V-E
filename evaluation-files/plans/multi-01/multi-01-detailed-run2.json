@@ -1,0 +1,600 @@
+{
+  "segments": [
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "Strong emotional hook, immediate engagement, motionPeak 0.85.",
+      "sourceEndTime": 14.5,
+      "sourceStartTime": 12,
+      "targetPosition": 0,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Reaction shot, reinforcing the hook, subjectContinuity 0.9.",
+      "sourceEndTime": 16.5,
+      "sourceStartTime": 14.5,
+      "targetPosition": 2.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Establishing context, transition to first episode, subjectContinuity 0.8.",
+      "sourceEndTime": 45,
+      "sourceStartTime": 40,
+      "targetPosition": 4.5,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "Build phase, introducing the first narrative thread, motionPeak 0.4.",
+      "sourceEndTime": 54,
+      "sourceStartTime": 50,
+      "targetPosition": 9.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Build phase, deepening the conversation, subjectContinuity 0.85.",
+      "sourceEndTime": 65,
+      "sourceStartTime": 60,
+      "targetPosition": 13.5,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Build phase, adding raw energy, motionPeak 0.5.",
+      "sourceEndTime": 74,
+      "sourceStartTime": 70,
+      "targetPosition": 18.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Build phase, stabilizing the narrative, subjectContinuity 0.8.",
+      "sourceEndTime": 84,
+      "sourceStartTime": 80,
+      "targetPosition": 22.5,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "wobble",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Transition to interleaving, slight shift in tone, motionPeak 0.3.",
+      "sourceEndTime": 93,
+      "sourceStartTime": 90,
+      "targetPosition": 26.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Interleaving phase, building tension, subjectContinuity 0.8.",
+      "sourceEndTime": 104,
+      "sourceStartTime": 100,
+      "targetPosition": 29.5,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Interleaving, rapid dialogue exchange, motionPeak 0.4.",
+      "sourceEndTime": 113,
+      "sourceStartTime": 110,
+      "targetPosition": 33.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Interleaving, maintaining rhythm, subjectContinuity 0.85.",
+      "sourceEndTime": 124,
+      "sourceStartTime": 120,
+      "targetPosition": 36.5,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Interleaving, rhythmic beat, motionPeak 0.3.",
+      "sourceEndTime": 133,
+      "sourceStartTime": 130,
+      "targetPosition": 40.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Interleaving, building momentum, subjectContinuity 0.8.",
+      "sourceEndTime": 144,
+      "sourceStartTime": 140,
+      "targetPosition": 43.5,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Interleaving, increasing energy, motionPeak 0.5.",
+      "sourceEndTime": 153,
+      "sourceStartTime": 150,
+      "targetPosition": 47.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Interleaving, steady build, subjectContinuity 0.85.",
+      "sourceEndTime": 164,
+      "sourceStartTime": 160,
+      "targetPosition": 50.5,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Interleaving, rhythmic beat, motionPeak 0.3.",
+      "sourceEndTime": 173,
+      "sourceStartTime": 170,
+      "targetPosition": 54.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "Interleaving, preparing for climax, subjectContinuity 0.8.",
+      "sourceEndTime": 184,
+      "sourceStartTime": 180,
+      "targetPosition": 57.5,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "Interleaving, high stakes, motionPeak 0.6.",
+      "sourceEndTime": 193,
+      "sourceStartTime": 190,
+      "targetPosition": 61.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.6
+        }
+      ],
+      "rationale": "Climax entry, high energy, motionPeak 0.9. speedRamp into peak.",
+      "sourceEndTime": 204,
+      "sourceStartTime": 200,
+      "targetPosition": 64.5,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 205.5,
+      "sourceStartTime": 204,
+      "targetPosition": 68.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 207,
+      "sourceStartTime": 205.5,
+      "targetPosition": 70,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 208.5,
+      "sourceStartTime": 207,
+      "targetPosition": 71.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 210,
+      "sourceStartTime": 208.5,
+      "targetPosition": 73,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 211.5,
+      "sourceStartTime": 210,
+      "targetPosition": 74.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 213,
+      "sourceStartTime": 211.5,
+      "targetPosition": 76,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 214.5,
+      "sourceStartTime": 213,
+      "targetPosition": 77.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 216,
+      "sourceStartTime": 214.5,
+      "targetPosition": 79,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 217.5,
+      "sourceStartTime": 216,
+      "targetPosition": 80.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 219,
+      "sourceStartTime": 217.5,
+      "targetPosition": 82,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 220.5,
+      "sourceStartTime": 219,
+      "targetPosition": 83.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 222,
+      "sourceStartTime": 220.5,
+      "targetPosition": 85,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 223.5,
+      "sourceStartTime": 222,
+      "targetPosition": 86.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 225,
+      "sourceStartTime": 223.5,
+      "targetPosition": 88,
+      "targetVideoId": "video-1",
+      "sourceVideoId": "video-1",
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "Climax, rapid-fire emotional beats, motionPeak 0.7.",
+      "sourceEndTime": 225.5,
+      "sourceStartTime": 225,
+      "targetPosition": 89.5,
+      "targetVideoId": "video-2",
+      "sourceVideoId": "video-1",
+      "effects": []
+    }
+  ],
+  "textElements": [
+    {
+      "animation": "pop",
+      "content": "The Truth About It All",
+      "duration": 3,
+      "position": {
+        "x": 0.5,
+        "y": 0.15
+      },
+      "rationale": "Hook text, immediate impact.",
+      "startTime": 0.5,
+      "style": "title"
+    },
+    {
+      "animation": "fade",
+      "content": "Episode 1: The Beginning",
+      "duration": 2,
+      "position": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "rationale": "Contextual callout.",
+      "startTime": 5,
+      "style": "lower-third"
+    },
+    {
+      "animation": "word-by-word",
+      "content": "I never thought it would end like this.",
+      "duration": 3,
+      "position": {
+        "x": 0.5,
+        "y": 0.85
+      },
+      "rationale": "Caption for key emotional moment.",
+      "startTime": 12,
+      "style": "caption"
+    }
+  ],
+  "effects": [
+    {
+      "params": {
+        "intensity": 0.5,
+        "radius": 10,
+        "type": "chromatic-aberration"
+      },
+      "rationale": "Accentuate the emotional peak of the climax.",
+      "targetSegmentIndex": 18,
+      "type": "chromatic-aberration"
+    }
+  ],
+  "transitions": [
+    {
+      "afterSegmentIndex": 17,
+      "duration": 0.4,
+      "rationale": "Transition into the high-energy climax.",
+      "type": "impactShake"
+    },
+    {
+      "afterSegmentIndex": 18,
+      "duration": 0.3,
+      "rationale": "Transition into the rapid-fire climax.",
+      "type": "glitch"
+    }
+  ],
+  "audioDecisions": [
+    {
+      "duration": 90,
+      "rationale": "Emotional underscore for the entire arc.",
+      "sourceVideoId": "audio/Dave - Raindance (ft. Tems).mp3",
+      "startTime": 0,
+      "type": "music",
+      "volume": 0.6
+    }
+  ],
+  "captionTemplate": {
+    "animation": "pop",
+    "style": "caption"
+  },
+  "motionMoments": [],
+  "metadata": {
+    "genre": "Documentary/Podcast",
+    "pacing": "medium",
+    "rationale": "A continuous emotional arc interleaving two podcast episodes, starting with a cold hook and building to a high-stakes climax.",
+    "targetDuration": 90,
+    "targetPlatform": "YouTube"
+  }
+}

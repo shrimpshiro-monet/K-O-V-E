@@ -1,0 +1,142 @@
+{
+  "generatedAt": "2026-10-11T07:03:19.692Z",
+  "model": "@cf/google/gemma-4-26b-a4b-it-external",
+  "sampling": {
+    "temperature": 0,
+    "seed": 1234
+  },
+  "runsPerCombo": 2,
+  "corpusFingerprint": "546b64d0357c05db50c70133d9334bbe5037cfbd02745a255cfadc59d34448a3",
+  "cases": 1,
+  "total": 2,
+  "passed": 1,
+  "status": "complete",
+  "quotaExcluded": 0,
+  "gateRates": {
+    "planValidates": {
+      "mean": 0.5,
+      "min": 0,
+      "max": 1,
+      "stdev": 0.7071,
+      "perRun": [
+        0,
+        1
+      ],
+      "validPerRun": [
+        1,
+        1
+      ]
+    },
+    "materializes": {
+      "mean": 0.5,
+      "min": 0,
+      "max": 1,
+      "stdev": 0.7071,
+      "perRun": [
+        0,
+        1
+      ],
+      "validPerRun": [
+        1,
+        1
+      ]
+    },
+    "noClipOverlaps": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1,
+        1
+      ],
+      "validPerRun": [
+        1,
+        1
+      ]
+    },
+    "allGates": {
+      "mean": 0.5,
+      "min": 0,
+      "max": 1,
+      "stdev": 0.7071,
+      "perRun": [
+        0,
+        1
+      ],
+      "validPerRun": [
+        1,
+        1
+      ]
+    }
+  },
+  "determinism": {
+    "allPass": 0,
+    "allFail": 0,
+    "mixed": 1,
+    "mixedIds": [
+      "multi-01/multi-01-detailed"
+    ],
+    "incomplete": 0,
+    "incompleteIds": []
+  },
+  "results": [
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [bad_target_duration] Target duration must be positive."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 293646,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r2-include-1.json.failures/multi-01/multi-01-detailed#run0.json"
+    },
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 1,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 164951,
+        "clipCount": 10,
+        "transitionCount": 0,
+        "effectCount": 1,
+        "audioCount": 1,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": 90
+      }
+    }
+  ]
+}

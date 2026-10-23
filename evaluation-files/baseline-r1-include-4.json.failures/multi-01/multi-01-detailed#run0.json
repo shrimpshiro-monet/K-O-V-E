@@ -1,0 +1,272 @@
+{
+  "id": "multi-01/multi-01-detailed",
+  "run": 0,
+  "projectId": "multi-01",
+  "promptId": "multi-01-detailed",
+  "promptType": "detailed",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 5 and 7 overlap in time on the same track (75.00-90.00s vs 85.00-100.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 8 overlap in time on the same track (75.00-90.00s vs 88.00-504.37s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 5 and 7 overlap in time on the same track (75.00-90.00s vs 85.00-100.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.7.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 5 and 8 overlap in time on the same track (75.00-90.00s vs 88.00-504.37s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.8.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Cold open: the strongest emotional hook from Episode 1.",
+        "sourceEndTime": 45,
+        "sourceStartTime": 30,
+        "targetPosition": 0,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "First interleave: introducing the perspective from Episode 2.",
+        "sourceEndTime": 135,
+        "sourceStartTime": 120,
+        "targetPosition": 15,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Building the conversation: Episode 1 response.",
+        "sourceEndTime": 75,
+        "sourceStartTime": 60,
+        "targetPosition": 30,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Building the conversation: Episode 2 response.",
+        "sourceEndTime": 195,
+        "sourceStartTime": 180,
+        "targetPosition": 45,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Increasing stakes: Episode 1 deeper dive.",
+        "sourceEndTime": 115,
+        "sourceStartTime": 100,
+        "targetPosition": 60,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Increasing stakes: Episode 2 deeper dive.",
+        "sourceEndTime": 265,
+        "sourceStartTime": 250,
+        "targetPosition": 75,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax: The most intense moment from Episode 1.",
+        "sourceEndTime": 215,
+        "sourceStartTime": 200,
+        "targetPosition": 80,
+        "trackIndex": 0,
+        "speedRamp": {
+          "keyframes": [
+            {
+              "easing": "ease-in",
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 1.5,
+              "time": 0.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax: The most intense moment from Episode 2.",
+        "sourceEndTime": 365,
+        "sourceStartTime": 350,
+        "targetPosition": 85,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Resolution: A quiet, reflective moment to close the arc.",
+        "sourceEndTime": 416.371484,
+        "sourceStartTime": 0,
+        "targetPosition": 88,
+        "trackIndex": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "The truth about the journey...",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Opening hook text.",
+        "startTime": 2,
+        "style": "title"
+      },
+      {
+        "animation": "typewriter",
+        "content": "[Captions will be burned in throughout]",
+        "duration": 85,
+        "position": {
+          "x": 0.5,
+          "y": 0.85
+        },
+        "rationale": "Continuous captioning for accessibility.",
+        "startTime": 5,
+        "style": "caption"
+      }
+    ],
+    "effects": [
+      {
+        "params": {
+          "brightness": 0.8,
+          "contrast": 1.2
+        },
+        "rationale": "Coherent color grade for a cinematic, moody feel.",
+        "targetSegmentIndex": 0,
+        "type": "colorGrade"
+      },
+      {
+        "params": {
+          "amount": 40
+        },
+        "rationale": "Subtle vignette to focus on the speaker during emotional beats.",
+        "targetSegmentIndex": 1,
+        "type": "vignette"
+      },
+      {
+        "params": {
+          "amount": 20
+        },
+        "rationale": "Adding texture to the climax.",
+        "targetSegmentIndex": 6,
+        "type": "grain"
+      }
+    ],
+    "transitions": [
+      {
+        "afterSegmentIndex": 0,
+        "duration": 0.3,
+        "rationale": "Punchy transition into the body.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 5,
+        "duration": 0.4,
+        "rationale": "Transition into the high-intensity climax.",
+        "type": "flash"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 90,
+        "rationale": "Emotional, rhythmic backdrop for the podcast arc.",
+        "sourceVideoId": "audio/Dave - Raindance (ft. Tems).mp3",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.2
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Subtle impact to transition from the cold open hook to the main body.",
+        "sourceVideoId": "video-1",
+        "startTime": 15,
+        "type": "sfx",
+        "volume": 0.5
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Podcast/Documentary",
+      "pacing": "medium",
+      "rationale": "A 90-second emotional journey interleaving two podcast episodes, using J-cuts and rhythmic hard cuts to build tension and resolve.",
+      "targetDuration": 90,
+      "targetPlatform": "YouTube"
+    }
+  }
+}

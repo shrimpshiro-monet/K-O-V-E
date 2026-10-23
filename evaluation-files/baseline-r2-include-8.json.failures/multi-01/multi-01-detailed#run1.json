@@ -1,0 +1,342 @@
+{
+  "id": "multi-01/multi-01-detailed",
+  "run": 1,
+  "projectId": "multi-01",
+  "promptId": "multi-01-detailed",
+  "promptType": "detailed",
+  "toolCode": "EDIT_PLAN_APPLY_FAILED",
+  "failures": [
+    "plan_edit failed [EDIT_PLAN_APPLY_FAILED]: EditPlan was valid but could not be applied: Could not add planned music: \"music_id\" is not a media library id or name. Available audio/video media: video-1 (podcast #1.mp4), video-2 (podcast 2.mp4), audio-1 (audio/Dave - Raindance (ft. Tems).mp3).. The timeline was left at its previous revision (10 partial artifact(s) removed)."
+  ],
+  "warnings": [],
+  "issues": [],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Cold open with the strongest emotional hook from podcast #1.",
+        "sourceEndTime": 140,
+        "sourceStartTime": 120,
+        "targetPosition": 0,
+        "targetVideoId": "video-1",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Introducing the second perspective from podcast 2.",
+        "sourceEndTime": 220,
+        "sourceStartTime": 200,
+        "targetPosition": 20,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Intensifying the dialogue by cutting back to podcast 1.",
+        "sourceEndTime": 160,
+        "sourceStartTime": 150,
+        "targetPosition": 40,
+        "targetVideoId": "video-1",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Interleaving podcast 2 to raise the stakes.",
+        "sourceEndTime": 220,
+        "sourceStartTime": 210,
+        "targetPosition": 50,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Rapid interleaving to increase emotional density.",
+        "sourceEndTime": 175,
+        "sourceStartTime": 170,
+        "targetPosition": 60,
+        "targetVideoId": "video-1",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Reaction shot from podcast 2.",
+        "sourceEndTime": 235,
+        "sourceStartTime": 230,
+        "targetPosition": 65,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Building towards the climax.",
+        "sourceEndTime": 185,
+        "sourceStartTime": 180,
+        "targetPosition": 70,
+        "targetVideoId": "video-1",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Counterpoint from podcast 2.",
+        "sourceEndTime": 245,
+        "sourceStartTime": 240,
+        "targetPosition": 75,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax: the most intense moment of the arc.",
+        "sourceEndTime": 195,
+        "sourceStartTime": 190,
+        "targetPosition": 80,
+        "targetVideoId": "video-1",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Resolution and fade out.",
+        "sourceEndTime": 255,
+        "sourceStartTime": 250,
+        "targetPosition": 85,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "fade",
+        "content": "\"It changed everything for me...\"",
+        "duration": 4,
+        "position": {
+          "x": 0.5,
+          "y": 0.85
+        },
+        "rationale": "Opening hook caption.",
+        "startTime": 1,
+        "style": "caption"
+      },
+      {
+        "animation": "pop",
+        "content": "\"The stakes were higher than we knew.\"",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Mid-video emphasis.",
+        "startTime": 45,
+        "style": "callout"
+      },
+      {
+        "animation": "typewriter",
+        "content": "\"A journey of truth.\"",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.85
+        },
+        "rationale": "Closing caption.",
+        "startTime": 86,
+        "style": "caption"
+      }
+    ],
+    "effects": [
+      {
+        "params": {
+          "amount": 30
+        },
+        "rationale": "Emotional texture for the opening.",
+        "targetSegmentIndex": 0,
+        "type": "vignette"
+      },
+      {
+        "params": {
+          "amount": 15
+        },
+        "rationale": "Adding a raw, documentary feel.",
+        "targetSegmentIndex": 1,
+        "type": "grain"
+      },
+      {
+        "params": {
+          "amount": 20
+        },
+        "rationale": "Emphasizing the punch-in.",
+        "targetSegmentIndex": 2,
+        "type": "chromatic-aberration"
+      },
+      {
+        "params": {
+          "value": 1.1
+        },
+        "rationale": "Subtle contrast boost for clarity.",
+        "targetSegmentIndex": 3,
+        "type": "contrast"
+      },
+      {
+        "params": {
+          "radius": 10,
+          "intensity": 1.5
+        },
+        "rationale": "Highlighting the emotional peak.",
+        "targetSegmentIndex": 4,
+        "type": "glow"
+      },
+      {
+        "params": {
+          "amount": 15
+        },
+        "rationale": "Adding tension.",
+        "targetSegmentIndex": 5,
+        "type": "blur"
+      },
+      {
+        "params": {
+          "value": 0.9
+        },
+        "rationale": "Slightly desaturating for mood.",
+        "targetSegmentIndex": 6,
+        "type": "saturation"
+      },
+      {
+        "params": {
+          "value": 1.2
+        },
+        "rationale": "Punchy contrast for the build.",
+        "targetSegmentIndex": 7,
+        "type": "contrast"
+      },
+      {
+        "params": {
+          "amount": 25
+        },
+        "rationale": "Maximum impact on the climax.",
+        "targetSegmentIndex": 8,
+        "type": "chromatic-aberration"
+      },
+      {
+        "params": {
+          "amount": 40
+        },
+        "rationale": "Softening the resolution.",
+        "targetSegmentIndex": 9,
+        "type": "vignette"
+      }
+    ],
+    "transitions": [
+      {
+        "afterSegmentIndex": 0,
+        "duration": 0.3,
+        "rationale": "Hard cut to maintain rhythm.",
+        "type": "crossfade"
+      },
+      {
+        "afterSegmentIndex": 1,
+        "duration": 0.3,
+        "rationale": "Hard cut.",
+        "type": "crossfade"
+      },
+      {
+        "afterSegmentIndex": 4,
+        "duration": 0.4,
+        "rationale": "Whip pan to signal the shift into the high-intensity phase.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 8,
+        "duration": 0.5,
+        "rationale": "Smooth landing for the resolution.",
+        "type": "dipToBlack"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 90,
+        "rationale": "Emotional underscore for the podcast arc.",
+        "sourceVideoId": "music_id",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.3
+      }
+    ],
+    "captionTemplate": {
+      "color": "#FFFFFF",
+      "fontFamily": "Inter, sans-serif",
+      "fontSize": 24,
+      "position": {
+        "x": 0.5,
+        "y": 0.85
+      },
+      "style": "caption"
+    },
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Podcast/Documentary",
+      "pacing": "medium",
+      "rationale": "A continuous emotional arc interleaving two podcast episodes, starting with a cold open and building tension through alternating perspectives.",
+      "targetDuration": 90,
+      "targetPlatform": "YouTube"
+    }
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "segments": [
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.8
+        }
+      ],
+      "rationale": "strong reaction, hook, motionPeak .85",
+      "sourceEndTime": 12.8,
+      "sourceStartTime": 12,
+      "sourceVideoId": "video-2",
+      "targetPosition": 0,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "follow up, hook, motionPeak .70",
+      "sourceEndTime": 14.5,
+      "sourceStartTime": 13.5,
+      "sourceVideoId": "video-2",
+      "targetPosition": 0.8,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.3
+        }
+      ],
+      "rationale": "interesting point, build, beat@1.8",
+      "sourceEndTime": 47.5,
+      "sourceStartTime": 45,
+      "sourceVideoId": "video-2",
+      "targetPosition": 1.8,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "contextual b-roll, build, beat@4.3",
+      "sourceEndTime": 83,
+      "sourceStartTime": 80,
+      "sourceVideoId": "video-2",
+      "targetPosition": 4.3,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.4
+        }
+      ],
+      "rationale": "contextual b-roll, build, beat@7.3",
+      "sourceEndTime": 113,
+      "sourceStartTime": 110,
+      "sourceVideoId": "video-2",
+      "targetPosition": 7.3,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.5
+        }
+      ],
+      "rationale": "engaging dialogue, build, beat@10.3",
+      "sourceEndTime": 154.7,
+      "sourceStartTime": 150,
+      "sourceVideoId": "video-2",
+      "targetPosition": 10.3,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "snippet, build, beat@15.0",
+      "sourceEndTime": 181.5,
+      "sourceStartTime": 180,
+      "sourceVideoId": "video-2",
+      "targetPosition": 15,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "snippet, build, beat@16.5",
+      "sourceEndTime": 201.5,
+      "sourceStartTime": 200,
+      "sourceVideoId": "video-2",
+      "targetPosition": 16.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.7
+        }
+      ],
+      "rationale": "reaction, build, beat@18.0",
+      "sourceEndTime": 222,
+      "sourceStartTime": 220,
+      "sourceVideoId": "video-2",
+      "targetPosition": 18,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "snippet, build, beat@20.0",
+      "sourceEndTime": 241.5,
+      "sourceStartTime": 240,
+      "sourceVideoId": "video-2",
+      "targetPosition": 20,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "snippet, build, beat@21.5",
+      "sourceEndTime": 262,
+      "sourceStartTime": 260,
+      "sourceVideoId": "video-2",
+      "targetPosition": 21.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "snippet, build, beat@23.5",
+      "sourceEndTime": 282,
+      "sourceStartTime": 280,
+      "sourceVideoId": "video-2",
+      "targetPosition": 23.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "snippet, build, beat@25.5",
+      "sourceEndTime": 302,
+      "sourceStartTime": 300,
+      "sourceVideoId": "video-2",
+      "targetPosition": 25.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [],
+      "rationale": "transition to climax, beat@27.5",
+      "sourceEndTime": 322.5,
+      "sourceStartTime": 320,
+      "sourceVideoId": "video-2",
+      "targetPosition": 27.5,
+      "trackIndex": 0,
+      "effects": []
+    },
+    {
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.9
+        }
+      ],
+      "rationale": "climax entry, speed ramp, beat@30.0",
+      "sourceEndTime": 341,
+      "sourceStartTime": 340,
+      "sourceVideoId": "video-2",
+      "targetPosition": 30,
+      "speedRamp": {
+        "keyframes": [
+          {
+            "easing": "ease-in",
+            "speed": 2,
+            "time": 0
+          },
+          {
+            "easing": "ease-out",
+            "speed": 1,
+            "time": 1
+          }
+        ],
+        "pitchCorrection": true
+      },
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "effects": [],
+      "sourceStartTime": 0,
+      "sourceEndTime": 14,
+      "targetPosition": 31
+    }
+  ],
+  "textElements": [],
+  "effects": [],
+  "transitions": [],
+  "audioDecisions": [
+    {
+      "duration": 45,
+      "rationale": "Continuous music bed to drive energy.",
+      "sourceVideoId": "video-1",
+      "startTime": 0,
+      "type": "music",
+      "volume": 0.7
+    },
+    {
+      "duration": 0.3,
+      "rationale": "Impact hit on the transition to the climax.",
+      "sourceVideoId": "video-1",
+      "startTime": 30,
+      "type": "sfx"
+    }
+  ],
+  "motionMoments": [],
+  "metadata": {
+    "genre": "Podcast Highlights",
+    "pacing": "medium",
+    "rationale": "A high-energy highlight reel designed for social media, using rapid cuts and text overlays to capture attention.",
+    "targetDuration": 45,
+    "targetPlatform": "9:16"
+  }
+}

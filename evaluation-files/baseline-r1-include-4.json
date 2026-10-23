@@ -1,0 +1,192 @@
+{
+  "generatedAt": "2026-10-10T03:34:53.141Z",
+  "model": "@cf/google/gemma-4-26b-a4b-it-external",
+  "sampling": {
+    "temperature": 0,
+    "seed": 1234
+  },
+  "runsPerCombo": 1,
+  "corpusFingerprint": "546b64d0357c05db50c70133d9334bbe5037cfbd02745a255cfadc59d34448a3",
+  "cases": 4,
+  "total": 4,
+  "passed": 1,
+  "status": "complete",
+  "quotaExcluded": 0,
+  "gateRates": {
+    "planValidates": {
+      "mean": 0.25,
+      "min": 0.25,
+      "max": 0.25,
+      "stdev": 0,
+      "perRun": [
+        0.25
+      ],
+      "validPerRun": [
+        4
+      ]
+    },
+    "materializes": {
+      "mean": 0.25,
+      "min": 0.25,
+      "max": 0.25,
+      "stdev": 0,
+      "perRun": [
+        0.25
+      ],
+      "validPerRun": [
+        4
+      ]
+    },
+    "noClipOverlaps": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1
+      ],
+      "validPerRun": [
+        4
+      ]
+    },
+    "allGates": {
+      "mean": 0.25,
+      "min": 0.25,
+      "max": 0.25,
+      "stdev": 0,
+      "perRun": [
+        0.25
+      ],
+      "validPerRun": [
+        4
+      ]
+    }
+  },
+  "determinism": {
+    "allPass": 1,
+    "allFail": 3,
+    "mixed": 0,
+    "mixedIds": [],
+    "incomplete": 0,
+    "incompleteIds": []
+  },
+  "results": [
+    {
+      "id": "pod-02/pod-02-vague",
+      "run": 0,
+      "projectId": "pod-02",
+      "promptId": "pod-02-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [invalid_freeze_frame] Segment 8 freeze frame 0 is invalid."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 170161,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r1-include-4.json.failures/pod-02/pod-02-vague#run0.json"
+    },
+    {
+      "id": "pod-02/pod-02-genre",
+      "run": 0,
+      "projectId": "pod-02",
+      "promptId": "pod-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 85411,
+        "clipCount": 10,
+        "transitionCount": 0,
+        "effectCount": 2,
+        "audioCount": 2,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": 45
+      }
+    },
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 5 and 7 overlap in time on the same track (75.00-90.00s vs 85.00-100.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 8 overlap in time on the same track (75.00-90.00s vs 88.00-504.37s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 253278,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r1-include-4.json.failures/multi-01/multi-01-detailed#run0.json"
+    },
+    {
+      "id": "multi-01/multi-01-genre",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-genre",
+      "promptType": "genre",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [unsupported_effect] Effect \"undefined\" is not supported by the renderer. Supported effects: brightness, contrast, saturation, grayscale, sepia, invert, hue, blur, sharpen, vignette, grain, temperature, tint, tonal, chromaKey, shadow, glow, motion-blur, radial-blur, chromatic-aberration, shader (colorGrade also maps to clip color grading). Signature shader effects: vhs, scanlines, halftone, dither, posterize, duotone, gradient-map, prism, fisheye, wave-warp, edge-glow, speed-lines, glitch-blocks, light-leak, pixelate, kaleidoscope, mirror-tiles, swirl, crt-curve, echo."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 180493,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "failureArtifact": "baseline-r1-include-4.json.failures/multi-01/multi-01-genre#run0.json"
+    }
+  ]
+}

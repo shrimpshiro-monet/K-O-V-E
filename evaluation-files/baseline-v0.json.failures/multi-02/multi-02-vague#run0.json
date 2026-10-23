@@ -1,0 +1,35 @@
+{
+  "id": "multi-02/multi-02-vague",
+  "run": 0,
+  "projectId": "multi-02",
+  "promptId": "multi-02-vague",
+  "promptType": "vague",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [bad_target_duration] Target duration must be positive."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "bad_target_duration",
+      "message": "Target duration must be positive.",
+      "path": "metadata.targetDuration"
+    }
+  ],
+  "editPlan": {
+    "segments": [],
+    "textElements": [],
+    "effects": [],
+    "transitions": [],
+    "audioDecisions": [],
+    "motionMoments": [],
+    "metadata": {
+      "targetDuration": 0,
+      "targetPlatform": "unknown",
+      "genre": "unknown",
+      "pacing": "medium",
+      "rationale": ""
+    }
+  }
+}

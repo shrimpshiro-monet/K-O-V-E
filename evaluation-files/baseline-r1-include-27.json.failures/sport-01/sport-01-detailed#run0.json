@@ -1,0 +1,181 @@
+{
+  "id": "sport-01/sport-01-detailed",
+  "run": 0,
+  "projectId": "sport-01",
+  "promptId": "sport-01-detailed",
+  "promptType": "detailed",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 0 and 1 overlap in time on the same track (0.00-12.00s vs 1.00-16.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 0 and 2 overlap in time on the same track (0.00-12.00s vs 2.00-20.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 0 and 1 overlap in time on the same track (0.00-12.00s vs 1.00-16.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.1.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 0 and 2 overlap in time on the same track (0.00-12.00s vs 2.00-20.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.2.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Rank 3 make. Starting with a lateral drift to establish the scene before the shot.",
+        "sourceEndTime": 17,
+        "sourceStartTime": 5,
+        "sourceVideoId": "video-1",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 0.5,
+              "time": 0.5
+            },
+            {
+              "speed": 1,
+              "time": 1.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Rank 2 make. Using a punch-in to increase tension as the shot is released.",
+        "sourceEndTime": 40,
+        "sourceStartTime": 25,
+        "sourceVideoId": "video-1",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 0.3,
+              "time": 0.6
+            },
+            {
+              "speed": 1,
+              "time": 2
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 1,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Rank 1 make. A slow push to build anticipation for the most spectacular shot of the set.",
+        "sourceEndTime": 68,
+        "sourceStartTime": 50,
+        "sourceVideoId": "video-1",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 0.2,
+              "time": 0.8
+            },
+            {
+              "speed": 1,
+              "time": 2.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 2,
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "3",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Countdown number 3.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "scale",
+        "content": "2",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Countdown number 2.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "zoom-blur",
+        "content": "1",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Countdown number 1.",
+        "startTime": 0.5,
+        "style": "title"
+      }
+    ],
+    "effects": [],
+    "transitions": [],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "Using the natural crowd audio from the source video to drive the energy of the countdown.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Sports Highlight",
+      "pacing": "medium",
+      "rationale": "A high-energy 3-2-1 countdown of Steph Curry's best makes, using speed ramps to emphasize the shooting motion and large text for the countdown numbers.",
+      "targetDuration": 45,
+      "targetPlatform": "TikTok"
+    }
+  }
+}

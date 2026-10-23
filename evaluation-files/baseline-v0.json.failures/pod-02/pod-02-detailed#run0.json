@@ -1,0 +1,121 @@
+{
+  "id": "pod-02/pod-02-detailed",
+  "run": 0,
+  "projectId": "pod-02",
+  "promptId": "pod-02-detailed",
+  "promptType": "detailed",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 0 and 1 overlap in time on the same track (0.00-3.00s vs 0.00-22.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 0 and 2 overlap in time on the same track (0.00-3.00s vs 0.00-5.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 0 and 1 overlap in time on the same track (0.00-3.00s vs 0.00-22.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.1.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 0 and 2 overlap in time on the same track (0.00-3.00s vs 0.00-5.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.2.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Cold-open hook: the immediate reaction to the joke.",
+        "sourceEndTime": 125,
+        "sourceStartTime": 122,
+        "sourceVideoId": "video-1",
+        "targetPosition": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "The setup/context leading to the punchline.",
+        "sourceEndTime": 122,
+        "sourceStartTime": 100,
+        "sourceVideoId": "video-1",
+        "targetPosition": 0,
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.3
+          }
+        ],
+        "rationale": "The punchline payoff.",
+        "sourceEndTime": 130,
+        "sourceStartTime": 125,
+        "sourceVideoId": "video-1",
+        "targetPosition": 0,
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "Wait, what?!",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Hook text to grab attention.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "typewriter",
+        "content": "So then he says...",
+        "duration": 22,
+        "position": {
+          "x": 0.5,
+          "y": 0.8
+        },
+        "rationale": "Captions for the setup.",
+        "startTime": 3,
+        "style": "caption"
+      },
+      {
+        "animation": "zoom-blur",
+        "content": "THE PUNCHLINE!",
+        "duration": 5,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Emphasis on the punchline.",
+        "startTime": 25,
+        "style": "callout"
+      }
+    ],
+    "effects": [],
+    "transitions": [],
+    "audioDecisions": [],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Comedy",
+      "pacing": "medium",
+      "rationale": "A tight, joke-focused TikTok edit with a cold-open hook and punchline payoff, following the user's deadpan/no-effect constraints.",
+      "targetDuration": 30,
+      "targetPlatform": "TikTok"
+    }
+  }
+}

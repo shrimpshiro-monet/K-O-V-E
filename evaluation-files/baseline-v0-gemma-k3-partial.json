@@ -1,0 +1,1351 @@
+{
+  "generatedAt": "2026-10-23T12:53:22.075Z",
+  "model": "@cf/google/gemma-4-26b-a4b-it",
+  "sampling": {
+    "temperature": 0,
+    "seed": 1234
+  },
+  "runsPerCombo": 3,
+  "cases": 27,
+  "total": 31,
+  "passed": 24,
+  "status": "aborted",
+  "abortReason": "Workers AI quota exhausted after 31/81 case-runs (3 quota errors)",
+  "quotaExcluded": 3,
+  "gateRates": {
+    "planValidates": {
+      "mean": 0.8556,
+      "min": 0.7778,
+      "max": 0.9,
+      "stdev": 0.0676,
+      "perRun": [
+        0.7778,
+        0.8889,
+        0.9
+      ],
+      "validPerRun": [
+        9,
+        9,
+        10
+      ]
+    },
+    "materializes": {
+      "mean": 0.8556,
+      "min": 0.7778,
+      "max": 0.9,
+      "stdev": 0.0676,
+      "perRun": [
+        0.7778,
+        0.8889,
+        0.9
+      ],
+      "validPerRun": [
+        9,
+        9,
+        10
+      ]
+    },
+    "noClipOverlaps": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1,
+        1,
+        1
+      ],
+      "validPerRun": [
+        9,
+        9,
+        10
+      ]
+    },
+    "allGates": {
+      "mean": 0.8556,
+      "min": 0.7778,
+      "max": 0.9,
+      "stdev": 0.0676,
+      "perRun": [
+        0.7778,
+        0.8889,
+        0.9
+      ],
+      "validPerRun": [
+        9,
+        9,
+        10
+      ]
+    }
+  },
+  "determinism": {
+    "allPass": 6,
+    "allFail": 0,
+    "mixed": 3,
+    "mixedIds": [
+      "pod-02/pod-02-detailed",
+      "pod-02/pod-02-vague",
+      "multi-01/multi-01-detailed"
+    ],
+    "incomplete": 1,
+    "incompleteIds": [
+      "game-01/game-01-detailed"
+    ]
+  },
+  "quality": {
+    "references": [
+      "real-captain-price-profile.json",
+      "real-spiderman-profile.json"
+    ],
+    "scored": 24,
+    "meanOverall": 0.6206,
+    "byReference": {
+      "real-captain-price-profile.json": 0.4929,
+      "real-spiderman-profile.json": 0.7483
+    }
+  },
+  "results": [
+    {
+      "id": "pod-01/pod-01-detailed",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 442402,
+        "clipCount": 3,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 2,
+        "textCount": 4,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.3333,
+          "detail": "3 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5007,
+          "detail": "mean cut 13.33s vs 2.28s, spread(cv) 1.09 vs 1.32"
+        },
+        "craft": {
+          "score": 0.3333,
+          "detail": "transitions=0 effects=0 texts=4"
+        },
+        "overall": 0.3891
+      }
+    },
+    {
+      "id": "pod-01/pod-01-detailed",
+      "run": 1,
+      "projectId": "pod-01",
+      "promptId": "pod-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 146384,
+        "clipCount": 13,
+        "transitionCount": 0,
+        "effectCount": 4,
+        "audioCount": 1,
+        "textCount": 5,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.6923,
+          "detail": "13 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.4625,
+          "detail": "mean cut 3.46s vs 2.28s, spread(cv) 0.35 vs 1.32"
+        },
+        "craft": {
+          "score": 0.6667,
+          "detail": "transitions=0 effects=4 texts=5"
+        },
+        "overall": 0.6072
+      }
+    },
+    {
+      "id": "pod-01/pod-01-detailed",
+      "run": 2,
+      "projectId": "pod-01",
+      "promptId": "pod-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 135738,
+        "clipCount": 12,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 5,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.75,
+          "detail": "12 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.4478,
+          "detail": "mean cut 3.75s vs 2.28s, spread(cv) 0.38 vs 1.32"
+        },
+        "craft": {
+          "score": 0.3333,
+          "detail": "transitions=0 effects=0 texts=5"
+        },
+        "overall": 0.5104
+      }
+    },
+    {
+      "id": "pod-01/pod-01-vague",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 77149,
+        "clipCount": 9,
+        "transitionCount": 2,
+        "effectCount": 4,
+        "audioCount": 3,
+        "textCount": 4,
+        "planScore": 1,
+        "timelineDuration": 44.9
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 1,
+          "detail": "9 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.4442,
+          "detail": "mean cut 4.99s vs 2.28s, spread(cv) 0.57 vs 1.32"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=2 effects=4 texts=4"
+        },
+        "overall": 0.8147
+      }
+    },
+    {
+      "id": "pod-01/pod-01-vague",
+      "run": 1,
+      "projectId": "pod-01",
+      "promptId": "pod-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 424947,
+        "clipCount": 1,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 2,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.1111,
+          "detail": "1 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.0253,
+          "detail": "mean cut 45.00s vs 2.28s, spread(cv) 0.00 vs 1.32"
+        },
+        "craft": {
+          "score": 0.3333,
+          "detail": "transitions=0 effects=0 texts=3"
+        },
+        "overall": 0.1566
+      }
+    },
+    {
+      "id": "pod-01/pod-01-vague",
+      "run": 2,
+      "projectId": "pod-01",
+      "promptId": "pod-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 534219,
+        "clipCount": 14,
+        "transitionCount": 3,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 4,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.6429,
+          "detail": "14 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5274,
+          "detail": "mean cut 3.21s vs 2.28s, spread(cv) 0.46 vs 1.32"
+        },
+        "craft": {
+          "score": 0.6667,
+          "detail": "transitions=3 effects=0 texts=4"
+        },
+        "overall": 0.6123
+      }
+    },
+    {
+      "id": "pod-01/pod-01-genre",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 59510,
+        "clipCount": 18,
+        "transitionCount": 2,
+        "effectCount": 3,
+        "audioCount": 3,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.7826,
+          "detail": "18 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.4837,
+          "detail": "mean cut 2.50s vs 2.03s, spread(cv) 0.27 vs 1.69"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=2 effects=3 texts=3"
+        },
+        "overall": 0.7554
+      }
+    },
+    {
+      "id": "pod-01/pod-01-genre",
+      "run": 1,
+      "projectId": "pod-01",
+      "promptId": "pod-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 1083337,
+        "clipCount": 13,
+        "transitionCount": 2,
+        "effectCount": 2,
+        "audioCount": 1,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.6923,
+          "detail": "13 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.4801,
+          "detail": "mean cut 3.46s vs 2.28s, spread(cv) 0.40 vs 1.32"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=2 effects=2 texts=3"
+        },
+        "overall": 0.7241
+      }
+    },
+    {
+      "id": "pod-01/pod-01-genre",
+      "run": 2,
+      "projectId": "pod-01",
+      "promptId": "pod-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 331815,
+        "clipCount": 18,
+        "transitionCount": 1,
+        "effectCount": 11,
+        "audioCount": 2,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.7826,
+          "detail": "18 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5066,
+          "detail": "mean cut 2.50s vs 2.03s, spread(cv) 0.34 vs 1.69"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=1 effects=11 texts=3"
+        },
+        "overall": 0.7631
+      }
+    },
+    {
+      "id": "pod-02/pod-02-detailed",
+      "run": 0,
+      "projectId": "pod-02",
+      "promptId": "pod-02-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 295073,
+        "clipCount": 9,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 9,
+        "planScore": 1,
+        "timelineDuration": 30
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 1,
+          "detail": "9 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.4691,
+          "detail": "mean cut 3.33s vs 2.28s, spread(cv) 0.34 vs 1.32"
+        },
+        "craft": {
+          "score": 0.3333,
+          "detail": "transitions=0 effects=0 texts=9"
+        },
+        "overall": 0.6008
+      }
+    },
+    {
+      "id": "pod-02/pod-02-detailed",
+      "run": 1,
+      "projectId": "pod-02",
+      "promptId": "pod-02-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "NO_PLAN_RETURNED",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [NO_PLAN_RETURNED]: Director returned no EditPlan (stopReason: max_tokens after truncation retry). Text: "
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 1174966,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    },
+    {
+      "id": "pod-02/pod-02-detailed",
+      "run": 2,
+      "projectId": "pod-02",
+      "promptId": "pod-02-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "NO_PLAN_RETURNED",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [NO_PLAN_RETURNED]: Director returned no EditPlan (stopReason: max_tokens after truncation retry). Text: "
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 965466,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    },
+    {
+      "id": "pod-02/pod-02-vague",
+      "run": 0,
+      "projectId": "pod-02",
+      "promptId": "pod-02-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 18 and 19 overlap in time on the same track (31.50-32.50s vs 31.50-32.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 572097,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    },
+    {
+      "id": "pod-02/pod-02-vague",
+      "run": 1,
+      "projectId": "pod-02",
+      "promptId": "pod-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 191668,
+        "clipCount": 25,
+        "transitionCount": 2,
+        "effectCount": 4,
+        "audioCount": 1,
+        "textCount": 4,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.92,
+          "detail": "25 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5777,
+          "detail": "mean cut 1.80s vs 2.03s, spread(cv) 0.45 vs 1.69"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=2 effects=4 texts=4"
+        },
+        "overall": 0.8326
+      }
+    },
+    {
+      "id": "pod-02/pod-02-vague",
+      "run": 2,
+      "projectId": "pod-02",
+      "promptId": "pod-02-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 570039,
+        "clipCount": 29,
+        "transitionCount": 2,
+        "effectCount": 3,
+        "audioCount": 1,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.7931,
+          "detail": "29 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.511,
+          "detail": "mean cut 1.55s vs 2.03s, spread(cv) 0.43 vs 1.69"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=2 effects=3 texts=3"
+        },
+        "overall": 0.768
+      }
+    },
+    {
+      "id": "pod-02/pod-02-genre",
+      "run": 0,
+      "projectId": "pod-02",
+      "promptId": "pod-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 374575,
+        "clipCount": 1,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 2,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.1111,
+          "detail": "1 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.0253,
+          "detail": "mean cut 45.00s vs 2.28s, spread(cv) 0.00 vs 1.32"
+        },
+        "craft": {
+          "score": 0.3333,
+          "detail": "transitions=0 effects=0 texts=3"
+        },
+        "overall": 0.1566
+      }
+    },
+    {
+      "id": "pod-02/pod-02-genre",
+      "run": 1,
+      "projectId": "pod-02",
+      "promptId": "pod-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 186386,
+        "clipCount": 29,
+        "transitionCount": 2,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.7931,
+          "detail": "29 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.6327,
+          "detail": "mean cut 1.55s vs 2.03s, spread(cv) 0.85 vs 1.69"
+        },
+        "craft": {
+          "score": 0.6667,
+          "detail": "transitions=2 effects=0 texts=3"
+        },
+        "overall": 0.6975
+      }
+    },
+    {
+      "id": "pod-02/pod-02-genre",
+      "run": 2,
+      "projectId": "pod-02",
+      "promptId": "pod-02-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 85437,
+        "clipCount": 17,
+        "transitionCount": 2,
+        "effectCount": 3,
+        "audioCount": 1,
+        "textCount": 4,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.7391,
+          "detail": "17 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5622,
+          "detail": "mean cut 2.65s vs 2.03s, spread(cv) 0.61 vs 1.69"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=2 effects=3 texts=4"
+        },
+        "overall": 0.7671
+      }
+    },
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [plan_length_out_of_tolerance] Plan spans 0.0s but the target is 90s (at least 81.0s) and the footage (873.9s) can cover it. Add shots or extend coverage — metadata.targetDuration is not the target.; [bad_target_duration] Target duration must be positive."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 471803,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    },
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 1,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 74763,
+        "clipCount": 1,
+        "transitionCount": 0,
+        "effectCount": 1,
+        "audioCount": 1,
+        "textCount": 6,
+        "planScore": 1,
+        "timelineDuration": 90
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.1111,
+          "detail": "1 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.0127,
+          "detail": "mean cut 90.00s vs 2.28s, spread(cv) 0.00 vs 1.32"
+        },
+        "craft": {
+          "score": 0.6667,
+          "detail": "transitions=0 effects=1 texts=6"
+        },
+        "overall": 0.2635
+      }
+    },
+    {
+      "id": "multi-01/multi-01-detailed",
+      "run": 2,
+      "projectId": "multi-01",
+      "promptId": "multi-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 166842,
+        "clipCount": 34,
+        "transitionCount": 2,
+        "effectCount": 1,
+        "audioCount": 1,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": 90
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.6765,
+          "detail": "34 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5225,
+          "detail": "mean cut 2.65s vs 2.03s, spread(cv) 0.47 vs 1.69"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=2 effects=1 texts=3"
+        },
+        "overall": 0.733
+      }
+    },
+    {
+      "id": "multi-01/multi-01-vague",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 317423,
+        "clipCount": 33,
+        "transitionCount": 2,
+        "effectCount": 22,
+        "audioCount": 2,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.697,
+          "detail": "33 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.4754,
+          "detail": "mean cut 1.36s vs 2.03s, spread(cv) 0.47 vs 1.69"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=2 effects=22 texts=3"
+        },
+        "overall": 0.7241
+      }
+    },
+    {
+      "id": "multi-01/multi-01-vague",
+      "run": 1,
+      "projectId": "multi-01",
+      "promptId": "multi-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 95561,
+        "clipCount": 32,
+        "transitionCount": 2,
+        "effectCount": 2,
+        "audioCount": 3,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.7188,
+          "detail": "32 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.6036,
+          "detail": "mean cut 1.41s vs 2.03s, spread(cv) 0.87 vs 1.69"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=2 effects=2 texts=3"
+        },
+        "overall": 0.7741
+      }
+    },
+    {
+      "id": "multi-01/multi-01-vague",
+      "run": 2,
+      "projectId": "multi-01",
+      "promptId": "multi-01-vague",
+      "promptType": "vague",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 152301,
+        "clipCount": 16,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 2,
+        "textCount": 0,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.5625,
+          "detail": "16 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.8285,
+          "detail": "mean cut 2.81s vs 2.28s, spread(cv) 1.11 vs 1.32"
+        },
+        "craft": {
+          "score": 0,
+          "detail": "transitions=0 effects=0 texts=0"
+        },
+        "overall": 0.4637
+      }
+    },
+    {
+      "id": "multi-01/multi-01-genre",
+      "run": 0,
+      "projectId": "multi-01",
+      "promptId": "multi-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 131083,
+        "clipCount": 17,
+        "transitionCount": 2,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.7391,
+          "detail": "17 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5308,
+          "detail": "mean cut 2.71s vs 2.03s, spread(cv) 0.53 vs 1.69"
+        },
+        "craft": {
+          "score": 0.6667,
+          "detail": "transitions=2 effects=0 texts=3"
+        },
+        "overall": 0.6455
+      }
+    },
+    {
+      "id": "multi-01/multi-01-genre",
+      "run": 1,
+      "projectId": "multi-01",
+      "promptId": "multi-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 190107,
+        "clipCount": 19,
+        "transitionCount": 2,
+        "effectCount": 4,
+        "audioCount": 4,
+        "textCount": 4,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.8261,
+          "detail": "19 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5362,
+          "detail": "mean cut 2.47s vs 2.03s, spread(cv) 0.43 vs 1.69"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=2 effects=4 texts=4"
+        },
+        "overall": 0.7874
+      }
+    },
+    {
+      "id": "multi-01/multi-01-genre",
+      "run": 2,
+      "projectId": "multi-01",
+      "promptId": "multi-01-genre",
+      "promptType": "genre",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 123003,
+        "clipCount": 21,
+        "transitionCount": 2,
+        "effectCount": 0,
+        "audioCount": 1,
+        "textCount": 3,
+        "planScore": 1,
+        "timelineDuration": null
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.913,
+          "detail": "21 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.6169,
+          "detail": "mean cut 2.10s vs 2.03s, spread(cv) 0.45 vs 1.69"
+        },
+        "craft": {
+          "score": 0.6667,
+          "detail": "transitions=2 effects=0 texts=3"
+        },
+        "overall": 0.7322
+      }
+    },
+    {
+      "id": "game-01/game-01-detailed",
+      "run": 0,
+      "projectId": "game-01",
+      "promptId": "game-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "TOOL_ERROR",
+      "quotaExhausted": true,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [TOOL_ERROR]: cloudflare-ai 429: {\"errors\":[{\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage. (5efc7a5e-1a02-49f1-bc1d-3e24edcfbfd8)\",\"code\":4006}],\"success\":false,\"result\":{},\"messages\":[]}"
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 240488,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    },
+    {
+      "id": "game-01/game-01-detailed",
+      "run": 1,
+      "projectId": "game-01",
+      "promptId": "game-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": "TOOL_ERROR",
+      "quotaExhausted": true,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [TOOL_ERROR]: cloudflare-ai 429: {\"errors\":[{\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage. (b0edd051-3a54-43e2-b7f9-b16a1c731e63)\",\"code\":4006}],\"success\":false,\"result\":{},\"messages\":[]}"
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 241991,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    },
+    {
+      "id": "game-01/game-01-detailed",
+      "run": 2,
+      "projectId": "game-01",
+      "promptId": "game-01-detailed",
+      "promptType": "detailed",
+      "ok": true,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true
+      },
+      "failures": [],
+      "warnings": [],
+      "stats": {
+        "durationMs": 122461,
+        "clipCount": 7,
+        "transitionCount": 0,
+        "effectCount": 3,
+        "audioCount": 2,
+        "textCount": 0,
+        "planScore": 1,
+        "timelineDuration": 15
+      },
+      "quality": {
+        "reference": "real-captain-price-profile.json",
+        "cutGranularity": {
+          "score": 0.7778,
+          "detail": "7 produced cuts vs 9 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.735,
+          "detail": "mean cut 2.14s vs 2.28s, spread(cv) 0.70 vs 1.32"
+        },
+        "craft": {
+          "score": 0.3333,
+          "detail": "transitions=0 effects=3 texts=0"
+        },
+        "overall": 0.6154
+      }
+    },
+    {
+      "id": "game-01/game-01-vague",
+      "run": 0,
+      "projectId": "game-01",
+      "promptId": "game-01-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": "TOOL_ERROR",
+      "quotaExhausted": true,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true
+      },
+      "failures": [
+        "plan_edit failed [TOOL_ERROR]: cloudflare-ai 429: {\"errors\":[{\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage. (6fec0e90-99bb-477c-b18f-53ceccfd6bde)\",\"code\":4006}],\"success\":false,\"result\":{},\"messages\":[]}"
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 2194,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    }
+  ]
+}

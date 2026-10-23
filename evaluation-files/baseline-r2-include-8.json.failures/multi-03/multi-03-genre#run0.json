@@ -1,0 +1,374 @@
+{
+  "id": "multi-03/multi-03-genre",
+  "run": 0,
+  "projectId": "multi-03",
+  "promptId": "multi-03-genre",
+  "promptType": "genre",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 1 and 2 overlap in time on the same track (1.50-3.50s vs 3.00-6.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 6 overlap in time on the same track (15.00-87.83s vs 20.00-24.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 7 overlap in time on the same track (15.00-87.83s vs 24.00-96.83s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 8 overlap in time on the same track (15.00-87.83s vs 30.00-102.83s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 9 overlap in time on the same track (15.00-87.83s vs 35.00-38.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 5 and 10 overlap in time on the same track (15.00-87.83s vs 38.00-110.83s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 1 and 2 overlap in time on the same track (1.50-3.50s vs 3.00-6.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.2.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 5 and 6 overlap in time on the same track (15.00-87.83s vs 20.00-24.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.6.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 5 and 7 overlap in time on the same track (15.00-87.83s vs 24.00-96.83s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.7.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 5 and 8 overlap in time on the same track (15.00-87.83s vs 30.00-102.83s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.8.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 5 and 9 overlap in time on the same track (15.00-87.83s vs 35.00-38.00s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.9.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 5 and 10 overlap in time on the same track (15.00-87.83s vs 38.00-110.83s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.10.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Hook: Immediate impact with a snap-zoom on Curry.",
+        "sourceEndTime": 1.5,
+        "sourceStartTime": 0,
+        "targetPosition": 0,
+        "targetVideoId": "video-1",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Quick cut to Miles Morales to establish the crossover.",
+        "sourceEndTime": 12,
+        "sourceStartTime": 10,
+        "targetPosition": 1.5,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Establishing Curry's presence.",
+        "sourceEndTime": 8,
+        "sourceStartTime": 5,
+        "targetPosition": 3,
+        "targetVideoId": "video-1",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Smooth b-roll of Miles Morales.",
+        "sourceEndTime": 50,
+        "sourceStartTime": 45,
+        "targetPosition": 6,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.3,
+            "intensity": 0.8,
+            "params": {
+              "amount": 20
+            },
+            "rationale": "Punchy chromatic aberration on the action.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "rationale": "Intensifying the pace with a punch-in.",
+        "sourceEndTime": 19,
+        "sourceStartTime": 15,
+        "targetPosition": 10,
+        "targetVideoId": "video-1",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "tilt-up",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Dynamic movement for Miles Morales.",
+        "sourceEndTime": 72.827891,
+        "sourceStartTime": 0,
+        "targetPosition": 15,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "intensity": 1,
+            "params": {
+              "radius": 25,
+              "intensity": 1.5
+            },
+            "rationale": "Glow hit on the beat.",
+            "startOffset": 0,
+            "type": "glow"
+          }
+        ],
+        "rationale": "High energy transition shot.",
+        "sourceEndTime": 34,
+        "sourceStartTime": 30,
+        "targetPosition": 20,
+        "targetVideoId": "video-1",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax: Rapid movement and speed ramp.",
+        "sourceEndTime": 72.827891,
+        "sourceStartTime": 0,
+        "speedRamp": {
+          "keyframes": [
+            {
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "speed": 0.5,
+              "time": 0.5
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 25,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Maintaining energy in the final third.",
+        "sourceEndTime": 72.827891,
+        "sourceStartTime": 0,
+        "targetPosition": 30,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "intensity": 0.9,
+            "params": {
+              "amount": 30,
+              "angle": 45,
+              "mix": 0.8
+            },
+            "rationale": "Signature prism effect for the peak.",
+            "startOffset": 0,
+            "type": "prism"
+          }
+        ],
+        "rationale": "Final high-impact shot.",
+        "sourceEndTime": 43,
+        "sourceStartTime": 40,
+        "targetPosition": 35,
+        "targetVideoId": "video-1",
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Deliberate landing to resolve the edit.",
+        "sourceEndTime": 72.827891,
+        "sourceStartTime": 0,
+        "targetPosition": 40,
+        "targetVideoId": "video-2",
+        "sourceVideoId": "video-1",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "THE GOAT",
+        "duration": 1.5,
+        "position": {
+          "x": 0.5,
+          "y": 0.1
+        },
+        "rationale": "Hook title.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "slide-up",
+        "content": "SPIDER-VERSE",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Mid-edit thematic title.",
+        "startTime": 15,
+        "style": "title"
+      },
+      {
+        "animation": "bounce",
+        "content": "UNSTOPPABLE",
+        "duration": 1.5,
+        "position": {
+          "x": 0.5,
+          "y": 0.7
+        },
+        "rationale": "Climax text punch.",
+        "startTime": 30,
+        "style": "callout"
+      },
+      {
+        "animation": "zoom-blur",
+        "content": "LEGENDS",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Final payoff text.",
+        "startTime": 42,
+        "style": "title"
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 0,
+        "duration": 0.4,
+        "rationale": "Punchy transition into the second shot.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 3,
+        "duration": 0.5,
+        "rationale": "Bright flash to shift energy.",
+        "type": "flash"
+      },
+      {
+        "afterSegmentIndex": 6,
+        "duration": 0.4,
+        "rationale": "Glitch transition for the climax.",
+        "type": "glitch"
+      },
+      {
+        "afterSegmentIndex": 9,
+        "duration": 0.6,
+        "rationale": "Smooth landing.",
+        "type": "crossfade"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "High energy music to drive the hype montage.",
+        "sourceVideoId": "video-2",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.7
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on the opening snap-zoom.",
+        "sourceVideoId": "video-1",
+        "startTime": 0.3,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Hype Montage",
+      "pacing": "fast",
+      "rationale": "A high-energy crossover montage featuring Steph Curry and Miles Morales, using rapid cuts, signature effects, and rhythmic text to build intensity.",
+      "targetDuration": 45,
+      "targetPlatform": "Social Media"
+    }
+  }
+}

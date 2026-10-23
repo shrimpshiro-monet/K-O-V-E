@@ -1,0 +1,416 @@
+{
+  "id": "game-01/game-01-vague",
+  "run": 0,
+  "projectId": "game-01",
+  "promptId": "game-01-vague",
+  "promptType": "vague",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 8 and 9 overlap in time on the same track (22.50-26.50s vs 25.50-28.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 10 and 11 overlap in time on the same track (28.50-32.50s vs 31.50-34.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 8 and 9 overlap in time on the same track (22.50-26.50s vs 25.50-28.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.9.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 10 and 11 overlap in time on the same track (28.50-32.50s vs 31.50-34.50s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.11.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Hook shot with immediate impact.",
+        "sourceEndTime": 12,
+        "sourceStartTime": 10,
+        "targetPosition": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Building momentum.",
+        "sourceEndTime": 27.5,
+        "sourceStartTime": 25,
+        "targetPosition": 2,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Aggressive transition point.",
+        "sourceEndTime": 42,
+        "sourceStartTime": 40,
+        "targetPosition": 4.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Breathing room before the intensification.",
+        "sourceEndTime": 58,
+        "sourceStartTime": 55,
+        "targetPosition": 6.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Smooth b-roll movement.",
+        "sourceEndTime": 73,
+        "sourceStartTime": 70,
+        "targetPosition": 9.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Dynamic reveal.",
+        "sourceEndTime": 88,
+        "sourceStartTime": 85,
+        "targetPosition": 12.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Stabilizing before the final push.",
+        "sourceEndTime": 104,
+        "sourceStartTime": 100,
+        "targetPosition": 15.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "tilt-up",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Setting up the mid-edit title.",
+        "sourceEndTime": 118,
+        "sourceStartTime": 115,
+        "targetPosition": 19.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Adding raw energy.",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "easing": "ease-out",
+            "intensity": 0.8,
+            "params": {
+              "amount": 20
+            },
+            "rationale": "Chromatic aberration hit on the beat.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "sourceEndTime": 134,
+        "sourceStartTime": 130,
+        "targetPosition": 22.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "wobble",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Chaotic energy peak.",
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "easing": "ease-in-out",
+            "intensity": 0.9,
+            "params": {
+              "amount": 30,
+              "blockSize": 10,
+              "rgbSplit": 15,
+              "speed": 2
+            },
+            "rationale": "Glitch block hit.",
+            "startOffset": 0,
+            "type": "glitch-blocks"
+          }
+        ],
+        "sourceEndTime": 148,
+        "sourceStartTime": 145,
+        "targetPosition": 25.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "High-intensity visual punch.",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "easing": "ease-out",
+            "intensity": 0.7,
+            "params": {
+              "amount": 25,
+              "angle": 45,
+              "mix": 0.7
+            },
+            "rationale": "Prism split for optical impact.",
+            "startOffset": 0,
+            "type": "prism"
+          }
+        ],
+        "sourceEndTime": 164,
+        "sourceStartTime": 160,
+        "targetPosition": 28.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Rapid-fire segment.",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "easing": "ease-out",
+            "intensity": 0.8,
+            "params": {
+              "amount": 20
+            },
+            "rationale": "Chromatic aberration hit.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "sourceEndTime": 178,
+        "sourceStartTime": 175,
+        "targetPosition": 31.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Final build-up shake.",
+        "sourceEndTime": 193,
+        "sourceStartTime": 190,
+        "targetPosition": 34.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Final tension hold.",
+        "sourceEndTime": 205,
+        "sourceStartTime": 200,
+        "targetPosition": 37.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax and resolution.",
+        "sourceEndTime": 214.3,
+        "sourceStartTime": 210,
+        "speedRamp": {
+          "keyframes": [
+            {
+              "easing": "ease-in",
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "easing": "ease-out",
+              "speed": 0.5,
+              "time": 2
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 42.5,
+        "sourceVideoId": "video-1",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "color": "#FFFFFF",
+        "content": "MILES",
+        "duration": 2,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Strong opening title.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "glitch",
+        "color": "#FF0000",
+        "content": "GO HARD",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Aggressive mid-edit callout.",
+        "startTime": 20,
+        "style": "callout"
+      },
+      {
+        "animation": "split",
+        "color": "#FFFFFF",
+        "content": "UNSTOPPABLE",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.8
+        },
+        "rationale": "Final payoff text.",
+        "startTime": 45,
+        "style": "subtitle"
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 2,
+        "duration": 0.3,
+        "rationale": "Flash transition for energy.",
+        "type": "flash"
+      },
+      {
+        "afterSegmentIndex": 5,
+        "duration": 0.4,
+        "rationale": "Whip pan for momentum.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 12,
+        "duration": 0.5,
+        "rationale": "Glitch transition for the climax.",
+        "type": "glitch"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 48.8,
+        "rationale": "High-energy music bed to drive the 'go hard' vibe.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.7
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Impact hit on the transition.",
+        "sourceVideoId": "video-1",
+        "startTime": 6.5,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.3,
+        "rationale": "Whoosh for the whip pan.",
+        "sourceVideoId": "video-1",
+        "startTime": 15,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.4,
+        "rationale": "Glitch hit for the intensity peak.",
+        "sourceVideoId": "video-1",
+        "startTime": 33,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Action/Hype",
+      "pacing": "fast",
+      "rationale": "A high-octane, aggressive edit using rapid cuts, heavy signature effects, and rhythmic text to fulfill the 'go hard' request. The edit evolves from clean establishing shots to a dense, effect-heavy climax.",
+      "targetDuration": 48.8,
+      "targetPlatform": "TikTok/Reels"
+    }
+  }
+}

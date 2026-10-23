@@ -1,0 +1,521 @@
+{
+  "id": "game-01/game-01-vague",
+  "run": 0,
+  "projectId": "game-01",
+  "promptId": "game-01-vague",
+  "promptType": "vague",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [unsupported_transition] Transition \":<|\"|>whipPan<|\"|>\" is not supported by the renderer. Supported transitions: crossfade, dipToBlack, dipToWhite, wipe, slide, zoom, push, circleReveal, blur, whipPan, radialWipe, pixelate, glitch, blinds, diamondReveal, spin, flip, splitReveal, flash, filmBurn, mosaic, ripple, pageTurn, colorSplit, crossZoom, zoomBlur, motionSmear, strobeCut, impactShake, lumaWipe, inkBleed, tileFlip, sliceSlide, lightLeak, vhsScan, paperBurn, pixelSort, filmRoll. Hard cuts should be emitted as adjacent clips with no transition entry."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "unsupported_transition",
+      "message": "Transition \":<|\"|>whipPan<|\"|>\" is not supported by the renderer. Supported transitions: crossfade, dipToBlack, dipToWhite, wipe, slide, zoom, push, circleReveal, blur, whipPan, radialWipe, pixelate, glitch, blinds, diamondReveal, spin, flip, splitReveal, flash, filmBurn, mosaic, ripple, pageTurn, colorSplit, crossZoom, zoomBlur, motionSmear, strobeCut, impactShake, lumaWipe, inkBleed, tileFlip, sliceSlide, lightLeak, vhsScan, paperBurn, pixelSort, filmRoll. Hard cuts should be emitted as adjacent clips with no transition entry.",
+      "path": "transitions.1.type"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 1
+          }
+        ],
+        "rationale": "High-impact hook.",
+        "sourceEndTime": 2,
+        "sourceStartTime": 0,
+        "targetPosition": 0,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Establishing the subject.",
+        "sourceEndTime": 4,
+        "sourceStartTime": 2,
+        "targetPosition": 2,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "B-roll breathing room.",
+        "sourceEndTime": 7,
+        "sourceStartTime": 4,
+        "targetPosition": 4,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Building momentum with a speed ramp.",
+        "sourceEndTime": 10,
+        "sourceStartTime": 7,
+        "speedRamp": {
+          "keyframes": [
+            {
+              "easing": "ease-in-out",
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "easing": "ease-in-out",
+              "speed": 2.5,
+              "time": 1
+            },
+            {
+              "easing": "ease-in-out",
+              "speed": 1,
+              "time": 3
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "targetPosition": 7,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Adding energy with chromatic aberration.",
+        "effectSpecs": [
+          {
+            "duration": 0.3,
+            "easing": "linear",
+            "intensity": 0.8,
+            "params": {
+              "amount": 30
+            },
+            "rationale": "Chromatic aberration hit.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "sourceEndTime": 13,
+        "sourceStartTime": 10,
+        "targetPosition": 10,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Aggressive transition into the mid-section.",
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "easing": "ease-out",
+            "intensity": 0.9,
+            "params": {
+              "amount": 30,
+              "blockSize": 15,
+              "rgbSplit": 0.5,
+              "speed": 1
+            },
+            "rationale": "Glitch effect for impact.",
+            "startOffset": 0,
+            "type": "glitch-blocks"
+          }
+        ],
+        "sourceEndTime": 16,
+        "sourceStartTime": 13,
+        "targetPosition": 13,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-out",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Dynamic movement with prism.",
+        "effectSpecs": [
+          {
+            "duration": 0.5,
+            "easing": "ease-in-out",
+            "intensity": 0.8,
+            "params": {
+              "amount": 30,
+              "angle": 45,
+              "mix": 0.8
+            },
+            "rationale": "Prism split hit.",
+            "startOffset": 0,
+            "type": "prism"
+          }
+        ],
+        "sourceEndTime": 19,
+        "sourceStartTime": 16,
+        "targetPosition": 16,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Varying the lateral motion.",
+        "sourceEndTime": 22,
+        "sourceStartTime": 19,
+        "targetPosition": 19,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "tilt-up",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Building tension.",
+        "sourceEndTime": 25,
+        "sourceStartTime": 22,
+        "targetPosition": 22,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Intensifying the rhythm.",
+        "sourceEndTime": 28,
+        "sourceStartTime": 25,
+        "targetPosition": 25,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 1
+          }
+        ],
+        "rationale": "Entering the climax.",
+        "sourceEndTime": 31,
+        "sourceStartTime": 28,
+        "targetPosition": 28,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Rapid-fire climax shot.",
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "easing": "ease-out",
+            "intensity": 1,
+            "params": {
+              "amount": 40,
+              "blockSize": 10,
+              "rgbSplit": 0.8,
+              "speed": 2
+            },
+            "rationale": "Heavy glitch-blocks.",
+            "startOffset": 0,
+            "type": "glitch-blocks"
+          }
+        ],
+        "sourceEndTime": 33,
+        "sourceStartTime": 31,
+        "targetPosition": 31,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Staccato rhythm.",
+        "effectSpecs": [
+          {
+            "duration": 0.3,
+            "easing": "linear",
+            "intensity": 0.9,
+            "params": {
+              "amount": 40
+            },
+            "rationale": "Chromatic aberration hit.",
+            "startOffset": 0,
+            "type": "chromatic-aberration"
+          }
+        ],
+        "sourceEndTime": 35,
+        "sourceStartTime": 33,
+        "targetPosition": 33,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 1
+          }
+        ],
+        "rationale": "High energy prism hit.",
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "easing": "ease-out",
+            "intensity": 1,
+            "params": {
+              "amount": 40,
+              "angle": 90,
+              "mix": 0.9
+            },
+            "rationale": "Prism split.",
+            "startOffset": 0,
+            "type": "prism"
+          }
+        ],
+        "sourceEndTime": 37,
+        "sourceStartTime": 35,
+        "targetPosition": 35,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Visual chaos.",
+        "effectSpecs": [
+          {
+            "duration": 0.4,
+            "easing": "ease-out",
+            "intensity": 1,
+            "params": {
+              "amount": 50,
+              "blockSize": 20,
+              "rgbSplit": 1,
+              "speed": 3
+            },
+            "rationale": "Glitch-blocks hit.",
+            "startOffset": 0,
+            "type": "glitch-blocks"
+          }
+        ],
+        "sourceEndTime": 39,
+        "sourceStartTime": 37,
+        "targetPosition": 37,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Climax peak.",
+        "sourceEndTime": 41,
+        "sourceStartTime": 39,
+        "targetPosition": 39,
+        "sourceVideoId": "video-1",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Deliberate landing.",
+        "sourceEndTime": 45,
+        "sourceStartTime": 41,
+        "targetPosition": 41,
+        "sourceVideoId": "video-1",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "color": "#FFFFFF",
+        "content": "MILES",
+        "duration": 1.5,
+        "fontSize": 80,
+        "position": {
+          "x": 0.5,
+          "y": 0.3
+        },
+        "rationale": "Hook title.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "slide-up",
+        "color": "#FFFFFF",
+        "content": "MORALES",
+        "duration": 2,
+        "fontSize": 80,
+        "position": {
+          "x": 0.5,
+          "y": 0.3
+        },
+        "rationale": "Subject introduction.",
+        "startTime": 2.5,
+        "style": "title"
+      },
+      {
+        "animation": "bounce",
+        "color": "#FFD700",
+        "content": "UNLEASH",
+        "duration": 2,
+        "fontSize": 60,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Mid-edit callout.",
+        "startTime": 15,
+        "style": "callout"
+      },
+      {
+        "animation": "glitch",
+        "color": "#FFFFFF",
+        "content": "GO HARD",
+        "duration": 3,
+        "fontSize": 100,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Final payoff.",
+        "startTime": 39,
+        "style": "title"
+      }
+    ],
+    "effects": [],
+    "transitions": [
+      {
+        "afterSegmentIndex": 0,
+        "duration": 0.5,
+        "rationale": "Smooth entry.",
+        "type": "crossfade"
+      },
+      {
+        "afterSegmentIndex": 3,
+        "duration": 0.4,
+        "rationale": "Aggressive transition.",
+        "type": ":<|\"|>whipPan<|\"|>"
+      },
+      {
+        "afterSegmentIndex": 10,
+        "duration": 0.5,
+        "rationale": "Glitch transition for climax.",
+        "type": "glitch"
+      },
+      {
+        "afterSegmentIndex": 15,
+        "duration": 0.25,
+        "rationale": "Clean landing.",
+        "type": "dipToBlack"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "Driving hip-hop beat for high energy.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "music",
+        "volume": 0.8
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Impact on the hook.",
+        "sourceVideoId": "video-1",
+        "startTime": 1,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Glitch sound for transition.",
+        "sourceVideoId": "video-1",
+        "startTime": 13,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 1,
+        "rationale": "Heavy bass drop for the climax.",
+        "sourceVideoId": "video-1",
+        "startTime": 31,
+        "type": "sfx",
+        "volume": 1
+      },
+      {
+        "duration": 0.5,
+        "rationale": "Final slam for the landing.",
+        "sourceVideoId": "video-1",
+        "startTime": 41,
+        "type": "sfx",
+        "volume": 1
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Action/Hype",
+      "pacing": "fast",
+      "rationale": "A high-octane, fast-paced edit designed to 'go hard' using aggressive cuts, signature effects, and rhythmic text.",
+      "targetDuration": 45,
+      "targetPlatform": "Social Media"
+    }
+  }
+}

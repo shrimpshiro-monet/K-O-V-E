@@ -1,0 +1,354 @@
+{
+  "id": "multi-01/multi-01-genre",
+  "run": 0,
+  "projectId": "multi-01",
+  "promptId": "multi-01-genre",
+  "promptType": "genre",
+  "toolCode": "INVALID_EDIT_PLAN",
+  "failures": [
+    "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [overlapping_timeline_segments] Segments 2 and 3 overlap in time on the same track (7.00-464.56s vs 12.00-469.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 2 and 5 overlap in time on the same track (7.00-464.56s vs 22.00-479.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 2 and 6 overlap in time on the same track (7.00-464.56s vs 27.00-484.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 4 and 7 overlap in time on the same track (469.56-927.12s vs 484.56-942.12s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 2 and 8 overlap in time on the same track (7.00-464.56s vs 34.00-491.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.; [overlapping_timeline_segments] Segments 4 and 9 overlap in time on the same track (469.56-927.12s vs 491.56-949.12s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays."
+  ],
+  "warnings": [],
+  "issues": [
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 2 and 3 overlap in time on the same track (7.00-464.56s vs 12.00-469.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.3.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 2 and 5 overlap in time on the same track (7.00-464.56s vs 22.00-479.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.5.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 2 and 6 overlap in time on the same track (7.00-464.56s vs 27.00-484.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.6.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 4 and 7 overlap in time on the same track (469.56-927.12s vs 484.56-942.12s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.7.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 2 and 8 overlap in time on the same track (7.00-464.56s vs 34.00-491.56s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.8.targetPosition"
+    },
+    {
+      "severity": "error",
+      "code": "overlapping_timeline_segments",
+      "message": "Segments 4 and 9 overlap in time on the same track (469.56-927.12s vs 491.56-949.12s). Primary video on one track must not overlap; use overlapping trackIndex values with split/pip layout for intentional overlays.",
+      "path": "segments.9.targetPosition"
+    }
+  ],
+  "editPlan": {
+    "segments": [
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Hook: Establishing shot with a clean, intentional feel.",
+        "sourceEndTime": 3,
+        "sourceStartTime": 0,
+        "targetPosition": 0,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "handheld",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Hook: Adding organic movement to the second clip.",
+        "sourceEndTime": 4,
+        "sourceStartTime": 0,
+        "targetPosition": 3,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.4
+          }
+        ],
+        "rationale": "Establishing rhythm with lateral movement.",
+        "sourceEndTime": 457.56,
+        "sourceStartTime": 0,
+        "targetPosition": 7,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ],
+        "rationale": "Intensifying the edit with a sudden focus.",
+        "sourceEndTime": 457.56,
+        "sourceStartTime": 0,
+        "targetPosition": 12,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Speed ramp through a transitionary moment.",
+        "sourceEndTime": 457.56,
+        "sourceStartTime": 0,
+        "targetPosition": 17,
+        "sourceVideoId": "video-2",
+        "speedRamp": {
+          "keyframes": [
+            {
+              "easing": "ease-in-out",
+              "speed": 1,
+              "time": 0
+            },
+            {
+              "easing": "ease-in-out",
+              "speed": 2,
+              "time": 1
+            },
+            {
+              "easing": "ease-in-out",
+              "speed": 1,
+              "time": 2
+            }
+          ],
+          "pitchCorrection": true
+        },
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.6
+          }
+        ],
+        "rationale": "Maintaining steady pacing in the middle section.",
+        "sourceEndTime": 457.56,
+        "sourceStartTime": 0,
+        "targetPosition": 22,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "snap-zoom",
+            "intensity": 0.9
+          }
+        ],
+        "rationale": "Climax: High-impact shot to drive energy.",
+        "sourceEndTime": 457.56,
+        "sourceStartTime": 0,
+        "targetPosition": 27,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 1
+          }
+        ],
+        "rationale": "Climax: Maximum energy hit.",
+        "sourceEndTime": 457.56,
+        "sourceStartTime": 0,
+        "targetPosition": 30,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "pull-back",
+            "intensity": 0.7
+          }
+        ],
+        "rationale": "Resolution: Easing out of the high energy.",
+        "sourceEndTime": 457.56,
+        "sourceStartTime": 0,
+        "targetPosition": 34,
+        "sourceVideoId": "video-2",
+        "effects": []
+      },
+      {
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.5
+          }
+        ],
+        "rationale": "Landing: A calm, breathing finish.",
+        "sourceEndTime": 457.56,
+        "sourceStartTime": 0,
+        "targetPosition": 39,
+        "sourceVideoId": "video-2",
+        "effects": []
+      }
+    ],
+    "textElements": [
+      {
+        "animation": "pop",
+        "content": "THE INTERVIEW",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.2
+        },
+        "rationale": "Main title hook.",
+        "startTime": 0.5,
+        "style": "title"
+      },
+      {
+        "animation": "slide-up",
+        "content": "EPISODE 01",
+        "duration": 3,
+        "position": {
+          "x": 0.5,
+          "y": 0.85
+        },
+        "rationale": "Sub-title context.",
+        "startTime": 4,
+        "style": "subtitle"
+      },
+      {
+        "animation": "typewriter",
+        "content": "DEEP THOUGHTS",
+        "duration": 4,
+        "position": {
+          "x": 0.8,
+          "y": 0.4
+        },
+        "rationale": "Mid-edit callout.",
+        "startTime": 18,
+        "style": "callout"
+      },
+      {
+        "animation": "glitch",
+        "content": "THE TRUTH",
+        "duration": 4,
+        "position": {
+          "x": 0.2,
+          "y": 0.4
+        },
+        "rationale": "High-energy text hit.",
+        "startTime": 28,
+        "style": "callout"
+      },
+      {
+        "animation": "scale",
+        "content": "WATCH FULL",
+        "duration": 4,
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "rationale": "Final CTA.",
+        "startTime": 40,
+        "style": "title"
+      }
+    ],
+    "effects": [
+      {
+        "params": {
+          "amount": 25
+        },
+        "rationale": "Punchy chromatic aberration on the punch-in.",
+        "targetSegmentIndex": 3,
+        "type": "chromatic-aberration"
+      },
+      {
+        "params": {
+          "amount": 30
+        },
+        "rationale": "Glitch effect on the snap-zoom.",
+        "targetSegmentIndex": 6,
+        "type": "glitch-blocks"
+      },
+      {
+        "params": {
+          "intensity": 2,
+          "radius": 20
+        },
+        "rationale": "Glow hit on the whip-shake.",
+        "targetSegmentIndex": 7,
+        "type": "glow"
+      },
+      {
+        "params": {
+          "amount": 40
+        },
+        "rationale": "Vignette for the final landing.",
+        "targetSegmentIndex": 9,
+        "type": "vignette"
+      }
+    ],
+    "transitions": [
+      {
+        "afterSegmentIndex": 1,
+        "duration": 0.5,
+        "rationale": "Smooth transition between hooks.",
+        "type": "crossfade"
+      },
+      {
+        "afterSegmentIndex": 3,
+        "duration": 0.4,
+        "rationale": "Punchy transition into the speed ramp.",
+        "type": "whipPan"
+      },
+      {
+        "afterSegmentIndex": 6,
+        "duration": 0.3,
+        "rationale": "Flash transition for climax impact.",
+        "type": "flash"
+      },
+      {
+        "afterSegmentIndex": 8,
+        "duration": 0.8,
+        "rationale": "Deliberate fade to end.",
+        "type": "dipToBlack"
+      }
+    ],
+    "audioDecisions": [
+      {
+        "duration": 45,
+        "rationale": "No music provided in library, using silence for base.",
+        "sourceVideoId": "video-1",
+        "startTime": 0,
+        "type": "silence"
+      }
+    ],
+    "motionMoments": [],
+    "metadata": {
+      "genre": "Interview/Podcast",
+      "pacing": "medium",
+      "rationale": "Creating a rhythmic, professional interview montage using available podcast footage. The edit evolves from clean establishing shots to a high-energy climax with punchy effects and camera moves, before a calm resolution.",
+      "targetDuration": 45,
+      "targetPlatform": "Social Media (Vertical/Square)"
+    }
+  }
+}
