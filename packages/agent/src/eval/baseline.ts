@@ -104,6 +104,49 @@ export function loadWorkersAIConfig(repoRoot: string = REPO_ROOT): WorkersAIConf
   return { accountId, apiToken, model };
 }
 
+export interface OmniRouteConfig {
+  /** OpenAI-compatible base, e.g. http://localhost:20128/v1 */
+  readonly baseUrl: string;
+  readonly apiKey: string;
+  /** Pinned model slug — never `auto`, which can switch models mid-run. */
+  readonly model: string;
+}
+
+export function loadOmniRouteConfig(repoRoot: string = REPO_ROOT): OmniRouteConfig | null {
+  let vars: Record<string, string> = {};
+  const devVars = resolve(repoRoot, ".dev.vars");
+  if (existsSync(devVars)) {
+    vars = parseDevVars(readFileSync(devVars, "utf8"));
+  }
+  const pick = (name: string): string =>
+    process.env[`KOVE_EVAL_${name}`] || process.env[name] || vars[name] || "";
+  const baseUrl = pick("OMNIROUTE_BASE_URL") || "http://localhost:20128/v1";
+  const apiKey = pick("OMNIROUTE_KEY");
+  const model = pick("OMNIROUTE_MODEL");
+  if (!apiKey || !model) return null;
+  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey, model };
+}
+
+export type EvalLLMConfig =
+  | { readonly kind: "omni"; readonly config: OmniRouteConfig }
+  | { readonly kind: "workers"; readonly config: WorkersAIConfig };
+
+/**
+ * Provider selection for baseline runs. `KOVE_EVAL_LLM_PROVIDER` forces a
+ * side (`omni` | `workers`); otherwise a configured OmniRoute gateway wins
+ * over Workers AI — local gateway first, quota-limited cloud as fallback.
+ */
+export function resolveEvalLLMConfig(repoRoot?: string): EvalLLMConfig | null {
+  const provider = (process.env.KOVE_EVAL_LLM_PROVIDER || "").toLowerCase();
+  const omni = loadOmniRouteConfig(repoRoot);
+  const workers = loadWorkersAIConfig(repoRoot);
+  if (provider === "omni") return omni ? { kind: "omni", config: omni } : null;
+  if (provider === "workers") return workers ? { kind: "workers", config: workers } : null;
+  if (omni) return { kind: "omni", config: omni };
+  if (workers) return { kind: "workers", config: workers };
+  return null;
+}
+
 export interface WorkersAIClientOptions {
   readonly maxTokens?: number;
   readonly fetchFn?: typeof fetch;
@@ -168,6 +211,45 @@ export function makeWorkersAIClient(cfg: WorkersAIConfig, opts: WorkersAIClientO
   const send = sampling
     ? pinnedSend(makeWorkersAISend(cfg, opts), sampling)
     : makeWorkersAISend(cfg, opts);
+  return makeClientFromSend({
+    provider: "openai",
+    model: cfg.model,
+    maxTokens: opts.maxTokens ?? 8192,
+    send: withRetry(send),
+  });
+}
+
+/** OpenAI-compatible transport for a self-hosted OmniRoute gateway (or any /v1 relay). */
+export function makeOmniRouteSend(cfg: OmniRouteConfig, opts: WorkersAIClientOptions = {}): LLMSend {
+  const fetchFn = opts.fetchFn ?? fetch;
+  const url = `${cfg.baseUrl}/chat/completions`;
+  return async (body: unknown): Promise<unknown> => {
+    const res = await fetchFn(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cfg.apiKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw llmHttpError(
+        "omniroute",
+        res.status,
+        text,
+        parseRetryAfterMs(res.headers.get("retry-after")),
+      );
+    }
+    return res.json();
+  };
+}
+
+export function makeOmniRouteClient(cfg: OmniRouteConfig, opts: WorkersAIClientOptions = {}): LLMClient {
+  const sampling = opts.sampling === undefined ? PINNED_SAMPLING : opts.sampling;
+  const send = sampling
+    ? pinnedSend(makeOmniRouteSend(cfg, opts), sampling)
+    : makeOmniRouteSend(cfg, opts);
   return makeClientFromSend({
     provider: "openai",
     model: cfg.model,
@@ -883,10 +965,22 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
     throw new Error(`Corpus asset gate failed:\n${missing.join("\n")}`);
   }
 
-  const config = opts.config ?? loadWorkersAIConfig();
-  const client = opts.client ?? (config ? makeWorkersAIClient(config) : null);
+  const llmConfig: EvalLLMConfig | null = opts.client
+    ? null
+    : opts.config
+      ? { kind: "workers", config: opts.config }
+      : resolveEvalLLMConfig();
+  const client =
+    opts.client ??
+    (llmConfig
+      ? llmConfig.kind === "omni"
+        ? makeOmniRouteClient(llmConfig.config)
+        : makeWorkersAIClient(llmConfig.config)
+      : null);
   if (!client) {
-    throw new Error("No Workers AI credentials (set CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID or provide .dev.vars).");
+    throw new Error(
+      "No LLM credentials (set KOVE_EVAL_OMNIROUTE_KEY + KOVE_EVAL_OMNIROUTE_MODEL for a local gateway, or CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID for Workers AI).",
+    );
   }
 
   const runsPerCombo = Math.max(1, opts.runsPerCombo ?? 1);
@@ -938,7 +1032,7 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
   const expected = combos.length * runsPerCombo;
   const quotaExcluded = settled.filter(r => r.quotaExhausted).length;
   const summary = summarizeBaseline(settled, {
-    model: config?.model ?? "injected-client",
+    model: llmConfig?.config.model ?? "injected-client",
     cases: combos.length,
     runsPerCombo,
     status: settled.length === expected && quotaExcluded === 0 ? "complete" : "aborted",

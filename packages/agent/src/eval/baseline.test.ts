@@ -1,4 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { Project } from "@kove-advanced/core/types/project";
 import type { Track } from "@kove-advanced/core/types/timeline";
@@ -8,10 +10,13 @@ import {
   buildBaselineProject,
   buildSegmentMap,
   clipOverlaps,
+  loadOmniRouteConfig,
   loadWorkersAIConfig,
+  makeOmniRouteSend,
   parseDevVars,
   isQuotaMessage,
   pinnedSend,
+  resolveEvalLLMConfig,
   runBaseline,
   resolveTransitionCount,
   summarizeBaseline,
@@ -271,6 +276,100 @@ describe("baseline harness helpers", () => {
     expect(resolveTransitionCount({ transitionIds: ["t1", "t2"] })).toBe(2);
     expect(resolveTransitionCount({ transitionCount: 5, transitionIds: ["t1"] })).toBe(5);
     expect(resolveTransitionCount({ transitionCount: 0, transitionIds: ["t1"] })).toBe(0);
+  });
+
+  it("loads OmniRoute config with env over .dev.vars and refuses an unpinned model", () => {
+    const dir = mkdtempSync(join(tmpdir(), "kove-omni-cfg-"));
+    writeFileSync(
+      join(dir, ".dev.vars"),
+      "OMNIROUTE_KEY=vars-key\nOMNIROUTE_MODEL=vars/model\nOMNIROUTE_BASE_URL=http://vars-host:20128/v1/\n",
+      "utf8",
+    );
+    try {
+      vi.stubEnv("KOVE_EVAL_OMNIROUTE_KEY", "");
+      vi.stubEnv("KOVE_EVAL_OMNIROUTE_MODEL", "");
+      vi.stubEnv("KOVE_EVAL_OMNIROUTE_BASE_URL", "");
+      expect(loadOmniRouteConfig(dir)).toEqual({
+        baseUrl: "http://vars-host:20128/v1",
+        apiKey: "vars-key",
+        model: "vars/model",
+      });
+
+      vi.unstubAllEnvs();
+      vi.stubEnv("KOVE_EVAL_OMNIROUTE_KEY", "env-key");
+      vi.stubEnv("KOVE_EVAL_OMNIROUTE_MODEL", "env/model");
+      expect(loadOmniRouteConfig(dir)).toEqual({
+        baseUrl: "http://vars-host:20128/v1",
+        apiKey: "env-key",
+        model: "env/model",
+      });
+
+      vi.unstubAllEnvs();
+      vi.stubEnv("KOVE_EVAL_OMNIROUTE_KEY", "");
+      vi.stubEnv("KOVE_EVAL_OMNIROUTE_MODEL", "");
+      vi.stubEnv("KOVE_EVAL_OMNIROUTE_BASE_URL", "");
+      writeFileSync(join(dir, ".dev.vars"), "OMNIROUTE_KEY=only-a-key\n", "utf8");
+      expect(loadOmniRouteConfig(dir)).toBeNull();
+      expect(loadOmniRouteConfig(join(dir, "missing"))).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("routes eval provider selection: forced provider wins, configured gateway beats Workers", () => {
+    const dir = mkdtempSync(join(tmpdir(), "kove-omni-resolve-"));
+    const withGatewayAndWorkers =
+      "CLOUDFLARE_ACCOUNT_ID=acct\nCLOUDFLARE_API_TOKEN=tok\nCLOUDFLARE_AI_MODEL=@cf/test-model\n" +
+      "OMNIROUTE_KEY=omni-key\nOMNIROUTE_MODEL=vendor/pinned-model\n";
+    const workersOnly = "CLOUDFLARE_ACCOUNT_ID=acct\nCLOUDFLARE_API_TOKEN=tok\nCLOUDFLARE_AI_MODEL=@cf/test-model\n";
+    writeFileSync(join(dir, ".dev.vars"), withGatewayAndWorkers, "utf8");
+    try {
+      vi.stubEnv("KOVE_EVAL_LLM_PROVIDER", "");
+      vi.stubEnv("KOVE_EVAL_OMNIROUTE_KEY", "");
+      vi.stubEnv("KOVE_EVAL_OMNIROUTE_MODEL", "");
+      expect(resolveEvalLLMConfig(dir)?.kind).toBe("omni");
+
+      vi.stubEnv("KOVE_EVAL_LLM_PROVIDER", "workers");
+      expect(resolveEvalLLMConfig(dir)?.kind).toBe("workers");
+
+      vi.stubEnv("KOVE_EVAL_LLM_PROVIDER", "omni");
+      expect(resolveEvalLLMConfig(dir)?.kind).toBe("omni");
+
+      writeFileSync(join(dir, ".dev.vars"), workersOnly, "utf8");
+      expect(resolveEvalLLMConfig(dir)).toBeNull();
+
+      vi.stubEnv("KOVE_EVAL_LLM_PROVIDER", "workers");
+      expect(resolveEvalLLMConfig(dir)?.kind).toBe("workers");
+
+      vi.stubEnv("KOVE_EVAL_LLM_PROVIDER", "omni");
+      expect(resolveEvalLLMConfig(dir)).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("posts to the OmniRoute gateway with bearer auth and maps HTTP failures", async () => {
+    const calls: Array<{ url: string; headers: Record<string, string> }> = [];
+    const okFetch = (async (url: string, init: RequestInit) => {
+      calls.push({ url, headers: (init.headers ?? {}) as Record<string, string> });
+      return new Response(JSON.stringify({ choices: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as unknown as typeof fetch;
+    const cfg = { baseUrl: "http://localhost:20128/v1", apiKey: "omni-key", model: "vendor/model" };
+    const send = makeOmniRouteSend(cfg, { fetchFn: okFetch });
+    await send({ model: "vendor/model", messages: [] });
+    expect(calls[0]?.url).toBe("http://localhost:20128/v1/chat/completions");
+    expect(calls[0]?.headers.Authorization).toBe("Bearer omni-key");
+
+    const limitedFetch = (async () =>
+      new Response('{"error":{"code":429}}', {
+        status: 429,
+        headers: { "retry-after": "7", "content-type": "application/json" },
+      })) as unknown as typeof fetch;
+    const failing = makeOmniRouteSend(cfg, { fetchFn: limitedFetch });
+    await expect(failing({})).rejects.toThrow("omniroute 429");
   });
 });
 
