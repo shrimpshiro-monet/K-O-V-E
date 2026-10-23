@@ -755,6 +755,12 @@ export interface RunBaselineOptions {
   /** Directory of measured reference profiles (real-*.json). Default: evaluation-files/reference. */
   readonly referenceDir?: string;
   readonly onCase?: (result: BaselineCaseResult) => void;
+  /**
+   * Merge the previous report at reportPath and skip case-runs that already
+   * produced a non-quota result. Quota-exhausted rows are dropped and re-run —
+   * this is how a corpus run survives daily Workers AI allocation resets.
+   */
+  readonly resume?: boolean;
 }
 
 export interface SummarizeOptions {
@@ -879,11 +885,25 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
   const combos = corpus
     .flatMap(entry => entry.prompts.map(prompt => ({ entry, prompt })))
     .slice(0, Math.max(1, opts.limit ?? Number.MAX_SAFE_INTEGER));
-  const work = combos.flatMap(combo =>
-    Array.from({ length: runsPerCombo }, (_, run) => ({ ...combo, run })),
-  );
+  const reportPath = opts.reportPath ?? DEFAULT_REPORT_PATH;
+
+  let priorResults: BaselineCaseResult[] = [];
+  if (opts.resume && existsSync(reportPath)) {
+    try {
+      const prior = JSON.parse(readFileSync(reportPath, "utf8")) as BaselineSummary;
+      // Quota rows were never measured — they are exactly what a resume re-runs.
+      priorResults = (prior.results ?? []).filter(result => !result.quotaExhausted);
+    } catch {
+      // Unreadable prior report: fall through to a fresh full run.
+      priorResults = [];
+    }
+  }
+  const done = new Set(priorResults.map(result => `${result.id}|${result.run}`));
+  const work = combos
+    .flatMap(combo => Array.from({ length: runsPerCombo }, (_, run) => ({ ...combo, run })))
+    .filter(item => !done.has(`${item.entry.id}/${item.prompt.id}|${item.run}`));
   let quotaHit = false;
-  const results = await mapLimit(work, opts.concurrency ?? 3, async item => {
+  const fresh = await mapLimit(work, opts.concurrency ?? 3, async item => {
     // Stop scheduling as soon as the provider reports quota exhaustion: further
     // calls are guaranteed transport failures and would only pollute the report.
     if (quotaHit) return null;
@@ -899,7 +919,10 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
     opts.onCase?.(result);
     return result;
   });
-  const settled = results.filter((r): r is BaselineCaseResult => r !== null);
+  const settled = [
+    ...priorResults,
+    ...fresh.filter((r): r is BaselineCaseResult => r !== null),
+  ];
 
   const expected = combos.length * runsPerCombo;
   const quotaExcluded = settled.filter(r => r.quotaExhausted).length;
@@ -919,7 +942,6 @@ export async function runBaseline(opts: RunBaselineOptions = {}): Promise<Baseli
     quotaExcluded,
   });
 
-  const reportPath = opts.reportPath ?? DEFAULT_REPORT_PATH;
   writeFileSync(reportPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
   return summary;
 }

@@ -23,6 +23,8 @@ const LIVE = process.env.KOVE_EVAL_BASELINE === "1";
 const LIMIT = Number(process.env.KOVE_EVAL_LIMIT ?? "0") || undefined;
 /** Repeats per combination (k). k >= 3 so gate rates carry a spread. */
 const RUNS = Number(process.env.KOVE_EVAL_RUNS ?? "3") || 3;
+/** Merge the previous report and skip already-measured case-runs. */
+const RESUME = process.env.KOVE_EVAL_RESUME === "1";
 const reportPath = LIMIT
   ? new URL("../../../../evaluation-files/baseline-smoke.json", import.meta.url).pathname
   : undefined;
@@ -271,6 +273,7 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
         limit: LIMIT,
         runsPerCombo: RUNS,
         reportPath,
+        resume: RESUME,
         concurrency: 3,
         onCase: result => {
           const gateLabel = [
