@@ -78,19 +78,83 @@
       ]
     }
   },
-  "determinism": {
-    "allPass": 6,
-    "allFail": 0,
+  "gateSemanticsVersion": 1,
+  "spread": {
+    "all_pass": 6,
+    "all_fail": 0,
     "mixed": 3,
-    "mixedIds": [
-      "pod-02/pod-02-detailed",
-      "pod-02/pod-02-vague",
-      "multi-01/multi-01-detailed"
+    "incomplete": 2,
+    "byCombination": [
+      {
+        "id": "game-01/game-01-detailed",
+        "outcome": "incomplete",
+        "validRuns": 1,
+        "expectedRuns": 3
+      },
+      {
+        "id": "game-01/game-01-vague",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-01/multi-01-detailed",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-01/multi-01-genre",
+        "outcome": "all_pass",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-01/multi-01-vague",
+        "outcome": "all_pass",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-01/pod-01-detailed",
+        "outcome": "all_pass",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-01/pod-01-genre",
+        "outcome": "all_pass",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-01/pod-01-vague",
+        "outcome": "all_pass",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-02/pod-02-detailed",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-02/pod-02-genre",
+        "outcome": "all_pass",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-02/pod-02-vague",
+        "outcome": "mixed",
+        "validRuns": 3,
+        "expectedRuns": 3
+      }
     ],
-    "incomplete": 1,
-    "incompleteIds": [
-      "game-01/game-01-detailed"
-    ]
+    "legacyObservedOnly": true,
+    "unobservedCombinations": 16,
+    "scopeNote": "Legacy rows did not retain a full expected-combination ID list; only row-observed combinations are individually classified."
   },
   "quality": {
     "references": [

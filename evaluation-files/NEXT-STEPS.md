@@ -8,36 +8,35 @@ file cites when you need them.
 
 K.O.V.E. is a browser-based video editor. The AI director "Monet" authors an edit (called
 an EditPlan: clips, transitions, effects, camera moves, text, motion overlays) in a single
-tool call, which the system then materializes onto the timeline. We are running a
-**live corpus eval**: 9 sample projects × 3 prompt styles (detailed / vague / genre) × k=3
-sampled runs = **81 case-runs** through the real code path (not a simulation), gated on
-plan validity, materialization, and clip-overlap correctness, with craft counters
-(transitions, effects) reported. The "perfect set" = all 81 pass all gates with visible
-craft.
+tool call, which the system then materializes onto the timeline. The **live corpus eval**
+uses 9 sample projects × 3 prompt styles (detailed / vague / genre) × k=3 sampled runs =
+**81 case-runs** through the real code path (not a simulation). Each case is gated on plan
+validity, materialization, clip overlaps, primary-footage gaps, a context-sensitive
+transition minimum, camera-move density, repeated transition/effect accents, and target
+duration. Craft evidence is read back from the materialized project. The "perfect set" =
+all 81 pass every gate; this does not substitute raw counts for edit quality or restraint.
 
-## Current state (as of commit `874ce10b`, 2026-10-23)
+## Current state (2026-10-23)
 
-- **Everything is landed, tested, and pushed.** `main` == `fix/prompts` ==
-  `arena/62b7f22b-k-o-v-e` at `874ce10b`. Nothing is half-finished in the working tree
-  (only untracked junk at repo root — session notes, etc.).
-- **The headline bug is fixed.** Inserted motion moments (`motionMoments[].insertIntoEditor:
-  true`) used to land on the primary video track and fail the overlap gate 100% of the
-  time. Now they go to a dedicated "Motion" graphics track, the gate skips overlay tracks,
-  overlays are clamped to the footage extent, and a regression test pins it. Evidence and
-  mechanism: `HANDOFF-EVAL-DEFECTS.md` §8.1.
-- **The harness survives long runs now.** Per-row JSONL journal (`<report>.rows.jsonl`),
-  12h live-test timeout, transport abort + 120s SSE-idle watchdogs, infra-failure rows
-  excluded from rates and re-run on resume, model-mismatch guard (one model per report),
-  craft counters read back from the materialized project (not the tool's self-report).
-- **The last live qwen k=3 run was deliberately killed** (before the D1 fix). **No current
-  live report exists.** 7 historical rows from that run are in the handoff doc §7 — they
-  prove the D1 bug, nothing more. `baseline-v0.json` is absent until the next run finishes.
-- **Model choice is settled:** the only working tool-capable route is the user's
-  self-hosted OmniRoute gateway on `alibaba/qwen3.8-max`. Workers AI gemma is measured too
-  slow for k=3 (~6 days) and passes gates by doing less (timid craft). Details:
-  handoff §5 (provider matrix) and §5.2 (credentials — key is in `.dev.vars`, gitignored).
-- **Gaps that remain are deliberate deferrals**, listed below in priority order. They are
-  the actual remaining work.
+- This Arena branch is based on `9100a2c`; step 1 below is implemented and verified on
+  `arena/905775ed-k-o-v-e`. Do not switch branches; use `git log` for its commit state.
+- **The headline D1 bug is fixed** (original fix `874ce10b`). Inserted motion moments
+  (`motionMoments[].insertIntoEditor: true`) now go to a dedicated "Motion" graphics track;
+  overlap checks skip overlay tracks and overlays are clamped to footage extent. Evidence:
+  `HANDOFF-EVAL-DEFECTS.md` §8.1.
+- **The harness survives long runs:** per-row JSONL journal, 12h live-test timeout,
+  transport abort + 120s SSE-idle watchdogs, infra-failure rows excluded from rates and
+  rerun on resume, and a one-model-per-report guard. Current reports include materialized
+  craft gates and gate-semantics version 2; pre-v2 reports/journals must not be resumed.
+- **No live report exists for the new semantics.** Seven historical rows from the stopped
+  run predate the D1 fix. A probe of sandbox `localhost:20128` returned connection refused;
+  this does not test the user's Mac-local gateway. This checkout also lacks `.dev.vars` and
+  all 21 corpus media/audio/reference assets, and the sandbox network allowlist excludes the
+  LLM provider. Do not start the live runner here; run the campaign on the user's Mac with
+  local credentials and media, or arrange an allowed, secure route plus the assets.
+- The gate implementation and synthetic tests are complete, and the full `src/eval/`
+  verification is recorded under step 1. The next campaign actions are the later Mac-local
+  gateway check and fresh k=3 campaign. Product-side rendering/latency work remains deferred.
 
 ## Your job (in order)
 
@@ -45,58 +44,54 @@ craft.
 
 ```bash
 cd /Users/hamza/Desktop/k.o.v.e
-git log --oneline -5          # should show 874ce10b as tip
-git status                    # expect clean except untracked root junk
-pnpm --filter @kove-advanced/agent exec tsc --noEmit   # must be clean
-pnpm --filter @kove-advanced/agent test:run src/eval/baseline.test.ts src/eval/resume.test.ts src/eval/quality.test.ts
+git branch --show-current    # stay on arena/905775ed-k-o-v-e for this task
+git status                    # inspect any local changes before continuing
+pnpm --filter @kove-advanced/agent exec tsc --noEmit
+pnpm --filter @kove-advanced/agent test:run src/eval/
 ```
 
-Expect: tsc clean, ~32 passed | 1 skipped on the eval tests. If anything fails here, stop
-and read the failure — the baseline should be green.
+In this workspace, tsc is clean and `src/eval/` is 42 passed with media-dependent tests
+skipped because corpus assets are absent (see `corpus.test.ts`); run with the user's full
+media set before the live campaign. Stop and inspect any unexpected failure.
 
 Read (in this order): `AGENTS.md` (repo conventions), this file, `HANDOFF-EVAL-DEFECTS.md`
 §0-§4 (mission, timeline, eval infra) and §8 (defects). Skip §5-§6 until you need the
-gateway. Skip Appendix §13 unless you need verbatim source — and remember it is a
-point-in-time snapshot at `b80c501f`, *before* the D1 fix; the header of the handoff wins
-over the appendix when they disagree.
+gateway. Skip Appendix §13 unless you need verbatim source — it is a point-in-time snapshot
+at `b80c501f`, before D1 and the current craft gates; current implementation and decisions
+in this file and the top of the handoff take precedence.
 
-### 1. Add the missing gates (the real remaining eval work)
+### 1. Add the missing gates — implementation complete in this branch
 
-Right now the eval only hard-gates: plan valid, plan materializes, no clip overlap on
-video/image/audio tracks. Craft (transitions, effects, camera moves) is only *reported*,
-never *gated*. The v2 director prompt asks for specific craft behavior that is currently
-unenforced by the harness. Implement, in `packages/agent/src/eval/baseline.ts` (gates run
-in `gateRow` / wherever `plan_validates` etc. are computed — find them, they are adjacent):
+The implementation is in `packages/agent/src/eval/baseline.ts`; it reads craft evidence
+from the materialized project, not the tool's self-report:
 
-1. **Gap gate** (`no_timeline_gaps`): the placed footage must cover the timeline without
-   dead air — i.e. no gap > some epsilon (suggest 0.25s) between consecutive clips on the
-   primary video track. A gap means black frames.
-2. **Transition minimum** (`meets_transition_minimum`): if the plan is not a pure talking-
-   head (heuristic: prompt style is vague/genre, or project is not a podcast — use your
-   judgment, document it), require `transitionCount >= 1` on the materialized project.
-   Detailed podcast-style rows may legitimately have 0.
-3. **Camera-move cap** (`camera_move_density_ok`): max ~70% of eligible clips should carry
-   a camera move (a "cap" — not a minimum; overuse is the failure mode, see D4). Read back
-   from the project: a clip "has a camera move" iff its keyframes include a position/scale
-   track authored by `compileCameraMoves` (check the keyframe structure, not the tool
-   report).
-4. **No consecutive identical accents**: adjacent cuts must not use the same transition
-   type AND the same effect preset back-to-back (the v2 prompt forbids this; gate it).
-5. **Duration tolerance** (`duration_within_tolerance`): materialized timeline length must
-   be within ±10% of the plan's declared `targetDurationSeconds` (or the sum of planned
-   segments — pick one definition and stick to it).
-6. **Rename the k-agreement column** from "determinism" to `spread` (or `pass@k`): the
-   provider ignores T=0/seed pins (three vague runs produced 0, 2, 1 motion moments —
-   handoff §7). Report `all_pass` / `all_fail` / `mixed` per combination. Do not claim
-   determinism anywhere in code, tests, or reports.
+1. **Gap gate** (`no_timeline_gaps`): no uncovered gap over **0.25s** between clips on the
+   selected primary footage track. Overlay tracks and `metadata.motionClip === true` clips
+   are not treated as primary footage.
+2. **Transition minimum** (`meets_transition_minimum`): at least one materialized transition
+   for vague/genre rows and other non-exempt projects. An explicit hard-cuts/no-transitions
+   request waives it; detailed podcast-style rows may also legitimately have zero.
+3. **Camera-move cap** (`camera_move_density_ok`): compiler-authored camera keyframes on no
+   more than **70%** of eligible primary-footage clips. It is a cap, not a minimum.
+4. **No consecutive identical accents**: consecutive materialized cuts fail only when both
+   transition type and outgoing effect preset repeat.
+5. **Duration tolerance** (`duration_within_tolerance`): materialized timeline extent is
+   within **±10%** of `EditPlan.metadata.targetDuration` (seconds).
+6. **Spread report**: per-combination `all_pass` / `all_fail` / `mixed` / `incomplete`, with
+   expected combination IDs supplied by the runner. No report claims determinism.
 
-Each new gate: a clear `GateResult` with a human-readable reason (the existing gates have
-this pattern — copy it). Update `baseline.test.ts` / `quality.test.ts` to cover the new
-gates with synthetic plans (no LLM needed — the unit tests build plans in-memory).
+Each craft gate retains a boolean in `gates` and a report-ready `GateResult` reason in
+`gateResults`. Per-gate rates are in the summary. Reports carry gate-semantics version 2;
+resume rejects older reports and rows without craft-gate results. Archive prior report and
+JSONL files before starting this campaign so old and new gate semantics are never mixed.
 
-Verify: `pnpm --filter @kove-advanced/agent exec tsc --noEmit` clean;
-`pnpm --filter @kove-advanced/agent test:run src/eval/` all green. Commit as
-`feat(eval): add craft + gap gates to baseline director eval` and push.
+The gate logic has synthetic no-LLM tests. Verification in this branch: agent TypeScript
+check passed; full `src/eval/` suite passed (**42 passed, 71 skipped**). The skips are the
+63 effect-golden tests (disabled by default), corpus-backed checks because evaluation media
+are absent from this checkout, and the live baseline (not enabled). Commit as
+`feat(eval): add craft + gap gates to baseline director eval` and push this branch.
+No live report has been run. Gateway verification and the full k=3 campaign remain later
+steps; the gateway is a Mac-local process and is not reachable from this workspace.
 
 ### 2. Verify the gateway is alive (or bring it up)
 
@@ -156,21 +151,23 @@ to stay busy — but do not touch `baseline.ts` gate semantics until the report 
 
 ### 4. When the 81-row report lands: analyze and summarize
 
-1. Open `evaluation-files/baseline-v0.json`. Check `summary`: rates for each gate
-   (including the new ones from step 1), `infraExcluded` count, per-combination `spread`.
-2. Compare against the frozen gemma partial
-   (`baseline-v0-gemma-k3-partial.json`): plan/materialize was 85.6% ± 6.8%, allThree
-   85.6%, craft timid (0-4 transitions). The question for qwen: does it beat gemma on
-   allThree *and* on craft counts, now that the D1 trap is removed?
-3. Specifically check the **vague and genre rows** — they are where qwen used motion
-   moments (0/2/1 in the killed run). Do they now pass with real craft?
-4. Check the **detailed podcast rows** — they had 0 transitions in the killed run. Is the
-   new transition-minimum gate (step 1.2) passing them by the podcast exemption, or
-   failing them because the density contract is suppressing transitions (the D4
-   corollary)? If the latter, a small prompt nudge in
-   `packages/agent/src/director/director-prompt.ts` + re-measure.
-5. Write the campaign summary for the user: allThree rate, per-gate rates, spread, craft
-   counts vs gemma, and any rows that still fail with the *reason* from the gate result.
+1. Open `evaluation-files/baseline-v0.json`. Check the per-gate rates, `infraExcluded`,
+   materialized-project gate reasons, and per-combination `spread`.
+2. Use the frozen gemma partial (`baseline-v0-gemma-k3-partial.json`) as historical context
+   only: it predates the craft gates, so its 85.6% plan/materialize rate and 85.6% old
+   all-three rate are not directly comparable to the new all-gates result. Its transition
+   counts (0–4) are descriptive, not a quality score; do not reward quantity over restraint.
+3. Specifically inspect the **vague and genre rows** — they are where qwen used motion
+   moments (0/2/1 in the killed run). Check whether materialized craft is appropriate and
+   whether the new gates pass; counts alone do not establish edit quality.
+4. Check the **detailed podcast rows** — they had 0 transitions in the killed run. The
+   corpus prompts explicitly request hard cuts/no transitions, so those rows should pass
+   the minimum via the explicit prompt exemption (the detailed-podcast exemption is a
+   separate safeguard). Check the recorded gate reason; do not weaken prompt behavior to
+   game a gate.
+5. Write the campaign summary for the user: all-gates and per-gate rates, spread, useful
+   materialized craft evidence (not raw counts as a proxy for quality), and rows that fail
+   with the gate's *reason*.
 
 ### 5. Deferred work (not blocking the eval — pick up after step 4)
 

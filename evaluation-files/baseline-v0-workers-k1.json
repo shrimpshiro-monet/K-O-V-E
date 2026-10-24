@@ -62,13 +62,95 @@
       ]
     }
   },
-  "determinism": {
-    "allPass": 10,
-    "allFail": 0,
+  "gateSemanticsVersion": 1,
+  "spread": {
+    "all_pass": 10,
+    "all_fail": 0,
     "mixed": 0,
-    "mixedIds": [],
-    "incomplete": 0,
-    "incompleteIds": []
+    "incomplete": 3,
+    "byCombination": [
+      {
+        "id": "game-01/game-01-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 1
+      },
+      {
+        "id": "game-01/game-01-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 1
+      },
+      {
+        "id": "game-01/game-01-vague",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "multi-01/multi-01-detailed",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "multi-01/multi-01-genre",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "multi-01/multi-01-vague",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "multi-02/multi-02-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 1
+      },
+      {
+        "id": "pod-01/pod-01-detailed",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "pod-01/pod-01-genre",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "pod-01/pod-01-vague",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "pod-02/pod-02-detailed",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "pod-02/pod-02-genre",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      },
+      {
+        "id": "pod-02/pod-02-vague",
+        "outcome": "all_pass",
+        "validRuns": 1,
+        "expectedRuns": 1
+      }
+    ],
+    "legacyObservedOnly": true,
+    "unobservedCombinations": 14,
+    "scopeNote": "Legacy rows did not retain a full expected-combination ID list; only row-observed combinations are individually classified."
   },
   "quality": {
     "references": [

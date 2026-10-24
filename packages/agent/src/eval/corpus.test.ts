@@ -10,10 +10,11 @@ const CORPUS = resolve(CORPUS_DIR, "projects.json");
 
 const corpusAvailable = existsSync(CORPUS);
 const skipReason = "skipped: evaluation corpus not present; see docs/AGENT-EVAL-CORPUS.md";
+const corpus = corpusAvailable ? loadCorpus(CORPUS) : [];
+const absentAssets = corpusAvailable ? missingAssets(corpus, CORPUS_DIR) : [];
+const mediaAvailable = corpusAvailable && absentAssets.length === 0;
 
 describe.skipIf(!corpusAvailable)(`eval corpus${corpusAvailable ? "" : ` (${skipReason})`}`, () => {
-  const corpus = corpusAvailable ? loadCorpus(CORPUS) : [];
-
   it("loads 9 projects with one prompt of each type", () => {
     expect(corpus).toHaveLength(9);
     expect(promptIds(corpus)).toHaveLength(27);
@@ -33,9 +34,12 @@ describe.skipIf(!corpusAvailable)(`eval corpus${corpusAvailable ? "" : ` (${skip
     ]);
   });
 
-  it("resolves every referenced media, music and reference file on disk", () => {
-    expect(missingAssets(corpus, CORPUS_DIR)).toEqual([]);
-  });
+  it.skipIf(!mediaAvailable)(
+    `resolves every referenced media, music and reference file on disk${mediaAvailable ? "" : ` (skipped: ${absentAssets.length} evaluation assets are absent)`}`,
+    () => {
+      expect(missingAssets(corpus, CORPUS_DIR)).toEqual([]);
+    },
+  );
 
   it("lists media plus optional music and reference per project", () => {
     const multi = corpus.find(p => p.id === "multi-03");

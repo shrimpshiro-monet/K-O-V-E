@@ -3,13 +3,23 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { Project } from "@kove-advanced/core/types/project";
-import type { Track } from "@kove-advanced/core/types/timeline";
+import type { Clip, Track, Transition } from "@kove-advanced/core/types/timeline";
+import type { EditPlan } from "@kove-advanced/creation-schema";
 import {
+  BASELINE_GATE_SEMANTICS_VERSION,
+  CAMERA_MOVE_CLIP_SHARE_MAX,
   DEFAULT_REPORT_PATH,
   PINNED_SAMPLING,
   buildBaselineProject,
   buildSegmentMap,
   clipOverlaps,
+  evaluateCameraMoveDensity,
+  evaluateCraftGates,
+  evaluateDurationWithinTolerance,
+  evaluateNoConsecutiveIdenticalAccents,
+  evaluateNoTimelineGaps,
+  evaluateTransitionMinimum,
+  TIMELINE_GAP_EPSILON_SECONDS,
   loadOmniRouteConfig,
   loadWorkersAIConfig,
   makeOmniRouteSend,
@@ -49,20 +59,37 @@ function syntheticProject(tracks: Track[]): Project {
   };
 }
 
-function trackWith(clips: Array<{ id: string; startTime: number; duration: number }>): Track {
+interface SyntheticClip {
+  readonly id: string;
+  readonly startTime: number;
+  readonly duration: number;
+  readonly effects?: Clip["effects"];
+  readonly keyframes?: Clip["keyframes"];
+  readonly metadata?: Clip["metadata"];
+}
+
+interface SyntheticTrackOptions {
+  readonly id?: string;
+  readonly name?: string;
+  readonly type?: Track["type"];
+  readonly transitions?: Track["transitions"];
+}
+
+function trackWith(clips: SyntheticClip[], options: SyntheticTrackOptions = {}): Track {
+  const trackId = options.id ?? "v1";
   return {
-    id: "v1",
-    type: "video",
-    name: "Video 1",
+    id: trackId,
+    type: options.type ?? "video",
+    name: options.name ?? "Video 1",
     clips: clips.map(clip => ({
       id: clip.id,
       mediaId: "video-1",
-      trackId: "v1",
+      trackId,
       startTime: clip.startTime,
       duration: clip.duration,
       inPoint: 0,
       outPoint: clip.duration,
-      effects: [],
+      effects: clip.effects ?? [],
       audioEffects: [],
       transform: {
         position: { x: 0, y: 0 },
@@ -72,9 +99,10 @@ function trackWith(clips: Array<{ id: string; startTime: number; duration: numbe
         opacity: 1,
       },
       volume: 1,
-      keyframes: [],
+      keyframes: clip.keyframes ?? [],
+      ...(clip.metadata ? { metadata: clip.metadata } : {}),
     })),
-    transitions: [],
+    transitions: options.transitions ?? [],
     locked: false,
     hidden: false,
     muted: false,
@@ -82,9 +110,53 @@ function trackWith(clips: Array<{ id: string; startTime: number; duration: numbe
   } as unknown as Track;
 }
 
+function syntheticEditPlan(targetDuration: number): EditPlan {
+  return {
+    segments: [],
+    textElements: [],
+    effects: [],
+    transitions: [],
+    audioDecisions: [],
+    metadata: {
+      targetDuration,
+      targetPlatform: "test",
+      genre: "test",
+      pacing: "medium",
+      rationale: "Synthetic unit-test plan.",
+    },
+  };
+}
+
+function syntheticTransition(clipAId: string, clipBId: string, type = "crossfade"): Transition {
+  return {
+    id: `${clipAId}-${clipBId}-transition`,
+    clipAId,
+    clipBId,
+    type: type as Transition["type"],
+    duration: 0.25,
+    params: {},
+  };
+}
+
+function syntheticGateResults(passed: boolean) {
+  const result = { passed, reason: "Synthetic gate result." };
+  return {
+    noTimelineGaps: result,
+    meetsTransitionMinimum: result,
+    cameraMoveDensityOk: result,
+    noConsecutiveIdenticalAccents: result,
+    durationWithinTolerance: result,
+  };
+}
+
 const corpusAvailable = existsSync(CORPUS_PATH);
-const corpusTest = corpusAvailable ? it : it.skip;
-const corpusTitle = (title: string) => corpusAvailable ? title : `${title} (skipped: evaluation corpus not present; see docs/AGENT-EVAL-CORPUS.md)`;
+const corpusMissingAssets = corpusAvailable ? missingAssets(loadCorpus(CORPUS_PATH), `${REPO_ROOT}/evaluation-files`) : [];
+const corpusReady = corpusAvailable && corpusMissingAssets.length === 0;
+const corpusTest = corpusReady ? it : it.skip;
+const corpusSkipReason = !corpusAvailable
+  ? "evaluation corpus not present"
+  : `${corpusMissingAssets.length} evaluation media asset(s) are absent`;
+const corpusTitle = (title: string) => corpusReady ? title : `${title} (skipped: ${corpusSkipReason})`;
 
 describe("baseline harness helpers", () => {
   corpusTest(corpusTitle("loads the corpus and passes the asset-existence gate"), () => {
@@ -143,6 +215,199 @@ describe("baseline harness helpers", () => {
     expect(clipOverlaps(adjacent)).toEqual([]);
   });
 
+  it("gates primary-footage gaps with a 0.25-second epsilon", () => {
+    expect(TIMELINE_GAP_EPSILON_SECONDS).toBe(0.25);
+    const withinEpsilon = syntheticProject([
+      trackWith([
+        { id: "a", startTime: 0, duration: 1 },
+        { id: "b", startTime: 1 + TIMELINE_GAP_EPSILON_SECONDS - 0.001, duration: 1 },
+      ]),
+    ]);
+    const pass = evaluateNoTimelineGaps(withinEpsilon);
+    expect(pass.passed).toBe(true);
+    expect(pass.reason).toContain("largest uncovered gap");
+    const leadingGap = evaluateNoTimelineGaps(
+      syntheticProject([trackWith([{ id: "late-start", startTime: TIMELINE_GAP_EPSILON_SECONDS + 0.001, duration: 1 }])]),
+    );
+    expect(leadingGap.passed).toBe(false);
+    expect(leadingGap.reason).toContain("starts 0.251s after timeline zero");
+
+    const overEpsilon = syntheticProject([
+      trackWith([
+        { id: "a", startTime: 0, duration: 1 },
+        { id: "b", startTime: 1 + TIMELINE_GAP_EPSILON_SECONDS + 0.001, duration: 1 },
+      ]),
+    ]);
+    const fail = evaluateNoTimelineGaps(overEpsilon);
+    expect(fail.passed).toBe(false);
+    expect(fail.reason).toContain("0.251s gap");
+
+    const primaryFootage = trackWith(
+      [
+        { id: "shot-1", startTime: 0, duration: 1 },
+        { id: "shot-2", startTime: 1, duration: 1 },
+      ],
+      { id: "footage", name: "Footage" },
+    );
+    const graphicOverlay = trackWith(
+      [
+        { id: "overlay-1", startTime: 5, duration: 0.2 },
+        { id: "overlay-2", startTime: 8, duration: 0.2 },
+        { id: "overlay-3", startTime: 11, duration: 0.2 },
+      ],
+      { id: "graphics", name: "Graphics", type: "graphics" },
+    );
+    const overlaysIgnored = evaluateNoTimelineGaps(syntheticProject([primaryFootage, graphicOverlay]));
+    expect(overlaysIgnored.passed).toBe(true);
+    expect(overlaysIgnored.reason).toContain('track "Footage"');
+  });
+
+  it("requires a materialized transition except for explicit hard cuts and detailed speech", () => {
+    const noTransitions = syntheticProject([trackWith([{ id: "a", startTime: 0, duration: 4 }])]);
+    const detailedSpeech = { id: "pod-01-detailed", type: "detailed" as const, text: "Tell one clear story." };
+    expect(evaluateTransitionMinimum(noTransitions, detailedSpeech, { id: "pod-01", category: "speech" })).toMatchObject({
+      passed: true,
+    });
+    expect(
+      evaluateTransitionMinimum(noTransitions, detailedSpeech, { id: "interview-01", category: "speech" }).passed,
+    ).toBe(false);
+
+    const genreSpeech = { id: "pod-01-genre", type: "genre" as const, text: "podcast-clips" };
+    const required = evaluateTransitionMinimum(noTransitions, genreSpeech, { id: "pod-01", category: "speech" });
+    expect(required.passed).toBe(false);
+    expect(required.reason).toContain("requires at least 1");
+
+    for (const hardCuts of [
+      { id: "game-01-only", type: "detailed" as const, text: "Use hard cuts only." },
+      { id: "game-01-none", type: "detailed" as const, text: "No transitions." },
+    ]) {
+      expect(evaluateTransitionMinimum(noTransitions, hardCuts, { id: "game-01", category: "game" })).toMatchObject({
+        passed: true,
+      });
+    }
+    const ambiguousHardCut = {
+      id: "multi-01-detailed",
+      type: "detailed" as const,
+      text: "Hard cut between every beat.",
+    };
+    expect(
+      evaluateTransitionMinimum(noTransitions, ambiguousHardCut, { id: "multi-01", category: "multi" }).passed,
+    ).toBe(false);
+
+    const withTransition = syntheticProject([
+      trackWith(
+        [
+          { id: "a", startTime: 0, duration: 2 },
+          { id: "b", startTime: 2, duration: 2 },
+        ],
+        { transitions: [syntheticTransition("a", "b")] },
+      ),
+    ]);
+    expect(evaluateTransitionMinimum(withTransition, genreSpeech, { id: "pod-01", category: "speech" })).toMatchObject({
+      passed: true,
+      reason: expect.stringContaining("materialized transition"),
+    });
+  });
+
+  it("caps compiler-authored camera moves at 70% of primary footage clips", () => {
+    const makeClips = (movingCount: number): SyntheticClip[] =>
+      Array.from({ length: 10 }, (_, index) => {
+        const id = `clip-${index}`;
+        return {
+          id,
+          startTime: index,
+          duration: 1,
+          keyframes:
+            index < movingCount
+              ? [{ id: `${id}-move-0`, time: 0, property: "scale.x", value: 1.08, easing: "linear" }]
+              : index === 9
+                ? [{ id: `${id}-manual-0`, time: 0, property: "position.x", value: 5, easing: "linear" }]
+                : [],
+        };
+      });
+    const atCap = evaluateCameraMoveDensity(syntheticProject([trackWith(makeClips(7))]));
+    expect(CAMERA_MOVE_CLIP_SHARE_MAX).toBe(0.7);
+    expect(atCap.passed).toBe(true);
+    expect(atCap.reason).toContain("7/10");
+
+    const overCap = evaluateCameraMoveDensity(syntheticProject([trackWith(makeClips(8))]));
+    expect(overCap.passed).toBe(false);
+    expect(overCap.reason).toContain("8/10");
+    expect(overCap.reason).toContain("maximum 70.0%");
+  });
+
+  it("rejects repeated transition + effect-preset pairs on adjacent cuts", () => {
+    const effect = {
+      id: "look",
+      type: "shader",
+      params: { shaderId: "analog-vhs" },
+      enabled: true,
+    };
+    const makeProject = (secondPreset: string, secondTransition = "crossfade") =>
+      syntheticProject([
+        trackWith(
+          [
+            { id: "a", startTime: 0, duration: 1, effects: [effect] },
+            {
+              id: "b",
+              startTime: 1,
+              duration: 1,
+              effects: [{ ...effect, params: { shaderId: secondPreset } }],
+            },
+            { id: "c", startTime: 2, duration: 1 },
+          ],
+          {
+            transitions: [
+              syntheticTransition("a", "b", "crossfade"),
+              syntheticTransition("b", "c", secondTransition),
+            ],
+          },
+        ),
+      ]);
+
+    const repeated = evaluateNoConsecutiveIdenticalAccents(makeProject("analog-vhs"));
+    expect(repeated.passed).toBe(false);
+    expect(repeated.reason).toContain("crossfade");
+    expect(repeated.reason).toContain("shader:analog-vhs");
+
+    expect(evaluateNoConsecutiveIdenticalAccents(makeProject("film-grain")).passed).toBe(true);
+    expect(evaluateNoConsecutiveIdenticalAccents(makeProject("analog-vhs", "wipe")).passed).toBe(true);
+  });
+
+  it("checks materialized timeline duration against metadata.targetDuration ±10%", () => {
+    const within = syntheticProject([trackWith([{ id: "a", startTime: 0, duration: 9.1 }])]);
+    const pass = evaluateDurationWithinTolerance(within, syntheticEditPlan(10));
+    expect(pass.passed).toBe(true);
+    expect(pass.reason).toContain("±10%");
+
+    const outside = syntheticProject([trackWith([{ id: "a", startTime: 0, duration: 8.9 }])]);
+    const fail = evaluateDurationWithinTolerance(outside, syntheticEditPlan(10));
+    expect(fail.passed).toBe(false);
+    expect(fail.reason).toContain("8.90s");
+  });
+
+  it("returns reasons for every new gate using only a synthetic plan and project", () => {
+    const project = syntheticProject([
+      trackWith([
+        { id: "a", startTime: 0, duration: 5 },
+        { id: "b", startTime: 5, duration: 5 },
+      ], { transitions: [syntheticTransition("a", "b")] }),
+    ]);
+    const plan = syntheticEditPlan(10);
+    const results = evaluateCraftGates(
+      project,
+      plan,
+      { id: "vague", type: "vague", text: "Make it feel good." },
+      { id: "sport-01", category: "sport" },
+      10,
+    );
+    expect(Object.values(results)).toHaveLength(5);
+    for (const result of Object.values(results)) {
+      expect(typeof result.passed).toBe("boolean");
+      expect(result.reason.length).toBeGreaterThan(0);
+    }
+  });
+
   it("pins temperature and seed on every outgoing request body", async () => {
     const seen: unknown[] = [];
     const inner = async (body: unknown): Promise<unknown> => {
@@ -178,7 +443,7 @@ describe("baseline harness helpers", () => {
     expect(isInfraFailureMessage("plan_edit failed [EDIT_PLAN_APPLY_FAILED]: rolled back")).toBe(false);
   });
 
-  it("excludes quota results from gate rates and marks aborted runs", () => {
+  it("excludes quota/infra rows from gate rates and reports per-combination spread", () => {
     const stats = {
       durationMs: 1,
       clipCount: 0,
@@ -189,54 +454,91 @@ describe("baseline harness helpers", () => {
       planScore: null,
       timelineDuration: 0,
     };
-    const make = (id: string, run: number, ok: boolean, quota: boolean) => ({
+    const make = (id: string, run: number, ok: boolean, quota = false, infra = false) => ({
       id,
       run,
       projectId: "p",
       promptId: "q",
       promptType: "vague" as const,
       ok,
-      toolCode: quota ? "TOOL_ERROR" : null,
+      toolCode: quota || infra ? "TOOL_ERROR" : null,
       quotaExhausted: quota,
-      infraFailure: false,
-      gates: { planValidates: ok, materializes: ok, noClipOverlaps: true },
-      failures: quota ? ["plan_edit failed [TOOL_ERROR]: cloudflare-ai 429 ..."] : [],
+      infraFailure: infra,
+      gates: {
+        planValidates: ok,
+        materializes: ok,
+        noClipOverlaps: true,
+        noTimelineGaps: ok,
+        meetsTransitionMinimum: ok,
+        cameraMoveDensityOk: ok,
+        noConsecutiveIdenticalAccents: ok,
+        durationWithinTolerance: ok,
+      },
+      gateResults: syntheticGateResults(ok),
+      failures: quota
+        ? ["plan_edit failed [TOOL_ERROR]: cloudflare-ai 429 ..."]
+        : infra
+          ? ["plan_edit failed [TOOL_ERROR]: fetch failed"]
+          : [],
       warnings: [],
       stats,
     });
     const summary = summarizeBaseline(
       [
-        make("a", 0, true, false), // combo a: complete k-run sample, pass/fail/pass
+        make("a", 0, true, false), // mixed: pass/fail/pass
         make("a", 1, false, false),
         make("a", 2, true, false),
-        make("b", 0, true, true), // combo b: quota run excluded -> only 2 valid
+        make("b", 0, true, true), // incomplete: one quota row is not a model result
         make("b", 1, true, false),
         make("b", 2, true, false),
-        make("c", 0, true, false), // combo c: complete and stable pass
+        make("c", 0, true, false), // all_pass
         make("c", 1, true, false),
         make("c", 2, true, false),
+        make("d", 0, false, false), // all_fail
+        make("d", 1, false, false),
+        make("d", 2, false, false),
+        make("e", 0, true, false, true), // incomplete: infra row is excluded
+        make("e", 1, true, false),
+        make("e", 2, true, false),
       ],
-      { model: "m", cases: 3, runsPerCombo: 3, status: "aborted", abortReason: "stopped early", quotaExcluded: 1, infraExcluded: 0 },
+      {
+        model: "m",
+        cases: 6,
+        runsPerCombo: 3,
+        combinationIds: ["a", "b", "c", "d", "e", "f"],
+        status: "aborted",
+        abortReason: "stopped early",
+        quotaExcluded: 1,
+        infraExcluded: 1,
+      },
     );
+    expect(summary.gateSemanticsVersion).toBe(BASELINE_GATE_SEMANTICS_VERSION);
     expect(summary.quotaExcluded).toBe(1);
-    expect(summary.infraExcluded).toBe(0);
+    expect(summary.infraExcluded).toBe(1);
     expect(summary.status).toBe("aborted");
     expect(summary.abortReason).toBe("stopped early");
-    // planValidates over non-quota results: run0 2/2, run1 2/3, run2 3/3
-    expect(summary.gateRates.planValidates.perRun).toEqual([1, 0.6667, 1]);
-    expect(summary.gateRates.planValidates.validPerRun).toEqual([2, 3, 3]);
-    expect(summary.gateRates.allGates.perRun).toEqual([1, 0.6667, 1]);
-    // b is not evidence of stability: 2 valid < runsPerCombo
-    expect(summary.determinism).toEqual({
-      allPass: 1,
-      allFail: 0,
+    // Run-wise pass rates exclude quota and infra results: 2/3, 3/5, and 4/5.
+    expect(summary.gateRates.planValidates.perRun).toEqual([0.6667, 0.6, 0.8]);
+    expect(summary.gateRates.noTimelineGaps.perRun).toEqual([0.6667, 0.6, 0.8]);
+    expect(summary.gateRates.durationWithinTolerance.perRun).toEqual([0.6667, 0.6, 0.8]);
+    expect(summary.gateRates.planValidates.validPerRun).toEqual([3, 5, 5]);
+    expect(summary.gateRates.allGates.perRun).toEqual([0.6667, 0.6, 0.8]);
+    expect(summary.spread).toEqual({
+      all_pass: 1,
+      all_fail: 1,
       mixed: 1,
-      mixedIds: ["a"],
-      incomplete: 1,
-      incompleteIds: ["b"],
+      incomplete: 3,
+      byCombination: [
+        { id: "a", outcome: "mixed", validRuns: 3, expectedRuns: 3 },
+        { id: "b", outcome: "incomplete", validRuns: 2, expectedRuns: 3 },
+        { id: "c", outcome: "all_pass", validRuns: 3, expectedRuns: 3 },
+        { id: "d", outcome: "all_fail", validRuns: 3, expectedRuns: 3 },
+        { id: "e", outcome: "incomplete", validRuns: 2, expectedRuns: 3 },
+        { id: "f", outcome: "incomplete", validRuns: 0, expectedRuns: 3 },
+      ],
     });
-    expect(summary.passed).toBe(7);
-    expect(summary.total).toBe(9);
+    expect(summary.passed).toBe(9);
+    expect(summary.total).toBe(15);
   });
 
   it("reads Workers AI credentials from .dev.vars when present", () => {
@@ -449,9 +751,9 @@ describe("baseline harness helpers", () => {
   });
 });
 
-describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
+describe.skipIf(!LIVE || !corpusReady)("baseline v0 (live eval run)", () => {
   it(
-    "measures plan-validates / materializes / no-overlap over k runs per combination",
+    "measures validity, materialization, and craft gates over k runs per combination",
     async () => {
       const summary = await runBaseline({
         limit: LIMIT,
@@ -464,6 +766,11 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
             result.gates.planValidates ? "plan✓" : "plan✗",
             result.gates.materializes ? "mat✓" : "mat✗",
             result.gates.noClipOverlaps ? "overlap✓" : "overlap✗",
+            result.gates.noTimelineGaps ? "gaps✓" : "gaps✗",
+            result.gates.meetsTransitionMinimum ? "transition✓" : "transition✗",
+            result.gates.cameraMoveDensityOk ? "camera✓" : "camera✗",
+            result.gates.noConsecutiveIdenticalAccents ? "accents✓" : "accents✗",
+            result.gates.durationWithinTolerance ? "duration✓" : "duration✗",
           ].join(" ");
           console.log(
             `[baseline] run ${result.run} ${result.id} (${result.promptType}): ` +
@@ -497,15 +804,19 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
       expect(summary.passed).toBe(valid.filter(result => result.ok).length);
       for (const result of summary.results) {
         if (result.quotaExhausted || result.infraFailure) continue;
-        expect(typeof result.gates.planValidates, result.id).toBe("boolean");
-        expect(typeof result.gates.materializes, result.id).toBe("boolean");
-        expect(typeof result.gates.noClipOverlaps, result.id).toBe("boolean");
+        for (const gatePassed of Object.values(result.gates)) expect(typeof gatePassed, result.id).toBe("boolean");
+        for (const gateResult of Object.values(result.gateResults)) {
+          expect(typeof gateResult.passed, result.id).toBe("boolean");
+          expect(gateResult.reason.length, result.id).toBeGreaterThan(0);
+        }
+        const hardGatesPass = Object.values(result.gates).every(Boolean);
+        const processingCompleted = !result.failures.some(failure => failure.startsWith("threw:"));
         expect(result.ok, `${result.id} run ${result.run}: ${result.failures.join(" | ")}`).toBe(
-          result.gates.planValidates && result.gates.materializes && result.gates.noClipOverlaps,
+          hardGatesPass && result.toolCode === null && processingCompleted,
         );
         expect(result.stats.durationMs).toBeGreaterThan(0);
       }
-      // Quota-excluded runs must never appear inside a gate rate.
+      // Quota- and infra-excluded rows must never appear inside a gate rate.
       for (const rate of Object.values(summary.gateRates)) {
         expect(rate.validPerRun.reduce((sum, n) => sum + n, 0)).toBe(valid.length);
       }
@@ -518,22 +829,21 @@ describe.skipIf(!LIVE)("baseline v0 (live Workers AI run)", () => {
         `${label} ${pct(rate.mean)} ± ${pct(rate.stdev)} [${rate.perRun.map((v, i) => `${pct(v)}/${rate.validPerRun[i]}`).join(", ")}]`;
       console.log(
         `[baseline] k=${RUNS}, sampling T=${summary.sampling.temperature} seed=${summary.sampling.seed}, ` +
-          `valid ${valid.length}/${summary.total} (quota excluded ${summary.quotaExcluded}); gate rates: ` +
+          `valid ${valid.length}/${summary.total} (quota excluded ${summary.quotaExcluded}, infra excluded ${summary.infraExcluded}); gate rates: ` +
           line("plan_validates", summary.gateRates.planValidates) + "; " +
           line("materializes", summary.gateRates.materializes) + "; " +
           line("no_clip_overlaps", summary.gateRates.noClipOverlaps) + "; " +
-          line("all_three", summary.gateRates.allGates),
+          line("no_timeline_gaps", summary.gateRates.noTimelineGaps) + "; " +
+          line("transition_minimum", summary.gateRates.meetsTransitionMinimum) + "; " +
+          line("camera_move_density", summary.gateRates.cameraMoveDensityOk) + "; " +
+          line("distinct_accents", summary.gateRates.noConsecutiveIdenticalAccents) + "; " +
+          line("duration_tolerance", summary.gateRates.durationWithinTolerance) + "; " +
+          line("all_gates", summary.gateRates.allGates),
       );
       console.log(
-        `[baseline] determinism across k=${RUNS} (non-quota only): stable pass ${summary.determinism.allPass}, ` +
-          `stable fail ${summary.determinism.allFail}, mixed ${summary.determinism.mixed}` +
-          (summary.determinism.mixedIds.length
-            ? ` → ${summary.determinism.mixedIds.join(", ")}`
-            : "") +
-          `, incomplete ${summary.determinism.incomplete}` +
-          (summary.determinism.incompleteIds.length
-            ? ` → ${summary.determinism.incompleteIds.join(", ")}`
-            : ""),
+        `[baseline] spread across k=${RUNS} (valid model results): all_pass ${summary.spread.all_pass}, ` +
+          `all_fail ${summary.spread.all_fail}, mixed ${summary.spread.mixed}, incomplete ${summary.spread.incomplete}; ` +
+          summary.spread.byCombination.map(combo => `${combo.id}:${combo.outcome}`).join(", "),
       );
     },
     43_200_000,

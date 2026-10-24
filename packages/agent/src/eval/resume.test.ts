@@ -1,9 +1,16 @@
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { LLMClient } from "../llm";
-import { CORPUS_PATH, rowsPathFor, runBaseline, type BaselineCaseResult } from "./baseline";
+import {
+  BASELINE_GATE_SEMANTICS_VERSION,
+  CORPUS_PATH,
+  rowsPathFor,
+  runBaseline,
+  type BaselineCaseResult,
+} from "./baseline";
+import { loadCorpus, missingAssets } from "./corpus";
 
 function measuredRow(id: string): BaselineCaseResult {
   const [projectId, promptId] = id.split("/");
@@ -17,7 +24,23 @@ function measuredRow(id: string): BaselineCaseResult {
     toolCode: null,
     quotaExhausted: false,
     infraFailure: false,
-    gates: { planValidates: true, materializes: true, noClipOverlaps: true },
+    gates: {
+      planValidates: true,
+      materializes: true,
+      noClipOverlaps: true,
+      noTimelineGaps: true,
+      meetsTransitionMinimum: true,
+      cameraMoveDensityOk: true,
+      noConsecutiveIdenticalAccents: true,
+      durationWithinTolerance: true,
+    },
+    gateResults: {
+      noTimelineGaps: { passed: true, reason: "Synthetic pass." },
+      meetsTransitionMinimum: { passed: true, reason: "Synthetic pass." },
+      cameraMoveDensityOk: { passed: true, reason: "Synthetic pass." },
+      noConsecutiveIdenticalAccents: { passed: true, reason: "Synthetic pass." },
+      durationWithinTolerance: { passed: true, reason: "Synthetic pass." },
+    },
     failures: [],
     warnings: [],
     stats: {
@@ -33,7 +56,10 @@ function measuredRow(id: string): BaselineCaseResult {
   };
 }
 
-describe.skipIf(!existsSync(CORPUS_PATH))("runBaseline resume", () => {
+const corpusReady =
+  existsSync(CORPUS_PATH) && missingAssets(loadCorpus(CORPUS_PATH), dirname(CORPUS_PATH)).length === 0;
+
+describe.skipIf(!corpusReady)("runBaseline resume", () => {
   it("skips measured case-runs, re-runs prior quota and infra rows, and merges to complete", async () => {
     const dir = mkdtempSync(join(tmpdir(), "kove-eval-resume-"));
     const reportPath = join(dir, "report.json");
@@ -41,7 +67,23 @@ describe.skipIf(!existsSync(CORPUS_PATH))("runBaseline resume", () => {
       ...measuredRow("pod-01/pod-01-detailed"),
       ok: false,
       quotaExhausted: true,
-      gates: { planValidates: false, materializes: false, noClipOverlaps: false },
+      gates: {
+        planValidates: false,
+        materializes: false,
+        noClipOverlaps: false,
+        noTimelineGaps: false,
+        meetsTransitionMinimum: false,
+        cameraMoveDensityOk: false,
+        noConsecutiveIdenticalAccents: false,
+        durationWithinTolerance: false,
+      },
+      gateResults: {
+        noTimelineGaps: { passed: false, reason: "Synthetic quota row." },
+        meetsTransitionMinimum: { passed: false, reason: "Synthetic quota row." },
+        cameraMoveDensityOk: { passed: false, reason: "Synthetic quota row." },
+        noConsecutiveIdenticalAccents: { passed: false, reason: "Synthetic quota row." },
+        durationWithinTolerance: { passed: false, reason: "Synthetic quota row." },
+      },
       failures: ["quota"],
     };
     const infraRow: BaselineCaseResult = {
@@ -50,13 +92,30 @@ describe.skipIf(!existsSync(CORPUS_PATH))("runBaseline resume", () => {
       ok: false,
       toolCode: "TOOL_ERROR",
       infraFailure: true,
-      gates: { planValidates: false, materializes: false, noClipOverlaps: false },
+      gates: {
+        planValidates: false,
+        materializes: false,
+        noClipOverlaps: false,
+        noTimelineGaps: false,
+        meetsTransitionMinimum: false,
+        cameraMoveDensityOk: false,
+        noConsecutiveIdenticalAccents: false,
+        durationWithinTolerance: false,
+      },
+      gateResults: {
+        noTimelineGaps: { passed: false, reason: "Synthetic infra row." },
+        meetsTransitionMinimum: { passed: false, reason: "Synthetic infra row." },
+        cameraMoveDensityOk: { passed: false, reason: "Synthetic infra row." },
+        noConsecutiveIdenticalAccents: { passed: false, reason: "Synthetic infra row." },
+        durationWithinTolerance: { passed: false, reason: "Synthetic infra row." },
+      },
       failures: ["plan_edit failed [TOOL_ERROR]: fetch failed"],
     };
     writeFileSync(
       reportPath,
       JSON.stringify({
         model: "injected-client",
+        gateSemanticsVersion: BASELINE_GATE_SEMANTICS_VERSION,
         results: [measuredRow("pod-01/pod-01-vague"), quotaRow, infraRow],
       }),
       "utf8",
@@ -121,7 +180,11 @@ describe.skipIf(!existsSync(CORPUS_PATH))("runBaseline resume", () => {
     const reportPath = join(dir, "report.json");
     writeFileSync(
       reportPath,
-      JSON.stringify({ model: "vendor/other-model", results: [measuredRow("pod-01/pod-01-vague")] }),
+      JSON.stringify({
+        model: "vendor/other-model",
+        gateSemanticsVersion: BASELINE_GATE_SEMANTICS_VERSION,
+        results: [measuredRow("pod-01/pod-01-vague")],
+      }),
       "utf8",
     );
 

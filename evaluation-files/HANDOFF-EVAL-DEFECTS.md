@@ -4,11 +4,24 @@ Background reference for the director-prompt v2 campaign: full state, evidence, 
 exact surgical defects. **Start with `NEXT-STEPS.md` in this directory** — that is the
 zero-knowledge action plan. This file is the deep context behind it.
 
-- Repo: `/Users/hamza/Desktop/k.o.v.e` (Intel Mac, pnpm workspaces, Vitest, TS strict, no `any`)
-- Branch state: `main` == `fix/prompts` == `arena/62b7f22b-k-o-v-e` at **`874ce10b`** (everything pushed + merged)
-- This document was written mid-campaign and then corrected after a full review; where an
-  embedded snapshot (Appendix §13) disagrees with the header/sections, **the header wins** —
-  appendix sources are point-in-time at `b80c501f`, before the D1 fix.
+- Repo: `/Users/hamza/Desktop/k.o.v.e` on the user's Mac (pnpm workspaces, Vitest, strict TypeScript)
+- Campaign-note baseline: this handoff was originally written against `874ce10b`; the
+  current Arena task branch is `arena/905775ed-k-o-v-e`, based on `9100a2c`.
+- The five craft/gap gates and spread reporting are implemented in the current task branch.
+  Agent TypeScript check is clean; full `src/eval/` suite passed (42 passed, 71 skipped).
+  Corpus-backed tests are skipped here because the media files are absent; effect goldens
+  are also disabled by default.
+- No live report has been run for the new semantics. A sandbox request to
+  `localhost:20128/api/health` was refused; that does not test the user's Mac-local gateway.
+  This checkout has no `.dev.vars` and is missing all 21 corpus media/audio/reference
+  assets. The sandbox outbound allowlist also excludes LLM providers, so do not launch the
+  live runner here; use the Mac-local campaign environment or arrange an allowed, secure
+  route and provide the assets.
+- Historical JSON reports now carry `gateSemanticsVersion: 1` and a renamed, observed-row
+  `spread`; they predate craft gates and must not be resumed under the current version 2.
+- This document was written mid-campaign and then corrected after a full review. Its
+  embedded source appendix (§13) is point-in-time and contains superseded baseline code;
+  current implementation and acceptance criteria are described in NEXT-STEPS and §1.
 - Committed prompt docs (root of repo): `PROMPTS.md`, `PROMPTS-CONTENT.md`, `DIRECTOR-V2-HANDOFF.md`, `EXECUTION-BRIEF.md`, `AI_DIRECTOR_FLOW.md`
 
 ---
@@ -16,25 +29,27 @@ zero-knowledge action plan. This file is the deep context behind it.
 ## 0. TL;DR for the receiving agent
 
 1. A chat-first AI director ("Monet") authors EditPlans via one tool call (`submit_edit_plan`).
-   The live corpus eval (`packages/agent/src/eval/baseline.test.ts`) runs 27 prompts (9 projects
-   × {detailed, vague, genre}) × k=3 through the real executor and gates each result on
-   plan validity, materialization, and clip-overlap correctness.
-2. Prompt v2 + fixes C1-C6 are landed and green. The eval runs through the user's self-hosted
-   **OmniRoute** gateway on **`alibaba/qwen3.8-max`** (the only working tool-capable route;
-   see §5). Workers AI gemma is measured as too slow for k=3 (~6 days).
-3. **The headline defect (D1) is FIXED as of `874ce10b`**: inserted motion moments used to
-   land on the primary video track and fail the overlap gate 100% of the time. The
-   materializer now defers to the engine's dedicated "Motion" graphics track, the gate skips
-   overlay tracks, and overlays are clamped to the footage extent. The k=3 run has NOT been
-   re-measured on the fixed build yet — that is the first live task (see NEXT-STEPS).
-4. The harness now survives long runs: per-row JSONL journal, 12h test timeout, transport
-   idle/abort watchdogs, infra-failure rows excluded from rates and re-run on resume, and a
-   model-mismatch guard (one model per report). The previous run was killed on purpose —
-   **no live report exists right now**.
-5. Known remaining gaps (deliberately not yet built): gap gate, craft gates (transition
-   minimum, camera-move cap, consecutive-accent rule, duration ±10%), pass@k reporting
-   instead of "determinism" wording, and the product-side latency work (two-call split,
-   thumbnails). NEXT-STEPS orders them.
+   The live corpus eval (`packages/agent/src/eval/baseline.test.ts`) covers 27 prompts (9
+   projects × {detailed, vague, genre}) × k=3 through the real executor. In addition to plan
+   validity, materialization, and clip overlaps, the current branch gates primary-footage
+   gaps, materialized transition minimums, camera-move density, repeated accents, and
+   duration tolerance.
+2. Prompt v2 + fixes C1-C6 are landed and green. The eval is intended to run through the
+   user's self-hosted **OmniRoute** gateway on **`alibaba/qwen3.8-max`** (see §5); the gateway
+   has not been checked from this workspace. Workers AI gemma was historically too slow for
+   k=3 (~6 days).
+3. **The headline defect (D1) was fixed by `874ce10b`**: inserted motion moments used to land
+   on the primary video track and fail the overlap gate 100% of the time. The materializer
+   now defers to the dedicated "Motion" graphics track, the overlap gate skips overlay
+   tracks, and overlays are clamped to the footage extent.
+4. The harness has per-row JSONL journaling, a 12h test timeout, transport idle/abort
+   watchdogs, infra-failure rows excluded from rates and re-run on resume, and a
+   model-mismatch guard. The earlier live run was stopped; no report exists for the new
+   gate semantics.
+5. **Step 1 in NEXT-STEPS is implemented and verified in the current branch.** The later
+   campaign work is gateway verification on the user's Mac and a fresh k=3 report after this
+   feature branch is published. Product latency work (two-call split, thumbnails) remains
+   deferred.
 
 Do not re-litigate prompt style or re-run pre-v2 baselines. Do not touch Workers AI quota
 logic unless asked.
@@ -58,23 +73,26 @@ are also *mechanically valid* (no timeline corruption, plans validate and materi
 - Frozen (do not edit): `packages/agent-runner/src/evals/{cases,rubric}.ts`,
   `packages/agent/src/eval/corpus.ts`.
 
-### Baseline gates (in `packages/agent/src/eval/baseline.ts`)
+### Baseline gates (current task-branch implementation in `packages/agent/src/eval/baseline.ts`)
 
-| Gate | What it ACTUALLY checks | Where |
-|---|---|---|
-| `plan_validates` | `plan_edit` tool output passes `validateEditPlan` / normalize (schema truth) | registry tool path, exercised per case |
-| `plan_materializes` | tool did not fail and every claimed clip ID exists on the timeline (it does NOT verify that claimed transition/effect counts actually landed — that gap is why craft counters are now read back from the project, see below) | `packages/agent/src/registry.ts` materialize path |
-| `no_clip_overlaps` | Per-track pairwise overlap on **video/image/audio** tracks only. `graphics` and `text` tracks (overlays: motion moments, titles) are skipped — overlays may stack by design | `clipOverlaps` in `packages/agent/src/eval/baseline.ts` |
-| spread (k=3) | Per-combination agreement across the 3 samples: all pass / all fail / mixed. Post-run analysis, not a hard gate | derived |
+| Gate | Materialized evidence / behavior |
+|---|---|
+| `plan_validates` | `plan_edit` output passes `validateEditPlan` / normalization |
+| `plan_materializes` | Tool did not fail and claimed clip IDs exist on the timeline |
+| `no_clip_overlaps` | Pairwise overlap on video/image/audio tracks; graphics and text overlays are skipped because they may stack |
+| `no_timeline_gaps` | No gap over 0.25s between clips on the selected primary footage track; `metadata.motionClip === true` clips are excluded |
+| `meets_transition_minimum` | At least one materialized transition unless the prompt explicitly requests hard cuts/no transitions, or the row is a detailed podcast-style case |
+| `camera_move_density_ok` | Compiler-authored camera-move keyframes appear on no more than 70% of eligible primary-footage clips |
+| `no_consecutive_identical_accents` | Adjacent cuts cannot repeat both transition type and outgoing effect preset |
+| `duration_within_tolerance` | Materialized timeline extent is within ±10% of `EditPlan.metadata.targetDuration` |
+| `spread` (k runs) | Per-combination `all_pass` / `all_fail` / `mixed` / `incomplete`; observed sample agreement, not a hard gate |
 
 Track types are `video | audio | image | text | graphics`
-(`packages/core/src/types/timeline.ts:43`).
-
-Craft counters reported per row (`transitionCount`, `effectCount`) are **read back from the
-materialized project** (`track.transitions`, `clip.effects`) as of `874ce10b` — the tool's
-self-report is no longer trusted. They are informational, not gates; promoting them to
-gates is a pending task (NEXT-STEPS step 3). Camera moves compile to keyframes, NOT clips —
-see §8.1.
+(`packages/core/src/types/timeline.ts:43`). Each craft gate has a retained boolean plus a
+human-readable `GateResult` reason. Transition and effect counters are still read back from
+the materialized project (`track.transitions`, `clip.effects`) rather than trusting tool
+self-report. Those raw counters are descriptive evidence, not a quality score; restraint
+and context matter. Camera moves compile to keyframes, NOT clips — see §8.1.
 
 Output-token note (verified): `requestPlan` in registry.ts explicitly passes
 `DIRECTOR_PLAN_MAX_TOKENS = 16384` per call, overriding the client default 8192 — plans are
@@ -158,7 +176,7 @@ self-contained:
 | `KOVE_EVAL_LLM_PROVIDER=omni|workers` | which LLM config wins (forces the union member; `omni` reads OMNIROUTE_*) |
 | `KOVE_EVAL_BASELINE=1` | run the corpus (otherwise the file is just unit tests) |
 | `KOVE_EVAL_LIMIT=N` | first N cases only; also switches report path to `evaluation-files/baseline-smoke.json` |
-| `KOVE_EVAL_RUNS=N` | k determinism runs (report invariant: RUNS must be consistent within one report) |
+| `KOVE_EVAL_RUNS=N` | k sampled runs per combination (report invariant: RUNS must be consistent within one report) |
 | `KOVE_EVAL_RESUME=1` | resume: loads the per-row JSONL journal first (later lines win per `id|run`), falls back to the report; skips already-measured rows; **re-runs quota rows AND infra-failure rows**; refuses to merge if the prior report was measured with a different model |
 | `KOVE_EVAL_CLOUDFLARE_ACCOUNT_ID / _API_TOKEN / …_2` | Workers AI accounts (fallback in runner) |
 | `KOVE_EVAL_OMNIROUTE_{BASE_URL,KEY,MODEL}` > `OMNIROUTE_*` > `.dev.vars` | omni endpoint resolution (precedence is unit-tested) |
@@ -187,18 +205,19 @@ body — `/v1/models` always advertises every model and LIES, so the canary is t
 
 | File | Contents |
 |---|---|
-| `baseline-v0-gemma-k3-partial.json` | Workers gemma k=3 partial: 31 rows (28 ok, 0 failed, 3 quota), status aborted, model `@cf/google/gemma-4-26b-a4b-it`. Stats: plan_validates/materializes **85.6% ± 6.8%**, no_overlap **100%**, all_three **85.6%**; determinism: stable pass 6, mixed 3 (pod-02-detailed, pod-02-vague, multi-01-detailed), incomplete 1 (game-01-detailed) |
-| `baseline-v0-workers-k1.json` | gemma k=1 (10/10 allThree on the early subset) |
-| `baseline-v0-pre-v2.json` | pre-v2 prompt allGates **63.89%** — the A/B baseline |
-| `baseline-v0.json` | current omni/qwen k=3 target (written only at run end; absent while running) |
-| `baseline-smoke.json` | LIMIT smoke output (stale, Oct 22) |
+| `baseline-v0-gemma-k3-partial.json` | Legacy gate-semantics version 1; Workers gemma k=3 partial: 31 rows (28 ok, 0 failed, 3 quota), status aborted. Historical rates: plan_validates/materializes **85.6% ± 6.8%**, no_overlap **100%**, legacy three-gate allGates **85.6%**. Its renamed spread is observed-row-only; craft gates were not measured. |
+| `baseline-v0-workers-k1.json` | Legacy version 1; gemma k=1 (10/10 legacy three-gate allGates on the early subset) |
+| `baseline-v0-pre-v2.json` | Legacy version 1; pre-v2 prompt legacy allGates **63.89%** — the A/B baseline |
+| `baseline-v0.json` | New Omni/qwen k=3 target under gate-semantics version 2 (written only at run end; absent while running) |
+| `baseline-smoke.json` | Legacy version 1 LIMIT smoke output (stale, Oct 22); do not resume it |
 | `plans/pod-01/*.json`, `plans/{game-01,multi-01,pod-02}/*.json` | full plan dumps per case/run (`dumpPlanJson`, `PLAN_DUMP_DIR`) — primary evidence for defect analysis |
 | `reference/real-*.json`, `projects.json` | corpus media metadata (9 projects / 27 prompts) |
 | `runner.log`, `baseline-full.log` | run logs |
 | `baseline-r1-*.json`, `baseline-r2-*.json` | older 2025-eraversion reports (ignore for current work) |
 
-Historical A/B: pre-v2 allGates 63.89% → post-v2 Workers k=1 allGates 100% (10/10);
-max timeline length 2757s → 90s.
+Historical A/B (legacy three-gate reports only; not comparable to version 2 craft-gate
+results): pre-v2 allGates 63.89% → Workers k=1 allGates 100% (10/10); max timeline length
+2757s → 90s.
 
 ---
 
@@ -317,11 +336,12 @@ the mechanism; the correlation is already perfect.
 
 ### gemma k=3 partial (backed up; frozen for comparison)
 
-plan/materialize 85.6% ± 6.8%, overlap 100%, allThree 85.6% — gemma's no_overlap was 100%
-because it apparently never (or very rarely) used `insertIntoEditor: true`; gemma's failure
-mode was schema/plan validity instead, and its craft was timid (0-4 transitions vs qwen's
-4-5). This is why model choice matters for the "craft" goal: gemma passes gates by doing
-less; qwen does more and trips a system-side gate.
+plan/materialize 85.6% ± 6.8%, overlap 100%, legacy allThree 85.6% — gemma's no_overlap
+was 100% in this partial sample and apparently used `insertIntoEditor: true` less often.
+The observed transition counts (0–4 for gemma vs 4–5 in the small qwen sample) are
+historical descriptions only, not evidence that either edit is better. The new gates
+measure materialized craft behavior, but JSON gates and counts still do not prove rendered
+quality or taste; avoid rewarding quantity over restraint.
 
 ---
 
@@ -521,20 +541,18 @@ git check-ignore .dev.vars evaluation-files   # .dev.vars must be ignored; evalu
 **Full, zero-knowledge-ready version lives in `evaluation-files/NEXT-STEPS.md` — start
 there.** Condensed order:
 
-1. Read `NEXT-STEPS.md`, then the defect sections here (D1 is fixed; D4 and the craft-gate
-   gaps are the live work).
-2. Add the missing gates (gap gate, craft gates: transition minimum, camera-move cap,
-   no-consecutive-identical, duration ±10%) and rename "determinism" reporting to
-   pass@k/spread — see NEXT-STEPS for the precise spec.
-3. Launch the fresh k=3 qwen run on the fixed build (runner command in §9 / NEXT-STEPS).
-   While it runs (~4-6h wall clock at concurrency 3), the gateway may need a manual
-   relaunch (§5/§9) — it is not a daemon.
-4. When the 81-row report completes, compare against
-   `baseline-v0-gemma-k3-partial.json` (craft counts, allThree rate, spread) and write the
-   final campaign summary for the user.
-5. Deferred product work (ordered in NEXT-STEPS): render-order fix for motion overlays,
+1. Read `NEXT-STEPS.md`, then the defect sections here; D1 is already fixed.
+2. Step 1 is implemented and verified on the task branch. The requested feature commit
+   subject is `feat(eval): add craft + gap gates to baseline director eval`; keep all work
+   on `arena/905775ed-k-o-v-e`.
+3. Later, verify the user's Mac-local gateway and launch the fresh k=3 qwen run (runner
+   command in §9 / NEXT-STEPS). The gateway must not be assumed healthy from this workspace.
+4. When the 81-row report completes, inspect per-gate results and spread. Compare against
+   `baseline-v0-gemma-k3-partial.json` only as a legacy three-gate reference; its craft
+   counts are descriptive, not quality evidence. Write the campaign summary for the user.
+5. Deferred product work (ordered in NEXT-STEPS): rendered motion-overlay verification,
    two-call split for latency, thumbnail planning, reference-style eval case, `speed`
-   placement math (D2), camera-move cap in the validator (not just the prompt).
+   placement math (D2), and a validator-level camera-move cap.
 
 ## 12. Evidence appendix (paths, may be ephemeral)
 
@@ -561,8 +579,11 @@ there.** Condensed order:
 
 ## 13. Appendix — source of every file this handoff relies on
 
-Verbatim at commit `b80c501f`. Triple-backtick fences inside any of these files
-are harmless: each block is wrapped in four-backtick fences.
+Verbatim at commit `b80c501f`. This snapshot predates D1 and the current version-2
+craft-gate implementation. Any older summary fields or per-run agreement terminology in
+the appendix are historical source only and must not be copied into current code or
+reports. Triple-backtick fences inside any of these files are harmless: each block is
+wrapped in four-backtick fences.
 
 Two files are excerpted instead of inlined whole, because inlining them would
 bury the signal (their full content is one `cat` away at the path shown):

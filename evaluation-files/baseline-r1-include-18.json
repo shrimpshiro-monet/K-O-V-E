@@ -63,13 +63,35 @@
       ]
     }
   },
-  "determinism": {
-    "allPass": 0,
-    "allFail": 0,
+  "gateSemanticsVersion": 1,
+  "spread": {
+    "all_pass": 0,
+    "all_fail": 0,
     "mixed": 0,
-    "mixedIds": [],
-    "incomplete": 0,
-    "incompleteIds": []
+    "incomplete": 3,
+    "byCombination": [
+      {
+        "id": "game-01/game-01-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 1
+      },
+      {
+        "id": "game-01/game-01-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 1
+      },
+      {
+        "id": "game-01/game-01-vague",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 1
+      }
+    ],
+    "legacyObservedOnly": true,
+    "unobservedCombinations": 15,
+    "scopeNote": "Legacy rows did not retain a full expected-combination ID list; only row-observed combinations are individually classified."
   },
   "results": [
     {
