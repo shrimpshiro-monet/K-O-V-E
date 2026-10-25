@@ -483,6 +483,9 @@ importers:
       '@kove-advanced/core':
         specifier: workspace:*
         version: link:../core
+      '@kove-advanced/creation-schema':
+        specifier: workspace:*
+        version: link:../creation-schema
       '@playwright/test':
         specifier: 1.60.0
         version: 1.60.0

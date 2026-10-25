@@ -1,0 +1,125 @@
+{
+  "planAuthorship": "hand-authored; not AI-generated",
+  "aiDirectorStatus": "plan_edit was attempted; OmniRoute returned free-quota-exhausted (HTTP 403)",
+  "materializer": "K.O.V.E. project timeline",
+  "exporter": "K.O.V.E. browser ExportEngine",
+  "source": "evaluation-files/High Quality Steph Curry Clips for Edits! (2024-25).mp4",
+  "output": "curry-hero-v2.mp4",
+  "resolution": "576x640",
+  "targetDuration": 15.7,
+  "actualDuration": 83873,
+  "frames": 471,
+  "fileSizeBytes": 7624213,
+  "audioIncluded": false,
+  "plan": "director-plan-v2.json",
+  "edl": "EDIT-DECISIONS-v2.md",
+  "quality": {
+    "file": "/Users/hamza/Desktop/k.o.v.e/evaluation-files/wow-reviews/curry-hero-montage/curry-hero-v2.mp4",
+    "resolution": {
+      "width": 576,
+      "height": 640
+    },
+    "frameRate": 30,
+    "frames": 471,
+    "duration": 15.7,
+    "act2": {
+      "meanLuma": 43.53060035980072,
+      "lumaP5": 8,
+      "lumaP95": 172,
+      "meanRgb": {
+        "red": 51.508044583000185,
+        "green": 38.52600963312627,
+        "blue": 47.881513700104556
+      },
+      "meanSaturation": 0.6811632819769625,
+      "tealSkew": {
+        "greenMinusRed": -12.982034949873913,
+        "blueMinusRed": -3.6265308828956293
+      },
+      "targets": {
+        "meanLuma": true,
+        "lumaP5": false,
+        "lumaP95": false,
+        "tealSkew": false,
+        "saturation": false
+      }
+    },
+    "cadence": {
+      "gridIntervalSeconds": 0.45,
+      "intervalsSeconds": [
+        0.4500000000000002,
+        0.4500000000000002,
+        0.4499999999999993,
+        0.45000000000000107,
+        0.4499999999999993,
+        0.4499999999999993,
+        0.45000000000000107,
+        0.4499999999999993,
+        0.45000000000000107,
+        0.4499999999999993,
+        0.4499999999999993,
+        0.45000000000000107,
+        0.45000000000000107,
+        0.4499999999999993,
+        0.4499999999999993,
+        0.4499999999999993
+      ],
+      "intervalsFrames": [
+        14,
+        14,
+        13,
+        14,
+        13,
+        13,
+        14,
+        13,
+        14,
+        13,
+        13,
+        14,
+        14,
+        13,
+        13,
+        13
+      ],
+      "cutBoundaryPixelDelta": [
+        0.11982733821228021,
+        0.12001403847924146,
+        0.10597181947896529,
+        0.27730771886219274,
+        0.19593315612630027,
+        0.07341520528399154,
+        0.13991329513025869,
+        0.12003388796833288,
+        0.1282766040688576,
+        0.03358418484764798,
+        0.09908864954432477,
+        0.37726456779895057,
+        0.4863337705974409,
+        0.14016932477216237,
+        0.1543041747215318,
+        0.2086730760379269
+      ],
+      "allIntervalsOnGrid": true,
+      "allRenderBoundariesVisible": true
+    },
+    "ending": {
+      "flashFrameLuma": [
+        253.02508802816902,
+        253.02596830985917,
+        253.01320422535213
+      ],
+      "blackFrameLuma": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "wordmarkFrameLuma": 5.490316901408451,
+      "targetsMet": true
+    },
+    "passed": false
+  }
+}

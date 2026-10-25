@@ -32,3 +32,16 @@ export {
 export { SCRIPTED_CASES } from "./evals/cases";
 export { decodeMirrorFrame, createFfmpegMirrorFrameRunner, createCompositorMirrorFrameRunner } from "./mirror-frame-runner";
 export { MirrorCompositor, createMirrorSnapshot } from "./mirror-compositor";
+export {
+  runWowEval,
+  scoreVisualCandidate,
+  type WowEvalOptions,
+  type WowEvalResult,
+  type WowVisionScore,
+} from "./wow-eval";
+export {
+  isCutIntervalGridConforming,
+  measureRenderedVideoQuality,
+  type RenderQualityReport,
+  type RenderQualityTargets,
+} from "./render-quality";

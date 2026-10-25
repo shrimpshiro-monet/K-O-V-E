@@ -8,7 +8,9 @@
       "@kove-advanced/core": ["../core/src/index.ts"],
       "@kove-advanced/core/*": ["../core/src/*"],
       "@kove-advanced/agent": ["../agent/src/index.ts"],
-      "@kove-advanced/agent/*": ["../agent/src/*"]
+      "@kove-advanced/agent/*": ["../agent/src/*"],
+      "@kove-advanced/creation-schema": ["../creation-schema/src/index.ts"],
+      "@kove-advanced/creation-schema/*": ["../creation-schema/src/*"]
     }
   },
   "include": ["src"]

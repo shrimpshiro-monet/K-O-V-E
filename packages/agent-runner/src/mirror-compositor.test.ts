@@ -5,11 +5,14 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { chromium } from "@playwright/test";
 import { describe, it, expect } from "vitest";
+import { DEFAULT_TEXT_STYLE, DEFAULT_TEXT_TRANSFORM } from "@kove-advanced/core/text/types";
+import type { TextClip } from "@kove-advanced/core/text/types";
 import type { Project } from "@kove-advanced/core/types/project";
 import { ssim } from "@kove-advanced/agent/director/mirror/ssim";
 import { mirrorRefine } from "@kove-advanced/agent/director/mirror/mirror-refine-tool";
 import { HeadlessHost } from "@kove-advanced/agent/headless-host";
 import { createEmptyProject } from "./project-io";
+import { prepareAudioProxyProject } from "./wow-eval";
 import { createMirrorSnapshot, MirrorCompositor } from "./mirror-compositor";
 import { createCompositorMirrorFrameRunner, decodeMirrorFrame } from "./mirror-frame-runner";
 
@@ -86,6 +89,139 @@ describe("Mirror Chromium VideoEngine compositor trial", () => {
       await rm(dir, { recursive: true, force: true });
     }
   }, 90_000);
+
+  it.skipIf(ffmpegAbsent || chromiumAbsent)(`renders serialized text clips in the browser compositor${skipReason}`, async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "kove-mirror-text-"));
+    const image = path.join(dir, "image.png");
+    const compositor = new MirrorCompositor(process.env.CHROMIUM_EXECUTABLE_PATH);
+    try {
+      runFfmpeg(["-f", "lavfi", "-i", "color=c=0x2468ac:s=64x64:d=1", "-frames:v", "1", image]);
+      const base = projectForImage();
+      const textTrack = {
+        id: "text-track",
+        name: "Text",
+        type: "text" as const,
+        clips: [],
+        transitions: [],
+        locked: false,
+        hidden: false,
+        muted: false,
+        solo: false,
+      };
+      const textClip: TextClip = {
+        id: "title",
+        trackId: textTrack.id,
+        startTime: 0,
+        duration: 1,
+        text: "KOVE",
+        style: { ...DEFAULT_TEXT_STYLE, fontSize: 14, color: "#ffffff" },
+        transform: DEFAULT_TEXT_TRANSFORM,
+        keyframes: [],
+      };
+      const withText: Project = {
+        ...base,
+        textClips: [textClip],
+        timeline: { ...base.timeline, tracks: [textTrack, ...base.timeline.tracks] },
+      };
+      const withoutText: Project = { ...withText, textClips: [] };
+      const withTextSnapshot = await createMirrorSnapshot(withText, { image });
+      const withoutTextSnapshot = await createMirrorSnapshot(withoutText, { image });
+      const withTextFrame = await compositor.sample(withTextSnapshot, 0.5);
+      const withoutTextFrame = await compositor.sample(withoutTextSnapshot, 0.5);
+      const pixelDifference = withTextFrame.data.reduce(
+        (sum, value, index) => sum + Math.abs(value - withoutTextFrame.data[index]!),
+        0,
+      );
+      expect(pixelDifference).toBeGreaterThan(0);
+    } finally {
+      await compositor.close();
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 90_000);
+
+  it.skipIf(ffmpegAbsent || chromiumAbsent)(
+    `exports an actual MP4 through the browser's K.O.V.E. ExportEngine${skipReason}`,
+    async () => {
+      const dir = await mkdtemp(path.join(tmpdir(), "kove-mirror-export-"));
+      const video = path.join(dir, "video.mp4");
+      const output = path.join(dir, "candidate.mp4");
+      const compositor = new MirrorCompositor(process.env.CHROMIUM_EXECUTABLE_PATH);
+      try {
+        runFfmpeg([
+          "-f", "lavfi", "-i", "color=c=0x2468ac:s=64x64:r=30:d=1",
+          "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+          "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+          "-c:a", "aac", "-ar", "48000", "-ac", "2", video,
+        ]);
+        const base = projectForImage();
+        const imageItem = base.mediaLibrary.items[0]!;
+        const project: Project = {
+          ...base,
+          mediaLibrary: {
+            items: [{
+              ...imageItem,
+              id: "video",
+              name: "Generated video with audio",
+              type: "video",
+              metadata: { ...imageItem.metadata, codec: "h264", hasVideo: true, hasAudio: true },
+            }],
+          },
+          timeline: {
+            ...base.timeline,
+            tracks: base.timeline.tracks.map((track) => ({
+              ...track,
+              muted: false,
+              clips: track.clips.map((clip) => ({ ...clip, mediaId: "video" })),
+            })),
+          },
+        };
+        const prepared = await prepareAudioProxyProject(project, { video }, dir, ffmpeg);
+        expect(prepared.project.timeline.tracks[0]?.muted).toBe(false);
+        expect(prepared.project.mediaLibrary.items.find((item) => item.id === "video")?.metadata.hasAudio).toBe(false);
+        expect(prepared.project.timeline.tracks.some((track) =>
+          track.type === "audio" && track.name.includes("rendered audio"),
+        )).toBe(true);
+        const snapshot = await createMirrorSnapshot(prepared.project, prepared.mediaPaths);
+        const result = await compositor.exportVideo(snapshot, output, {
+          format: "mp4",
+          codec: "h264",
+          width: 64,
+          height: 64,
+          frameRate: 30,
+          bitrate: 1000,
+          bitrateMode: "vbr",
+          quality: 80,
+          keyframeInterval: 60,
+          audioSettings: {
+            format: "aac",
+            sampleRate: 48000,
+            bitDepth: 16,
+            bitrate: 128,
+            channels: 2,
+          },
+        });
+        expect(result.framesRendered).toBe(30);
+        expect(result.fileSize).toBeGreaterThan(0);
+        const probe = spawnSync(process.env.FFPROBE_PATH ?? "ffprobe", [
+          "-v", "error", "-show_entries", "stream=codec_type", "-of", "csv=p=0", output,
+        ], { encoding: "utf8" });
+        expect(probe.status).toBe(0);
+        expect(probe.stdout).toContain("video");
+        expect(probe.stdout).toContain("audio");
+        const pixels = spawnSync(ffmpeg, [
+          "-hide_banner", "-loglevel", "error", "-i", output,
+          "-vf", "signalstats,metadata=print:file=-", "-frames:v", "1", "-f", "null", "-",
+        ], { encoding: "utf8" });
+        expect(pixels.status).toBe(0);
+        const averageLuma = /lavfi\.signalstats\.YAVG=([0-9.]+)/.exec(`${pixels.stdout}\n${pixels.stderr}`)?.[1];
+        expect(Number(averageLuma)).toBeGreaterThan(20);
+      } finally {
+        await compositor.close();
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+    120_000,
+  );
 
   it.skipIf(ffmpegAbsent || chromiumAbsent)(`runs mirror_refine trials on successive immutable compositor snapshots${skipReason}`, async () => {
     const dir = await mkdtemp(path.join(tmpdir(), "kove-mirror-refine-"));

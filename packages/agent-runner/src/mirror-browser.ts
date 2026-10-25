@@ -1,4 +1,7 @@
 import { VideoEngine } from "@kove-advanced/core/video/video-engine";
+import { ExportEngine } from "@kove-advanced/core/export/export-engine";
+import { titleEngine } from "@kove-advanced/core/text/title-engine";
+import type { VideoExportSettings } from "@kove-advanced/core/export/types";
 import { SCHEMA_VERSION, type ProjectFile } from "@kove-advanced/core/storage/project-serializer";
 import type { Project } from "@kove-advanced/core/types/project";
 
@@ -36,6 +39,7 @@ async function loadSnapshot(snapshot: BrowserSnapshot): Promise<typeof loaded & 
     return { ...item, blob, isPlaceholder: false };
   }));
   const project: Project = { ...file.project, mediaLibrary: { items } };
+  titleEngine.loadTextClips(project.textClips ?? []);
   const engine = new VideoEngine({ maxFrames: 1 });
   // Export semantics retry/abort failed effects instead of silently showing a
   // preview fallback that would look like a successfully measured candidate.
@@ -84,7 +88,103 @@ async function render(snapshot: BrowserSnapshot, timeSeconds: number): Promise<n
   }
 }
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let start = 0; start < bytes.length; start += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(start, start + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function exportTimeline(
+  snapshot: BrowserSnapshot,
+  settings: Partial<VideoExportSettings>,
+): Promise<{ duration: number; framesRendered: number; fileSize: number }> {
+  const { project } = await loadSnapshot(snapshot);
+  const exportWindow = window as MirrorWindow;
+  let position = 0;
+  const writable = {
+    async write(chunk: unknown): Promise<void> {
+      let bytes: Uint8Array;
+      if (chunk instanceof Uint8Array) bytes = chunk;
+      else if (chunk instanceof ArrayBuffer) bytes = new Uint8Array(chunk);
+      else if (ArrayBuffer.isView(chunk)) {
+        bytes = new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+      } else {
+        throw new Error("Timeline exporter wrote an unsupported chunk");
+      }
+      if (!exportWindow.__koveWriteExportChunk) throw new Error("Timeline export writer is unavailable");
+      await exportWindow.__koveWriteExportChunk(position, bytesToBase64(bytes));
+      position += bytes.byteLength;
+    },
+    async seek(nextPosition: number): Promise<void> {
+      if (!Number.isSafeInteger(nextPosition) || nextPosition < 0) throw new Error("Invalid timeline export seek");
+      position = nextPosition;
+    },
+    async truncate(size: number): Promise<void> {
+      if (!exportWindow.__koveTruncateExport) throw new Error("Timeline export writer is unavailable");
+      await exportWindow.__koveTruncateExport(size);
+    },
+    async close(): Promise<void> {
+      if (!exportWindow.__koveCloseExport) throw new Error("Timeline export writer is unavailable");
+      await exportWindow.__koveCloseExport();
+    },
+    async abort(): Promise<void> {
+      await exportWindow.__koveAbortExport?.();
+    },
+  } as unknown as FileSystemWritableFileStream;
+
+  const exporter = new ExportEngine();
+  try {
+    await exporter.initialize();
+    await exportWindow.__koveExportProgress?.("Starting timeline export (audio is mixed before video frames).");
+    const generator = exporter.exportVideo(project, settings, writable);
+    let finalResult;
+    let lastReportedFrame = -1;
+    while (true) {
+      const next = await generator.next();
+      if (next.done) {
+        finalResult = next.value;
+        break;
+      }
+      const progress = next.value;
+      if (progress.phase === "preparing") {
+        await exportWindow.__koveExportProgress?.("Preparing render and mixing timeline audio.");
+      } else if (
+        progress.phase === "rendering" &&
+        (progress.currentFrame === 1 || progress.currentFrame - lastReportedFrame >= (settings.frameRate ?? 30) * 5)
+      ) {
+        lastReportedFrame = progress.currentFrame;
+        await exportWindow.__koveExportProgress?.(
+          `Rendering ${progress.currentFrame}/${progress.totalFrames} frames (${Math.round(progress.progress * 100)}%).`,
+        );
+      } else if (progress.phase === "muxing") {
+        await exportWindow.__koveExportProgress?.("Finalizing MP4.");
+      }
+    }
+    if (!finalResult.success) {
+      throw new Error(finalResult.error?.message ?? "Timeline export failed");
+    }
+    return {
+      duration: finalResult.stats?.duration ?? project.timeline.duration,
+      framesRendered: finalResult.stats?.framesRendered ?? 0,
+      fileSize: finalResult.stats?.fileSize ?? position,
+    };
+  } finally {
+    exporter.dispose();
+  }
+}
+
 interface MirrorWindow extends Window {
   koveMirrorRender?: typeof render;
+  koveMirrorExport?: typeof exportTimeline;
+  __koveWriteExportChunk?: (position: number, base64: string) => Promise<void>;
+  __koveTruncateExport?: (size: number) => Promise<void>;
+  __koveCloseExport?: () => Promise<void>;
+  __koveAbortExport?: () => Promise<void>;
+  __koveExportProgress?: (message: string) => Promise<void>;
 }
-(window as MirrorWindow).koveMirrorRender = render;
+const mirrorWindow = window as MirrorWindow;
+mirrorWindow.koveMirrorRender = render;
+mirrorWindow.koveMirrorExport = exportTimeline;

@@ -1,0 +1,4484 @@
+{
+  "version": "1.2.0",
+  "project": {
+    "id": "eval-curry-hero",
+    "name": "Steph Curry — The Quiet Before (Reference QA v2)",
+    "createdAt": 1792853596016,
+    "modifiedAt": 1792897990451,
+    "settings": {
+      "width": 576,
+      "height": 640,
+      "frameRate": 30,
+      "sampleRate": 48000,
+      "channels": 2
+    },
+    "mediaLibrary": {
+      "items": [
+        {
+          "id": "curry-source",
+          "name": "High Quality Steph Curry Clips for Edits! (2024-25).mp4",
+          "type": "video",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 72.827891,
+            "width": 1280,
+            "height": 720,
+            "frameRate": 30,
+            "codec": "h264",
+            "sampleRate": 44100,
+            "channels": 2,
+            "fileSize": 19866887,
+            "hasVideo": true,
+            "hasAudio": false
+          },
+          "thumbnailUrl": null,
+          "waveformData": null,
+          "isPlaceholder": true
+        },
+        {
+          "id": "flash-white",
+          "name": "Three-frame white flash",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 0.1,
+            "width": 576,
+            "height": 640,
+            "frameRate": 0,
+            "codec": "png",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 2509,
+            "hasVideo": true,
+            "hasAudio": false
+          },
+          "thumbnailUrl": null,
+          "waveformData": null,
+          "isPlaceholder": true
+        },
+        {
+          "id": "black-card",
+          "name": "Black wordmark hold",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 1.2,
+            "width": 576,
+            "height": 640,
+            "frameRate": 0,
+            "codec": "png",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 2507,
+            "hasVideo": true,
+            "hasAudio": false
+          },
+          "thumbnailUrl": null,
+          "waveformData": null,
+          "isPlaceholder": true
+        }
+      ]
+    },
+    "timeline": {
+      "tracks": [
+        {
+          "id": "text-track-0",
+          "type": "text",
+          "name": "Text 1",
+          "clips": [],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+          "type": "video",
+          "name": "Video 1",
+          "clips": [
+            {
+              "id": "047feafc-3161-4345-bf70-53dd7e15eb0d",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 0,
+              "duration": 2.25,
+              "inPoint": 21.1,
+              "outPoint": 23.35,
+              "effects": [
+                {
+                  "id": "047feafc-3161-4345-bf70-53dd7e15eb0d-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -8
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "047feafc-3161-4345-bf70-53dd7e15eb0d-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.12
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "047feafc-3161-4345-bf70-53dd7e15eb0d-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 1.04
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "047feafc-3161-4345-bf70-53dd7e15eb0d-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -8
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "047feafc-3161-4345-bf70-53dd7e15eb0d-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "047feafc-3161-4345-bf70-53dd7e15eb0d-push-x-start",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "047feafc-3161-4345-bf70-53dd7e15eb0d-push-x-end",
+                  "time": 2.25,
+                  "property": "scale.x",
+                  "value": 1.08,
+                  "easing": "linear"
+                },
+                {
+                  "id": "047feafc-3161-4345-bf70-53dd7e15eb0d-push-y-start",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "047feafc-3161-4345-bf70-53dd7e15eb0d-push-y-end",
+                  "time": 2.25,
+                  "property": "scale.y",
+                  "value": 1.08,
+                  "easing": "linear"
+                }
+              ],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "e70c64f9-9654-482a-952a-329d2f05d6af",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 2.25,
+              "duration": 2.25,
+              "inPoint": 40.1,
+              "outPoint": 42.35,
+              "effects": [
+                {
+                  "id": "e70c64f9-9654-482a-952a-329d2f05d6af-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -8
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "e70c64f9-9654-482a-952a-329d2f05d6af-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.12
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "e70c64f9-9654-482a-952a-329d2f05d6af-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 1.04
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "e70c64f9-9654-482a-952a-329d2f05d6af-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -8
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "e70c64f9-9654-482a-952a-329d2f05d6af-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "e70c64f9-9654-482a-952a-329d2f05d6af-push-x-start",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "e70c64f9-9654-482a-952a-329d2f05d6af-push-x-end",
+                  "time": 2.25,
+                  "property": "scale.x",
+                  "value": 1.08,
+                  "easing": "linear"
+                },
+                {
+                  "id": "e70c64f9-9654-482a-952a-329d2f05d6af-push-y-start",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "e70c64f9-9654-482a-952a-329d2f05d6af-push-y-end",
+                  "time": 2.25,
+                  "property": "scale.y",
+                  "value": 1.08,
+                  "easing": "linear"
+                }
+              ],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 4.5,
+              "duration": 2.25,
+              "inPoint": 27.4,
+              "outPoint": 29.65,
+              "effects": [
+                {
+                  "id": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -8
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.12
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 1.04
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -8
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1-push-x-start",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1-push-x-end",
+                  "time": 2.25,
+                  "property": "scale.x",
+                  "value": 1.08,
+                  "easing": "linear"
+                },
+                {
+                  "id": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1-push-y-start",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1-push-y-end",
+                  "time": 2.25,
+                  "property": "scale.y",
+                  "value": 1.08,
+                  "easing": "linear"
+                }
+              ],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "a2bec4fd-84a8-4452-832d-615c2dd3e2a1",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 6.75,
+              "duration": 0.45,
+              "inPoint": 36.5,
+              "outPoint": 36.95,
+              "effects": [
+                {
+                  "id": "a2bec4fd-84a8-4452-832d-615c2dd3e2a1-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a2bec4fd-84a8-4452-832d-615c2dd3e2a1-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a2bec4fd-84a8-4452-832d-615c2dd3e2a1-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a2bec4fd-84a8-4452-832d-615c2dd3e2a1-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a2bec4fd-84a8-4452-832d-615c2dd3e2a1-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a2bec4fd-84a8-4452-832d-615c2dd3e2a1-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a2bec4fd-84a8-4452-832d-615c2dd3e2a1-entry-blur",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 12,
+                    "angle": -8,
+                    "startOffset": 0,
+                    "duration": 0.1
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "757b7dc2-4181-43e0-8b53-a0b4e420df78",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 7.2,
+              "duration": 0.45,
+              "inPoint": 37.5,
+              "outPoint": 37.95,
+              "effects": [
+                {
+                  "id": "757b7dc2-4181-43e0-8b53-a0b4e420df78-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "757b7dc2-4181-43e0-8b53-a0b4e420df78-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "757b7dc2-4181-43e0-8b53-a0b4e420df78-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "757b7dc2-4181-43e0-8b53-a0b4e420df78-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "757b7dc2-4181-43e0-8b53-a0b4e420df78-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "757b7dc2-4181-43e0-8b53-a0b4e420df78-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 7.65,
+              "duration": 0.45,
+              "inPoint": 38.5,
+              "outPoint": 38.95,
+              "effects": [
+                {
+                  "id": "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2-entry-blur",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 12,
+                    "angle": -8,
+                    "startOffset": 0,
+                    "duration": 0.1
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2-drive-lines",
+                  "type": "shader",
+                  "params": {
+                    "shaderId": "speed-lines",
+                    "amount": 0.34,
+                    "density": 42,
+                    "speed": 1.8,
+                    "startOffset": 0,
+                    "duration": 0.2
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "f0ef1a04-ec80-4144-88cf-35784369bdc2",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 8.1,
+              "duration": 0.45,
+              "inPoint": 39.5,
+              "outPoint": 39.95,
+              "effects": [
+                {
+                  "id": "f0ef1a04-ec80-4144-88cf-35784369bdc2-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "f0ef1a04-ec80-4144-88cf-35784369bdc2-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "f0ef1a04-ec80-4144-88cf-35784369bdc2-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "f0ef1a04-ec80-4144-88cf-35784369bdc2-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "f0ef1a04-ec80-4144-88cf-35784369bdc2-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "f0ef1a04-ec80-4144-88cf-35784369bdc2-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "4591d1fe-d2ec-48f3-973d-7c61833a0a9c",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 8.55,
+              "duration": 0.45,
+              "inPoint": 44,
+              "outPoint": 44.45,
+              "effects": [
+                {
+                  "id": "4591d1fe-d2ec-48f3-973d-7c61833a0a9c-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4591d1fe-d2ec-48f3-973d-7c61833a0a9c-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4591d1fe-d2ec-48f3-973d-7c61833a0a9c-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4591d1fe-d2ec-48f3-973d-7c61833a0a9c-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4591d1fe-d2ec-48f3-973d-7c61833a0a9c-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4591d1fe-d2ec-48f3-973d-7c61833a0a9c-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4591d1fe-d2ec-48f3-973d-7c61833a0a9c-entry-blur",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 12,
+                    "angle": -8,
+                    "startOffset": 0,
+                    "duration": 0.1
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "63521aaa-b014-43c5-bde1-46b2d3afd18a",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 9,
+              "duration": 0.45,
+              "inPoint": 45.5,
+              "outPoint": 45.95,
+              "effects": [
+                {
+                  "id": "63521aaa-b014-43c5-bde1-46b2d3afd18a-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "63521aaa-b014-43c5-bde1-46b2d3afd18a-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "63521aaa-b014-43c5-bde1-46b2d3afd18a-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "63521aaa-b014-43c5-bde1-46b2d3afd18a-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "63521aaa-b014-43c5-bde1-46b2d3afd18a-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "63521aaa-b014-43c5-bde1-46b2d3afd18a-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "63521aaa-b014-43c5-bde1-46b2d3afd18a-prism-hit",
+                  "type": "shader",
+                  "params": {
+                    "shaderId": "prism",
+                    "amount": 7,
+                    "angle": 0,
+                    "mix": 0.75,
+                    "startOffset": 0,
+                    "duration": 0.15
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "443295dd-9a20-4f3e-b0b5-15f81d7ddf81",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 9.45,
+              "duration": 0.45,
+              "inPoint": 47.5,
+              "outPoint": 47.95,
+              "effects": [
+                {
+                  "id": "443295dd-9a20-4f3e-b0b5-15f81d7ddf81-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "443295dd-9a20-4f3e-b0b5-15f81d7ddf81-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "443295dd-9a20-4f3e-b0b5-15f81d7ddf81-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "443295dd-9a20-4f3e-b0b5-15f81d7ddf81-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "443295dd-9a20-4f3e-b0b5-15f81d7ddf81-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "443295dd-9a20-4f3e-b0b5-15f81d7ddf81-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "443295dd-9a20-4f3e-b0b5-15f81d7ddf81-entry-blur",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 12,
+                    "angle": -8,
+                    "startOffset": 0,
+                    "duration": 0.1
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 144,
+                  "y": 320
+                },
+                "scale": {
+                  "x": 0.5,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "479838b8-23a8-4a1f-a41d-2eb251332074",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 9.9,
+              "duration": 0.45,
+              "inPoint": 52.5,
+              "outPoint": 52.95,
+              "effects": [
+                {
+                  "id": "479838b8-23a8-4a1f-a41d-2eb251332074-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "479838b8-23a8-4a1f-a41d-2eb251332074-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "479838b8-23a8-4a1f-a41d-2eb251332074-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "479838b8-23a8-4a1f-a41d-2eb251332074-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -5
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "479838b8-23a8-4a1f-a41d-2eb251332074-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "479838b8-23a8-4a1f-a41d-2eb251332074-off-palette",
+                  "type": "shader",
+                  "params": {
+                    "shaderId": "duotone",
+                    "shadowColor": "#15261a",
+                    "highlightColor": "#d7ed55",
+                    "mix": 0.38,
+                    "contrast": 1.12
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.02,
+                    "g": 0.04,
+                    "b": -0.04
+                  },
+                  "midtones": {
+                    "r": -0.025,
+                    "g": 0.045,
+                    "b": -0.04
+                  },
+                  "highlights": {
+                    "r": 0.035,
+                    "g": 0.055,
+                    "b": -0.04
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "9f819b33-0f61-4993-b8f0-9138d116e960",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 10.35,
+              "duration": 0.45,
+              "inPoint": 55,
+              "outPoint": 55.45,
+              "effects": [
+                {
+                  "id": "9f819b33-0f61-4993-b8f0-9138d116e960-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9f819b33-0f61-4993-b8f0-9138d116e960-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9f819b33-0f61-4993-b8f0-9138d116e960-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9f819b33-0f61-4993-b8f0-9138d116e960-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9f819b33-0f61-4993-b8f0-9138d116e960-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9f819b33-0f61-4993-b8f0-9138d116e960-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9f819b33-0f61-4993-b8f0-9138d116e960-entry-blur",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 12,
+                    "angle": -8,
+                    "startOffset": 0,
+                    "duration": 0.1
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "5ad194a8-11a1-4b54-991a-1d4f3a0215b7",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 10.8,
+              "duration": 0.45,
+              "inPoint": 57,
+              "outPoint": 57.45,
+              "effects": [
+                {
+                  "id": "5ad194a8-11a1-4b54-991a-1d4f3a0215b7-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "5ad194a8-11a1-4b54-991a-1d4f3a0215b7-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "5ad194a8-11a1-4b54-991a-1d4f3a0215b7-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "5ad194a8-11a1-4b54-991a-1d4f3a0215b7-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "5ad194a8-11a1-4b54-991a-1d4f3a0215b7-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "5ad194a8-11a1-4b54-991a-1d4f3a0215b7-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "10e6ff42-acce-4a4f-b890-fffa69167aff",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 11.25,
+              "duration": 0.45,
+              "inPoint": 58,
+              "outPoint": 58.45,
+              "effects": [
+                {
+                  "id": "10e6ff42-acce-4a4f-b890-fffa69167aff-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "10e6ff42-acce-4a4f-b890-fffa69167aff-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "10e6ff42-acce-4a4f-b890-fffa69167aff-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "10e6ff42-acce-4a4f-b890-fffa69167aff-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "10e6ff42-acce-4a4f-b890-fffa69167aff-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "10e6ff42-acce-4a4f-b890-fffa69167aff-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "10e6ff42-acce-4a4f-b890-fffa69167aff-entry-blur",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 12,
+                    "angle": -8,
+                    "startOffset": 0,
+                    "duration": 0.1
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "406ad97d-2959-4427-b108-12cd0b63d741",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 11.7,
+              "duration": 0.45,
+              "inPoint": 59.5,
+              "outPoint": 59.95,
+              "effects": [
+                {
+                  "id": "effect-c81b8a2a-79ef-4bfc-ae5c-9f8b1ce7af81",
+                  "type": "glow",
+                  "params": {
+                    "radius": 18,
+                    "intensity": 1.15,
+                    "duration": 0.45
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "406ad97d-2959-4427-b108-12cd0b63d741-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "406ad97d-2959-4427-b108-12cd0b63d741-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "406ad97d-2959-4427-b108-12cd0b63d741-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "406ad97d-2959-4427-b108-12cd0b63d741-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "406ad97d-2959-4427-b108-12cd0b63d741-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "406ad97d-2959-4427-b108-12cd0b63d741-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "bdb45eb8-ea14-47a4-850a-1645ea4fd9b5",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 12.15,
+              "duration": 0.45,
+              "inPoint": 61.5,
+              "outPoint": 61.95,
+              "effects": [
+                {
+                  "id": "bdb45eb8-ea14-47a4-850a-1645ea4fd9b5-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "bdb45eb8-ea14-47a4-850a-1645ea4fd9b5-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "bdb45eb8-ea14-47a4-850a-1645ea4fd9b5-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "bdb45eb8-ea14-47a4-850a-1645ea4fd9b5-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "bdb45eb8-ea14-47a4-850a-1645ea4fd9b5-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "bdb45eb8-ea14-47a4-850a-1645ea4fd9b5-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "bdb45eb8-ea14-47a4-850a-1645ea4fd9b5-entry-blur",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 12,
+                    "angle": -8,
+                    "startOffset": 0,
+                    "duration": 0.1
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "4fa40066-cb82-4828-b33f-7427a2bf3511",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 12.600000000000001,
+              "duration": 0.45,
+              "inPoint": 62.5,
+              "outPoint": 62.95,
+              "effects": [
+                {
+                  "id": "4fa40066-cb82-4828-b33f-7427a2bf3511-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4fa40066-cb82-4828-b33f-7427a2bf3511-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4fa40066-cb82-4828-b33f-7427a2bf3511-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4fa40066-cb82-4828-b33f-7427a2bf3511-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4fa40066-cb82-4828-b33f-7427a2bf3511-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4fa40066-cb82-4828-b33f-7427a2bf3511-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4fa40066-cb82-4828-b33f-7427a2bf3511-entry-blur",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 12,
+                    "angle": -8,
+                    "startOffset": 0,
+                    "duration": 0.1
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "4fa40066-cb82-4828-b33f-7427a2bf3511-drive-lines",
+                  "type": "shader",
+                  "params": {
+                    "shaderId": "speed-lines",
+                    "amount": 0.34,
+                    "density": 42,
+                    "speed": 1.8,
+                    "startOffset": 0,
+                    "duration": 0.2
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "a5aee631-26b1-4f7b-8298-6e2e46740b4f",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 13.05,
+              "duration": 0.45,
+              "inPoint": 64,
+              "outPoint": 64.45,
+              "effects": [
+                {
+                  "id": "a5aee631-26b1-4f7b-8298-6e2e46740b4f-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a5aee631-26b1-4f7b-8298-6e2e46740b4f-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a5aee631-26b1-4f7b-8298-6e2e46740b4f-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a5aee631-26b1-4f7b-8298-6e2e46740b4f-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a5aee631-26b1-4f7b-8298-6e2e46740b4f-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a5aee631-26b1-4f7b-8298-6e2e46740b4f-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a5aee631-26b1-4f7b-8298-6e2e46740b4f-entry-blur",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 12,
+                    "angle": -8,
+                    "startOffset": 0,
+                    "duration": 0.1
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "a5aee631-26b1-4f7b-8298-6e2e46740b4f-prism-hit",
+                  "type": "shader",
+                  "params": {
+                    "shaderId": "prism",
+                    "amount": 7,
+                    "angle": 0,
+                    "mix": 0.75,
+                    "startOffset": 0,
+                    "duration": 0.15
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "ec564757-93fe-4739-a599-eb1a0b0cc5b5",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 13.5,
+              "duration": 0.45,
+              "inPoint": 65,
+              "outPoint": 65.45,
+              "effects": [
+                {
+                  "id": "ec564757-93fe-4739-a599-eb1a0b0cc5b5-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "ec564757-93fe-4739-a599-eb1a0b0cc5b5-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "ec564757-93fe-4739-a599-eb1a0b0cc5b5-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "ec564757-93fe-4739-a599-eb1a0b0cc5b5-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "ec564757-93fe-4739-a599-eb1a0b0cc5b5-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "ec564757-93fe-4739-a599-eb1a0b0cc5b5-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "17520665-fcd2-44b4-a4eb-47865b955a6d",
+              "mediaId": "curry-source",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 13.95,
+              "duration": 0.45,
+              "inPoint": 70.5,
+              "outPoint": 70.95,
+              "effects": [
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": 55
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-entry-blur",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 12,
+                    "angle": -8,
+                    "startOffset": 0,
+                    "duration": 0.1
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-final-lens-split",
+                  "type": "chromatic-aberration",
+                  "params": {
+                    "amount": 4,
+                    "startOffset": 0,
+                    "duration": 0.13
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-punch-start-x",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "linear"
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-punch-hit-x",
+                  "time": 0.1,
+                  "property": "scale.x",
+                  "value": 1.16,
+                  "easing": "easeOutQuart"
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-punch-settle-x",
+                  "time": 0.2,
+                  "property": "scale.x",
+                  "value": 1.08,
+                  "easing": "linear"
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-punch-start-y",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "linear"
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-punch-hit-y",
+                  "time": 0.1,
+                  "property": "scale.y",
+                  "value": 1.16,
+                  "easing": "easeOutQuart"
+                },
+                {
+                  "id": "17520665-fcd2-44b4-a4eb-47865b955a6d-punch-settle-y",
+                  "time": 0.2,
+                  "property": "scale.y",
+                  "value": 1.08,
+                  "easing": "linear"
+                }
+              ],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            },
+            {
+              "id": "0e290cc8-c91b-4481-a869-0a453e966b32",
+              "mediaId": "flash-white",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 14.4,
+              "duration": 0.1,
+              "inPoint": 0,
+              "outPoint": 0.1,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": []
+            },
+            {
+              "id": "41a88305-a964-4aef-bbbd-6536a43e9dc8",
+              "mediaId": "black-card",
+              "trackId": "track-4e05f61a-f255-4190-9d64-e1f5ce0d6c5b",
+              "startTime": 14.5,
+              "duration": 1.2,
+              "inPoint": 0,
+              "outPoint": 1.2,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": []
+            }
+          ],
+          "transitions": [
+            {
+              "id": "transition-d6bd876a-86b2-4614-9391-79d87a3bc35b",
+              "clipAId": "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1",
+              "clipBId": "a2bec4fd-84a8-4452-832d-615c2dd3e2a1",
+              "type": "whipPan",
+              "duration": 0.1,
+              "params": {}
+            }
+          ],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-b0c64622-f0c9-409a-a4c8-8b7bfe9edfd4",
+          "type": "video",
+          "name": "Video 2",
+          "clips": [
+            {
+              "id": "9b79489d-1509-4caf-acdd-a8f7b937d001",
+              "mediaId": "curry-source",
+              "trackId": "track-b0c64622-f0c9-409a-a4c8-8b7bfe9edfd4",
+              "startTime": 9.45,
+              "duration": 0.45,
+              "inPoint": 47,
+              "outPoint": 47.45,
+              "effects": [
+                {
+                  "id": "9b79489d-1509-4caf-acdd-a8f7b937d001-grade-exposure",
+                  "type": "brightness",
+                  "params": {
+                    "value": -20
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9b79489d-1509-4caf-acdd-a8f7b937d001-grade-contrast",
+                  "type": "contrast",
+                  "params": {
+                    "value": 1.4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9b79489d-1509-4caf-acdd-a8f7b937d001-grade-saturation",
+                  "type": "saturation",
+                  "params": {
+                    "value": 0.9
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9b79489d-1509-4caf-acdd-a8f7b937d001-grade-temperature",
+                  "type": "temperature",
+                  "params": {
+                    "value": -50
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9b79489d-1509-4caf-acdd-a8f7b937d001-grade-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 4
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "9b79489d-1509-4caf-acdd-a8f7b937d001-grade-tint",
+                  "type": "tint",
+                  "params": {
+                    "value": -28
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 432,
+                  "y": 320
+                },
+                "scale": {
+                  "x": 0.5,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": [],
+              "colorGrading": {
+                "colorWheels": {
+                  "shadows": {
+                    "r": -0.075,
+                    "g": 0.06,
+                    "b": 0.095
+                  },
+                  "midtones": {
+                    "r": -0.07,
+                    "g": 0.055,
+                    "b": 0.1
+                  },
+                  "highlights": {
+                    "r": 0.05,
+                    "g": 0.025,
+                    "b": 0
+                  },
+                  "shadowsLift": -0.1,
+                  "midtonesGamma": 1,
+                  "highlightsGain": 1.035
+                }
+              }
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-a68cbf9b-7a0f-423d-84c3-a7b2ef12dfa2",
+          "type": "video",
+          "name": "Video 3",
+          "clips": [
+            {
+              "id": "740bd7d0-fc10-4a3a-b438-6b2c1163904d",
+              "mediaId": "black-card",
+              "trackId": "track-a68cbf9b-7a0f-423d-84c3-a7b2ef12dfa2",
+              "startTime": 8.566666666666666,
+              "duration": 0.03333333333333333,
+              "inPoint": 0,
+              "outPoint": 0.03333333333333333,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": []
+            },
+            {
+              "id": "b269ff6a-afec-44a1-8372-2ae10896952a",
+              "mediaId": "black-card",
+              "trackId": "track-a68cbf9b-7a0f-423d-84c3-a7b2ef12dfa2",
+              "startTime": 10.8,
+              "duration": 0.03333333333333333,
+              "inPoint": 0,
+              "outPoint": 0.03333333333333333,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": []
+            },
+            {
+              "id": "1637ef4e-a63f-4433-95e1-0912f9619678",
+              "mediaId": "black-card",
+              "trackId": "track-a68cbf9b-7a0f-423d-84c3-a7b2ef12dfa2",
+              "startTime": 13.066666666666666,
+              "duration": 0.03333333333333333,
+              "inPoint": 0,
+              "outPoint": 0.03333333333333333,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 1,
+              "keyframes": []
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "subtitles": [],
+      "duration": 15.7,
+      "markers": []
+    },
+    "textClips": [
+      {
+        "id": "text-1792853596153-pv7jwaz",
+        "trackId": "text-track-0",
+        "startTime": 0.28,
+        "duration": 2.05,
+        "text": "THE QUIET BEFORE",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 38,
+          "fontWeight": 800,
+          "fontStyle": "normal",
+          "color": "#F7F3EA",
+          "strokeColor": "#111827",
+          "strokeWidth": 2,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.2,
+          "letterSpacing": 0,
+          "shadowColor": "#000000",
+          "shadowBlur": 3,
+          "shadowOffsetY": 2
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.76
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": []
+      },
+      {
+        "id": "text-1792853596155-s6nax6a",
+        "trackId": "text-track-0",
+        "startTime": 14.7,
+        "duration": 1,
+        "text": "STEPH CURRY",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 45,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#F8F5EC",
+          "strokeColor": "#111827",
+          "strokeWidth": 2,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.2,
+          "letterSpacing": 0,
+          "shadowColor": "#E9B45F",
+          "shadowBlur": 18,
+          "shadowOffsetY": 0
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": [],
+        "effects": [
+          {
+            "id": "wordmark-prism-split",
+            "type": "chromatic-aberration",
+            "params": {
+              "amount": 3
+            },
+            "enabled": true
+          }
+        ]
+      }
+    ],
+    "directorPlanState": {
+      "revision": 1,
+      "commit": {
+        "revision": 1,
+        "ownedClipIds": [
+          "047feafc-3161-4345-bf70-53dd7e15eb0d",
+          "e70c64f9-9654-482a-952a-329d2f05d6af",
+          "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1",
+          "a2bec4fd-84a8-4452-832d-615c2dd3e2a1",
+          "757b7dc2-4181-43e0-8b53-a0b4e420df78",
+          "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2",
+          "f0ef1a04-ec80-4144-88cf-35784369bdc2",
+          "4591d1fe-d2ec-48f3-973d-7c61833a0a9c",
+          "63521aaa-b014-43c5-bde1-46b2d3afd18a",
+          "443295dd-9a20-4f3e-b0b5-15f81d7ddf81",
+          "479838b8-23a8-4a1f-a41d-2eb251332074",
+          "9b79489d-1509-4caf-acdd-a8f7b937d001",
+          "9f819b33-0f61-4993-b8f0-9138d116e960",
+          "5ad194a8-11a1-4b54-991a-1d4f3a0215b7",
+          "10e6ff42-acce-4a4f-b890-fffa69167aff",
+          "406ad97d-2959-4427-b108-12cd0b63d741",
+          "bdb45eb8-ea14-47a4-850a-1645ea4fd9b5",
+          "4fa40066-cb82-4828-b33f-7427a2bf3511",
+          "a5aee631-26b1-4f7b-8298-6e2e46740b4f",
+          "ec564757-93fe-4739-a599-eb1a0b0cc5b5",
+          "17520665-fcd2-44b4-a4eb-47865b955a6d",
+          "0e290cc8-c91b-4481-a869-0a453e966b32",
+          "41a88305-a964-4aef-bbbd-6536a43e9dc8",
+          "740bd7d0-fc10-4a3a-b438-6b2c1163904d",
+          "b269ff6a-afec-44a1-8372-2ae10896952a",
+          "1637ef4e-a63f-4433-95e1-0912f9619678"
+        ],
+        "ownedTextClipIds": [
+          "text-1792853596153-pv7jwaz",
+          "text-1792853596155-s6nax6a"
+        ],
+        "ownedTransitionIds": [
+          "transition-d6bd876a-86b2-4614-9391-79d87a3bc35b",
+          "transition-c1344f64-482d-4a48-935a-c80db2e9ac16",
+          "transition-cb512e51-876d-4388-8df5-4f16b5f505b4",
+          "transition-c3127e5b-cd93-4636-b02f-acae930085e4",
+          "transition-f819bd83-28b3-47d4-984b-f9ffd6e364a0"
+        ],
+        "ownedMotionInstanceIds": [],
+        "ownedMotionCompositionIds": []
+      },
+      "lastReplay": {
+        "key": "plan-10u9rth-47d",
+        "summary": "plan_edit applied as revision 1: 26 clip(s), 2 text overlay(s), 111 effect(s), 5 transition(s), 0 audio clip(s), 5 camera move(s). Style check: 0.60 · density: 0.51 (26 shots / 15.3s (102.3/min) · median 0.45s, contrast 50.0x · 111 effect hits (436.7/min, 9 types) · 5 camera moves (2 kinds) · 2 texts (2 animations) · 0 speed ramps · 0 SFX · treated shots 65% · evolution rising · beat data unavailable).",
+        "data": {
+          "editPlan": {
+            "segments": [
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 21.1,
+                "sourceEndTime": 23.2,
+                "targetPosition": 0,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Arena spotlight walk-on; slow-build opener; selected from contact-sheet review.",
+                "cameraMoves": [
+                  {
+                    "move": "slow-push",
+                    "intensity": 0.48
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 40.1,
+                "sourceEndTime": 42.2,
+                "targetPosition": 2.1,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Curry's composed bench close-up; character beat; source moment 40-43s.",
+                "cameraMoves": [
+                  {
+                    "move": "slow-push",
+                    "intensity": 0.42
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 27.4,
+                "sourceEndTime": 29.5,
+                "targetPosition": 4.2,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Curry with teammates at the bench; last breath before the drop.",
+                "cameraMoves": [
+                  {
+                    "move": "slow-push",
+                    "intensity": 0.5
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 33.15,
+                "sourceEndTime": 33.6,
+                "targetPosition": 6.3,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 33.15-33.60s; 0.45s drop-grid beat 1.",
+                "cameraMoves": [],
+                "effectSpecs": [
+                  {
+                    "type": "motion-blur",
+                    "params": {
+                      "distance": 26,
+                      "angle": 8
+                    },
+                    "intensity": 0.5,
+                    "startOffset": 0,
+                    "duration": 0.1,
+                    "rationale": "Short directional smear on the cut entrance; snap back to sharp inside the 0.45s beat."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 34.25,
+                "sourceEndTime": 34.7,
+                "targetPosition": 6.75,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 34.25-34.70s; 0.45s drop-grid beat 2.",
+                "cameraMoves": [],
+                "effectSpecs": []
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 35.35,
+                "sourceEndTime": 35.8,
+                "targetPosition": 7.2,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 35.35-35.80s; 0.45s drop-grid beat 3.",
+                "cameraMoves": [],
+                "effectSpecs": [
+                  {
+                    "type": "prism",
+                    "params": {
+                      "amount": 7,
+                      "angle": 0,
+                      "mix": 1
+                    },
+                    "intensity": 0.34,
+                    "duration": 0.18,
+                    "rationale": "Custom K.O.V.E. prism shader punctuates a source action peak."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 36.45,
+                "sourceEndTime": 36.9,
+                "targetPosition": 7.65,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 36.45-36.90s; 0.45s drop-grid beat 4.",
+                "cameraMoves": [
+                  {
+                    "move": "snap-zoom",
+                    "intensity": 0.82,
+                    "duration": 0.14
+                  }
+                ],
+                "effectSpecs": []
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 37.55,
+                "sourceEndTime": 38,
+                "targetPosition": 8.1,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 37.55-38.00s; 0.45s drop-grid beat 5.",
+                "cameraMoves": [],
+                "effectSpecs": []
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 43.15,
+                "sourceEndTime": 43.6,
+                "targetPosition": 8.55,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 43.15-43.60s; 0.45s drop-grid beat 6.",
+                "cameraMoves": [],
+                "effectSpecs": [
+                  {
+                    "type": "motion-blur",
+                    "params": {
+                      "distance": 26,
+                      "angle": 8
+                    },
+                    "intensity": 0.5,
+                    "startOffset": 0,
+                    "duration": 0.1,
+                    "rationale": "Short directional smear on the cut entrance; snap back to sharp inside the 0.45s beat."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 44.25,
+                "sourceEndTime": 44.7,
+                "targetPosition": 9,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 44.25-44.70s; 0.45s drop-grid beat 7.",
+                "cameraMoves": [],
+                "effectSpecs": [
+                  {
+                    "type": "speed-lines",
+                    "params": {
+                      "amount": 0.42,
+                      "density": 48,
+                      "speed": 2
+                    },
+                    "intensity": 0.42,
+                    "duration": 0.22,
+                    "rationale": "Renderer-backed speed-line shader accents a live drive."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 45.35,
+                "sourceEndTime": 45.8,
+                "targetPosition": 9.45,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 45.35-45.80s; 0.45s drop-grid beat 8.",
+                "cameraMoves": [],
+                "effectSpecs": [],
+                "layout": {
+                  "region": "split-left",
+                  "fit": "cover"
+                }
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 45,
+                "sourceEndTime": 45.35,
+                "targetPosition": 9.45,
+                "trackIndex": 1,
+                "effects": [],
+                "rationale": "Adjacent but non-repeating source beat paired as a before/after two-panel action comparison.",
+                "layout": {
+                  "region": "split-right",
+                  "fit": "cover"
+                }
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 46.45,
+                "sourceEndTime": 46.9,
+                "targetPosition": 9.9,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 46.45-46.90s; 0.45s drop-grid beat 9.",
+                "cameraMoves": [],
+                "effectSpecs": [
+                  {
+                    "type": "duotone",
+                    "params": {
+                      "shadowColor": "#141b0d",
+                      "highlightColor": "#d9ff42",
+                      "mix": 0.72,
+                      "contrast": 1.2
+                    },
+                    "intensity": 0.72,
+                    "duration": 0.45,
+                    "rationale": "One deliberate yellow-green palette break on a peak play."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 48.15,
+                "sourceEndTime": 48.6,
+                "targetPosition": 10.35,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 48.15-48.60s; 0.45s drop-grid beat 10.",
+                "cameraMoves": [],
+                "effectSpecs": []
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 49.25,
+                "sourceEndTime": 49.7,
+                "targetPosition": 10.8,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 49.25-49.70s; 0.45s drop-grid beat 11.",
+                "cameraMoves": [],
+                "effectSpecs": [
+                  {
+                    "type": "prism",
+                    "params": {
+                      "amount": 7,
+                      "angle": 0,
+                      "mix": 1
+                    },
+                    "intensity": 0.34,
+                    "duration": 0.18,
+                    "rationale": "Custom K.O.V.E. prism shader punctuates a source action peak."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 50.35,
+                "sourceEndTime": 50.8,
+                "targetPosition": 11.25,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 50.35-50.80s; 0.45s drop-grid beat 12.",
+                "cameraMoves": [
+                  {
+                    "move": "snap-zoom",
+                    "intensity": 0.82,
+                    "duration": 0.14
+                  }
+                ],
+                "effectSpecs": [
+                  {
+                    "type": "colorGrade",
+                    "params": {
+                      "contrast": 1.08,
+                      "saturation": 0.78,
+                      "brightness": 1.18
+                    },
+                    "duration": 0.45,
+                    "rationale": "High-key flash-bright court frame gives the peak sequence contrast."
+                  },
+                  {
+                    "type": "glow",
+                    "params": {
+                      "radius": 18,
+                      "intensity": 1.15
+                    },
+                    "duration": 0.45,
+                    "rationale": "Soft highlight bloom on the high-key peak."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 54.15,
+                "sourceEndTime": 54.6,
+                "targetPosition": 11.7,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 54.15-54.60s; 0.45s drop-grid beat 13.",
+                "cameraMoves": [],
+                "effectSpecs": [
+                  {
+                    "type": "motion-blur",
+                    "params": {
+                      "distance": 26,
+                      "angle": 8
+                    },
+                    "intensity": 0.5,
+                    "startOffset": 0,
+                    "duration": 0.1,
+                    "rationale": "Short directional smear on the cut entrance; snap back to sharp inside the 0.45s beat."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 55.25,
+                "sourceEndTime": 55.7,
+                "targetPosition": 12.15,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 55.25-55.70s; 0.45s drop-grid beat 14.",
+                "cameraMoves": [],
+                "effectSpecs": []
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 61.15,
+                "sourceEndTime": 61.6,
+                "targetPosition": 12.6,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 61.15-61.60s; 0.45s drop-grid beat 15.",
+                "cameraMoves": [],
+                "effectSpecs": [
+                  {
+                    "type": "speed-lines",
+                    "params": {
+                      "amount": 0.42,
+                      "density": 48,
+                      "speed": 2
+                    },
+                    "intensity": 0.42,
+                    "duration": 0.22,
+                    "rationale": "Renderer-backed speed-line shader accents a live drive."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 64.15,
+                "sourceEndTime": 64.6,
+                "targetPosition": 13.05,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 64.15-64.60s; 0.45s drop-grid beat 16.",
+                "cameraMoves": [],
+                "effectSpecs": [
+                  {
+                    "type": "motion-blur",
+                    "params": {
+                      "distance": 26,
+                      "angle": 8
+                    },
+                    "intensity": 0.5,
+                    "startOffset": 0,
+                    "duration": 0.1,
+                    "rationale": "Short directional smear on the cut entrance; snap back to sharp inside the 0.45s beat."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "curry-source",
+                "sourceStartTime": 70.15,
+                "sourceEndTime": 70.6,
+                "targetPosition": 13.5,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Distinct source moment 70.15-70.60s; 0.45s drop-grid beat 17.",
+                "cameraMoves": [],
+                "effectSpecs": [
+                  {
+                    "type": "prism",
+                    "params": {
+                      "amount": 7,
+                      "angle": 0,
+                      "mix": 1
+                    },
+                    "intensity": 0.34,
+                    "duration": 0.18,
+                    "rationale": "Custom K.O.V.E. prism shader punctuates a source action peak."
+                  }
+                ]
+              },
+              {
+                "sourceVideoId": "flash-white",
+                "sourceStartTime": 0,
+                "sourceEndTime": 0.1,
+                "targetPosition": 13.95,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Three-frame white flash; native transition asset."
+              },
+              {
+                "sourceVideoId": "black-card",
+                "sourceStartTime": 0,
+                "sourceEndTime": 1.2,
+                "targetPosition": 14.05,
+                "trackIndex": 0,
+                "effects": [],
+                "rationale": "Six-frame black hit, then one-second wordmark hold."
+              },
+              {
+                "sourceVideoId": "black-card",
+                "sourceStartTime": 0,
+                "sourceEndTime": 0.03333333333333333,
+                "targetPosition": 8.1,
+                "trackIndex": 2,
+                "effects": [],
+                "rationale": "Single-frame black hit on the fixed 0.45s cut grid."
+              },
+              {
+                "sourceVideoId": "black-card",
+                "sourceStartTime": 0,
+                "sourceEndTime": 0.03333333333333333,
+                "targetPosition": 10.35,
+                "trackIndex": 2,
+                "effects": [],
+                "rationale": "Single-frame black hit on the fixed 0.45s cut grid."
+              },
+              {
+                "sourceVideoId": "black-card",
+                "sourceStartTime": 0,
+                "sourceEndTime": 0.03333333333333333,
+                "targetPosition": 12.15,
+                "trackIndex": 2,
+                "effects": [],
+                "rationale": "Single-frame black hit on the fixed 0.45s cut grid."
+              }
+            ],
+            "textElements": [
+              {
+                "content": "THE QUIET BEFORE",
+                "style": "title",
+                "startTime": 0.28,
+                "duration": 2.05,
+                "position": {
+                  "x": 0.5,
+                  "y": 0.76
+                },
+                "fontFamily": "Arial",
+                "fontSize": 38,
+                "color": "#F7F3EA",
+                "animation": "rise",
+                "animationInSec": 0.22,
+                "animationOutSec": 0.18,
+                "templateOverride": {
+                  "fontFamily": "Arial",
+                  "fontSize": 38,
+                  "fontWeight": 800,
+                  "color": "#F7F3EA",
+                  "align": "center",
+                  "position": {
+                    "x": 0.5,
+                    "y": 0.76
+                  }
+                },
+                "rationale": "Three-word setup hook confined to act one."
+              },
+              {
+                "content": "STEPH CURRY",
+                "style": "title",
+                "startTime": 14.25,
+                "duration": 1,
+                "position": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "fontFamily": "Arial",
+                "fontSize": 45,
+                "color": "#F8F5EC",
+                "animation": "glitch",
+                "animationInSec": 0.08,
+                "animationOutSec": 0.95,
+                "templateOverride": {
+                  "fontFamily": "Arial",
+                  "fontSize": 45,
+                  "fontWeight": 900,
+                  "color": "#F8F5EC",
+                  "align": "center",
+                  "position": {
+                    "x": 0.5,
+                    "y": 0.5
+                  }
+                },
+                "rationale": "Glowing creator wordmark over the final black frame with short chromatic split."
+              }
+            ],
+            "effects": [
+              {
+                "targetSegmentIndex": 0,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 0,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 0,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 0,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 0,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 1,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 1,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 1,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 1,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 1,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 2,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 2,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 2,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 2,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 2,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 3,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 3,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 3,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 3,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 3,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 4,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 4,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 4,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 4,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 4,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 5,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 5,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 5,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 5,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 5,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 6,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 6,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 6,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 6,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 6,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 7,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 7,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 7,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 7,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 7,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 8,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 8,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 8,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 8,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 8,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 9,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 9,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 9,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 9,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 9,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 10,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 10,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 10,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 10,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 10,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 12,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 12,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 12,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 12,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 13,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 13,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 13,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 13,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 13,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 14,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 14,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 14,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 14,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 14,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 15,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 15,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 15,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 15,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 15,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 16,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 16,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 16,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 16,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 16,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 17,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 17,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 17,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 17,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 17,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 18,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 18,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 18,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 18,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 18,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 19,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 19,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 19,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 19,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 19,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              },
+              {
+                "targetSegmentIndex": 20,
+                "type": "colorGrade",
+                "params": {
+                  "contrast": 1.28,
+                  "saturation": 0.84,
+                  "brightness": 0.92
+                },
+                "rationale": "Consistent low-exposure cinematic grade."
+              },
+              {
+                "targetSegmentIndex": 20,
+                "type": "tonal",
+                "params": {
+                  "shadows": -0.18,
+                  "midtones": -0.03,
+                  "highlights": 0.04
+                },
+                "rationale": "Crushed shadows with controlled highlight detail."
+              },
+              {
+                "targetSegmentIndex": 20,
+                "type": "temperature",
+                "params": {
+                  "value": -14
+                },
+                "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+              },
+              {
+                "targetSegmentIndex": 20,
+                "type": "grain",
+                "params": {
+                  "amount": 9
+                },
+                "rationale": "Fine film grain throughout the edit."
+              },
+              {
+                "targetSegmentIndex": 20,
+                "type": "duotone",
+                "params": {
+                  "shadowColor": "#071522",
+                  "highlightColor": "#d8914b",
+                  "mix": 0.28,
+                  "contrast": 1.08
+                },
+                "rationale": "Unified teal-shadow/amber-highlight signature grade."
+              }
+            ],
+            "transitions": [
+              {
+                "afterSegmentIndex": 2,
+                "type": "whipPan",
+                "duration": 0.1,
+                "rationale": "Whip into the drop at the 6.3s act change."
+              },
+              {
+                "afterSegmentIndex": 6,
+                "type": "crossZoom",
+                "duration": 0.1,
+                "rationale": "Optical punch on the early drive sequence."
+              },
+              {
+                "afterSegmentIndex": 9,
+                "type": "impactShake",
+                "duration": 0.1,
+                "rationale": "Impact transition on a high-motion basket attack."
+              },
+              {
+                "afterSegmentIndex": 16,
+                "type": "motionSmear",
+                "duration": 0.1,
+                "rationale": "Directional smear refreshes the final run."
+              },
+              {
+                "afterSegmentIndex": 20,
+                "type": "flash",
+                "duration": 0.05,
+                "rationale": "Three-frame white flash into the six-frame black hit."
+              }
+            ],
+            "audioDecisions": [
+              {
+                "type": "silence",
+                "startTime": 0,
+                "duration": 16.15,
+                "rationale": "User explicitly scoped audio out."
+              }
+            ],
+            "motionMoments": [],
+            "metadata": {
+              "targetDuration": 15.25,
+              "targetPlatform": "9:10 social hero montage",
+              "genre": "sports-highlight",
+              "pacing": "fast",
+              "rationale": "7.2-second character build, 17 beats on a 0.45-second grid, then a flash/black/name landing."
+            }
+          },
+          "clipIds": [
+            "047feafc-3161-4345-bf70-53dd7e15eb0d",
+            "e70c64f9-9654-482a-952a-329d2f05d6af",
+            "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1",
+            "a2bec4fd-84a8-4452-832d-615c2dd3e2a1",
+            "757b7dc2-4181-43e0-8b53-a0b4e420df78",
+            "9fa4d8d5-d197-44c9-b2d1-8c505f67d8f2",
+            "f0ef1a04-ec80-4144-88cf-35784369bdc2",
+            "4591d1fe-d2ec-48f3-973d-7c61833a0a9c",
+            "63521aaa-b014-43c5-bde1-46b2d3afd18a",
+            "443295dd-9a20-4f3e-b0b5-15f81d7ddf81",
+            "479838b8-23a8-4a1f-a41d-2eb251332074",
+            "9b79489d-1509-4caf-acdd-a8f7b937d001",
+            "9f819b33-0f61-4993-b8f0-9138d116e960",
+            "5ad194a8-11a1-4b54-991a-1d4f3a0215b7",
+            "10e6ff42-acce-4a4f-b890-fffa69167aff",
+            "406ad97d-2959-4427-b108-12cd0b63d741",
+            "bdb45eb8-ea14-47a4-850a-1645ea4fd9b5",
+            "4fa40066-cb82-4828-b33f-7427a2bf3511",
+            "a5aee631-26b1-4f7b-8298-6e2e46740b4f",
+            "ec564757-93fe-4739-a599-eb1a0b0cc5b5",
+            "17520665-fcd2-44b4-a4eb-47865b955a6d",
+            "0e290cc8-c91b-4481-a869-0a453e966b32",
+            "41a88305-a964-4aef-bbbd-6536a43e9dc8",
+            "740bd7d0-fc10-4a3a-b438-6b2c1163904d",
+            "b269ff6a-afec-44a1-8372-2ae10896952a",
+            "1637ef4e-a63f-4433-95e1-0912f9619678"
+          ],
+          "textIds": [
+            "text-1792853596153-pv7jwaz",
+            "text-1792853596155-s6nax6a"
+          ],
+          "effectCount": 111,
+          "transitionCount": 5,
+          "audioCount": 0,
+          "audioClipIds": [],
+          "cameraMoveCount": 5,
+          "keyframedClipIds": [
+            "047feafc-3161-4345-bf70-53dd7e15eb0d",
+            "e70c64f9-9654-482a-952a-329d2f05d6af",
+            "dc22d9e9-8ee6-4c91-a5e5-c74b121f8af1",
+            "f0ef1a04-ec80-4144-88cf-35784369bdc2",
+            "406ad97d-2959-4427-b108-12cd0b63d741"
+          ],
+          "motionCompositionIds": [],
+          "motionInstanceIds": [],
+          "revision": 1,
+          "mode": "replace_plan",
+          "baseRevision": null,
+          "idempotencyKey": "plan-10u9rth-47d",
+          "idempotentReplay": false,
+          "placementRepairs": [],
+          "replacedPrevious": null,
+          "cleanupWarnings": [],
+          "validationWarnings": [],
+          "planReview": {
+            "score": 0.6,
+            "deviations": [
+              "cutsPerMinute 102.29508196721312 is outside 20-45"
+            ],
+            "revisionApplied": true,
+            "effectCost": {
+              "overBudget": true,
+              "estimatedCpuMinutes": 0.85,
+              "budgetMinutes": 0.26,
+              "realtimeRatio": 3.254,
+              "unmeasuredShaderTypes": [],
+              "warnings": [
+                "Estimated effect CPU time 0.9 min exceeds the budget of 0.3 min (3.3× real time, upper-bound sandbox numbers). Reduce full-duration CPU effects (sharpen/motion-blur/radial-blur), scope them with startOffset/duration, or accept a long export."
+              ]
+            }
+          },
+          "density": {
+            "score": 0.507,
+            "summary": "26 shots / 15.3s (102.3/min) · median 0.45s, contrast 50.0x · 111 effect hits (436.7/min, 9 types) · 5 camera moves (2 kinds) · 2 texts (2 animations) · 0 speed ramps · 0 SFX · treated shots 65% · evolution rising · beat data unavailable",
+            "escalation": "rising",
+            "shotsPerMinute": 102.3,
+            "effectHitsPerMinute": 436.72,
+            "cameraMoveCount": 5,
+            "textsPerMinute": 7.87,
+            "sfxHits": 0,
+            "onBeatCutRatio": null,
+            "deficiencies": [
+              {
+                "code": "shot_count",
+                "severity": "major",
+                "directive": "Only 26 shot(s) over 15.3s = 102.3 cuts/min; this genre wants 22-55. Split the longest shots at beat boundaries and add roughly 1 more shot(s) — short 0.4-1.2s inserts of a different angle, reaction, or detail from the same footage count."
+              },
+              {
+                "code": "effect_density",
+                "severity": "major",
+                "directive": "Only 111 effect hit(s) (436.7/min); this genre runs 12-70/min. Add short (0.15-0.5s) hits with explicit params on the hardest cuts — chromatic-aberration, motion-blur, glow, radial-blur, flash-adjacent grades."
+              },
+              {
+                "code": "camera_motion",
+                "severity": "major",
+                "directive": "Only 5 camera move(s) across 26 shot(s) (19% of shots move; want ≥60%). Add `cameraMoves` to the remaining shots — slow-push/drift on holds, punch-in on beats, handheld for energy, snap-zoom on the hook."
+              },
+              {
+                "code": "speed_ramps",
+                "severity": "major",
+                "directive": "0 speed ramp(s) (want ≥3). Ramp down into the biggest moment (1.0→0.35 over ~0.4s) and back up out of it, or add a freeze frame on the peak."
+              },
+              {
+                "code": "sfx_layer",
+                "severity": "major",
+                "directive": "0 SFX hit(s) (want ≥4). Layer one-shot hits on the biggest cuts/impacts — they are what makes a cut feel like it landed."
+              },
+              {
+                "code": "hook",
+                "severity": "major",
+                "directive": "The first 2.0s contains 1 shot(s) (want ≥3). Open cold: 2-3 micro-shots of the strongest footage before the first title, no slow ramp-in."
+              },
+              {
+                "code": "camera_move_variety",
+                "severity": "moderate",
+                "directive": "Only 2 distinct camera move(s); vary them (≥4) so the motion does not feel mechanical."
+              },
+              {
+                "code": "text_animation_variety",
+                "severity": "moderate",
+                "directive": "2 distinct text animation(s); use ≥3 (pop, bounce, slide-up, typewriter, zoom-blur, split, cascade) so the type does not enter the same way every time."
+              },
+              {
+                "code": "static_shots",
+                "severity": "minor",
+                "directive": "35% of shots carry no effect, camera move, speed ramp, or layout — they read as raw splices. Give every shot at least one treatment (target ≥85%)."
+              }
+            ],
+            "revisionApplied": true
+          },
+          "quality": {
+            "status": "unavailable",
+            "reason": "Timeline frame sampling is not implemented — no visual quality review was performed."
+          }
+        },
+        "revision": 1
+      }
+    },
+    "motionCompositions": [],
+    "motionInstances": [],
+    "generatedShaders": []
+  }
+}

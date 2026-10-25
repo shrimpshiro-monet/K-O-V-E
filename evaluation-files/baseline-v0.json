@@ -1,0 +1,876 @@
+{
+  "generatedAt": "2026-10-24T12:40:32.201Z",
+  "model": "alibaba/qwen3.8-max",
+  "gateSemanticsVersion": 2,
+  "sampling": {
+    "temperature": 0,
+    "seed": 1234
+  },
+  "runsPerCombo": 3,
+  "cases": 27,
+  "total": 8,
+  "passed": 0,
+  "status": "aborted",
+  "abortReason": "Workers AI quota exhausted after 8/81 case-runs (1 quota errors)",
+  "quotaExcluded": 1,
+  "infraExcluded": 1,
+  "gateRates": {
+    "planValidates": {
+      "mean": 0.6667,
+      "min": 0.5,
+      "max": 1,
+      "stdev": 0.2887,
+      "perRun": [
+        0.5,
+        0.5,
+        1
+      ],
+      "validPerRun": [
+        2,
+        2,
+        2
+      ]
+    },
+    "materializes": {
+      "mean": 0.6667,
+      "min": 0.5,
+      "max": 1,
+      "stdev": 0.2887,
+      "perRun": [
+        0.5,
+        0.5,
+        1
+      ],
+      "validPerRun": [
+        2,
+        2,
+        2
+      ]
+    },
+    "noClipOverlaps": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1,
+        1,
+        1
+      ],
+      "validPerRun": [
+        2,
+        2,
+        2
+      ]
+    },
+    "noTimelineGaps": {
+      "mean": 0.5,
+      "min": 0.5,
+      "max": 0.5,
+      "stdev": 0,
+      "perRun": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "validPerRun": [
+        2,
+        2,
+        2
+      ]
+    },
+    "meetsTransitionMinimum": {
+      "mean": 0.6667,
+      "min": 0.5,
+      "max": 1,
+      "stdev": 0.2887,
+      "perRun": [
+        0.5,
+        0.5,
+        1
+      ],
+      "validPerRun": [
+        2,
+        2,
+        2
+      ]
+    },
+    "cameraMoveDensityOk": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "stdev": 0,
+      "perRun": [
+        0,
+        0,
+        0
+      ],
+      "validPerRun": [
+        2,
+        2,
+        2
+      ]
+    },
+    "noConsecutiveIdenticalAccents": {
+      "mean": 1,
+      "min": 1,
+      "max": 1,
+      "stdev": 0,
+      "perRun": [
+        1,
+        1,
+        1
+      ],
+      "validPerRun": [
+        2,
+        2,
+        2
+      ]
+    },
+    "durationWithinTolerance": {
+      "mean": 0.6667,
+      "min": 0.5,
+      "max": 1,
+      "stdev": 0.2887,
+      "perRun": [
+        0.5,
+        0.5,
+        1
+      ],
+      "validPerRun": [
+        2,
+        2,
+        2
+      ]
+    },
+    "allGates": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "stdev": 0,
+      "perRun": [
+        0,
+        0,
+        0
+      ],
+      "validPerRun": [
+        2,
+        2,
+        2
+      ]
+    }
+  },
+  "spread": {
+    "all_pass": 0,
+    "all_fail": 2,
+    "mixed": 0,
+    "incomplete": 25,
+    "byCombination": [
+      {
+        "id": "pod-01/pod-01-detailed",
+        "outcome": "all_fail",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-01/pod-01-vague",
+        "outcome": "all_fail",
+        "validRuns": 3,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-01/pod-01-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-02/pod-02-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-02/pod-02-vague",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "pod-02/pod-02-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-01/multi-01-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-01/multi-01-vague",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-01/multi-01-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "game-01/game-01-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "game-01/game-01-vague",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "game-01/game-01-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-02/multi-02-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-02/multi-02-vague",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-02/multi-02-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "stream-01/stream-01-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "stream-01/stream-01-vague",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "stream-01/stream-01-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "sport-01/sport-01-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "sport-01/sport-01-vague",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "sport-01/sport-01-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "sport-02/sport-02-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "sport-02/sport-02-vague",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "sport-02/sport-02-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-03/multi-03-detailed",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-03/multi-03-vague",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      },
+      {
+        "id": "multi-03/multi-03-genre",
+        "outcome": "incomplete",
+        "validRuns": 0,
+        "expectedRuns": 3
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "pod-01/pod-01-detailed",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "infraFailure": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true,
+        "noTimelineGaps": true,
+        "meetsTransitionMinimum": true,
+        "cameraMoveDensityOk": false,
+        "noConsecutiveIdenticalAccents": true,
+        "durationWithinTolerance": true
+      },
+      "gateResults": {
+        "noTimelineGaps": {
+          "passed": true,
+          "reason": "Primary footage track \"Video 1\" has 28 clip(s); largest uncovered gap 0.000s is within the 0.250s limit."
+        },
+        "meetsTransitionMinimum": {
+          "passed": true,
+          "reason": "The prompt explicitly requests hard cuts/no transitions; the minimum is waived (found 0 materialized transition(s))."
+        },
+        "cameraMoveDensityOk": {
+          "passed": false,
+          "reason": "28/28 eligible primary clips carry compiler-authored camera moves (100.0%; maximum 70.0%)."
+        },
+        "noConsecutiveIdenticalAccents": {
+          "passed": true,
+          "reason": "No adjacent accented cuts repeat both a materialized transition type and the outgoing clip's effect preset (0 accented cut(s) inspected)."
+        },
+        "durationWithinTolerance": {
+          "passed": true,
+          "reason": "Materialized timeline is 45.00s; declared target is 45.00s (allowed 40.50–49.50s, ±10%)."
+        }
+      },
+      "failures": [
+        "camera_move_density_ok: 28/28 eligible primary clips carry compiler-authored camera moves (100.0%; maximum 70.0%)."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 712648,
+        "clipCount": 28,
+        "transitionCount": 0,
+        "effectCount": 11,
+        "audioCount": 3,
+        "textCount": 7,
+        "planScore": 1,
+        "timelineDuration": 45.00000000000003
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.8214,
+          "detail": "28 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5406,
+          "detail": "mean cut 1.61s vs 2.03s, spread(cv) 0.49 vs 1.69"
+        },
+        "craft": {
+          "score": 0.6667,
+          "detail": "transitions=0 effects=11 texts=7"
+        },
+        "overall": 0.6762
+      }
+    },
+    {
+      "id": "pod-01/pod-01-detailed",
+      "run": 1,
+      "projectId": "pod-01",
+      "promptId": "pod-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "infraFailure": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true,
+        "noTimelineGaps": true,
+        "meetsTransitionMinimum": true,
+        "cameraMoveDensityOk": false,
+        "noConsecutiveIdenticalAccents": true,
+        "durationWithinTolerance": true
+      },
+      "gateResults": {
+        "noTimelineGaps": {
+          "passed": true,
+          "reason": "Primary footage track \"Video 1\" has 23 clip(s); largest uncovered gap 0.000s is within the 0.250s limit."
+        },
+        "meetsTransitionMinimum": {
+          "passed": true,
+          "reason": "The prompt explicitly requests hard cuts/no transitions; the minimum is waived (found 0 materialized transition(s))."
+        },
+        "cameraMoveDensityOk": {
+          "passed": false,
+          "reason": "23/23 eligible primary clips carry compiler-authored camera moves (100.0%; maximum 70.0%)."
+        },
+        "noConsecutiveIdenticalAccents": {
+          "passed": true,
+          "reason": "No adjacent accented cuts repeat both a materialized transition type and the outgoing clip's effect preset (0 accented cut(s) inspected)."
+        },
+        "durationWithinTolerance": {
+          "passed": true,
+          "reason": "Materialized timeline is 45.00s; declared target is 45.00s (allowed 40.50–49.50s, ±10%)."
+        }
+      },
+      "failures": [
+        "camera_move_density_ok: 23/23 eligible primary clips carry compiler-authored camera moves (100.0%; maximum 70.0%)."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 781898,
+        "clipCount": 23,
+        "transitionCount": 0,
+        "effectCount": 6,
+        "audioCount": 5,
+        "textCount": 19,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 1,
+          "detail": "23 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.6461,
+          "detail": "mean cut 1.96s vs 2.03s, spread(cv) 0.55 vs 1.69"
+        },
+        "craft": {
+          "score": 0.6667,
+          "detail": "transitions=0 effects=6 texts=19"
+        },
+        "overall": 0.7709
+      }
+    },
+    {
+      "id": "pod-01/pod-01-detailed",
+      "run": 2,
+      "projectId": "pod-01",
+      "promptId": "pod-01-detailed",
+      "promptType": "detailed",
+      "ok": false,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "infraFailure": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true,
+        "noTimelineGaps": true,
+        "meetsTransitionMinimum": true,
+        "cameraMoveDensityOk": false,
+        "noConsecutiveIdenticalAccents": true,
+        "durationWithinTolerance": true
+      },
+      "gateResults": {
+        "noTimelineGaps": {
+          "passed": true,
+          "reason": "Primary footage track \"Video 1\" has 24 clip(s); largest uncovered gap 0.000s is within the 0.250s limit."
+        },
+        "meetsTransitionMinimum": {
+          "passed": true,
+          "reason": "The prompt explicitly requests hard cuts/no transitions; the minimum is waived (found 0 materialized transition(s))."
+        },
+        "cameraMoveDensityOk": {
+          "passed": false,
+          "reason": "24/24 eligible primary clips carry compiler-authored camera moves (100.0%; maximum 70.0%)."
+        },
+        "noConsecutiveIdenticalAccents": {
+          "passed": true,
+          "reason": "No adjacent accented cuts repeat both a materialized transition type and the outgoing clip's effect preset (0 accented cut(s) inspected)."
+        },
+        "durationWithinTolerance": {
+          "passed": true,
+          "reason": "Materialized timeline is 45.00s; declared target is 45.00s (allowed 40.50–49.50s, ±10%)."
+        }
+      },
+      "failures": [
+        "camera_move_density_ok: 24/24 eligible primary clips carry compiler-authored camera moves (100.0%; maximum 70.0%)."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 888554,
+        "clipCount": 24,
+        "transitionCount": 0,
+        "effectCount": 14,
+        "audioCount": 5,
+        "textCount": 19,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.9583,
+          "detail": "24 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.6192,
+          "detail": "mean cut 1.88s vs 2.03s, spread(cv) 0.53 vs 1.69"
+        },
+        "craft": {
+          "score": 0.6667,
+          "detail": "transitions=0 effects=14 texts=19"
+        },
+        "overall": 0.7481
+      }
+    },
+    {
+      "id": "pod-01/pod-01-vague",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "infraFailure": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true,
+        "noTimelineGaps": false,
+        "meetsTransitionMinimum": false,
+        "cameraMoveDensityOk": false,
+        "noConsecutiveIdenticalAccents": true,
+        "durationWithinTolerance": false
+      },
+      "gateResults": {
+        "noTimelineGaps": {
+          "passed": false,
+          "reason": "No primary video/image track with placed footage was materialized."
+        },
+        "meetsTransitionMinimum": {
+          "passed": false,
+          "reason": "Found 0 materialized transitions; this non-exempt vague row requires at least 1."
+        },
+        "cameraMoveDensityOk": {
+          "passed": false,
+          "reason": "No primary footage clips are available for the camera-move density check."
+        },
+        "noConsecutiveIdenticalAccents": {
+          "passed": true,
+          "reason": "Fewer than two adjacent cuts exist; no repeated back-to-back accent can occur."
+        },
+        "durationWithinTolerance": {
+          "passed": false,
+          "reason": "Materialized timeline is 0.00s; declared target is 45.00s (allowed 40.50–49.50s, ±10%)."
+        }
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [speed_keyframe_out_of_range] Segment 10 speed keyframe 4 is outside the source range.",
+        "no_timeline_gaps: No primary video/image track with placed footage was materialized.",
+        "meets_transition_minimum: Found 0 materialized transitions; this non-exempt vague row requires at least 1.",
+        "camera_move_density_ok: No primary footage clips are available for the camera-move density check.",
+        "duration_within_tolerance: Materialized timeline is 0.00s; declared target is 45.00s (allowed 40.50–49.50s, ±10%)."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 701383,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    },
+    {
+      "id": "pod-01/pod-01-vague",
+      "run": 1,
+      "projectId": "pod-01",
+      "promptId": "pod-01-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": "INVALID_EDIT_PLAN",
+      "quotaExhausted": false,
+      "infraFailure": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true,
+        "noTimelineGaps": false,
+        "meetsTransitionMinimum": false,
+        "cameraMoveDensityOk": false,
+        "noConsecutiveIdenticalAccents": true,
+        "durationWithinTolerance": false
+      },
+      "gateResults": {
+        "noTimelineGaps": {
+          "passed": false,
+          "reason": "No primary video/image track with placed footage was materialized."
+        },
+        "meetsTransitionMinimum": {
+          "passed": false,
+          "reason": "Found 0 materialized transitions; this non-exempt vague row requires at least 1."
+        },
+        "cameraMoveDensityOk": {
+          "passed": false,
+          "reason": "No primary footage clips are available for the camera-move density check."
+        },
+        "noConsecutiveIdenticalAccents": {
+          "passed": true,
+          "reason": "Fewer than two adjacent cuts exist; no repeated back-to-back accent can occur."
+        },
+        "durationWithinTolerance": {
+          "passed": false,
+          "reason": "Materialized timeline is 0.00s; declared target is 45.00s (allowed 40.50–49.50s, ±10%)."
+        }
+      },
+      "failures": [
+        "plan_edit failed [INVALID_EDIT_PLAN]: Director produced an invalid EditPlan (one repair attempt also failed): [speed_keyframe_out_of_range] Segment 18 speed keyframe 3 is outside the source range.",
+        "no_timeline_gaps: No primary video/image track with placed footage was materialized.",
+        "meets_transition_minimum: Found 0 materialized transitions; this non-exempt vague row requires at least 1.",
+        "camera_move_density_ok: No primary footage clips are available for the camera-move density check.",
+        "duration_within_tolerance: Materialized timeline is 0.00s; declared target is 45.00s (allowed 40.50–49.50s, ±10%)."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 775823,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    },
+    {
+      "id": "pod-01/pod-01-vague",
+      "run": 2,
+      "projectId": "pod-01",
+      "promptId": "pod-01-vague",
+      "promptType": "vague",
+      "ok": false,
+      "toolCode": null,
+      "quotaExhausted": false,
+      "infraFailure": false,
+      "gates": {
+        "planValidates": true,
+        "materializes": true,
+        "noClipOverlaps": true,
+        "noTimelineGaps": false,
+        "meetsTransitionMinimum": true,
+        "cameraMoveDensityOk": false,
+        "noConsecutiveIdenticalAccents": true,
+        "durationWithinTolerance": true
+      },
+      "gateResults": {
+        "noTimelineGaps": {
+          "passed": false,
+          "reason": "Primary footage has a 1.200s gap between clips \"595b281a-c224-4417-a34a-3842ad1aa717\" and \"8caa7704-9926-44e7-90f8-9e269b1fed14\" (maximum allowed gap 0.250s)."
+        },
+        "meetsTransitionMinimum": {
+          "passed": true,
+          "reason": "Found 4 materialized transition(s); the minimum is 1."
+        },
+        "cameraMoveDensityOk": {
+          "passed": false,
+          "reason": "28/28 eligible primary clips carry compiler-authored camera moves (100.0%; maximum 70.0%)."
+        },
+        "noConsecutiveIdenticalAccents": {
+          "passed": true,
+          "reason": "No adjacent accented cuts repeat both a materialized transition type and the outgoing clip's effect preset (2 accented cut(s) inspected)."
+        },
+        "durationWithinTolerance": {
+          "passed": true,
+          "reason": "Materialized timeline is 45.00s; declared target is 45.00s (allowed 40.50–49.50s, ±10%)."
+        }
+      },
+      "failures": [
+        "no_timeline_gaps: Primary footage has a 1.200s gap between clips \"595b281a-c224-4417-a34a-3842ad1aa717\" and \"8caa7704-9926-44e7-90f8-9e269b1fed14\" (maximum allowed gap 0.250s).",
+        "camera_move_density_ok: 28/28 eligible primary clips carry compiler-authored camera moves (100.0%; maximum 70.0%)."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 631779,
+        "clipCount": 28,
+        "transitionCount": 4,
+        "effectCount": 11,
+        "audioCount": 5,
+        "textCount": 7,
+        "planScore": 1,
+        "timelineDuration": 45
+      },
+      "quality": {
+        "reference": "real-spiderman-profile.json",
+        "cutGranularity": {
+          "score": 0.8214,
+          "detail": "28 produced cuts vs 23 reference shots"
+        },
+        "rhythmSimilarity": {
+          "score": 0.5518,
+          "detail": "mean cut 1.56s vs 2.03s, spread(cv) 0.56 vs 1.69"
+        },
+        "craft": {
+          "score": 1,
+          "detail": "transitions=4 effects=11 texts=7"
+        },
+        "overall": 0.7911
+      }
+    },
+    {
+      "id": "pod-01/pod-01-genre",
+      "run": 0,
+      "projectId": "pod-01",
+      "promptId": "pod-01-genre",
+      "promptType": "genre",
+      "ok": false,
+      "toolCode": "TOOL_ERROR",
+      "quotaExhausted": false,
+      "infraFailure": true,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true,
+        "noTimelineGaps": false,
+        "meetsTransitionMinimum": false,
+        "cameraMoveDensityOk": false,
+        "noConsecutiveIdenticalAccents": true,
+        "durationWithinTolerance": false
+      },
+      "gateResults": {
+        "noTimelineGaps": {
+          "passed": false,
+          "reason": "No primary video/image track with placed footage was materialized."
+        },
+        "meetsTransitionMinimum": {
+          "passed": false,
+          "reason": "Found 0 materialized transitions; this non-exempt genre row requires at least 1."
+        },
+        "cameraMoveDensityOk": {
+          "passed": false,
+          "reason": "No primary footage clips are available for the camera-move density check."
+        },
+        "noConsecutiveIdenticalAccents": {
+          "passed": true,
+          "reason": "Fewer than two adjacent cuts exist; no repeated back-to-back accent can occur."
+        },
+        "durationWithinTolerance": {
+          "passed": false,
+          "reason": "The EditPlan does not declare a positive metadata.targetDuration in seconds."
+        }
+      },
+      "failures": [
+        "plan_edit failed [TOOL_ERROR]: omniroute 502: {\"message\":\"[alibaba/qwen3.8-max] [403]: The free quota has been exhausted. To continue accessing the model on a paid basis, please complete your payment information （or disable the \\\"use free tier only\\\" mode in the management console if already completed). (reset after 1m 36s)\",\"retry_after\":96,\"reset_at\":\"2026-10-24T12:40:29.975Z\"}",
+        "no_timeline_gaps: No primary video/image track with placed footage was materialized.",
+        "meets_transition_minimum: Found 0 materialized transitions; this non-exempt genre row requires at least 1.",
+        "camera_move_density_ok: No primary footage clips are available for the camera-move density check.",
+        "duration_within_tolerance: The EditPlan does not declare a positive metadata.targetDuration in seconds."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 45708,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    },
+    {
+      "id": "pod-01/pod-01-genre",
+      "run": 1,
+      "projectId": "pod-01",
+      "promptId": "pod-01-genre",
+      "promptType": "genre",
+      "ok": false,
+      "toolCode": "TOOL_ERROR",
+      "quotaExhausted": true,
+      "infraFailure": false,
+      "gates": {
+        "planValidates": false,
+        "materializes": false,
+        "noClipOverlaps": true,
+        "noTimelineGaps": false,
+        "meetsTransitionMinimum": false,
+        "cameraMoveDensityOk": false,
+        "noConsecutiveIdenticalAccents": true,
+        "durationWithinTolerance": false
+      },
+      "gateResults": {
+        "noTimelineGaps": {
+          "passed": false,
+          "reason": "No primary video/image track with placed footage was materialized."
+        },
+        "meetsTransitionMinimum": {
+          "passed": false,
+          "reason": "Found 0 materialized transitions; this non-exempt genre row requires at least 1."
+        },
+        "cameraMoveDensityOk": {
+          "passed": false,
+          "reason": "No primary footage clips are available for the camera-move density check."
+        },
+        "noConsecutiveIdenticalAccents": {
+          "passed": true,
+          "reason": "Fewer than two adjacent cuts exist; no repeated back-to-back accent can occur."
+        },
+        "durationWithinTolerance": {
+          "passed": false,
+          "reason": "The EditPlan does not declare a positive metadata.targetDuration in seconds."
+        }
+      },
+      "failures": [
+        "plan_edit failed [TOOL_ERROR]: omniroute 429: {\"error\":{\"message\":\"All credentials for model qwen3.8-max are cooling down\",\"type\":\"rate_limit_error\",\"code\":\"model_cooldown\",\"model\":\"qwen3.8-max\",\"reset_seconds\":84,\"retry_after\":\"2026-10-24T12:40:29.975Z\",\"credentials_cooling\":1}}",
+        "no_timeline_gaps: No primary video/image track with placed footage was materialized.",
+        "meets_transition_minimum: Found 0 materialized transitions; this non-exempt genre row requires at least 1.",
+        "camera_move_density_ok: No primary footage clips are available for the camera-move density check.",
+        "duration_within_tolerance: The EditPlan does not declare a positive metadata.targetDuration in seconds."
+      ],
+      "warnings": [],
+      "stats": {
+        "durationMs": 12084,
+        "clipCount": 0,
+        "transitionCount": 0,
+        "effectCount": 0,
+        "audioCount": 0,
+        "textCount": 0,
+        "planScore": null,
+        "timelineDuration": 0
+      },
+      "quality": null
+    }
+  ]
+}

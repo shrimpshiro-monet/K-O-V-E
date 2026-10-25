@@ -388,20 +388,22 @@ export class AudioEngine {
       return null;
     }
 
-    try {
-      const audioBuffer = await this.extractAudioFromVideo(
-        mediaItem,
-        context,
-        audioTrackIndex,
-      );
-      if (audioBuffer) {
-        this.mediaBuffers.set(cacheKey, audioBuffer);
-        return audioBuffer;
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === "NoAudioStreamError") {
-        this.noAudioMedia.add(cacheKey);
-        return null;
+    if (mediaItem.type !== "audio" || audioTrackIndex !== 0) {
+      try {
+        const audioBuffer = await this.extractAudioFromVideo(
+          mediaItem,
+          context,
+          audioTrackIndex,
+        );
+        if (audioBuffer) {
+          this.mediaBuffers.set(cacheKey, audioBuffer);
+          return audioBuffer;
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === "NoAudioStreamError") {
+          this.noAudioMedia.add(cacheKey);
+          return null;
+        }
       }
     }
 

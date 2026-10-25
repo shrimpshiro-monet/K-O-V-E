@@ -18,6 +18,34 @@ describe("HeadlessHost", () => {
     expect(host.getProject().timeline.tracks).toHaveLength(1);
   });
 
+  it("creates renderable text on a frontmost track with complete text styles", async () => {
+    const host = new HeadlessHost(makeEmptyProject());
+    const overlay = await host.createTextOverlay({
+      text: "THE QUIET BEFORE",
+      startSec: 0.2,
+      durationSec: 2,
+      style: {
+        fontFamily: "Arial",
+        fontSize: 38,
+        fontWeight: 800,
+        color: "#F7F3EA",
+        align: "center",
+      },
+    });
+
+    const project = host.getProject();
+    const track = project.timeline.tracks[0];
+    const clip = project.textClips?.find((item) => item.id === overlay.id);
+    expect(track).toMatchObject({ id: overlay.trackId, type: "text", hidden: false });
+    expect(clip?.style).toMatchObject({
+      fontFamily: "Arial",
+      fontSize: 38,
+      lineHeight: 1.2,
+      letterSpacing: 0,
+      textAlign: "center",
+    });
+  });
+
   it("exposes the capability manifest", () => {
     const host = new HeadlessHost(makeEmptyProject());
     expect(host.capabilities().blendModes.length).toBeGreaterThan(0);

@@ -4,6 +4,8 @@ import type { ExportMeasureReport } from "@kove-advanced/core/qc/measure-export"
 import { ActionHistory } from "@kove-advanced/core/actions/action-history";
 import { CAPABILITY_MANIFEST } from "@kove-advanced/core/capabilities/manifest";
 import type { CapabilityManifest } from "@kove-advanced/core/capabilities/manifest";
+import { DEFAULT_TEXT_STYLE } from "@kove-advanced/core/text/types";
+import type { TextStyle } from "@kove-advanced/core/text/types";
 import type { Action, ActionResult } from "@kove-advanced/core/types/actions";
 import type { Project } from "@kove-advanced/core/types/project";
 import { HistoryLedger, fingerprintProject } from "./checkpoints";
@@ -191,14 +193,47 @@ export class HeadlessHost implements EditingHost {
   async createTextOverlay(options: TextOverlayOptions): Promise<OverlayRef> {
     this.requireOpenProject();
     const id = `text-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    const trackId = options.trackId ?? "text-track-0";
+    const trackId = options.trackId
+      ?? this.project!.timeline.tracks.find((track) => track.type === "text")?.id
+      ?? "text-track-0";
+    const track = this.project!.timeline.tracks.find((item) => item.id === trackId);
+    if (track && track.type !== "text") {
+      throw new Error(`Text overlay track "${trackId}" is a ${track.type} track`);
+    }
+    if (!track) {
+      const trackResult = await this.applyAction({
+        type: "track/add",
+        id: `track-${id}`,
+        timestamp: Date.now(),
+        params: { trackType: "text", trackId, position: 0 },
+      });
+      if (!trackResult.success) {
+        throw new Error(trackResult.error?.message ?? "Failed to create text overlay track");
+      }
+    }
+    const styleOptions = options.style ?? {};
+    const requestedAlign = styleOptions.align ?? styleOptions.textAlign;
+    const textAlign = requestedAlign === "left"
+      || requestedAlign === "right"
+      || requestedAlign === "justify"
+      || requestedAlign === "center"
+      ? requestedAlign
+      : DEFAULT_TEXT_STYLE.textAlign;
+    const styleOverrides = { ...styleOptions };
+    delete styleOverrides.align;
+    delete styleOverrides.textAlign;
+    const style = {
+      ...DEFAULT_TEXT_STYLE,
+      ...styleOverrides,
+      textAlign,
+    } as TextStyle;
     const clip = {
       id,
       trackId,
       startTime: options.startSec,
       duration: options.durationSec,
       text: options.text,
-      style: (options.style ?? {}) as Record<string, unknown>,
+      style,
       transform: {
         position: options.position
           ? { x: options.position.x, y: options.position.y }

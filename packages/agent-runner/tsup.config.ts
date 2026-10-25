@@ -1,13 +1,20 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: { cli: "src/cli.ts" },
+  entry: {
+    cli: "src/cli.ts",
+    "wow-eval-cli": "src/wow-eval-cli.ts",
+  },
   format: ["cjs"],
   platform: "node",
   target: "node18",
   // Workspace source packages are consumed as TS and must be inlined into the
   // standalone CLI bundle (only Node built-ins stay external).
-  noExternal: ["@kove-advanced/agent", "@kove-advanced/core"],
+  noExternal: [
+    "@kove-advanced/agent",
+    "@kove-advanced/core",
+    "@kove-advanced/creation-schema",
+  ],
   clean: true,
   sourcemap: true,
 });

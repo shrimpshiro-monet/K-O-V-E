@@ -27,7 +27,23 @@ import {
   type ReferenceFingerprint,
 } from "./quality";
 
-export const REPO_ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../..");
+function findRepositoryRoot(): string {
+  const moduleDirectory = typeof __dirname !== "undefined"
+    ? __dirname
+    : fileURLToPath(new URL(".", import.meta.url));
+  for (const start of [process.cwd(), moduleDirectory]) {
+    let directory = resolve(start);
+    for (;;) {
+      if (existsSync(resolve(directory, "evaluation-files/projects.json"))) return directory;
+      const parent = resolve(directory, "..");
+      if (parent === directory) break;
+      directory = parent;
+    }
+  }
+  return resolve(moduleDirectory, "../../../..");
+}
+
+export const REPO_ROOT = findRepositoryRoot();
 export const CORPUS_DIR = resolve(REPO_ROOT, "evaluation-files");
 export const CORPUS_PATH = resolve(CORPUS_DIR, "projects.json");
 export const DEFAULT_REPORT_PATH = resolve(CORPUS_DIR, "baseline-v0.json");

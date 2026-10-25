@@ -1,0 +1,2186 @@
+{
+  "segments": [
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 21.1,
+      "sourceEndTime": 23.35,
+      "targetPosition": 0,
+      "trackIndex": 0,
+      "effects": [],
+      "rationale": "Spotlit Curry walk-on; slow push establishes the hero.",
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.62
+        }
+      ]
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 40.1,
+      "sourceEndTime": 42.35,
+      "targetPosition": 2.25,
+      "trackIndex": 0,
+      "effects": [],
+      "rationale": "Curry portrait and focus; calm character beat before the drop.",
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.62
+        }
+      ]
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 27.4,
+      "sourceEndTime": 29.65,
+      "targetPosition": 4.5,
+      "trackIndex": 0,
+      "effects": [],
+      "rationale": "Tension and focus in the final held setup shot.",
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.62
+        }
+      ]
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 36.5,
+      "sourceEndTime": 36.95,
+      "targetPosition": 6.75,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "motion-blur",
+          "params": {
+            "distance": 12,
+            "angle": -8
+          },
+          "startOffset": 0,
+          "duration": 0.1,
+          "rationale": "Three-frame cut-entry smear, then snap back to sharp."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Curry drives into the lane; first attack beat. Distinct source window 36.50–36.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 37.5,
+      "sourceEndTime": 37.95,
+      "targetPosition": 7.2,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Curry reaches the rim for the first scoring attempt. Distinct source window 37.50–37.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 38.5,
+      "sourceEndTime": 38.95,
+      "targetPosition": 7.65,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "motion-blur",
+          "params": {
+            "distance": 12,
+            "angle": -8
+          },
+          "startOffset": 0,
+          "duration": 0.1,
+          "rationale": "Three-frame cut-entry smear, then snap back to sharp."
+        },
+        {
+          "type": "speed-lines",
+          "params": {
+            "amount": 0.34,
+            "density": 42,
+            "speed": 1.8
+          },
+          "startOffset": 0,
+          "duration": 0.2,
+          "rationale": "Renderer-backed directional energy on a live drive."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Tight basket-side continuation of the attack. Distinct source window 38.50–38.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 39.5,
+      "sourceEndTime": 39.95,
+      "targetPosition": 8.1,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Curry accelerates into a close-range finish. Distinct source window 39.50–39.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 44,
+      "sourceEndTime": 44.45,
+      "targetPosition": 8.55,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "motion-blur",
+          "params": {
+            "distance": 12,
+            "angle": -8
+          },
+          "startOffset": 0,
+          "duration": 0.1,
+          "rationale": "Three-frame cut-entry smear, then snap back to sharp."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Curry attacks the basket from the wing. Distinct source window 44.00–44.45s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 45.5,
+      "sourceEndTime": 45.95,
+      "targetPosition": 9,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "prism",
+          "params": {
+            "amount": 7,
+            "angle": 0,
+            "mix": 0.75
+          },
+          "startOffset": 0,
+          "duration": 0.15,
+          "rationale": "Brief optical prism hit within the action shot."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Rim-side finish, held on the key action frame. Distinct source window 45.50–45.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 47.5,
+      "sourceEndTime": 47.95,
+      "targetPosition": 9.45,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "motion-blur",
+          "params": {
+            "distance": 12,
+            "angle": -8
+          },
+          "startOffset": 0,
+          "duration": 0.1,
+          "rationale": "Three-frame cut-entry smear, then snap back to sharp."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Curry rises into the same play's shot; split-screen angle. Distinct source window 47.50–47.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 47,
+      "sourceEndTime": 47.45,
+      "targetPosition": 9.45,
+      "trackIndex": 1,
+      "effects": [],
+      "effectSpecs": [],
+      "layout": {
+        "region": "split-right",
+        "fit": "cover"
+      },
+      "rationale": "Second non-overlapping source angle from the same play; paired in a two-panel split-screen."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 52.5,
+      "sourceEndTime": 52.95,
+      "targetPosition": 9.9,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -5
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Curry's shot release, switched to the yellow-green accent grade. Distinct source window 52.50–52.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 55,
+      "sourceEndTime": 55.45,
+      "targetPosition": 10.35,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "motion-blur",
+          "params": {
+            "distance": 12,
+            "angle": -8
+          },
+          "startOffset": 0,
+          "duration": 0.1,
+          "rationale": "Three-frame cut-entry smear, then snap back to sharp."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Curry attacks the paint as the montage builds. Distinct source window 55.00–55.45s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 57,
+      "sourceEndTime": 57.45,
+      "targetPosition": 10.8,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Ball travels toward the rim; setup to the make. Distinct source window 57.00–57.45s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 58,
+      "sourceEndTime": 58.45,
+      "targetPosition": 11.25,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "motion-blur",
+          "params": {
+            "distance": 12,
+            "angle": -8
+          },
+          "startOffset": 0,
+          "duration": 0.1,
+          "rationale": "Three-frame cut-entry smear, then snap back to sharp."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Rim and ball payoff, immediately followed by the reaction beat. Distinct source window 58.00–58.45s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 59.5,
+      "sourceEndTime": 59.95,
+      "targetPosition": 11.7,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Single Curry reaction after the scoring play. Distinct source window 59.50–59.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 61.5,
+      "sourceEndTime": 61.95,
+      "targetPosition": 12.15,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "motion-blur",
+          "params": {
+            "distance": 12,
+            "angle": -8
+          },
+          "startOffset": 0,
+          "duration": 0.1,
+          "rationale": "Three-frame cut-entry smear, then snap back to sharp."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Curry pushes the ball into the next drive. Distinct source window 61.50–61.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 62.5,
+      "sourceEndTime": 62.95,
+      "targetPosition": 12.600000000000001,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "motion-blur",
+          "params": {
+            "distance": 12,
+            "angle": -8
+          },
+          "startOffset": 0,
+          "duration": 0.1,
+          "rationale": "Three-frame cut-entry smear, then snap back to sharp."
+        },
+        {
+          "type": "speed-lines",
+          "params": {
+            "amount": 0.34,
+            "density": 42,
+            "speed": 1.8
+          },
+          "startOffset": 0,
+          "duration": 0.2,
+          "rationale": "Renderer-backed directional energy on a live drive."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Curry attacks the basket from the perimeter. Distinct source window 62.50–62.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 64,
+      "sourceEndTime": 64.45,
+      "targetPosition": 13.05,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "motion-blur",
+          "params": {
+            "distance": 12,
+            "angle": -8
+          },
+          "startOffset": 0,
+          "duration": 0.1,
+          "rationale": "Three-frame cut-entry smear, then snap back to sharp."
+        },
+        {
+          "type": "prism",
+          "params": {
+            "amount": 7,
+            "angle": 0,
+            "mix": 0.75
+          },
+          "startOffset": 0,
+          "duration": 0.15,
+          "rationale": "Brief optical prism hit within the action shot."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Curry elevates into a jump-shot release. Distinct source window 64.00–64.45s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 65,
+      "sourceEndTime": 65.45,
+      "targetPosition": 13.5,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": -20
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Ball reaches the rim; action rises toward the climax. Distinct source window 65.00–65.45s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "curry-source",
+      "sourceStartTime": 70.5,
+      "sourceEndTime": 70.95,
+      "targetPosition": 13.95,
+      "trackIndex": 0,
+      "effects": [],
+      "effectSpecs": [
+        {
+          "type": "brightness",
+          "params": {
+            "value": 55
+          },
+          "rationale": "Act-two exposure target."
+        },
+        {
+          "type": "contrast",
+          "params": {
+            "value": 1.4
+          },
+          "rationale": "Crushed blacks and hard highlight separation."
+        },
+        {
+          "type": "saturation",
+          "params": {
+            "value": 0.9
+          },
+          "rationale": "Maintain the cinematic palette without flattening the uniform."
+        },
+        {
+          "type": "temperature",
+          "params": {
+            "value": -50
+          },
+          "rationale": "Cool the shadows and midtones except the off-palette accent."
+        },
+        {
+          "type": "grain",
+          "params": {
+            "amount": 4
+          },
+          "rationale": "Light film texture."
+        },
+        {
+          "type": "tint",
+          "params": {
+            "value": -28
+          },
+          "rationale": "Bias shadow and midtone color toward teal-green."
+        },
+        {
+          "type": "motion-blur",
+          "params": {
+            "distance": 12,
+            "angle": -8
+          },
+          "startOffset": 0,
+          "duration": 0.1,
+          "rationale": "Three-frame cut-entry smear, then snap back to sharp."
+        },
+        {
+          "type": "chromatic-aberration",
+          "params": {
+            "amount": 4
+          },
+          "startOffset": 0,
+          "duration": 0.13,
+          "rationale": "Short lens split accent on the final shot."
+        }
+      ],
+      "cameraMoves": [],
+      "rationale": "Final Curry shot and strongest visual payoff before the flash. Distinct source window 70.50–70.95s on the 0.45s act-two grid."
+    },
+    {
+      "sourceVideoId": "flash-white",
+      "sourceStartTime": 0,
+      "sourceEndTime": 0.1,
+      "targetPosition": 14.4,
+      "trackIndex": 0,
+      "effects": [],
+      "rationale": "Three-frame white flash, cut rather than transitioned."
+    },
+    {
+      "sourceVideoId": "black-card",
+      "sourceStartTime": 0,
+      "sourceEndTime": 1.2,
+      "targetPosition": 14.5,
+      "trackIndex": 0,
+      "effects": [],
+      "rationale": "Six clean black frames, then the glowing wordmark over black."
+    },
+    {
+      "sourceVideoId": "black-card",
+      "sourceStartTime": 0,
+      "sourceEndTime": 0.03333333333333333,
+      "targetPosition": 8.566666666666666,
+      "trackIndex": 2,
+      "effects": [],
+      "rationale": "One-frame black hit at a montage beat; never consecutive."
+    },
+    {
+      "sourceVideoId": "black-card",
+      "sourceStartTime": 0,
+      "sourceEndTime": 0.03333333333333333,
+      "targetPosition": 10.8,
+      "trackIndex": 2,
+      "effects": [],
+      "rationale": "One-frame black hit at a montage beat; never consecutive."
+    },
+    {
+      "sourceVideoId": "black-card",
+      "sourceStartTime": 0,
+      "sourceEndTime": 0.03333333333333333,
+      "targetPosition": 13.066666666666666,
+      "trackIndex": 2,
+      "effects": [],
+      "rationale": "One-frame black hit at a montage beat; never consecutive."
+    }
+  ],
+  "effects": [
+    {
+      "targetSegmentIndex": 0,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 0,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 0,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 0,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 0,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 1,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 1,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 1,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 1,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 1,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 2,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 2,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 2,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 2,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 2,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 3,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 3,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 3,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 3,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 3,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 4,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 4,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 4,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 4,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 4,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 5,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 5,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 5,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 5,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 5,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 6,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 6,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 6,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 6,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 6,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 7,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 7,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 7,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 7,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 7,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 8,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 8,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 8,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 8,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 8,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 9,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 9,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 9,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 9,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 9,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 10,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 10,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 10,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 10,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 10,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 12,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 12,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 12,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 12,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 13,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 13,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 13,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 13,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 13,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 14,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 14,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 14,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 14,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 14,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 15,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 15,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 15,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 15,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 15,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 16,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 16,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 16,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 16,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 16,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 17,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 17,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 17,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 17,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 17,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 18,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 18,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 18,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 18,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 18,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 19,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 19,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 19,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 19,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 19,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    },
+    {
+      "targetSegmentIndex": 20,
+      "type": "colorGrade",
+      "params": {
+        "contrast": 1.28,
+        "saturation": 0.84,
+        "brightness": 0.92
+      },
+      "rationale": "Consistent low-exposure cinematic grade."
+    },
+    {
+      "targetSegmentIndex": 20,
+      "type": "tonal",
+      "params": {
+        "shadows": -0.18,
+        "midtones": -0.03,
+        "highlights": 0.04
+      },
+      "rationale": "Crushed shadows with controlled highlight detail."
+    },
+    {
+      "targetSegmentIndex": 20,
+      "type": "temperature",
+      "params": {
+        "value": -14
+      },
+      "rationale": "Cool the shadows; reserve amber in the duotone highlight rolloff."
+    },
+    {
+      "targetSegmentIndex": 20,
+      "type": "grain",
+      "params": {
+        "amount": 9
+      },
+      "rationale": "Fine film grain throughout the edit."
+    },
+    {
+      "targetSegmentIndex": 20,
+      "type": "duotone",
+      "params": {
+        "shadowColor": "#071522",
+        "highlightColor": "#d8914b",
+        "mix": 0.28,
+        "contrast": 1.08
+      },
+      "rationale": "Unified teal-shadow/amber-highlight signature grade."
+    }
+  ],
+  "transitions": [
+    {
+      "afterSegmentIndex": 2,
+      "type": "whipPan",
+      "duration": 0.1,
+      "rationale": "One native whip transition launches the act-two drop."
+    }
+  ],
+  "audioDecisions": [
+    {
+      "type": "silence",
+      "startTime": 0,
+      "duration": 15.7,
+      "rationale": "Audio is explicitly out of scope for this visual revision."
+    }
+  ],
+  "textElements": [
+    {
+      "content": "THE QUIET BEFORE",
+      "style": "title",
+      "startTime": 0.28,
+      "duration": 2.05,
+      "position": {
+        "x": 0.5,
+        "y": 0.76
+      },
+      "fontFamily": "Arial",
+      "fontSize": 38,
+      "color": "#F7F3EA",
+      "animation": "rise",
+      "animationInSec": 0.22,
+      "animationOutSec": 0.18,
+      "templateOverride": {
+        "fontFamily": "Arial",
+        "fontSize": 38,
+        "fontWeight": 800,
+        "color": "#F7F3EA",
+        "align": "center",
+        "position": {
+          "x": 0.5,
+          "y": 0.76
+        }
+      },
+      "rationale": "Three-word setup hook confined to act one."
+    },
+    {
+      "content": "STEPH CURRY",
+      "style": "title",
+      "startTime": 14.25,
+      "duration": 1,
+      "position": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "fontFamily": "Arial",
+      "fontSize": 45,
+      "color": "#F8F5EC",
+      "animation": "glitch",
+      "animationInSec": 0.08,
+      "animationOutSec": 0.95,
+      "templateOverride": {
+        "fontFamily": "Arial",
+        "fontSize": 45,
+        "fontWeight": 900,
+        "color": "#F8F5EC",
+        "align": "center",
+        "position": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "rationale": "Glowing creator wordmark over the final black frame with short chromatic split."
+    }
+  ],
+  "metadata": {
+    "targetDuration": 15.7,
+    "targetPlatform": "9:10 social hero montage",
+    "genre": "sports-highlight",
+    "pacing": "fast",
+    "rationale": "Three-shot 6.75s slow build, 17 unique action beats on a 0.45s grid, and a flash/black/wordmark landing."
+  },
+  "planAuthorship": "hand-authored; AI director unavailable due provider quota",
+  "materializer": "K.O.V.E. project timeline; visual effects via K.O.V.E. renderer"
+}
