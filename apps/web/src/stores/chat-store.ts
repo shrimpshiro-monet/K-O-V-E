@@ -29,6 +29,7 @@ import {
   applyReferenceStructure,
   attachReferenceProfile,
 } from "../services/mirror/reference-flow";
+import { abortError, isAbortError, throwIfAborted } from "../services/mirror/reference-measurement";
 import {
   conversationTitle,
   useChatHistoryStore,
@@ -194,6 +195,8 @@ interface PrepareReferenceTurnInput {
   readonly attachment: ReferenceAttachment | null;
   readonly parsedPrompt: string;
   readonly notice: (message: string) => void;
+  /** The turn's cancel signal: Stop cancels measurement, not just the model. */
+  readonly signal: AbortSignal;
 }
 
 /**
@@ -205,7 +208,7 @@ interface PrepareReferenceTurnInput {
 async function prepareReferenceTurn(
   input: PrepareReferenceTurnInput,
 ): Promise<{ text: string; applied: ReferenceApplication }> {
-  const { intent, attachment, parsedPrompt, notice } = input;
+  const { intent, attachment, parsedPrompt, notice, signal } = input;
   if (!attachment) {
     const directive = referenceIntentDirective({
       intent,
@@ -226,11 +229,16 @@ async function prepareReferenceTurn(
   } else {
     try {
       notice("Measuring the reference…");
-      const measured = await measureReferenceVideo(bytes, (done, total) =>
-        notice(`Measuring the reference… ${done}/${total} frames`),
-      );
+      // Measurement is bounded work that yields between slices, and it is
+      // cancelled by the same Stop that cancels the turn.
+      const measured = await measureReferenceVideo(bytes, {
+        onProgress: (done, total) =>
+          notice(`Measuring the reference… ${done}/${total} frames`),
+        signal,
+      });
+      throwIfAborted(signal);
       notice("Detecting beats and captions in the reference…");
-      profile = await enrichReferenceVideo(bytes, measured.profile, notice);
+      profile = await enrichReferenceVideo(bytes, measured.profile, notice, signal);
       if (intent === "reference") {
         // Style guidance only: the EditDNA is attached so the plan can follow
         // the reference's rhythm, but the timeline is not rebuilt.
@@ -240,6 +248,7 @@ async function prepareReferenceTurn(
         if (!sources.length) {
           warnings.push("No source footage is in the library, so the reference structure was not applied.");
         } else {
+          throwIfAborted(signal);
           notice("Rebuilding your footage to the reference structure…");
           const result = await applyReferenceStructure(profile, sources);
           warnings.push(...result.warnings);
@@ -247,9 +256,13 @@ async function prepareReferenceTurn(
         }
       }
     } catch (error) {
-      warnings.push(
-        `The reference could not be measured: ${error instanceof Error ? error.message : "unknown error"}`,
-      );
+      // A cancelled measurement is not a measurement failure: let the turn stop.
+      if (signal.aborted || isAbortError(error)) throw abortError(signal);
+      // Anything else is reported, never fatal: the turn continues without the
+      // reference instead of leaving the panel stuck on "Measuring…".
+      const reason = error instanceof Error ? error.message : "unknown error";
+      warnings.push(`The reference could not be measured: ${reason}`);
+      notice(`The reference could not be measured: ${reason}. Continuing without it.`);
     }
   }
 
@@ -500,12 +513,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
     let turnText = trimmed;
     let directorPlanApplied = false;
     if (referenceIntent) {
-      const prepared = await prepareReferenceTurn({
-        intent: referenceIntent,
-        attachment,
-        parsedPrompt: parsedIntent.prompt,
-        notice: (message) => updateAssistant((m) => ({ ...m, notice: message })),
-      });
+      let prepared: Awaited<ReturnType<typeof prepareReferenceTurn>>;
+      try {
+        prepared = await prepareReferenceTurn({
+          intent: referenceIntent,
+          attachment,
+          parsedPrompt: parsedIntent.prompt,
+          notice: (message) => updateAssistant((m) => ({ ...m, notice: message })),
+          signal: controller.signal,
+        });
+      } catch (error) {
+        if (activeSeq !== seq) return;
+        // Stopped while measuring the reference: no model call, no stuck panel.
+        if (controller.signal.aborted || isAbortError(error)) {
+          updateAssistant((m) => ({
+            ...m,
+            text: m.text || "Stopped.",
+            notice: "Reference measurement cancelled.",
+          }));
+          set({ status: "idle", abortController: null, pendingConfirm: null });
+          saveConversationSnapshot(get());
+          return;
+        }
+        // Reference preparation must never leave the turn wedged in "running".
+        const message = error instanceof Error ? error.message : "The reference could not be prepared.";
+        updateAssistant((m) => ({ ...m, notice: `The reference could not be prepared: ${message}` }));
+        set({ status: "error", error: message, abortController: null, pendingConfirm: null });
+        saveConversationSnapshot(get());
+        return;
+      }
       turnText = prepared.text;
       // The structure is already on the timeline: the model adds craft to it
       // instead of replacing it with a fresh plan.

@@ -5,6 +5,14 @@ const h = vi.hoisted(() => ({
   executeTool: vi.fn(),
   sampleVideoStats: vi.fn(),
   allocateSourceRanges: vi.fn(),
+  probeContainerClock: vi.fn(async () => ({
+    fps: { num: 30, den: 1 },
+    durationSeconds: 2,
+    width: 1920,
+    height: 1080,
+    rotationDegrees: 0,
+    averagePacketRate: 30,
+  })),
 }));
 
 vi.mock("@kove-advanced/agent", () => ({ executeTool: h.executeTool }));
@@ -16,12 +24,22 @@ vi.mock("./extract-reference", () => ({
   extractReference: vi.fn(),
   sampleVideoStats: h.sampleVideoStats,
 }));
+vi.mock("@kove-advanced/core/mirror/reference-clock", () => ({
+  probeReferenceClock: h.probeContainerClock,
+}));
 vi.mock("./enrich-reference-audio", () => ({ enrichReferenceWithAudio: vi.fn() }));
 vi.mock("@kove-advanced/core/mirror/allocate-shots", () => ({
   allocateSourceRanges: h.allocateSourceRanges,
 }));
 
-import { applyReferenceStructure, attachReferenceProfile } from "./reference-flow";
+import {
+  applyReferenceStructure,
+  attachReferenceProfile,
+  measureReferenceVideo,
+} from "./reference-flow";
+import { extractReference } from "./extract-reference";
+
+const extractReferenceMock = vi.mocked(extractReference);
 
 const profile = {
   version: "kove.mirror.v2",
@@ -76,6 +94,42 @@ describe("reference flow", () => {
       ]),
     ).rejects.toThrow(/not available locally/);
     expect(h.executeTool).not.toHaveBeenCalled();
+  });
+
+  it("measures the reference with the caller's cancel signal", async () => {
+    extractReferenceMock.mockResolvedValue(profile);
+    const controller = new AbortController();
+    const progress: number[] = [];
+
+    await measureReferenceVideo(new Blob(["reference"]), {
+      onProgress: (done) => progress.push(done),
+      signal: controller.signal,
+    });
+
+    const [file, clock, options] = extractReferenceMock.mock.calls[0] as [
+      Blob,
+      { fps: { num: number; den: number }; fpsSource: string },
+      { onProgress?: (done: number, total: number) => void; signal?: AbortSignal },
+    ];
+    expect(file).toBeInstanceOf(Blob);
+    expect(clock).toMatchObject({ fps: { num: 30, den: 1 }, fpsSource: "web-metadata" });
+    // Stop must reach the frame analysis, not just the model call.
+    expect(options.signal).toBe(controller.signal);
+    options.onProgress?.(3, 10);
+    expect(progress).toEqual([3]);
+  });
+
+  it("does not start a measurement that was already cancelled", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const error = await measureReferenceVideo(new Blob(["reference"]), {
+      signal: controller.signal,
+    }).catch((reason: unknown) => reason);
+
+    expect((error as Error).name).toBe("AbortError");
+    expect(h.probeContainerClock).not.toHaveBeenCalled();
+    expect(extractReferenceMock).not.toHaveBeenCalled();
   });
 
   it("attaches the EditDNA without touching the timeline", async () => {

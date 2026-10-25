@@ -2,6 +2,7 @@ import { getBeatDetectionEngine } from "@kove-advanced/core";
 import { applyAudioAnnotations, type ReferenceWordTiming } from "@kove-advanced/core/mirror/audio-annotations";
 import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import { transcribeWithWordTimestamps } from "../multicam-transcription";
+import { abortable, abortError, isAbortError } from "./reference-measurement";
 
 /** Enrich a measured reference profile with its audio-derived annotations:
  * caption windows (local Whisper word timings) and a beat grid (local beat
@@ -47,6 +48,8 @@ export async function enrichReferenceWithAudio(
     onStatus?: (message: string) => void;
     /** Overrides the transcription ceiling (tests use a short one). */
     transcriptionTimeoutMs?: number;
+    /** Cancels the local beat and transcription passes. */
+    signal?: AbortSignal;
   } = {},
 ): Promise<ReferenceProfile> {
   const baseWarnings = profile.warnings ?? [];
@@ -54,11 +57,16 @@ export async function enrichReferenceWithAudio(
   try {
     const context = new AudioContext();
     try {
-      audioBuffer = await context.decodeAudioData(await file.arrayBuffer());
+      audioBuffer = await abortable(
+        file.arrayBuffer().then((buffer) => context.decodeAudioData(buffer)),
+        options.signal,
+      );
     } finally {
       void context.close();
     }
-  } catch {
+  } catch (error) {
+    // A cancelled turn must stop, not degrade to an "audio unreadable" warning.
+    if (isAbortError(error)) throw abortError(options.signal);
     return {
       ...profile,
       warnings: [...baseWarnings, "Reference audio could not be decoded; caption windows and the beat grid were not extracted."],
@@ -69,12 +77,17 @@ export async function enrichReferenceWithAudio(
   let beatsMs: number[] = [];
   try {
     options.onStatus?.("Detecting beats in the reference audio…");
-    const analysis = await getBeatDetectionEngine().analyzeAudioBuffer(audioBuffer);
+    const analysis = await abortable(
+      getBeatDetectionEngine().analyzeAudioBuffer(audioBuffer),
+      options.signal,
+    );
     beatsMs = analysis.beats.map((beat) => Math.round(beat.time * 1_000));
     if (analysis.confidence < 0.3 && beatsMs.length > 0) {
       stageWarnings.push(`Beat grid confidence is low (bpm ${Math.round(analysis.bpm)}); cut-to-beat scoring may be unreliable.`);
     }
-  } catch {
+  } catch (error) {
+    // A cancelled turn stops here: that is not a beat-detection failure.
+    if (isAbortError(error)) throw abortError(options.signal);
     stageWarnings.push("Beat detection failed; the beat grid was left empty.");
   }
 
@@ -83,17 +96,21 @@ export async function enrichReferenceWithAudio(
     options.transcriptionTimeoutMs ?? DEFAULT_TRANSCRIPTION_TIMEOUT_MS;
   try {
     options.onStatus?.("Transcribing reference audio locally for caption windows…");
-    words = await withTimeout(
-      transcribeWithWordTimestamps(audioBuffer, {
-        model: "fast",
-        language: options.language,
-        onStatus: options.onStatus,
-        timeoutMs: transcriptionTimeoutMs,
-      }),
-      transcriptionTimeoutMs,
-      `timed out after ${Math.round(transcriptionTimeoutMs / 1000)}s`,
+    words = await abortable(
+      withTimeout(
+        transcribeWithWordTimestamps(audioBuffer, {
+          model: "fast",
+          language: options.language,
+          onStatus: options.onStatus,
+          timeoutMs: transcriptionTimeoutMs,
+        }),
+        transcriptionTimeoutMs,
+        `timed out after ${Math.round(transcriptionTimeoutMs / 1000)}s`,
+      ),
+      options.signal,
     );
   } catch (error) {
+    if (isAbortError(error)) throw abortError(options.signal);
     const reason = error instanceof Error ? error.message : "unknown error";
     stageWarnings.push(
       `Local transcription failed (${reason}); caption windows were not extracted.`,
