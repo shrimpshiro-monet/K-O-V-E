@@ -8,6 +8,7 @@ import type { LabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import { getLiveEditorHost, runExclusive } from "../agent/host-singleton";
 import { extractReference, sampleVideoStats, type ReferenceClock } from "./extract-reference";
 import { enrichReferenceWithAudio } from "./enrich-reference-audio";
+import { abortable, abortError, isAbortError, throwIfAborted } from "./reference-measurement";
 
 /** A source video the reference structure can be applied to. */
 export interface ReferenceSourceMedia {
@@ -22,16 +23,28 @@ export interface MeasuredReference {
   readonly clock: ReferenceClock;
 }
 
+export interface MeasureReferenceOptions {
+  /** Coalesced measurement progress (at most ~4 notices/s, plus the total). */
+  onProgress?: (done: number, total: number) => void;
+  /** Cancels container probing, decoding and frame analysis. */
+  signal?: AbortSignal;
+}
+
 /**
  * Measures a reference video end to end: the frame clock comes from the
  * container itself, then shots, camera motion and color are measured locally.
  * The user is never asked to type a frame rate for a normal file.
+ *
+ * Every stage is cancellable through `signal`, and the analysis is bounded by
+ * `extractReference`'s work budget, so this never wedges the tab.
  */
 export async function measureReferenceVideo(
   file: Blob,
-  onProgress?: (done: number, total: number) => void,
+  options: MeasureReferenceOptions = {},
 ): Promise<MeasuredReference> {
-  const probe = await probeContainerClock(file);
+  const { signal } = options;
+  throwIfAborted(signal);
+  const probe = await abortable(probeContainerClock(file), signal);
   const clock: ReferenceClock = {
     fps: probe.fps,
     fpsSource: "web-metadata",
@@ -39,7 +52,11 @@ export async function measureReferenceVideo(
     codedDimensions: { width: probe.width, height: probe.height },
     rotationDegrees: probe.rotationDegrees,
   };
-  const profile = await extractReference(file, clock, { onProgress });
+  throwIfAborted(signal);
+  const profile = await extractReference(file, clock, {
+    ...(options.onProgress ? { onProgress: options.onProgress } : {}),
+    ...(signal ? { signal } : {}),
+  });
   return { profile, clock };
 }
 
@@ -52,10 +69,16 @@ export async function enrichReferenceVideo(
   file: Blob,
   profile: ReferenceProfile,
   onStatus?: (message: string) => void,
+  signal?: AbortSignal,
 ): Promise<ReferenceProfile> {
   try {
-    return await enrichReferenceWithAudio(file, profile, { onStatus });
-  } catch {
+    return await enrichReferenceWithAudio(file, profile, {
+      ...(onStatus ? { onStatus } : {}),
+      ...(signal ? { signal } : {}),
+    });
+  } catch (error) {
+    // Cancellation is not an enrichment failure; it must stop the turn.
+    if (signal?.aborted || isAbortError(error)) throw abortError(signal);
     return {
       ...profile,
       warnings: [

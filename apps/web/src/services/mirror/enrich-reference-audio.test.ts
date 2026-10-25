@@ -110,6 +110,22 @@ describe("enrichReferenceWithAudio", () => {
     expect(enriched.warnings?.join(" ")).toMatch(/transcription failed/i);
   });
 
+  it("stops instead of warning when the turn is cancelled mid-transcription", async () => {
+    stubAudioContext();
+    transcribeMock.mockImplementation(() => new Promise(() => {}));
+    const controller = new AbortController();
+    const enrichment = enrichReferenceWithAudio(
+      new Blob([new Uint8Array([1])]),
+      measuredProfile(),
+      { transcriptionTimeoutMs: 5_000, signal: controller.signal },
+    );
+    controller.abort();
+
+    const error = await enrichment.catch((reason: unknown) => reason);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).name).toBe("AbortError");
+  });
+
   it("gives up on a transcription that never answers instead of blocking the turn", async () => {
     stubAudioContext();
     // A model host that accepts the connection but never responds: the promise

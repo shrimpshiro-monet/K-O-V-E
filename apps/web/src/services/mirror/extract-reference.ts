@@ -5,25 +5,38 @@ import { computeLabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import { loadOpenCv, extractFrameMotion } from "@kove-advanced/core/vision/opencv-camera-motion";
 import { classifyDominantMove, type CameraMotionSample } from "@kove-advanced/core/vision/camera-motion-extractor";
 import { createReferenceProfile, type ReferenceProfile, type ShotProfile } from "@kove-advanced/core/mirror/reference-profile";
+import {
+  abortable,
+  analysisDimensions,
+  createReferenceProgressReporter,
+  createWorkBudget,
+  REFERENCE_FRAME_BUDGET_MS,
+  REFERENCE_MAX_FRAMES_PER_SLICE,
+  REFERENCE_PROGRESS_INTERVAL_MS,
+  throwIfAborted,
+} from "./reference-measurement";
 
 /** Tuned against the existing normalized, sampled-RGB difference signal.
  * Never reuse this value for luma or another signal without recalibration. */
 const CUT_DIFFERENCE_THRESHOLD = 0.23;
 
-/** One fallback frame costs roughly 340k luminance comparisons, so two frames
- * keeps a synchronous batch well under one animation frame before yielding. */
-const FRAMES_PER_YIELD = 2;
-
 export interface ExtractReferenceOptions {
-  /** Called after each yielded batch so a caller can paint extraction progress. */
+  /** Called with coalesced progress: at most once per ~250ms, plus the total at the end. */
   onProgress?: (done: number, total: number) => void;
+  /** Cancels in-flight measurement and decoder reads. The measurement rejects
+   * with an `AbortError` and releases its decoder immediately. */
+  signal?: AbortSignal;
+  /** Long-edge cap of the analysis buffer. Defaults to the calibrated 160px. */
+  maxAnalysisDimension?: number;
+  /** Wall clock for the work budget and the progress throttle. Injectable for tests. */
+  now?: () => number;
 }
 
 interface YieldingScheduler {
   yield?: () => Promise<void>;
 }
 
-/** Let the tab paint and handle input between synchronous sample batches.
+/** Let the tab paint and handle input between work slices.
  * scheduler.yield() avoids the clamping delay of nested zero timers where available. */
 async function yieldToEventLoop(): Promise<void> {
   const scheduler = (globalThis as typeof globalThis & { scheduler?: YieldingScheduler }).scheduler;
@@ -36,7 +49,14 @@ async function yieldToEventLoop(): Promise<void> {
 
 /** Bounded, local decoder pass. No media bytes leave the browser or enter the DNA artifact.
  * Cuts use frame difference; camera motion uses sparse patch correspondences + least-squares similarity fit.
- * Sparse HTML seeking is limited to <= 4 fps: never promise frame-exact cuts from that fallback. */
+ * Sparse HTML seeking is limited to <= 4 fps: never promise frame-exact cuts from that fallback.
+ *
+ * Responsiveness contract for the caller: every synchronous stretch of this
+ * function is bounded by REFERENCE_FRAME_BUDGET_MS / REFERENCE_MAX_FRAMES_PER_SLICE
+ * and the analysis buffer is capped by `analysisDimensions`, so no slice of work
+ * grows with the reference's resolution or length. Awaiting decodes yields to
+ * the event loop naturally, and `signal` cancels the loop *and* any pending
+ * decode wait. */
 export interface ReferenceClock {
   fps: FrameRate;
   fpsSource: ReferenceProfile["fpsSource"];
@@ -63,6 +83,9 @@ export async function probeReferenceClock(file: File): Promise<{ status: "known"
 }
 
 export async function extractReference(file: Blob, clock: ReferenceClock, options: ExtractReferenceOptions = {}): Promise<ReferenceProfile> {
+  const { signal } = options;
+  const now = options.now ?? (() => Date.now());
+  throwIfAborted(signal);
   const url = URL.createObjectURL(file);
   const video = document.createElement("video");
   video.preload = "auto";
@@ -72,38 +95,55 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
   // decoder setup so a cold fetch overlaps that work instead of the sample loop.
   const openCvReady = loadOpenCv().catch(() => null);
   try {
-    await new Promise<void>((resolve, reject) => {
+    await abortable(new Promise<void>((resolve, reject) => {
       video.onloadedmetadata = () => resolve();
       video.onerror = () => reject(new Error("Could not decode reference video"));
-    });
-    if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) await new Promise<void>((resolve, reject) => {
+    }), signal);
+    if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) await abortable(new Promise<void>((resolve, reject) => {
       video.onloadeddata = () => resolve(); video.onerror = () => reject(new Error("Reference frame unavailable"));
-    });
+    }), signal);
     if (!Number.isFinite(video.duration) || video.duration <= 0 || !video.videoWidth || !video.videoHeight) throw new Error("Invalid reference video metadata");
     if (!clock?.fps || !clock.fpsSource) throw new Error("Reference FPS is unknown: select a frame clock before extraction");
     const fps = clock.fps;
     const durationFrames = secondsToFrame(clock.durationSeconds ?? video.duration, fps);
     if (durationFrames < 1) throw new Error("Reference is shorter than one frame");
-    const width = 160, height = Math.max(16, Math.round(width * video.videoHeight / video.videoWidth));
+    // Analysis never runs at native resolution: the long edge is capped, so a
+    // 4K reference costs exactly what a 720p one costs per sampled frame.
+    const { width, height } = analysisDimensions(
+      video.videoWidth,
+      video.videoHeight,
+      options.maxAnalysisDimension,
+    );
     const canvas = document.createElement("canvas");
     canvas.width = width; canvas.height = height;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) throw new Error("Canvas 2D is unavailable");
     // Prefer timestamp-verified WebCodecs samples. HTML seeking is only a
     // capability fallback and is never labelled frame-exact.
-    const indexed = await openIndexedVideoFrames(file, width, height).catch(() => null);
+    const indexed = await abortable(openIndexedVideoFrames(file, width, height), signal).catch((error: unknown) => {
+      // A cancelled measurement must not silently degrade to the HTML fallback.
+      throwIfAborted(signal);
+      if (error instanceof Error && error.name === "AbortError") throw error;
+      return null;
+    });
     const readFrame = async (frame: number): Promise<Uint8ClampedArray> => {
-      if (indexed) return (await indexed.read(frame, fps)).data;
+      throwIfAborted(signal);
+      if (indexed) {
+        const data = await abortable(indexed.read(frame, fps).then((image) => image.data), signal);
+        throwIfAborted(signal);
+        return data;
+      }
       const target = Math.min(video.duration - 0.001, frameToSeconds(frame, fps) + fps.den / fps.num / 4);
-      if (Math.abs(video.currentTime - target) > 0.0001) await new Promise<void>((resolve, reject) => {
+      if (Math.abs(video.currentTime - target) > 0.0001) await abortable(new Promise<void>((resolve, reject) => {
         video.onseeked = () => resolve(); video.onerror = () => reject(new Error("Reference frame seek failed")); video.currentTime = target;
-      });
+      }), signal);
       ctx.drawImage(video, 0, 0, width, height);
+      throwIfAborted(signal);
       return ctx.getImageData(0, 0, width, height).data;
     };
     // An unavailable OpenCV build does not block extraction: the sparse JS
     // matcher below remains available.
-    let cv: Awaited<ReturnType<typeof loadOpenCv>> | null = await openCvReady;
+    let cv: Awaited<ReturnType<typeof loadOpenCv>> | null = await abortable(openCvReady, signal);
     let previousMat: InstanceType<NonNullable<typeof cv>["Mat"]> | null = null;
     const stepFrames = indexed && durationFrames <= 600 ? 1 : Math.max(1, Math.ceil(durationFrames / 600), Math.ceil(fps.num / fps.den / 4));
     // One warnings path for decoder precision, sparse sampling and low-confidence cuts.
@@ -122,12 +162,34 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
         cameraMotion: { samples: motion, dominantMove: classifyDominantMove(motion) }, colorStats: grade, captionWindows: [] });
       startFrame = endFrame; motion = []; grade = undefined;
     };
+    // Progress is coalesced to about 4 notices per second, which still reads as
+    // live. Uncoalesced, the store re-rendered the chat panel once per decoded
+    // frame, and that render storm was as unresponsive as the pixel work.
+    const progress = createReferenceProgressReporter(
+      options.onProgress,
+      REFERENCE_PROGRESS_INTERVAL_MS,
+      now,
+    );
+    // Work is sliced by wall clock, not by a fixed frame batch: a slice can
+    // never grow with the source resolution, and a slow decode ends it at once.
+    const budget = createWorkBudget(REFERENCE_FRAME_BUDGET_MS, now());
+    let sliceFrames = 0;
+    // Difference inside a cut bracket: bounded work, but a cancelled measurement
+    // must not keep scanning frames.
+    const guard = (a: Uint8ClampedArray, b: Uint8ClampedArray): number => {
+      throwIfAborted(signal);
+      return difference(a, b);
+    };
     try { for (let i = 0; i < frames; i++) {
-      // Report completed frames and hand the main thread back before each
-      // batch. Without this the fully synchronous fallback matcher never paints.
-      if (i % FRAMES_PER_YIELD === 0) {
-        if (i > 0) options.onProgress?.(i, frames);
+      // Prompt cancel before doing any work for the next sample.
+      throwIfAborted(signal);
+      if (budget.expired(now()) || sliceFrames >= REFERENCE_MAX_FRAMES_PER_SLICE) {
+        progress.report(i, frames);
         await yieldToEventLoop();
+        // A Stop during the yield wins over the work already queued.
+        throwIfAborted(signal);
+        budget.reset(now());
+        sliceFrames = 0;
       }
       const frame = Math.min(durationFrames - 1, i * stepFrames);
       const pixels = await readFrame(frame);
@@ -144,13 +206,15 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
         try {
           const refined = await refineCutFrameByPeak({
             startFrame: previousFrame, endFrame: frame + 1,
-            read: readFrame, difference, threshold: CUT_DIFFERENCE_THRESHOLD,
+            read: readFrame, difference: guard, threshold: CUT_DIFFERENCE_THRESHOLD,
           });
           boundary = refined.frame;
           if (!refined.isHardCut) warnings.push(
             `Shot boundary near frame ${refined.frame} looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.`,
           );
         } catch (error) {
+          // Cancellation must escape both estimator fallbacks.
+          throwIfAborted(signal);
           // Only a malformed numeric measurement gets the conservative retry.
           // Real decoder/seek failures still propagate instead of inventing a cut.
           if (!(error instanceof InvalidCutDifferenceError)) throw error;
@@ -158,6 +222,7 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
             let checkedFrame = previousFrame;
             boundary = await locateCutFrame(previousFrame, frame, readFrame, (a, b) => {
               checkedFrame++;
+              throwIfAborted(signal);
               const value = difference(a, b);
               if (!Number.isFinite(value) || value < 0) throw new InvalidCutDifferenceError(checkedFrame);
               return value;
@@ -166,6 +231,7 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
               ? `Peak refinement near frame ${frame} had an invalid difference; the first-crossing retry found no verified boundary.`
               : `Peak refinement near frame ${frame} had an invalid difference; using first threshold crossing at frame ${boundary} (lower-confidence).`);
           } catch (retryError) {
+            throwIfAborted(signal);
             if (!(retryError instanceof InvalidCutDifferenceError)) throw retryError;
             // A persistently invalid signal cannot support either estimator.
             // Keep shots contiguous, but do not publish a fabricated boundary.
@@ -192,9 +258,11 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
       if (!grade) grade = computeLabStats(pixels);
       previous = pixels;
       previousFrame = frame;
+      sliceFrames++;
+      progress.report(i + 1, frames);
     }
     } finally { previousMat?.delete(); indexed?.close(); }
-    options.onProgress?.(frames, frames);
+    progress.report(frames, frames, { force: true });
     finish(durationFrames);
     const profile = createReferenceProfile({ aspectRatio: { width: video.videoWidth, height: video.videoHeight }, fps, fpsSource: clock.fpsSource, durationFrames, shots, beatGridMs: [], ...(clock.sampleAspectRatio && { sampleAspectRatio: clock.sampleAspectRatio }), ...(clock.codedDimensions && { codedDimensions: clock.codedDimensions }), ...(clock.rotationDegrees !== undefined && { rotationDegrees: clock.rotationDegrees }), warnings });
     return profile;
