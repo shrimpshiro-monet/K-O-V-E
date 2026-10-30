@@ -3,8 +3,9 @@ import {
   makeClientFromSend,
   llmHttpError,
   parseRetryAfterMs,
+  makeOmniRouteClient,
 } from "@kove-advanced/agent";
-import type { LLMClient } from "@kove-advanced/agent";
+import type { LLMClient, OmniRouteConfig } from "@kove-advanced/agent";
 import { apiFetch } from "../api-proxy";
 import type { LlmProvider } from "../../stores/settings-store";
 
@@ -109,6 +110,53 @@ export function makeCloudflareAIClient(opts: CloudflareAIOptions): LLMClient {
     model: opts.model ?? "@cf/google/gemma-4-26b-a4b-it",
     maxTokens: opts.maxTokens ?? 4096,
     send,
+  });
+}
+
+/** OmniRoute gateway credentials resolved from VITE_OMNIROUTE_* (.dev.vars). */
+export interface OmniRouteGatewayOptions {
+  readonly baseUrl: string;
+  readonly apiKey: string;
+  readonly model: string;
+  readonly maxTokens?: number;
+  readonly signal?: AbortSignal;
+}
+
+/**
+ * OmniRoute (local gateway) client for the product path. Uses the shared
+ * SSE-folding gateway transport, but every request is routed through
+ * apiFetch: dev goes through the same-origin Vite proxy (a renderer cannot
+ * reach localhost cross-origin) and desktop through the native bridge (Node
+ * fetch, no CORS at all).
+ *
+ * Transport retries are disabled — the fallback ladder decides when to
+ * switch to Cloudflare, so sitting in backoff here only delays failover.
+ */
+export function makeOmniRouteGatewayClient(opts: OmniRouteGatewayOptions): LLMClient {
+  const cfg: OmniRouteConfig = {
+    baseUrl: opts.baseUrl,
+    apiKey: opts.apiKey,
+    model: opts.model,
+  };
+  const routedFetch = (async (
+    input: globalThis.RequestInfo | URL,
+    init?: globalThis.RequestInit,
+  ): Promise<Response> => {
+    const url = String(input);
+    const path = url.startsWith(cfg.baseUrl) ? url.slice(cfg.baseUrl.length) : "/chat/completions";
+    return apiFetch("omniroute", path, cfg.apiKey, {
+      method: init?.method ?? "POST",
+      headers: (init?.headers ?? {}) as Record<string, string>,
+      body: typeof init?.body === "string" ? init.body : undefined,
+      baseUrl: cfg.baseUrl,
+      signal: init?.signal ?? undefined,
+    });
+  }) as typeof fetch;
+  return makeOmniRouteClient(cfg, {
+    fetchFn: routedFetch,
+    signal: opts.signal,
+    maxTokens: opts.maxTokens,
+    retries: 0,
   });
 }
 

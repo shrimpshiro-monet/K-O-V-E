@@ -90,8 +90,25 @@ export { probeReferenceClock, snapFrameRate } from "./mirror/reference-clock";
 export type { ReferenceClockProbe } from "./mirror/reference-clock";
 export { fitProfileToFootage } from "./mirror/fit-profile-to-footage";
 export type { FittedReference } from "./mirror/fit-profile-to-footage";
-export { parseReferenceProfile, createReferenceProfile, serializeReferenceProfile } from "./mirror/reference-profile";
-export type { ReferenceProfile, ShotProfile } from "./mirror/reference-profile";
+export {
+  parseReferenceProfile,
+  createReferenceProfile,
+  serializeReferenceProfile,
+  validateReferenceProfile,
+  REFERENCE_PROFILE_V3_LIMITATIONS,
+} from "./mirror/reference-profile";
+export type {
+  ReferenceProfile,
+  ShotProfile,
+  ReferenceEvidenceSource,
+  ReferenceEvidenceConfidence,
+  ReferenceStyleEvidence,
+  ReferenceTransitionEvidence,
+  ReferenceTextOverlay,
+  ReferenceTextStyleEstimate,
+  ReferenceEffectEvidence,
+  NormalizedFrameRect,
+} from "./mirror/reference-profile";
 export { allocateSourceRanges } from "./mirror/allocate-shots";
 export { applyAudioAnnotations } from "./mirror/audio-annotations";
 export type { ReferenceWordTiming, AudioAnnotationInput, AudioAnnotationResult } from "./mirror/audio-annotations";

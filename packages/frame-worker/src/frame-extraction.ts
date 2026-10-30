@@ -11,9 +11,16 @@ export interface ExtractedFrame {
   readonly height: number;
 }
 
+export interface MosaicMeta {
+  readonly rows: number;
+  readonly cols: number;
+  readonly timestamps: readonly number[];
+}
+
 export interface FrameBatch {
   readonly batchIndex: number;
   readonly frames: readonly ExtractedFrame[];
+  readonly mosaic?: MosaicMeta;
 }
 
 export interface SceneBoundary {
@@ -145,6 +152,124 @@ export function batchFrames(
     batches.push({
       batchIndex: batches.length,
       frames: batchFrames,
+    });
+  }
+
+  return batches;
+}
+
+export interface MosaicConfig {
+  readonly rows: number;
+  readonly cols: number;
+}
+
+export function parseMosaicConfig(value: string | null | undefined): MosaicConfig | null {
+  if (!value) return null;
+  const match = /^\s*(\d+)\s*[xX×]\s*(\d+)\s*$/.exec(value);
+  if (!match) return null;
+  const rows = Number(match[1]);
+  const cols = Number(match[2]);
+  if (!Number.isInteger(rows) || !Number.isInteger(cols)) return null;
+  if (rows < 1 || cols < 1 || rows > 8 || cols > 8) return null;
+  return { rows, cols };
+}
+
+export function readMosaicConfig(): MosaicConfig | null {
+  return parseMosaicConfig(import.meta.env?.VITE_KOVE_VISION_MOSAIC);
+}
+
+async function base64FromBlob(blob: Blob): Promise<string> {
+  const buffer = new Uint8Array(await blob.arrayBuffer());
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let i = 0; i < buffer.length; i += chunkSize) {
+    binary += String.fromCharCode(...buffer.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function frameToBitmap(frame: ExtractedFrame): Promise<ImageBitmap> {
+  const binary = atob(frame.imageData);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return createImageBitmap(new Blob([bytes], { type: "image/jpeg" }));
+}
+
+export interface MosaicOptions {
+  readonly tileWidth?: number;
+  readonly gap?: number;
+  readonly labelHeight?: number;
+  readonly quality?: number;
+}
+
+export async function composeMosaic(
+  frames: readonly ExtractedFrame[],
+  config: MosaicConfig,
+  options: MosaicOptions = {},
+): Promise<ExtractedFrame> {
+  const first = frames[0];
+  if (!first) throw new Error("Cannot compose a mosaic without frames");
+
+  const tileWidth = options.tileWidth ?? 320;
+  const gap = options.gap ?? 4;
+  const labelHeight = options.labelHeight ?? 18;
+  const quality = options.quality ?? 0.82;
+  const aspect = first.width > 0 && first.height > 0 ? first.height / first.width : 9 / 16;
+  const tileHeight = Math.max(1, Math.round(tileWidth * aspect));
+  const cellHeight = tileHeight + labelHeight;
+  const width = config.cols * tileWidth + Math.max(0, config.cols - 1) * gap;
+  const height = config.rows * cellHeight + Math.max(0, config.rows - 1) * gap;
+
+  const canvas = new OffscreenCanvas(width, height);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("OffscreenCanvas 2d context unavailable");
+
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, width, height);
+
+  const capacity = config.rows * config.cols;
+  for (let index = 0; index < Math.min(frames.length, capacity); index++) {
+    const frame = frames[index]!;
+    const row = Math.floor(index / config.cols);
+    const col = index % config.cols;
+    const x = col * (tileWidth + gap);
+    const y = row * (cellHeight + gap);
+
+    const bitmap = await frameToBitmap(frame);
+    ctx.drawImage(bitmap, x, y, tileWidth, tileHeight);
+    bitmap.close();
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+    ctx.fillRect(x, y + tileHeight, tileWidth, labelHeight);
+    ctx.fillStyle = "#fff";
+    ctx.font = "12px sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${frame.timestamp.toFixed(2)}s`, x + 6, y + tileHeight + labelHeight / 2);
+  }
+
+  const blob = await canvas.convertToBlob({ type: "image/jpeg", quality });
+  const imageData = await base64FromBlob(blob);
+  return { timestamp: first.timestamp, imageData, width, height };
+}
+
+export async function batchFramesMosaic(
+  frames: readonly ExtractedFrame[],
+  config: MosaicConfig,
+): Promise<readonly FrameBatch[]> {
+  const capacity = config.rows * config.cols;
+  const batches: FrameBatch[] = [];
+
+  for (let i = 0; i < frames.length; i += capacity) {
+    const chunk = frames.slice(i, i + capacity);
+    const mosaic = await composeMosaic(chunk, config);
+    batches.push({
+      batchIndex: batches.length,
+      frames: [mosaic],
+      mosaic: {
+        rows: config.rows,
+        cols: config.cols,
+        timestamps: chunk.map((frame) => frame.timestamp),
+      },
     });
   }
 

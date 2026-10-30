@@ -213,6 +213,96 @@ export class MediaBridge {
     }
   }
 
+  async extractVideoFrames(
+    file: Blob,
+    timestamps: readonly number[],
+    width = 320,
+  ): Promise<Array<{ timestamp: number; imageDataBase64: string; width: number; height: number }>> {
+    if (typeof document === "undefined") {
+      throw new Error("Video frame extraction requires a browser document");
+    }
+
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+
+    const waitForEvent = (
+      eventName: "loadedmetadata" | "loadeddata" | "seeked",
+      timeoutMs = 10_000,
+    ): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const timeout = window.setTimeout(() => {
+          cleanup();
+          reject(new Error(`Video ${eventName} timed out`));
+        }, timeoutMs);
+        const cleanup = () => {
+          window.clearTimeout(timeout);
+          video.removeEventListener(eventName, onEvent);
+          video.removeEventListener("error", onError);
+        };
+        const onEvent = () => {
+          cleanup();
+          resolve();
+        };
+        const onError = () => {
+          cleanup();
+          reject(new Error("Video frame decode failed"));
+        };
+        video.addEventListener(eventName, onEvent, { once: true });
+        video.addEventListener("error", onError, { once: true });
+      });
+
+    try {
+      if (video.readyState < 1) {
+        const metadataLoaded = waitForEvent("loadedmetadata", 15_000);
+        video.load();
+        await metadataLoaded;
+      }
+
+      const sourceWidth = video.videoWidth || width;
+      const sourceHeight = video.videoHeight || Math.round(width * 9 / 16);
+      const height = Math.max(1, Math.round(width * sourceHeight / Math.max(1, sourceWidth)));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Could not create a canvas for video frame extraction");
+
+      const maxTime = Math.max(0, Number.isFinite(video.duration) ? video.duration - 0.05 : 0);
+      const frames: Array<{
+        timestamp: number;
+        imageDataBase64: string;
+        width: number;
+        height: number;
+      }> = [];
+      for (const timestamp of timestamps) {
+        const target = Math.min(maxTime, Math.max(0, timestamp));
+        if (Math.abs(video.currentTime - target) > 0.01) {
+          const seeked = waitForEvent("seeked");
+          video.currentTime = target;
+          await seeked;
+        } else if (video.readyState < 2) {
+          await waitForEvent("loadeddata");
+        }
+
+        context.drawImage(video, 0, 0, width, height);
+        const imageDataBase64 = canvas.toDataURL("image/jpeg", 0.8).split(",")[1] ?? "";
+        if (!imageDataBase64) {
+          throw new Error(`Could not encode the video frame at ${timestamp.toFixed(3)}s`);
+        }
+        frames.push({ timestamp, imageDataBase64, width, height });
+      }
+      return frames;
+    } finally {
+      video.removeAttribute("src");
+      video.load();
+      URL.revokeObjectURL(url);
+    }
+  }
+
   /**
    * Initialize the media bridge
    * Connects to the MediaImportService and WaveformGenerator

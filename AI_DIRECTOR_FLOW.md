@@ -16,10 +16,10 @@ User types prompt
 └──────────────┘    └──────────────────┘    └────────────────┘
                            │                        │
                            ▼                        ▼
-                    ┌──────────────┐    ┌────────────────────┐
-                    │  loop.ts     │    │  Cloudflare / BYOK  │
-                    │  (agent loop)│    │  (LLM provider)    │
-                    └──────────────┘    └────────────────────┘
+                     ┌──────────────┐    ┌────────────────────┐
+                     │  loop.ts     │    │ OmniRoute → Cloudflare
+                     │  (agent loop)│    │ / BYOK (LLM ladder) │
+                     └──────────────┘    └────────────────────┘
                            │
                            ▼
                     ┌──────────────┐    ┌────────────────────┐
@@ -118,7 +118,10 @@ This is the orchestrator. The `send` method:
 3. Creates user and assistant message objects
 4. Builds the conversation history
 5. Selects tools for the prompt
-6. Calls `runTurn()` from the agent loop
+6. Builds the LLM client — for the zero-config `cloudflare` provider this is the
+   **OmniRoute → Cloudflare ladder** (gateway leads, Workers replays on failure);
+   BYOK providers get a single client
+7. Calls `runTurn()` from the agent loop
 
 ```tsx
 // chat-store.ts:156-428 — send method (key sections)
@@ -141,20 +144,33 @@ if (provider === "cloudflare") {
 const userMessage: ChatMessage = { id: genId(), role: "user", text: trimmed, toolCalls: [] };
 const assistantMessage: ChatMessage = { id: genId(), role: "assistant", text: "", toolCalls: [] };
 
-// 4. Build LLM client
-const llm = makeBYOKClient({ provider, model, apiKey, baseUrl, signal: controller.signal });
-
-// 5. Wire LLM into host for nested director calls (plan_edit)
-host.llm = { client: llm, provider: agentProvider };
-
-// 6. Select tools (max 25 for Cloudflare, 120 for others)
+// 4. Select tools (120 when the gateway leads, 25 when Workers runs alone)
+const omniRoute =
+  provider === "cloudflare" ? resolveOmniRouteLadder(settings.llmModel.trim()) : null;
 const selectedToolNames = selectToolsForPrompt(routingContext, {
-  maxTools: provider === "cloudflare" ? 25 : 120,
+  maxTools: provider === "cloudflare" && !omniRoute ? 25 : 120,
   priorToolNames,
 });
 const tools = provider === "anthropic-compatible"
   ? toAnthropicTools(selectedToolNames)
   : toOpenAITools(selectedToolNames);
+
+// 5. Build LLM client — gateway leads, Workers is the replay side
+const baseClient = makeBYOKClient({ provider, model, apiKey, baseUrl, signal: controller.signal });
+const llm = omniRoute
+  ? makeFallbackClient({
+      primary: makeOmniRouteGatewayClient({ ...omniRoute, signal: controller.signal }),
+      secondary: baseClient,
+      secondaryInput: buildWorkersFallbackInput(host, routingContext, priorToolNames),
+      onFallback: (error) => updateAssistant((m) => ({
+        ...m,
+        notice: `OmniRoute unreachable (${error}) — continuing on Cloudflare Workers AI.`,
+      })),
+    })
+  : baseClient;
+
+// 6. Wire LLM into host for nested director calls (plan_edit)
+host.llm = { client: llm, provider: agentProvider };
 
 // 7. Run the agent turn
 result = await runExclusive(() =>
@@ -214,8 +230,35 @@ const onEvent = (event: AgentEvent): void => {
 
 Routes requests to the correct provider. For Cloudflare, it goes through a Vite dev proxy:
 
+**Ladder, not exclusivity.** For the zero-config `cloudflare` provider the chat store
+wraps two clients in `makeFallbackClient` (from `@kove-advanced/agent`):
+
+- **Primary — OmniRoute gateway** (`makeOmniRouteGatewayClient`): local gateway at
+  `OMNIROUTE_BASE_URL` (default `http://localhost:20128/v1`), credentials from
+  `VITE_OMNIROUTE_*` (injected from `.dev.vars` by the Vite plugin, dev/desktop only).
+  Every request is routed through `apiFetch("omniroute", …)`: dev goes through the
+  same-origin `/api/omni` Vite proxy, desktop through the native bridge. Uses the
+  shared SSE-folding transport from `packages/agent/src/providers/omniroute.ts`,
+  with `retries: 0` so failover is immediate.
+- **Secondary — Cloudflare Workers AI** (`makeBYOKClient` → `makeCloudflareAIClient`):
+  reached when the gateway is unreachable (network error/5xx/timeout — user aborts
+  and quota `LLMHttpError`s from the secondary are never retried elsewhere). The
+  replay swaps the toolset and system prompt via `secondaryInput` — the gateway side
+  runs the full 120-tool routing, Workers gets its proven 25-tool cap. After a
+  failure the primary is on a 60s cooldown so repeated calls don't re-pay it.
+
 ```tsx
-// llm-transport.ts:44-82 — Cloudflare transport
+// llm-transport.ts:135-158 — Gateway client (primary)
+export function makeOmniRouteGatewayClient(opts: OmniRouteGatewayOptions): LLMClient {
+  const cfg: OmniRouteConfig = { baseUrl: opts.baseUrl, apiKey: opts.apiKey, model: opts.model };
+  const routedFetch = async (input, init) => {
+    const path = url.startsWith(cfg.baseUrl) ? url.slice(cfg.baseUrl.length) : "/chat/completions";
+    return apiFetch("omniroute", path, cfg.apiKey, { method, headers, body, baseUrl: cfg.baseUrl, signal });
+  };
+  return makeOmniRouteClient(cfg, { fetchFn: routedFetch, signal: opts.signal, maxTokens: opts.maxTokens, retries: 0 });
+}
+
+// llm-transport.ts:44-82 — Cloudflare transport (secondary)
 function makeCloudflareSend(accountId, apiToken, signal) {
   return async (body) => {
     const normalized = normalizeCloudflareBody(body);  // arrays/null → strings
@@ -231,7 +274,7 @@ function makeCloudflareSend(accountId, apiToken, signal) {
   };
 }
 
-// llm-transport.ts:169-192 — Client factory
+// llm-transport.ts:214-237 — Client factory
 export function makeBYOKClient(opts: BYOKClientOptions): LLMClient {
   if (opts.provider === "cloudflare") {
     return makeCloudflareAIClient({

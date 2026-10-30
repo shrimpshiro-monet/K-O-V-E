@@ -13,6 +13,7 @@ export {
 export {
   makeNodeLLMClient,
   makeNodeLLMSend,
+  resolveLlmProvider,
   type NodeLLMOptions,
   type LlmProvider,
 } from "./node-llm";

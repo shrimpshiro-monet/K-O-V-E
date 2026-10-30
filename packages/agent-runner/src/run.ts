@@ -17,7 +17,7 @@ import type {
 } from "@kove-advanced/agent";
 import type { Project } from "@kove-advanced/core/types/project";
 import { fitProfileToFootage } from "@kove-advanced/core/mirror/fit-profile-to-footage";
-import { makeNodeLLMClient, type LlmProvider } from "./node-llm";
+import { makeNodeLLMClient, resolveLlmProvider, type LlmProvider } from "./node-llm";
 import { loadProjectFile, saveProjectFile } from "./project-io";
 import { createCompositorMirrorFrameRunner } from "./mirror-frame-runner";
 
@@ -25,7 +25,8 @@ export interface HeadlessEditOptions {
   readonly project: Project;
   readonly prompt: string;
   readonly provider: LlmProvider;
-  readonly model: string;
+  /** Defaults to the provider's configured model (gateway) or requires --model. */
+  readonly model?: string;
   readonly apiKey: string;
   /** Inject a client directly (tests / custom transports); overrides BYOK build. */
   readonly llm?: LLMClient;
@@ -34,6 +35,8 @@ export interface HeadlessEditOptions {
   readonly limits?: { maxSteps?: number; maxToolCalls?: number };
   readonly dryRun?: boolean;
   readonly fetchFn?: typeof fetch;
+  /** Gateway→Workers failover notice (CLI logs it to stderr). */
+  readonly onFallback?: (error: unknown) => void;
   /** Opt in to real FFmpeg reference + Chromium timeline sampling for mirror_refine.
    * mediaPaths binds serialized media IDs to local files; absent media fails. */
   readonly mirror?: {
@@ -124,20 +127,24 @@ export async function runHeadlessEdit(
   });
   const host: HeadlessHost = new HeadlessHost(opts.project, { jobRunner: opts.jobRunner, mirrorFrameRunner: mirror?.sample });
   try {
+    // Resolve `auto` up front: the tool format must match the side the
+    // ladder actually picked (anthropic vs OpenAI schemas).
+    const provider = resolveLlmProvider(opts.provider);
     const llm =
       opts.llm ??
       makeNodeLLMClient({
-        provider: opts.provider,
+        provider,
         model: opts.model,
         apiKey: opts.apiKey,
         maxTokens: opts.maxTokens,
         fetchFn: opts.fetchFn,
+        onFallback: opts.onFallback,
       });
     const prepared = await prepareReferencePrompt(host, opts.prompt);
     const prompt = prepared.prompt;
     const selectedToolNames = selectToolsForPrompt(prompt);
     const tools =
-      opts.provider === "anthropic"
+      provider === "anthropic"
         ? toAnthropicTools(selectedToolNames)
         : toOpenAITools(selectedToolNames);
 

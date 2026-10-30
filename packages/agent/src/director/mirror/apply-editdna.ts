@@ -3,13 +3,13 @@ import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-prof
 import type { LabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import { createReinhardLut } from "@kove-advanced/core/color/reinhard-transfer";
 import { allocateSourceRanges } from "@kove-advanced/core/mirror/allocate-shots";
-import { serializeReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
+import { parseReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import { frameToSeconds, shotDurationFrames } from "@kove-advanced/core/mirror/timebase";
 
 /** Compiles measured shot boundaries and frame-relative motion into editable clips and keyframes.
  * Never inserts the reference media itself. Existing timeline content is preserved. */
-export async function applyEditDNA(host: EditingHost, profile: ReferenceProfile, userMediaIds: readonly string[], targetStats?: readonly (LabStats | undefined)[]): Promise<string[]> {
-  serializeReferenceProfile(profile); // validates chronology before any mutations
+export async function applyEditDNA(host: EditingHost, inputProfile: ReferenceProfile, userMediaIds: readonly string[], targetStats?: readonly (LabStats | undefined)[]): Promise<string[]> {
+  const profile = parseReferenceProfile(inputProfile);
   if (!userMediaIds.length) throw new Error("Choose at least one source video");
   const project = host.getProject();
   const sources = userMediaIds.map((id) => {

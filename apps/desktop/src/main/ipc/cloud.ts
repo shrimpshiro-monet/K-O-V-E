@@ -5,7 +5,8 @@ export type CloudService =
   | "openai"
   | "anthropic"
   | "openai-compatible"
-  | "anthropic-compatible";
+  | "anthropic-compatible"
+  | "omniroute";
 
 interface ServiceConfig {
   baseUrl: string;
@@ -15,7 +16,7 @@ interface ServiceConfig {
 // Mirror of apps/web/src/services/api-proxy.ts DIRECT_CONFIG. apps/desktop cannot import apps/web,
 // so this is a deliberate duplication — keep it in sync if the web config changes.
 export const DIRECT_CONFIG: Record<
-  Exclude<CloudService, "openai-compatible" | "anthropic-compatible">,
+  Exclude<CloudService, "openai-compatible" | "anthropic-compatible" | "omniroute">,
   ServiceConfig
 > = {
   elevenlabs: {
@@ -66,6 +67,19 @@ export function buildUpstreamRequest(
     baseUrl?: string;
   },
 ): UpstreamRequest {
+  if (service === "omniroute") {
+    // Local gateway: the renderer already holds the env-derived key, so the
+    // request keeps its own headers instead of consulting the keychain.
+    if (path !== "/chat/completions" && path !== "/models") {
+      throw new Error(`Unsupported ${service} API path`);
+    }
+    return {
+      url: `${normalizeCompatibleBaseUrl(options.baseUrl)}${path}`,
+      method: options.method ?? "POST",
+      headers: options.headers ?? {},
+      body: options.body,
+    };
+  }
   if (
     service === "openai-compatible" ||
     service === "anthropic-compatible"
@@ -135,7 +149,9 @@ export async function cloudFetch(args: {
   baseUrl?: string;
 }): Promise<CloudFetchResult> {
   const key = (await getKeyStore().get(args.service)) ?? "";
-  if (!key && !args.service.endsWith("-compatible")) {
+  // Keyless services carry their own credentials (keychain-backed `-compatible`
+  // slots, or the renderer-supplied OmniRoute gateway key from env).
+  if (!key && !args.service.endsWith("-compatible") && args.service !== "omniroute") {
     return {
       status: 401,
       statusText: `No API key stored for ${args.service}`,

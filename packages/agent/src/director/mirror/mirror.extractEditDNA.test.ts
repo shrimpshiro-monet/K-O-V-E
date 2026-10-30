@@ -5,7 +5,7 @@ import { fixture } from "./mirror-fixture";
 describe("EditDNA format", () => {
   it("serializes a DNA-only artifact with ordered non-overlapping shots", () => {
     const dna = JSON.parse(serializeReferenceProfile(fixture)) as ReferenceProfile;
-    expect(dna.version).toBe("kove.mirror.v2");
+    expect(dna.version).toBe("kove.mirror.v3");
     expect(dna.aspectRatio.width).toBe(1080);
     expect(dna.shots.every((s, i) => s.startFrame < s.endFrame && (!i || s.startFrame >= dna.shots[i - 1].endFrame))).toBe(true);
     expect(() => serializeReferenceProfile({ ...fixture, shots: [fixture.shots[1], fixture.shots[0]] })).toThrow();

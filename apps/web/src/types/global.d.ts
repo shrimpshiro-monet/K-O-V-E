@@ -232,7 +232,8 @@ export interface KoveAdvancedBridge {
         | "anthropic"
         | "openai-compatible"
         | "anthropic-compatible"
-        | "cloudflare",
+        | "cloudflare"
+        | "omniroute",
       path: string,
       options?: {
         method?: string;

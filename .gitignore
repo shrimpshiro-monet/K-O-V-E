@@ -113,3 +113,6 @@ evaluation-files/wow-reviews/
 apps/web/e2e/.assets/
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Python virtualenvs
+**/.venv/

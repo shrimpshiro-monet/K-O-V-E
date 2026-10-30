@@ -226,6 +226,43 @@ export function createExportJobRunner(): JobRunner {
         };
       }
 
+      if (kind === "extractVideoFrames") {
+        const mediaId = typeof params.mediaId === "string" ? params.mediaId : "";
+        const timestamps = params.timestamps;
+        if (!mediaId || !Array.isArray(timestamps) || timestamps.length > 60) {
+          return {
+            ok: false,
+            error: "extractVideoFrames requires a mediaId and at most 60 timestamps",
+          };
+        }
+        const frameTimes = timestamps.filter(
+          (timestamp): timestamp is number =>
+            typeof timestamp === "number" && Number.isFinite(timestamp) && timestamp >= 0,
+        );
+        if (frameTimes.length !== timestamps.length) {
+          return { ok: false, error: "Frame timestamps must be finite non-negative numbers" };
+        }
+        const media = project.mediaLibrary.items.find((item) => item.id === mediaId);
+        if (!media) return { ok: false, error: `Media not found: ${mediaId}` };
+        if (media.type !== "video") {
+          return { ok: false, error: `Media is not a video: ${media.type}` };
+        }
+        const mediaBlob = media.blob ?? await loadMediaBlob(media.id);
+        if (!mediaBlob) return { ok: false, error: "Media blob unavailable" };
+        const maxWidth =
+          typeof params.maxWidth === "number" && Number.isFinite(params.maxWidth)
+            ? Math.max(1, Math.min(960, Math.floor(params.maxWidth)))
+            : 320;
+        const mediaBridge = getMediaBridge();
+        if (!mediaBridge.isInitialized()) await initializeMediaBridge();
+        const frames = await mediaBridge.extractVideoFrames(
+          mediaBlob,
+          frameTimes,
+          maxWidth,
+        );
+        return { ok: true, data: { frames } };
+      }
+
       if (kind === "exportVideo") {
         const format = typeof params.format === "string" ? params.format : "mp4";
         const ext = VIDEO_FORMATS.has(format as VideoExportSettings["format"]) ? format : "mp4";

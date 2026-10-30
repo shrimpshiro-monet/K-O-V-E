@@ -9,6 +9,16 @@ export type SceneType =
 export type MotionLevel = "static" | "low" | "medium" | "high";
 import type { SportsMomentEvent } from "./quality-signals";
 
+export interface TranscriptEvidence {
+  readonly startTime: number;
+  readonly endTime: number;
+  readonly text: string;
+}
+
+export type TranscriptStatus =
+  | { readonly state: "complete"; readonly wordCount: number; readonly warning?: string }
+  | { readonly state: "skipped"; readonly reason: string };
+
 export interface VideoSegment {
   readonly id: string;
   readonly startTime: number;
@@ -31,12 +41,14 @@ export interface VideoSegment {
   readonly sportsMomentEvent?: SportsMomentEvent;
   readonly subjectIds?: readonly string[];
   readonly subjectContinuityScore?: number;
+  readonly transcript?: readonly TranscriptEvidence[];
 }
 
 export interface VideoSegmentMap {
   readonly videoId: string;
   readonly duration: number;
   readonly segments: readonly VideoSegment[];
+  readonly transcriptStatus?: TranscriptStatus;
 }
 
 export interface SegmentMap {

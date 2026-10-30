@@ -3,6 +3,8 @@ export type {
   MotionLevel,
   VideoSegment,
   VideoSegmentMap,
+  TranscriptEvidence,
+  TranscriptStatus,
   SegmentMap,
 } from "./segment-map";
 

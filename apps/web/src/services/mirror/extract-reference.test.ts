@@ -23,6 +23,7 @@ import {
 const originals = { createObjectURL: URL.createObjectURL, revokeObjectURL: URL.revokeObjectURL };
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   if (originals.createObjectURL) URL.createObjectURL = originals.createObjectURL;
   else delete (URL as { createObjectURL?: typeof URL.createObjectURL }).createObjectURL;
   if (originals.revokeObjectURL) URL.revokeObjectURL = originals.revokeObjectURL;
@@ -78,6 +79,10 @@ async function extractFixture(
   };
   const context = {
     drawImage: vi.fn(),
+    createImageData: (width: number, height: number) => ({
+      data: new Uint8ClampedArray(width * height * 4),
+    }),
+    putImageData: vi.fn(),
     getImageData: (_x: number, _y: number, width: number, height: number) => {
       record.getImageDataSizes.push({ width, height });
       const frame = Math.floor(currentTime * 30);
@@ -117,9 +122,39 @@ function steppingClock(stepMs: number): () => number {
 }
 
 describe("extractReference peak boundary wiring", () => {
+  it("extracts sparse local OCR observations into normalized, caveated overlay evidence", async () => {
+    const close = vi.fn();
+    const detect = vi.fn(async () => [{
+      rawValue: "REFERENCE TITLE",
+      boundingBox: { x: 16, y: 112, width: 80, height: 16 },
+    }]);
+    vi.stubGlobal("TextDetector", class {
+      detect = detect;
+    });
+    vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ close }) as unknown as ImageBitmap));
+
+    const profile = await extractFixture();
+
+    expect(detect).toHaveBeenCalled();
+    expect(close).toHaveBeenCalledTimes(detect.mock.calls.length);
+    expect(profile.styleEvidence?.textOverlays).toHaveLength(1);
+    expect(profile.styleEvidence?.textOverlays[0]).toMatchObject({
+      text: "REFERENCE TITLE",
+      source: "local-ocr",
+      confidence: 0.55,
+      bounds: { x: 0.1, y: 0.7, width: 0.5, height: 0.1 },
+      style: { fontSizeRatio: 0.1 },
+    });
+    expect(profile.styleEvidence?.textOverlays[0]?.note).toContain("sparsely");
+  });
+
   it("selects the exact stronger cut, tiles half-open shots, and warns about a gradual transition", async () => {
     const profile = await extractFixture();
     expect(intervals(profile)).toEqual([[0, 4], [4, 17], [17, 32]]);
+    expect(profile.styleEvidence?.transitions).toMatchObject([
+      { startFrame: 3, endFrame: 5, type: "hard-cut", confidence: 0.9 },
+      { startFrame: 16, endFrame: 18, type: "unknown", confidence: 0.55 },
+    ]);
     expect(profile.warnings).toContain("Indexed WebCodecs decoder unavailable: HTML video seeks may not decode exact requested frames. Verify critical cuts manually.");
     expect(profile.warnings).toEqual(expect.arrayContaining([expect.stringContaining("gradual transition")]));
   });
@@ -205,6 +240,25 @@ describe("extractReference analysis budget", () => {
     h.openIndexedVideoFrames.mockResolvedValue(null);
     await expect(extractFixture({ sourceWidth: 4096, sourceHeight: 2160 })).resolves.toBeDefined();
     expect(h.openIndexedVideoFrames).toHaveBeenCalledWith(expect.anything(), 160, 84);
+  });
+
+  it("falls back to HTML video seeking when indexed frame reads fail", async () => {
+    const close = vi.fn();
+    h.openIndexedVideoFrames.mockResolvedValue({
+      read: vi.fn().mockRejectedValue(new Error("Source frame 0 is unavailable from the indexed decoder")),
+      close,
+    });
+
+    const profile = await extractFixture();
+
+    expect(profile.shots.length).toBeGreaterThan(0);
+    expect(profile.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Indexed WebCodecs frame read failed at frame 0"),
+        expect.stringContaining("HTML video seeks"),
+      ]),
+    );
+    expect(close).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the documented slicing policy small enough to leave the tab responsive", () => {

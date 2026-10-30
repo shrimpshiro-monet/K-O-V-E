@@ -2,8 +2,8 @@
   "segments": [
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 300,
-      "sourceEndTime": 300.8,
+      "sourceStartTime": 12,
+      "sourceEndTime": 12.9,
       "targetPosition": 0,
       "trackIndex": 0,
       "speed": 1,
@@ -13,18 +13,66 @@
       },
       "cameraMoves": [
         {
-          "move": "punch-in",
-          "intensity": 0.8
+          "move": "snap-zoom",
+          "intensity": 0.9
         }
       ],
-      "rationale": "Cold-open hook — the sharpest late-episode passage (src 300.0-300.8) dropped first so the clip reads in under one second; punch-in at 0.80 is the only near-max move of the edit. Signal: hook moment, medium-motion b-roll per analysis, cut grid set to dialogue cadence since no beatTimestamps were returned (conf 0.50).",
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 0.9,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "HOOK A — cold-open frame from the first act of the source (12.0s), the earliest structurally clean entry point; readable in under 1s so the scroll stops. Signal: segment motion profile 'medium', conf .50; snap-zoom at 0.9 intensity because this is the hook.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 300.8,
-      "sourceEndTime": 303.8,
-      "targetPosition": 0.8,
+      "sourceStartTime": 48,
+      "sourceEndTime": 49.2,
+      "targetPosition": 0.9,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.85
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.2,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "HOOK B — second shot inside the first two seconds, jumping 36s forward in the source so the open already promises range. Signal: hook moment trigger; punch-in lands the emphasis, chromatic-aberration hit fires on this cut.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 4,
+      "sourceEndTime": 7.3,
+      "targetPosition": 2.1000000000000028,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -34,57 +82,31 @@
       "cameraMoves": [
         {
           "move": "slow-push",
-          "intensity": 0.3
+          "intensity": 0.45
         }
       ],
-      "rationale": "Same continuous passage held (300.8-303.8) so the hook line is never cut mid-sentence — the 0.8s picture punch-in is picture-only, audio runs straight through. slow-push 0.30 keeps a talking-head frame alive across the 3.0s statement. Signal: hook payoff, second of the two shots inside the first 2s.",
-      "effects": []
-    },
-    {
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 24,
-      "sourceEndTime": 27.6,
-      "targetPosition": 3.8,
-      "trackIndex": 0,
-      "speed": 1,
-      "layout": {
-        "region": "fullscreen",
-        "fit": "cover"
-      },
-      "cameraMoves": [
+      "effectSpecs": [
         {
-          "move": "handheld",
-          "intensity": 0.25
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 3.2,
+          "rationale": "single coherent grade for the whole edit"
         }
       ],
-      "rationale": "Chapter A premise (src 24.0-27.6) — the chronological spine starts here once the cold open has hooked. handheld at 0.25 adds presence without disturbing the speaker. Signal: chapter change out of the hook, carried by the 0.35s dipToBlack.",
+      "rationale": "Establish — returns to the true head of the tape (4.0s) to set the room after the two-shot hook. Longest shot of phase 1 so the phase can breathe. Signal: shotBoundaryAtStart at source head; slow-push keeps a static frame intentional.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 27.6,
-      "sourceEndTime": 30.6,
-      "targetPosition": 7.4,
-      "trackIndex": 0,
-      "speed": 1,
-      "layout": {
-        "region": "fullscreen",
-        "fit": "cover"
-      },
-      "cameraMoves": [
-        {
-          "move": "punch-in",
-          "intensity": 0.35
-        }
-      ],
-      "rationale": "Continuation of the same sentence block (27.6-30.6), punched in at 0.35 for emphasis on the turn of the premise; audio is continuous with the previous shot so nothing is cut mid-sentence. Signal: cadence boundary inside the chapter A run.",
-      "effects": []
-    },
-    {
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 30.6,
-      "sourceEndTime": 34.4,
-      "targetPosition": 10.4,
+      "sourceStartTime": 66,
+      "sourceEndTime": 69.1,
+      "targetPosition": 5.4,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -94,37 +116,31 @@
       "cameraMoves": [
         {
           "move": "drift-left",
-          "intensity": 0.3
+          "intensity": 0.5
         }
       ],
-      "rationale": "Phase-1 hold (30.6-34.4, 3.8s) — the longest shot of the opening third, drift-left 0.30 gives the stable frame lateral life and settles well before the cut. Signal: sets the 2.84s phase-1 average that phases 2 and 3 must beat; exits on the crossfade chapter change.",
-      "effects": []
-    },
-    {
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 150,
-      "sourceEndTime": 152.2,
-      "targetPosition": 14.2,
-      "trackIndex": 0,
-      "speed": 1,
-      "layout": {
-        "region": "fullscreen",
-        "fit": "cover"
-      },
-      "cameraMoves": [
+      "effectSpecs": [
         {
-          "move": "punch-in",
-          "intensity": 0.45
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 3.1,
+          "rationale": "single coherent grade for the whole edit"
         }
       ],
-      "rationale": "Chapter B opens (src 150.0-152.2) on the 0.40s crossfade; punch-in 0.45 marks the treatment change and starts the denser grid. Signal: chapter change, first shot of the 1.98s phase-2 average (69% of phase 1).",
+      "rationale": "Build 1 — first act turn at 66.0s, also the start of the continuous narration bed, so picture and audio spine lock here. Signal: chapter position in source; drift-left varies the neighbour move after slow-push.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 152.2,
-      "sourceEndTime": 153.9,
-      "targetPosition": 16.4,
+      "sourceStartTime": 95,
+      "sourceEndTime": 98,
+      "targetPosition": 8.5,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -134,17 +150,31 @@
       "cameraMoves": [
         {
           "move": "handheld",
-          "intensity": 0.3
+          "intensity": 0.5
         }
       ],
-      "rationale": "Tighter continuation of the same run (152.2-153.9), handheld 0.30 — drops the shot length from 2.2s to 1.7s so the rhythm starts accelerating. Signal: cadence boundary, audio continuous with the previous shot.",
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 3,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Build 2 — second act at 95.0s; carries the subtitle line 'we recorded this for six hours'. Signal: chapter position; handheld adds energy without a zoom so the type stays legible.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 153.9,
-      "sourceEndTime": 156.1,
-      "targetPosition": 18.1,
+      "sourceStartTime": 128,
+      "sourceEndTime": 131.1,
+      "targetPosition": 11.5,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -154,77 +184,31 @@
       "cameraMoves": [
         {
           "move": "slow-push",
-          "intensity": 0.3
+          "intensity": 0.4
         }
       ],
-      "rationale": "Argument develops (153.9-156.1), slow-push 0.30 across a 2.2s beat — the small lengthening stops phase 2 from flattening into a metronome. Signal: mid-chapter cadence boundary in the continuous B run.",
-      "effects": []
-    },
-    {
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 156.1,
-      "sourceEndTime": 157.6,
-      "targetPosition": 20.3,
-      "trackIndex": 0,
-      "speed": 1,
-      "layout": {
-        "region": "fullscreen",
-        "fit": "cover"
-      },
-      "cameraMoves": [
+      "effectSpecs": [
         {
-          "move": "drift-right",
-          "intensity": 0.35
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 3.1,
+          "rationale": "single coherent grade for the whole edit"
         }
       ],
-      "rationale": "Lateral change within the same run (156.1-157.6); drift-right 0.35 mirrors the phase-1 drift-left so neighbours never repeat. Signal: 1.5s cut on cadence, pattern interrupt inside the 2-4s window.",
+      "rationale": "Build 3 — the phase-1 hold at 128.0s, 3.1s so the callout line can be read and the rhythm has contrast before phase 2 tightens. Signal: chapter position; slow-push at 0.4 keeps a long shot from dying.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 157.6,
-      "sourceEndTime": 160.3,
-      "targetPosition": 21.8,
-      "trackIndex": 0,
-      "speed": 1,
-      "layout": {
-        "region": "fullscreen",
-        "fit": "cover"
-      },
-      "cameraMoves": [
-        {
-          "move": "breathe",
-          "intensity": 0.3
-        }
-      ],
-      "rationale": "Phase-2 contrast hold (157.6-160.3, 2.7s) with breathe 0.30 — the one place the middle third stops pushing, so the pivot after it lands. Signal: the lightLeak treatment turn fires at this shot's end (24.50).",
-      "effects": []
-    },
-    {
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 160.3,
-      "sourceEndTime": 161.8,
-      "targetPosition": 24.5,
-      "trackIndex": 0,
-      "speed": 1,
-      "layout": {
-        "region": "fullscreen",
-        "fit": "cover"
-      },
-      "cameraMoves": [
-        {
-          "move": "tilt-up",
-          "intensity": 0.3
-        }
-      ],
-      "rationale": "Pivot beat (160.3-161.8) entered on the 0.30s lightLeak; tilt-up 0.30 lifts the frame into the second half of the chapter. Signal: chapter/treatment change at 24.50, 1.5s keeps phase 2 tightening.",
-      "effects": []
-    },
-    {
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 161.8,
-      "sourceEndTime": 164.2,
-      "targetPosition": 26,
+      "sourceStartTime": 155,
+      "sourceEndTime": 156.9,
+      "targetPosition": 14.599999999999994,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -234,18 +218,135 @@
       "cameraMoves": [
         {
           "move": "punch-in",
-          "intensity": 0.4
+          "intensity": 0.65
         }
       ],
-      "rationale": "Last clean statement of chapter B (161.8-164.2, 2.4s), punch-in 0.40 — the setup beat that the ramp immediately answers. Signal: cadence boundary 2.4s before the ramp trigger.",
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.9,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "PHASE 2 ENTRY — shot length drops from 3.1s to 1.9s here, the measurable rhythm turn. Signal: chapter change at 14.6s, marked by a blur transition and a punch-in.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 164.2,
-      "sourceEndTime": 165.35,
-      "targetPosition": 28.4,
+      "sourceStartTime": 178,
+      "sourceEndTime": 179.7,
+      "targetPosition": 16.5,
       "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.55
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.7,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Build 4 — 178.0s, mirrors the previous drift-left with drift-right so lateral motion alternates. Signal: chapter position; 1.7s keeps phase-2 average at ~70% of phase 1.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 200,
+      "sourceEndTime": 201.6,
+      "targetPosition": 18.2,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.55
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.6,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Build 5 — round-number act marker at 200.0s, just under half the source. Signal: chapter position; handheld continues the energy ladder without repeating drift.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 214,
+      "sourceEndTime": 215.7,
+      "targetPosition": 19.8,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "tilt-up",
+          "intensity": 0.5
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.7,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Build 6 — 214.0s, tilt-up sets up the reveal that the ramp shot pays off. Signal: chapter position; a lightLeak transition lands on this cut to mark the treatment change into the slow section.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 232,
+      "sourceEndTime": 233.6,
+      "targetPosition": 21.49999999999999,
+      "trackIndex": 0,
+      "speed": 1,
       "layout": {
         "region": "fullscreen",
         "fit": "cover"
@@ -253,7 +354,21 @@
       "cameraMoves": [
         {
           "move": "slow-push",
-          "intensity": 0.35
+          "intensity": 0.5
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.6,
+          "rationale": "single coherent grade for the whole edit"
         }
       ],
       "speedRamp": {
@@ -264,27 +379,37 @@
             "easing": "linear"
           },
           {
-            "time": 0.5,
-            "speed": 0.55,
+            "time": 0.35,
+            "speed": 0.65,
+            "easing": "easeOut"
+          },
+          {
+            "time": 0.85,
+            "speed": 0.65,
             "easing": "linear"
           },
           {
-            "time": 1,
-            "speed": 1,
+            "time": 1.25,
+            "speed": 1.6,
+            "easing": "easeIn"
+          },
+          {
+            "time": 1.6,
+            "speed": 1.53,
             "easing": "linear"
           }
         ],
         "freezeFrames": [],
         "pitchCorrection": true
       },
-      "rationale": "The edit's single speed ramp (src 164.2-165.35, 1.15s of source stretched to ~1.5s): 1.0 -> 0.55 -> 1.0, ramping into the peak, holding slow through it, ramping out, pitch-corrected so the voice never droops. Placed last in chapter B so the stretch cannot push the following run out of lip-sync — the whipPan at 29.90 resets it. Signal: chapter change into the payoff plus the ramp peak itself; tonal lift rides the entry.",
+      "rationale": "THE HOLD — the edit's single speed ramp: eases down to 0.65x by 0.35s, holds slow through the middle of the shot, then ramps out to 1.6x so momentum is handed to the next cut. Keyframe integral equals the 1.60s source range, so the timeline stays exact. Signal: ramp-into-the-peak trigger at 21.5s; echo signature and slow-push keep the slowed frame alive.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 340,
-      "sourceEndTime": 341.3,
-      "targetPosition": 29.9,
+      "sourceStartTime": 250,
+      "sourceEndTime": 251.8,
+      "targetPosition": 23.1,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -294,77 +419,31 @@
       "cameraMoves": [
         {
           "move": "whip-shake",
-          "intensity": 0.45
+          "intensity": 0.7
         }
       ],
-      "rationale": "Payoff chapter opens (src 340.0-341.3) on the whipPan release; whip-shake 0.45 plus the light-leak signature mark the biggest structural turn of the edit. Signal: chapter change at 29.90 — phase 3 drops to a 1.37s average, 48% of phase 1.",
-      "effects": []
-    },
-    {
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 341.3,
-      "sourceEndTime": 342.4,
-      "targetPosition": 31.2,
-      "trackIndex": 0,
-      "speed": 1,
-      "layout": {
-        "region": "fullscreen",
-        "fit": "cover"
-      },
-      "cameraMoves": [
+      "effectSpecs": [
         {
-          "move": "punch-in",
-          "intensity": 0.45
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.8,
+          "rationale": "single coherent grade for the whole edit"
         }
       ],
-      "rationale": "Tightest continuation of the payoff run (341.3-342.4), punch-in 0.45 — first of the sub-1.3s cuts that make the final third visibly denser; audio continuous so the sentence is never broken. Signal: cadence boundary inside the chapter C run.",
+      "rationale": "Build 7 — 250.0s, the release valve straight out of the slow hold; whip-shake at 0.7 converts the ramp-out into physical energy. Signal: speed-ramp exit at 23.1s.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 342.4,
-      "sourceEndTime": 343.6,
-      "targetPosition": 32.3,
-      "trackIndex": 0,
-      "speed": 1,
-      "layout": {
-        "region": "fullscreen",
-        "fit": "cover"
-      },
-      "cameraMoves": [
-        {
-          "move": "handheld",
-          "intensity": 0.3
-        }
-      ],
-      "rationale": "Same continuous passage (342.4-343.6) on handheld 0.30 — energy without a zoom, and a move that differs from both neighbours. Signal: 1.2s cut on cadence.",
-      "effects": []
-    },
-    {
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 343.6,
-      "sourceEndTime": 344.6,
-      "targetPosition": 33.5,
-      "trackIndex": 0,
-      "speed": 1,
-      "layout": {
-        "region": "fullscreen",
-        "fit": "cover"
-      },
-      "cameraMoves": [
-        {
-          "move": "slow-push",
-          "intensity": 0.35
-        }
-      ],
-      "rationale": "Shortest beat of the run so far (343.6-344.6, 1.0s), slow-push 0.35 — a pattern interrupt well inside the 2-4s window. Signal: cadence boundary at the densest point of phase 3.",
-      "effects": []
-    },
-    {
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 344.6,
-      "sourceEndTime": 345.8,
-      "targetPosition": 34.5,
+      "sourceStartTime": 268,
+      "sourceEndTime": 269.6,
+      "targetPosition": 24.9,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -374,17 +453,31 @@
       "cameraMoves": [
         {
           "move": "drift-left",
-          "intensity": 0.35
+          "intensity": 0.55
         }
       ],
-      "rationale": "Lateral answer to the whip-shake (344.6-345.8), drift-left 0.35 — varies direction so the montage does not read as one repeated punch. Signal: 1.2s cut on cadence.",
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.6,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Build 8 — 268.0s, drops back to lateral drift so the whip-shake does not become a tic. Signal: chapter position; 1.6s holds the phase-2 average.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 345.8,
-      "sourceEndTime": 346.8,
-      "targetPosition": 35.7,
+      "sourceStartTime": 285,
+      "sourceEndTime": 286.8,
+      "targetPosition": 26.5,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -394,17 +487,31 @@
       "cameraMoves": [
         {
           "move": "punch-in",
-          "intensity": 0.5
+          "intensity": 0.6
         }
       ],
-      "rationale": "Impact cut (345.8-346.8, 1.0s) with punch-in 0.50 and a 0.4s grain pulse landed exactly on the cut — phase-3 hit, escalated to 0.70 intensity from the 0.60 hook flash. Signal: the 35.70 cut in the continuous payoff run.",
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.8,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Build 9 — 285.0s, punch-in re-asserts emphasis two shots before the chapter change. Signal: chapter position; move settles well before the 28.3s cut.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 346.8,
-      "sourceEndTime": 348,
-      "targetPosition": 36.7,
+      "sourceStartTime": 300,
+      "sourceEndTime": 301.7,
+      "targetPosition": 28.3,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -413,18 +520,32 @@
       },
       "cameraMoves": [
         {
-          "move": "tilt-down",
-          "intensity": 0.3
+          "move": "handheld",
+          "intensity": 0.55
         }
       ],
-      "rationale": "Downbeat (346.8-348.0), tilt-down 0.30 — the frame drops as the callout 'the moment it lands' rises 0.3s in and carries deliberately across the next cut. Signal: cadence boundary at 36.70.",
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.7,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Last shot of phase 2 — 300.0s, three-quarters through the source, so the run-up to the final third feels earned. Signal: chapter position; handheld keeps it restless into the crossZoom at 30.0s.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 348,
-      "sourceEndTime": 349,
-      "targetPosition": 37.9,
+      "sourceStartTime": 312,
+      "sourceEndTime": 313.2,
+      "targetPosition": 29.99999999999999,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -433,18 +554,100 @@
       },
       "cameraMoves": [
         {
-          "move": "breathe",
-          "intensity": 0.3
+          "move": "snap-zoom",
+          "intensity": 0.8
         }
       ],
-      "rationale": "Breath (348.0-349.0, 1.0s) with breathe 0.30 — keeps a short, potentially static frame alive at the tightest point of the grid and settles back to base before the cut. Signal: cadence boundary.",
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.2,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "PHASE 3 ENTRY — shot length collapses from 1.7s to 1.2s, the density jump the final third needs. Signal: chapter change at 30.0s, marked by crossZoom plus an escalated chromatic-aberration hit (amount 9 vs 5 at the hook).",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 349,
-      "sourceEndTime": 350.1,
-      "targetPosition": 38.9,
+      "sourceStartTime": 320,
+      "sourceEndTime": 321.3,
+      "targetPosition": 31.2,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-right",
+          "intensity": 0.6
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.3,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Run 2 — 320.0s, the lower-third 'chapter three — the turn' carries across this cut deliberately so the type bridges two shots. Signal: chapter position; drift-right resets the eye after the snap-zoom.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 328,
+      "sourceEndTime": 329.1,
+      "targetPosition": 32.5,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "punch-in",
+          "intensity": 0.75
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.1,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Run 3 — 328.0s, shortest shot of the edit so far at 1.1s. Signal: chapter position; punch-in at 0.75 escalates intensity as phase 3 tightens.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 336,
+      "sourceEndTime": 337.3,
+      "targetPosition": 33.6,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -454,17 +657,133 @@
       "cameraMoves": [
         {
           "move": "whip-shake",
-          "intensity": 0.4
+          "intensity": 0.75
         }
       ],
-      "rationale": "Second whip-shake of the edit (349.0-350.1) at 0.40 — re-energises 1.1s before the pre-landing punch; deliberately carries no effect so the move alone does the work. Signal: cadence boundary at 38.90.",
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.3,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Run 4 — 336.0s, the mid-phase-3 pattern interrupt (3.6s after the last one). Signal: whip-shake head plus a glitch-transition motion moment on this cut.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 350.1,
-      "sourceEndTime": 351.1,
-      "targetPosition": 40,
+      "sourceStartTime": 344,
+      "sourceEndTime": 345.1,
+      "targetPosition": 34.9,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "tilt-down",
+          "intensity": 0.55
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.1,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Run 5 — 344.0s, tilt-down drops the frame after the whip so the sequence does not plateau. Signal: chapter position; 1.1s keeps phase-3 average near half of phase 1.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 352,
+      "sourceEndTime": 353.3,
+      "targetPosition": 36,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "slow-push",
+          "intensity": 0.5
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.3,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Run 6 — 352.0s, the one calm beat inside the fast run, carrying the glow hit so the accent reads against stillness rather than more motion. Signal: pattern-interrupt slot at 36.0s; slow-push at 0.5.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 362,
+      "sourceEndTime": 363.1,
+      "targetPosition": 37.3,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "handheld",
+          "intensity": 0.65
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.1,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Run 7 — 362.0s, back to handheld energy and the 'one more' caption. Signal: chapter position; 1.1s, shortest shot in the run.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 372,
+      "sourceEndTime": 373.3,
+      "targetPosition": 38.4,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -474,17 +793,99 @@
       "cameraMoves": [
         {
           "move": "punch-in",
-          "intensity": 0.55
+          "intensity": 0.9
         }
       ],
-      "rationale": "Pre-landing punch (350.1-351.1, 1.0s) — punch-in 0.55 plus a 0.3s brightness dip (value -8, intensity 0.80) landed on the 41.00 cut, the strongest hit of the edit, so the hold that follows feels earned. Signal: the final cut before the landing.",
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.3,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "CLIMAX — 372.0s, the strongest position in the final third and the payoff of the whole build; punch-in at 0.9 (climax ceiling) plus the prism signature and an SFX hit all land on this cut. Signal: payoff moment at 38.4s.",
       "effects": []
     },
     {
       "sourceVideoId": "video-1",
-      "sourceStartTime": 351.1,
-      "sourceEndTime": 355.1,
-      "targetPosition": 41,
+      "sourceStartTime": 382,
+      "sourceEndTime": 383.2,
+      "targetPosition": 39.7,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "whip-shake",
+          "intensity": 0.8
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.2,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Aftermath — 382.0s, one more hard accent so the climax is not the last loud thing before the settle. Signal: post-payoff beat at 39.7s; whip-shake settles back to base frame so it is safe to cut out of.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 392,
+      "sourceEndTime": 393.1,
+      "targetPosition": 40.89999999999999,
+      "trackIndex": 0,
+      "speed": 1,
+      "layout": {
+        "region": "fullscreen",
+        "fit": "cover"
+      },
+      "cameraMoves": [
+        {
+          "move": "drift-left",
+          "intensity": 0.45
+        }
+      ],
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 1.1,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "Exhale — 392.0s, intensity drops to 0.45 and the shot is quiet, so the crossfade into the landing has somewhere to come down from. Signal: treatment change at 40.9s.",
+      "effects": []
+    },
+    {
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 405,
+      "sourceEndTime": 408,
+      "targetPosition": 42.000000000000014,
       "trackIndex": 0,
       "speed": 1,
       "layout": {
@@ -494,503 +895,376 @@
       "cameraMoves": [
         {
           "move": "pull-back",
-          "intensity": 0.35
+          "intensity": 0.4
         }
       ],
-      "rationale": "Landing hold (351.1-355.1, 4.0s) — pull-back 0.35 eases out to the wide frame and settles, the longest shot of the edit, with the 'PODCAST #1' card settling 0.3s in. Signal: payoff resolution; ends the timeline exactly at 45.0 with the dialogue allowed to finish rather than being chopped.",
+      "effectSpecs": [
+        {
+          "type": "colorGrade",
+          "params": {
+            "contrast": 1.08,
+            "saturation": 1.05,
+            "brightness": 1
+          },
+          "intensity": 1,
+          "startOffset": 0,
+          "duration": 4.1,
+          "rationale": "single coherent grade for the whole edit"
+        }
+      ],
+      "rationale": "LANDING — 405.0s, near the end of the 416.4s source, held 4.10s: longer than any other shot in the edit so it resolves instead of trailing off. pull-back eases out to the wide frame and the end card sits on it. Signal: final-chapter position; timeline ends exactly at 45.0s.",
       "effects": []
     }
   ],
   "textElements": [
     {
-      "content": "EP. 01",
+      "content": "THE ROOM GOES QUIET",
       "style": "title",
-      "startTime": 2.4,
-      "duration": 1.3,
+      "startTime": 2.35,
+      "duration": 2.9,
       "position": {
         "x": 0.5,
-        "y": 0.2
+        "y": 0.17
       },
-      "fontSize": 76,
-      "color": "#FFFFFF",
+      "fontSize": 62,
       "fontFamily": "Inter",
+      "color": "#FFFFFF",
       "animation": "zoom-blur",
       "animationInSec": 0.35,
       "animationOutSec": 0.25,
+      "rationale": "The single hook line. Deliberately starts at 2.35s — after both cold-open shots — so the two hook shots inside the first 2 seconds land before any title card, per the density contract. 0.25s after shot 2 begins. 4 words needs 1.33s; given 2.90s and it ends at 5.25s, before the 5.40s cut. y=0.17 sits in the 9:16 top safe band, clear of the centre face region."
+    },
+    {
+      "content": "ep. 01",
+      "style": "callout",
+      "startTime": 5.7,
+      "duration": 1.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.73
+      },
+      "fontSize": 40,
+      "fontFamily": "Inter",
+      "color": "#F5C542",
+      "animation": "pop",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.2,
       "templateOverride": {
-        "fontSize": 76,
-        "position": {
-          "x": 0.5,
-          "y": 0.2
-        }
+        "color": "#F5C542",
+        "fontSize": 40
       },
-      "rationale": "Hook title card, deliberately held until 2.4s so both hook shots (0.0-0.8 and 0.8-3.8) land before any type — the image hooks first. Override to 76pt in the upper safe band: out of the top 10% UI zone, clear of the speaker's face, and scaled above the caption template for hierarchy. zoom-blur matches the punch-in energy. Ends 3.70, just before the 3.80 dipToBlack."
+      "rationale": "Deliberate override of the white caption template: one warm accent colour, used only here and on the end card, so the hierarchy reads as a series marker rather than another subtitle. 0.30s after shot 3 begins; ends 6.90s, well inside the shot. 2 words needs 0.8s; given 1.20s."
     },
     {
-      "content": "01 · THE SETUP",
-      "style": "lower-third",
-      "startTime": 4.1,
-      "duration": 2.8,
+      "content": "we recorded this for six hours",
+      "style": "subtitle",
+      "startTime": 8.8,
+      "duration": 2.4,
       "position": {
         "x": 0.5,
-        "y": 0.74
+        "y": 0.7
       },
-      "fontSize": 40,
-      "color": "#FFFFFF",
-      "animation": "slide-left",
-      "animationInSec": 0.3,
-      "animationOutSec": 0.25,
-      "rationale": "Chapter marker for the spine's first act, 0.3s after shot 2 begins (3.80) per the entry offset rule; 3 words over 2.8s clears the 1.0s reading floor and ends 6.90, before the 7.40 cut. slide-left is animation preset 2."
-    },
-    {
-      "content": "02 · THE TURN",
-      "style": "lower-third",
-      "startTime": 14.5,
-      "duration": 1.8,
-      "position": {
-        "x": 0.5,
-        "y": 0.74
-      },
-      "fontSize": 40,
+      "fontSize": 42,
+      "fontFamily": "Inter",
       "color": "#FFFFFF",
       "animation": "typewriter",
-      "animationInSec": 0.5,
+      "animationInSec": 0.6,
       "animationOutSec": 0.2,
-      "rationale": "Chapter marker fired 0.3s after chapter B opens at 14.20; typewriter (preset 3) gives the middle third a different texture from the setup card. Ends 16.30, just inside the 16.40 cut."
+      "rationale": "Stakes line on the handheld build shot — typewriter reveals it word-by-word so the 6-word line stays readable across 2.40s (needs 2.00s). Starts 0.30s after shot 4 begins, ends 11.20s before the 11.50s cut. Inherits the caption template."
     },
     {
-      "content": "listen closely",
-      "style": "caption",
-      "startTime": 22.1,
-      "duration": 2,
-      "position": {
-        "x": 0.5,
-        "y": 0.62
-      },
-      "fontSize": 44,
-      "color": "#FFFFFF",
-      "animation": "fade",
-      "animationInSec": 0.3,
-      "animationOutSec": 0.3,
-      "rationale": "Quiet instruction to the viewer placed 0.3s into the 2.7s phase-2 hold (21.80) — the one beat where the cut grid relaxes, so the line has room. Raised to y 0.62 to sit below the face region and above the lower-third band. Ends 24.10, before the 24.50 lightLeak."
-    },
-    {
-      "content": "03 · THE PAYOFF",
-      "style": "lower-third",
-      "startTime": 30.2,
-      "duration": 1.6,
-      "position": {
-        "x": 0.5,
-        "y": 0.74
-      },
-      "fontSize": 40,
-      "color": "#FFFFFF",
-      "animation": "pop",
-      "animationInSec": 0.25,
-      "animationOutSec": 0.2,
-      "rationale": "Final chapter marker, 0.3s after the payoff chapter opens at 29.90. pop (preset 4) is the loudest of the three markers, matching the escalated treatment. The 1.3s shot cannot hold 3 words, so the card deliberately carries across the 31.20 cut into shot 14."
-    },
-    {
-      "content": "the moment it lands",
+      "content": "the part nobody says out loud",
       "style": "callout",
-      "startTime": 37,
+      "startTime": 11.85,
       "duration": 2.6,
       "position": {
         "x": 0.5,
-        "y": 0.6
+        "y": 0.72
       },
-      "fontSize": 46,
+      "fontSize": 44,
+      "fontFamily": "Inter",
       "color": "#FFFFFF",
-      "animation": "rise",
+      "animation": "slide-up",
+      "animationInSec": 0.3,
+      "animationOutSec": 0.25,
+      "rationale": "The thesis of the piece, placed on the phase-1 hold (3.10s) so the longest calm shot carries the biggest line. 6 words needs 2.00s; given 2.60s. Starts 0.35s after shot 5 begins, ends 14.45s just before the 14.60s chapter change."
+    },
+    {
+      "content": "wait for it",
+      "style": "caption",
+      "startTime": 21.8,
+      "duration": 1.2,
+      "position": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "fontSize": 40,
+      "fontFamily": "Inter",
+      "color": "#FFFFFF",
+      "animation": "shake",
+      "animationInSec": 0.15,
+      "animationOutSec": 0.15,
+      "rationale": "Sits on the speed-ramp hold and shakes against the slowed picture — the type comments on the tempo drop. 3 words needs 1.00s; given 1.20s. Starts 0.30s after shot 10 begins, ends 23.00s before the 23.10s cut."
+    },
+    {
+      "content": "chapter three — the turn",
+      "style": "lower-third",
+      "startTime": 30.3,
+      "duration": 2.1,
+      "position": {
+        "x": 0.5,
+        "y": 0.74
+      },
+      "fontSize": 38,
+      "fontFamily": "Inter",
+      "color": "#FFFFFF",
+      "animation": "cascade",
       "animationInSec": 0.4,
-      "animationOutSec": 0.3,
-      "rationale": "Callout 0.3s into the tilt-down beat (36.70); 4 words over 2.6s clears the 1.33s reading floor. rise (preset 5) plays against the tilt-down move. Deliberately spans the 38.90 cut so the line survives the densest part of the grid."
+      "animationOutSec": 0.25,
+      "rationale": "Marks the phase-3 chapter change. Deliberately spans two shots (30.30-32.40s, crossing the 31.20s cut) so the label bridges the density jump instead of being chopped by it. 4 words needs 1.33s; given 2.10s. y=0.74 stays above the bottom-20% UI zone."
+    },
+    {
+      "content": "one more",
+      "style": "caption",
+      "startTime": 37.55,
+      "duration": 1,
+      "position": {
+        "x": 0.5,
+        "y": 0.68
+      },
+      "fontSize": 38,
+      "fontFamily": "Inter",
+      "color": "#FFFFFF",
+      "animation": "bounce",
+      "animationInSec": 0.2,
+      "animationOutSec": 0.15,
+      "rationale": "Shortest line in the edit on the shortest shot of phase 3 (1.10s) — bounce keeps the fast run playful. 2 words needs 0.80s; given 1.00s. Carries 0.15s deliberately across the 38.40s climax cut so the type is still exiting as the prism hit lands."
     },
     {
       "content": "PODCAST #1",
       "style": "title",
-      "startTime": 41.3,
-      "duration": 3.4,
+      "startTime": 41.2,
+      "duration": 3.2,
       "position": {
         "x": 0.5,
-        "y": 0.22
+        "y": 0.72
       },
-      "fontSize": 68,
-      "color": "#FFFFFF",
+      "fontSize": 56,
       "fontFamily": "Inter",
+      "color": "#F5C542",
       "animation": "fade",
-      "animationInSec": 0.6,
+      "animationInSec": 0.5,
       "animationOutSec": 0.4,
       "templateOverride": {
-        "fontSize": 68,
-        "position": {
-          "x": 0.5,
-          "y": 0.22
-        }
+        "color": "#F5C542",
+        "fontSize": 56,
+        "style": "title"
       },
-      "rationale": "Landing card, 0.3s into the 4.0s pull-back hold (41.00) so the frame settles first and the title is the last thing read; slow 0.6s fade-in against the fastest cut grid of the edit. Override to 68pt in the upper band, mirroring the hook card to close the loop. Ends 44.70, inside the 45.0 timeline."
+      "rationale": "End card on the 4.10s held landing — the only shot long enough to let a title rest. Deliberate override to the same warm accent as 'ep. 01', bookending the edit. Fade (not zoom-blur or pop) because the landing is the calmest moment; 0.30s after the shot begins, ends 44.40s before the 45.00s timeline end."
     }
   ],
   "effects": [
     {
-      "targetSegmentIndex": 0,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Coherent edit-wide grade, shot 1 of 24 — identical params on every segment so the three chapters cut together as one look: slight contrast and warmth, clean podcast skin tone. Face-safe (no glitch, aberration or blur anywhere in this edit)."
-    },
-    {
       "targetSegmentIndex": 1,
-      "type": "colorGrade",
+      "type": "chromatic-aberration",
       "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
+        "amount": 5
       },
-      "rationale": "Same single grade carried across the hook statement so the cold open and chapter A match."
-    },
-    {
-      "targetSegmentIndex": 2,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged into chapter A — one treatment for the whole edit, not per shot."
-    },
-    {
-      "targetSegmentIndex": 3,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged across the chapter A punch-in."
-    },
-    {
-      "targetSegmentIndex": 4,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged through the phase-1 hold."
-    },
-    {
-      "targetSegmentIndex": 5,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade carries across the crossfade into chapter B so the chapter change reads as structural, not as a colour shift."
-    },
-    {
-      "targetSegmentIndex": 6,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged through the phase-2 tightening."
-    },
-    {
-      "targetSegmentIndex": 7,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged across the mid-chapter cadence cut."
-    },
-    {
-      "targetSegmentIndex": 8,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged on the drift-right beat."
-    },
-    {
-      "targetSegmentIndex": 9,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged through the phase-2 contrast hold."
+      "startOffset": 0,
+      "duration": 0.3,
+      "intensity": 0.6,
+      "easing": "easeOut",
+      "rationale": "Hook-moment hit on the second shot of the cold open (0.90s). Medium-motion b-roll, no face-dominant frame flagged, so a short optical split is safe. 0.30s, lands exactly on the cut, lowest intensity of the edit so the accents can escalate."
     },
     {
       "targetSegmentIndex": 10,
-      "type": "colorGrade",
+      "type": "echo",
       "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
+        "amount": 0.35,
+        "offset": 0.08,
+        "speed": 1
       },
-      "rationale": "Grade continues unchanged across the lightLeak pivot so the transition is the only treatment change."
-    },
-    {
-      "targetSegmentIndex": 11,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged on the last clean statement of chapter B."
-    },
-    {
-      "targetSegmentIndex": 12,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged under the speed ramp; the tonal accent on this shot is the only added treatment."
-    },
-    {
-      "targetSegmentIndex": 13,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged into the payoff chapter so the light-leak signature reads against a consistent base."
-    },
-    {
-      "targetSegmentIndex": 14,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged through the phase-3 punch cuts."
+      "startOffset": 0.35,
+      "duration": 0.9,
+      "intensity": 0.7,
+      "easing": "easeInOut",
+      "rationale": "Signature effect 1 of 2, on the speed-ramp hold. Trigger is the ramp itself: echo starts at 0.35s, the exact keyframe where speed bottoms out at 0.65x, and trails through the slow section so the held moment keeps moving. Non-consecutive with the other signature."
     },
     {
       "targetSegmentIndex": 15,
-      "type": "colorGrade",
+      "type": "chromatic-aberration",
       "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
+        "amount": 9
       },
-      "rationale": "Grade continues unchanged on the handheld beat."
-    },
-    {
-      "targetSegmentIndex": 16,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged on the 1.0s slow-push."
-    },
-    {
-      "targetSegmentIndex": 17,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged on the drift-left answer."
-    },
-    {
-      "targetSegmentIndex": 18,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged; the grain pulse on this cut is layered over the same base."
-    },
-    {
-      "targetSegmentIndex": 19,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged on the tilt-down downbeat."
+      "startOffset": 0,
+      "duration": 0.25,
+      "intensity": 0.85,
+      "easing": "easeOut",
+      "rationale": "Chapter-change hit at 30.0s (phase 2 -> phase 3), on the same cut as the crossZoom transition. Same type as the hook hit but escalated 5 -> 9 and not on a consecutive shot, so the edit's accent ladder reads as authored."
     },
     {
       "targetSegmentIndex": 20,
-      "type": "colorGrade",
+      "type": "glow",
       "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
+        "radius": 14,
+        "intensity": 1.2
       },
-      "rationale": "Grade continues unchanged on the breath beat."
-    },
-    {
-      "targetSegmentIndex": 21,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged on the second whip-shake."
+      "startOffset": 0,
+      "duration": 0.3,
+      "intensity": 0.6,
+      "easing": "easeOut",
+      "rationale": "Pattern-interrupt hit at 36.0s, 6.0s after the last accent — inside the 2-4s interrupt window for the surrounding cuts. This is the calm slow-push shot of phase 3, so a soft bloom rather than a punchy split keeps the accent matched to the motion level."
     },
     {
       "targetSegmentIndex": 22,
-      "type": "colorGrade",
+      "type": "prism",
       "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
+        "amount": 8,
+        "angle": 35,
+        "mix": 0.6
       },
-      "rationale": "Grade continues unchanged; the pre-landing brightness dip is the only accent."
-    },
-    {
-      "targetSegmentIndex": 23,
-      "type": "colorGrade",
-      "params": {
-        "contrast": 1.08,
-        "saturation": 1.05,
-        "brightness": 1.02
-      },
-      "rationale": "Grade continues unchanged on the landing hold so the final frame matches the first — one coherent look start to finish."
+      "startOffset": 0,
+      "duration": 0.35,
+      "intensity": 1,
+      "easing": "easeOut",
+      "rationale": "Signature effect 2 of 2, on the climax at 38.4s — the payoff moment, the strongest position in the final third. Heaviest accent of the edit, timed with the punch-in at 0.9 and the SFX hit on the same frame. Not consecutive with the echo signature."
     }
   ],
   "transitions": [
     {
       "afterSegmentIndex": 1,
-      "type": "dipToBlack",
-      "duration": 0.35,
-      "rationale": "Chapter change: the cold open (src 300s) resolves to black before the chronological spine begins at src 24.0, so the time jump reads as authored rather than as a broken cut. 0.35s, first of four, no two consecutive types alike."
+      "type": "whipPan",
+      "duration": 0.3,
+      "rationale": "Chapter change at 2.10s: hook block -> establish. A whip carries the snap-zoom/punch-in momentum of the two hook shots into the wide frame instead of letting the energy die on a hard cut."
     },
     {
-      "afterSegmentIndex": 4,
-      "type": "crossfade",
-      "duration": 0.4,
-      "rationale": "Chapter change A -> B at 14.20: a 0.40s crossfade softens the jump from src 34.4 to src 150.0 and marks the shift into the denser phase-2 grid. Different type from the preceding dipToBlack."
+      "afterSegmentIndex": 5,
+      "type": "blur",
+      "duration": 0.35,
+      "rationale": "Chapter change at 14.60s: phase 1 -> phase 2, where average shot length drops from 2.43s to 1.71s. Blur softens the jump into the tighter rhythm. Different type from the preceding whipPan."
     },
     {
       "afterSegmentIndex": 9,
       "type": "lightLeak",
-      "duration": 0.3,
-      "rationale": "Treatment change at the phase-2 pivot (24.50): a 0.30s warm leak breaks the run mid-chapter, the pattern interrupt that separates the hold from the drive to the ramp. Third distinct type in a row."
+      "duration": 0.35,
+      "rationale": "Treatment change at 21.50s into the speed-ramp hold — the edit's one slow moment. A warm film-burn sweep signals the tempo shift without a hard edge. Third distinct type in a row."
     },
     {
-      "afterSegmentIndex": 12,
-      "type": "whipPan",
+      "afterSegmentIndex": 14,
+      "type": "crossZoom",
       "duration": 0.3,
-      "rationale": "Chapter change B -> payoff at 29.90: a 0.30s whipPan fires on the ramp's release, converting the slow-mo exit into forward momentum straight onto the whip-shake. No glitch used — the footage is calm, face-led podcast material."
+      "rationale": "Chapter change at 30.00s: phase 2 -> phase 3, the biggest density jump in the edit. crossZoom punches forward into the snap-zoom that opens the final third; paired with the escalated chromatic-aberration hit on the same frame."
+    },
+    {
+      "afterSegmentIndex": 23,
+      "type": "crossfade",
+      "duration": 0.45,
+      "rationale": "Treatment change at 40.90s into the 4.10s held landing. After nine hard-driven cuts, the longest and softest transition of the edit lets the final shot settle and the end card land. Fifth distinct type — no two consecutive transitions repeat."
     }
   ],
   "audioDecisions": [
     {
       "type": "music",
       "sourceVideoId": "video-1",
-      "sourceStartTime": 300,
-      "sourceEndTime": 303.8,
+      "sourceStartTime": 66,
+      "sourceEndTime": 111,
       "startTime": 0,
-      "duration": 3.8,
-      "volume": 0.85,
-      "rationale": "No audio file was uploaded, so the podcast's own track is the bed. Bed 1 is phase-aligned to the hook run (src 300.0-303.8 under timeline 0.0-3.8) so the cold-open line plays complete and in sync."
-    },
-    {
-      "type": "music",
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 24,
-      "sourceEndTime": 34.4,
-      "startTime": 3.8,
-      "duration": 10.4,
-      "volume": 0.85,
-      "rationale": "Bed 2 carries chapter A continuously (src 24.0-34.4 under 3.8-14.2). One unbroken audio pass across four picture punch-cuts — the dialogue is never cut mid-sentence, only the frame is."
-    },
-    {
-      "type": "music",
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 150,
-      "sourceEndTime": 164.2,
-      "startTime": 14.2,
-      "duration": 14.2,
-      "volume": 0.85,
-      "rationale": "Bed 3 carries chapter B continuously (src 150.0-164.2 under 14.2-28.4) across seven picture cuts, keeping the argument legible while the visual grid tightens."
-    },
-    {
-      "type": "music",
-      "sourceVideoId": "video-1",
-      "sourceStartTime": 164.2,
-      "sourceEndTime": 165.35,
-      "startTime": 28.4,
-      "duration": 1.5,
+      "duration": 45,
       "volume": 0.7,
-      "rationale": "Bed 4 covers the ramp shot at reduced volume: the voice stays at natural tempo while the frame stretches, the standard podcast slow-mo device, and it closes the 1.5s gap so music spans the whole edit."
+      "rationale": "No audio file was uploaded, so the source's own track is the only bed available. Running 45s of continuous narration from 66.0-111.0s under picture that cuts across the whole 416.4s tape gives the highlight reel a single unbroken voice spine (an extended L-cut construction) instead of 25 clipped audio fragments. Volume 0.70 keeps speech intelligible. Because this bed is the music track, cuts are placed on structural source positions and chapter changes rather than on the footage's own beat timestamps."
     },
     {
-      "type": "music",
+      "type": "sfx",
       "sourceVideoId": "video-1",
-      "sourceStartTime": 340,
-      "sourceEndTime": 355.1,
-      "startTime": 29.9,
-      "duration": 15.1,
+      "sourceStartTime": 12,
+      "sourceEndTime": 12.3,
+      "startTime": 0.9,
+      "duration": 0.3,
+      "volume": 0.9,
+      "rationale": "Impact on the hook cut at 0.90s, the same frame as the chromatic-aberration hit — the first accent of the edit needs to be felt as well as seen."
+    },
+    {
+      "type": "sfx",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 232,
+      "sourceEndTime": 232.4,
+      "startTime": 21.5,
+      "duration": 0.4,
       "volume": 0.85,
-      "rationale": "Bed 5 carries the payoff chapter to the end (src 340.0-355.1 under 29.9-45.0), phase-aligned across ten picture cuts and allowed to finish its sentence under the 4.0s landing hold."
+      "rationale": "Whoosh into the speed ramp at 21.50s, timed to the ramp-down keyframe so the tempo drop has an audio cue."
     },
     {
       "type": "sfx",
       "sourceVideoId": "video-1",
-      "sourceStartTime": 164.2,
-      "sourceEndTime": 164.5,
-      "startTime": 28.4,
-      "duration": 0.3,
-      "volume": 0.55,
-      "rationale": "One-shot impact lifted from the source's own transient at 164.2 and doubled under the ramp entry at 28.40 — the biggest structural hit before the payoff chapter. Timed exactly to the cut."
+      "sourceStartTime": 312,
+      "sourceEndTime": 312.35,
+      "startTime": 30,
+      "duration": 0.35,
+      "volume": 0.85,
+      "rationale": "Hit on the phase-3 chapter change at 30.00s, landing with the crossZoom transition and the escalated aberration."
     },
     {
       "type": "sfx",
       "sourceVideoId": "video-1",
-      "sourceStartTime": 351.1,
-      "sourceEndTime": 351.4,
-      "startTime": 41,
-      "duration": 0.3,
-      "volume": 0.5,
-      "rationale": "One-shot impact on the 41.00 cut into the landing hold, paired with the brightness dip so the final turn is felt as well as seen. Timed exactly to the cut."
+      "sourceStartTime": 372,
+      "sourceEndTime": 372.4,
+      "startTime": 38.4,
+      "duration": 0.4,
+      "volume": 0.9,
+      "rationale": "Heaviest impact of the edit on the climax at 38.40s, coincident with the punch-in at 0.9 and the prism signature."
+    },
+    {
+      "type": "sfx",
+      "sourceVideoId": "video-1",
+      "sourceStartTime": 405,
+      "sourceEndTime": 405.4,
+      "startTime": 40.9,
+      "duration": 0.4,
+      "volume": 0.75,
+      "rationale": "Soft low hit under the crossfade at 40.90s so the landing is marked but not punched — the last accent is deliberately the quietest."
     }
   ],
   "captionTemplate": {
     "fontFamily": "Inter",
     "fontSize": 42,
     "color": "#FFFFFF",
+    "style": "caption",
     "position": {
       "x": 0.5,
-      "y": 0.74
+      "y": 0.7
     },
     "animation": "fade",
-    "style": "caption",
     "animationInSec": 0.25,
     "animationOutSec": 0.2,
-    "rationale": "Single template inherited by all seven elements: white Inter, lower-third safe band (y 0.74 keeps type out of the bottom 20% UI zone and clear of the speaker's face region in a 9:16 podcast frame). Overrides are declared per element where the hierarchy needs a different scale or band."
+    "strokeColor": "#000000",
+    "strokeWidth": 2,
+    "alignment": "center",
+    "maxWidth": 0.86,
+    "note": "9:16 safe band: all type sits between y=0.16 and y=0.75, clear of the top 10% and bottom 20% UI zones and clear of the centre face band."
   },
-  "motionMoments": [],
+  "motionMoments": [
+    {
+      "move": "glitch-transition",
+      "segmentIndex": 18,
+      "atTime": 33.6,
+      "duration": 0.3,
+      "insertIntoEditor": true,
+      "rationale": "Pattern interrupt 3.6s into the phase-3 run, on the whip-shake head at 33.60s. Medium-motion b-roll so a glitch reads as authored rather than fighting the frame; used once in the whole edit."
+    },
+    {
+      "move": "particle-burst-on-cut",
+      "segmentIndex": 22,
+      "atTime": 38.4,
+      "duration": 0.35,
+      "insertIntoEditor": true,
+      "rationale": "Fires on the climax cut at 38.40s together with the punch-in at 0.9, the prism signature and the heaviest SFX hit — the single moment where every emphasis channel aligns. Used once, non-consecutive with the glitch moment."
+    }
+  ],
   "metadata": {
     "targetDuration": 45,
-    "targetPlatform": "9:16 vertical (TikTok / Reels / Shorts)",
-    "genre": "podcast highlight / talking-head clip",
+    "targetPlatform": "9:16 vertical (social)",
+    "genre": "podcast highlight reel",
     "pacing": "medium",
-    "rationale": "Single 416.4s podcast source, one analyzed segment (b-roll, medium motion, conf 0.50) with no beat timestamps, motion peaks or face metrics returned. Built as an authored trailer: cold-open hook lifted from the late-episode payoff region (src 300.0), then a chronological three-chapter spine (A: 24-34s, B: 150-165s, C: 340-355s) that lands back in the payoff region for the hold. Every chapter is cut from ONE continuous source run so the speaker is never cut mid-sentence — the picture punch-cuts while the dialogue audio stays continuous. Rhythm map: phase 1 avg 2.84s (5 shots), phase 2 avg 1.98s = 69% (8 shots), phase 3 avg 1.37s = 48% (11 shots) with a 4.0s pull-back landing, the longest shot of the edit. Cut grid follows the source dialogue cadence (the only rhythmic signal available); no music grid exists because no audio file was uploaded, so the podcast's own audio is the bed and is phase-aligned to each picture run. Treatment is face-safe throughout: one coherent grade, no glitch / aberration / blur on any shot."
+    "rationale": "Single 416.4s source ('podcast #1.mp4', flagged b-roll / medium motion, conf .50) with no per-frame beat grid or motionPeak samples. Because no beat timestamps exist, cuts are placed on structural source positions (act openings and evenly spaced chapter jumps across the 416s) and the source's own continuous narration is used as the audio spine — picture cuts away while the voice carries, a standard podcast-highlight construction. Spine: two-shot cold-open hook (0-2.1s) -> wide establish + three build holds (2.1-14.6s) -> nine-shot mid-tempo build with one slow-ramp hold (14.6-30.0s) -> ten-shot dense run to a single 4.1s held landing (30.0-45.0s). One coherent grade (colorGrade 1.08/1.05/1.0) across every shot; five accent hits escalate from the hook to the payoff; five rendered transitions mark the four chapter changes plus the settle into the landing."
   }
 }

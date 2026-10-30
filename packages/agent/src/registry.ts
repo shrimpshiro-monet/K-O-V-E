@@ -45,6 +45,7 @@ import type {
   SegmentMap,
 } from "@kove-advanced/creation-schema";
 import { buildMotionMove } from "./director/motion-moves";
+import { enrichSegmentMapWithTranscripts } from "./director/transcript-evidence";
 import {
   DEFAULT_SHAPE_STYLE,
   SHAPE_TYPES,
@@ -11625,12 +11626,27 @@ function overlayRemoveTool(
 const VISION_WORKER_URL =
   (typeof process !== "undefined" && process.env.KOVE_VISION_WORKER_URL) ||
   (import.meta as any).env?.VITE_VISION_WORKER_URL;
+const LOCAL_ANALYZER_URL =
+  (typeof process !== "undefined" && process.env.KOVE_LOCAL_ANALYZER_URL) ||
+  (import.meta as any).env?.VITE_KOVE_LOCAL_ANALYZER_URL ||
+  "http://localhost:8000/analyze-frames";
+
+async function localAnalyzerHealthy(timeoutMs = 3000): Promise<boolean> {
+  try {
+    const base = LOCAL_ANALYZER_URL.replace(/\/analyze-frames\/?$/, "");
+    const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(timeoutMs) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
 
 let _analysisMode: "eco" | "ai" = "eco";
 export function setAnalysisMode(mode: "eco" | "ai") { _analysisMode = mode; }
 export function getAnalysisMode() { return _analysisMode; }
 
 const BASELINE_INTERVAL_SEC = 1 / 1.5; // matches DEFAULT_SAMPLE_CONFIG.baselineFps
+const MAX_BASELINE_FRAMES_PER_VIDEO = 60;
 
 export function baselineFrameTimestamps(duration: number): readonly number[] {
   const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
@@ -11642,6 +11658,19 @@ export function baselineFrameTimestamps(duration: number): readonly number[] {
       index * BASELINE_INTERVAL_SEC,
       Math.max(0, safeDuration - 0.05),
     ),
+  );
+}
+
+export function budgetedBaselineFrameTimestamps(
+  duration: number,
+  maxFrames = MAX_BASELINE_FRAMES_PER_VIDEO,
+): readonly number[] {
+  const timestamps = baselineFrameTimestamps(duration);
+  const budget = Math.max(1, Math.floor(maxFrames));
+  if (timestamps.length <= budget) return timestamps;
+  if (budget === 1) return [timestamps[0]];
+  return Array.from({ length: budget }, (_, index) =>
+    timestamps[Math.floor((index * (timestamps.length - 1)) / (budget - 1))],
   );
 }
 
@@ -11663,8 +11692,38 @@ async function captureBaselineFrames(
   duration: number,
 ): Promise<{ frames: ExtractedFrame[]; firstError?: string }> {
   const frames: ExtractedFrame[] = [];
-  const timestamps = baselineFrameTimestamps(duration);
+  const timestamps = budgetedBaselineFrameTimestamps(duration);
   let firstError: string | undefined;
+
+  const batch = await host.runJob("extractVideoFrames", {
+    mediaId,
+    timestamps,
+    maxWidth: 320,
+  });
+  if (batch.ok) {
+    const data = batch.data;
+    const batchFrames =
+      data && typeof data === "object" && "frames" in data && Array.isArray(data.frames)
+        ? data.frames
+        : [];
+    for (const candidate of batchFrames) {
+      if (!candidate || typeof candidate !== "object" || !("timestamp" in candidate)) continue;
+      const timestamp = candidate.timestamp;
+      if (typeof timestamp !== "number" || !Number.isFinite(timestamp)) continue;
+      if (!isExtractedFrameData(candidate)) continue;
+      frames.push({
+        timestamp,
+        imageData: candidate.imageDataBase64,
+        width: candidate.width,
+        height: candidate.height,
+      });
+    }
+    if (frames.length > 0) return { frames };
+    firstError = "extractVideoFrames returned invalid frame data";
+  } else if (!batch.error?.includes("not wired")) {
+    return { frames, firstError: batch.error ?? "Batch frame extraction failed" };
+  }
+
   for (const timestamp of timestamps) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const job = await host.runJob("extractVideoFrame", {
@@ -33382,7 +33441,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "ai",
     title: "Extract video segments",
     description:
-      "Analyze uploaded video(s) via real frame sampling, scene-cut detection, and vision analysis to build a SegmentMap describing what's actually happening in the footage. Use this first when the user wants to create an edit from their footage. Pass videoMediaIds to analyze specific videos, or omit/empty to auto-analyze ALL video media in the project. Expensive — requires confirmation.",
+      "Analyze uploaded video(s) via real frame sampling, scene-cut detection, and vision analysis to build a SegmentMap describing what's actually happening in the footage. Where supported, short source videos also receive local Whisper transcript evidence (fast model, about 100 MB downloaded on first use and cached; capped at 120 seconds per video and 2,000 words per extraction). Longer clips or unsupported hosts report why transcription was skipped. Use this first when the user wants to create an edit from their footage. Pass videoMediaIds to analyze specific videos, or omit/empty to auto-analyze ALL video media in the project. Expensive — requires confirmation.",
     inputSchema: obj({ videoMediaIds: { type: "array", items: str } }),
     readOnly: false,
     destructive: false,
@@ -33404,9 +33463,12 @@ const TOOLS: RegisteredTool[] = [
         videoMediaIds = videoMediaItems.map((m) => m.id);
       }
 
-      // Eco mode uses the local Python analyzer. Only AI mode requires the
-      // configured Cloudflare vision worker.
-      if (_analysisMode === "ai" && !VISION_WORKER_URL) {
+      // AI mode prefers the configured vision worker, but never skips analysis:
+      // the local Python analyzer is the guaranteed layer. Metadata-only is
+      // reserved for when BOTH the vision worker and the local analyzer are
+      // unavailable.
+      let analysisNote = "";
+      if (_analysisMode === "ai" && !VISION_WORKER_URL && !(await localAnalyzerHealthy())) {
         // Fallback: build a basic SegmentMap from video metadata (no vision analysis)
         const mediaMap = new Map(videoMediaItems.map((m) => [m.id, m]));
         const referenceMediaIds = new Set(
@@ -33437,9 +33499,14 @@ const TOOLS: RegisteredTool[] = [
               },
             ],
           };
-        }).filter(Boolean) as Array<{ videoId: string; sourceFile: string; duration: number; resolution: { width: number; height: number }; fps: number; totalFrames: number; segments: Array<{ id: string; startTime: number; endTime: number; sceneType: string; motionLevel: string; description: string; hasDialogue: boolean; visualContent: string; confidence: number }> }>;
+        }).filter(Boolean) as Array<{ videoId: string; sourceFile: string; duration: number; resolution: { width: number; height: number }; fps: number; totalFrames: number;         segments: Array<{ id: string; startTime: number; endTime: number; sceneType: "b-roll"; motionLevel: "medium"; description: string; hasDialogue: boolean; visualContent: string; confidence: number }> }>;
 
         const segmentMap = { videos };
+        const transcriptResult = await enrichSegmentMapWithTranscripts(
+          host,
+          segmentMap,
+          videos.map((video) => video.videoId),
+        );
         const referenceAnalysis = {
           analysisVersion: "1.1.0",
           videos: videos.map((video) => ({
@@ -33466,9 +33533,14 @@ const TOOLS: RegisteredTool[] = [
         }).join(", ");
 
         return ok(
-          `extract_segments: generated basic SegmentMap for ${videoMediaIds.length} video(s) [${videoList}] (vision worker not available — using metadata only)`,
-          { segmentMap, referenceAnalysis, videoCount: videoMediaIds.length, totalSegments: videos.length, frameCount: 0, videoMediaIds },
+          `extract_segments: generated basic SegmentMap for ${videoMediaIds.length} video(s) [${videoList}] (vision worker not available and local Python analysis engine unreachable — using metadata only). ${transcriptResult.warnings.length ? transcriptResult.warnings.join(" ") : "Local transcript evidence added where available."}`,
+          { segmentMap: transcriptResult.segmentMap, referenceAnalysis, videoCount: videoMediaIds.length, totalSegments: videos.length, frameCount: 0, videoMediaIds, transcriptWarnings: transcriptResult.warnings },
         );
+      }
+
+      if (_analysisMode === "ai" && !VISION_WORKER_URL) {
+        analysisNote =
+          "AI vision didn't work (VISION_WORKER_URL not configured) — local Python analysis engine used instead.";
       }
 
       const mediaMap = new Map(videoMediaItems.map((m) => [m.id, m]));
@@ -33494,14 +33566,26 @@ const TOOLS: RegisteredTool[] = [
         videoInputs.push({ videoId: id, duration, frames });
       }
 
-      const workerUrl = _analysisMode === "eco"
-        ? "http://localhost:8000/analyze-frames"
-        : VISION_WORKER_URL!;
-      const result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl });
+      const visionUrl = _analysisMode === "ai" ? VISION_WORKER_URL : null;
+      const primaryUrl = visionUrl ?? LOCAL_ANALYZER_URL;
+      let result: Awaited<ReturnType<typeof runFrameWorkerPipeline>>;
+      try {
+        result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl: primaryUrl });
+      } catch (error) {
+        if (!visionUrl) throw error;
+        const detail = error instanceof Error ? error.message : String(error);
+        analysisNote = `AI vision didn't work (${detail}) — local Python analysis engine used instead.`;
+        result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl: LOCAL_ANALYZER_URL });
+      }
       const sourceIds = new Set(sourceMediaIds);
       const sourceSegmentMap = {
         videos: result.segmentMap.videos.filter((video) => sourceIds.has(video.videoId)),
       };
+      const transcriptResult = await enrichSegmentMapWithTranscripts(
+        host,
+        sourceSegmentMap,
+        sourceSegmentMap.videos.map((video) => video.videoId),
+      );
       const referenceAnalysis = {
         ...result.referenceAnalysis,
         videos: result.referenceAnalysis.videos.map((video) => ({
@@ -33517,8 +33601,8 @@ const TOOLS: RegisteredTool[] = [
       }).join(", ");
 
       return ok(
-        `extract_segments: analyzed ${videoMediaIds.length} video(s) [${videoList}], ${referenceMediaIds.size} reference(s), ${result.frameCount} frame(s), ${sourceSegmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0)} source segment(s) in ${result.processingTimeMs}ms`,
-        { segmentMap: sourceSegmentMap, referenceAnalysis, videoCount: videoMediaIds.length, referenceVideoIds: [...referenceMediaIds], totalSegments: sourceSegmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0), frameCount: result.frameCount, videoMediaIds },
+        `extract_segments: analyzed ${videoMediaIds.length} video(s) [${videoList}], ${referenceMediaIds.size} reference(s), ${result.frameCount} frame(s), ${transcriptResult.segmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0)} source segment(s) in ${result.processingTimeMs}ms. ${analysisNote ? `${analysisNote} ` : ""}${transcriptResult.warnings.length ? transcriptResult.warnings.join(" ") : "Local transcript evidence added where available."}`,
+        { segmentMap: transcriptResult.segmentMap, referenceAnalysis, videoCount: videoMediaIds.length, referenceVideoIds: [...referenceMediaIds], totalSegments: transcriptResult.segmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0), frameCount: result.frameCount, videoMediaIds, transcriptWarnings: transcriptResult.warnings },
       );
     },
   },
@@ -33793,7 +33877,8 @@ const TOOLS: RegisteredTool[] = [
         version: project.mirrorProfile.version,
         shots: [],
         shotCount: project.mirrorProfile.shots.length,
-        rhythmCurve: project.mirrorProfile.version === "kove.mirror.v2" ? project.mirrorProfile.rhythmCurve.map((frames) => frameToSeconds(frames, project.mirrorProfile!.fps)) : undefined,
+        rhythmCurve: project.mirrorProfile.rhythmCurve.map((frames) => frameToSeconds(frames, project.mirrorProfile!.fps)),
+        styleEvidence: project.mirrorProfile.styleEvidence,
         aspectRatio: project.mirrorProfile.aspectRatio,
         dominantMoves: project.mirrorProfile.shots.map((shot) => shot.cameraMotion?.dominantMove ?? "unknown"),
       } : undefined);

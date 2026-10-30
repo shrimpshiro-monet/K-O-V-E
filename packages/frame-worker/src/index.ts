@@ -4,6 +4,8 @@ import {
   type ExtractedFrame,
   type VisionDescription,
   batchFrames,
+  batchFramesMosaic,
+  readMosaicConfig,
   computeAdaptiveTimestamps,
   detectSceneBoundaries,
   descriptionsToSegmentMap,
@@ -101,8 +103,11 @@ export async function extractSegments(
 
     totalFrameCount += selectedFrames.length;
 
-    // Batch frames for the vision worker
-    const batches = batchFrames(selectedFrames);
+    // Batch frames for the vision worker (tiled contact sheets when enabled)
+    const mosaicConfig = readMosaicConfig();
+    const batches = mosaicConfig
+      ? await batchFramesMosaic(selectedFrames, mosaicConfig)
+      : batchFrames(selectedFrames);
 
     // Call the vision worker
     const descriptions = await callVisionWorker(

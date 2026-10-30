@@ -8,6 +8,7 @@ import {
   setAnalysisMode as setAgentAnalysisMode,
   parseReferenceIntent,
   referenceIntentDirective,
+  makeFallbackClient,
 } from "@kove-advanced/agent";
 import type {
   AgentEvent,
@@ -15,13 +16,18 @@ import type {
   ToolCall,
   ToolResult,
   LoopMessage,
+  LLMTurnInput,
   ReferenceIntent,
   ReferenceApplication,
 } from "@kove-advanced/agent";
 import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import { isSessionUnlocked, getSecret } from "../services/secure-storage";
 import { getLiveEditorHost, runExclusive } from "../services/agent/host-singleton";
-import { makeBYOKClient } from "../services/agent/llm-transport";
+import {
+  makeBYOKClient,
+  makeOmniRouteGatewayClient,
+  type OmniRouteGatewayOptions,
+} from "../services/agent/llm-transport";
 import { normalizeCompatibleBaseUrl } from "../services/api-proxy";
 import {
   measureReferenceVideo,
@@ -158,6 +164,52 @@ function resolveReferenceAttachment(explicit: ReferenceAttachment | null): Refer
   const marked = items.find((item) => item.type === "video" && item.analysisRole === "reference");
   if (!marked) return null;
   return { mediaId: marked.id, name: marked.name, file: null };
+}
+
+/**
+ * OmniRoute gateway credentials for the director's ladder, read from
+ * VITE_OMNIROUTE_* (injected from .dev.vars by the Vite plugin).
+ *
+ * Null when unconfigured — or on a hosted production build, where a visitor's
+ * browser could not reach a localhost gateway even if the key were present.
+ * Dev goes through the same-origin Vite proxy, desktop through native fetch.
+ */
+function resolveOmniRouteLadder(settingsModel: string): OmniRouteGatewayOptions | null {
+  if (!import.meta.env.DEV && !isDesktop()) return null;
+  const baseUrl = (import.meta.env.VITE_OMNIROUTE_BASE_URL ?? "") as string;
+  const apiKey = (import.meta.env.VITE_OMNIROUTE_KEY ?? "") as string;
+  const envModel = (import.meta.env.VITE_OMNIROUTE_MODEL ?? "") as string;
+  // A settings model that is plainly a Workers slug belongs to the secondary
+  // side of the ladder; any other model ID the user typed overrides the
+  // gateway's pinned model.
+  const model = !settingsModel || settingsModel.startsWith("@cf/") ? envModel : settingsModel;
+  if (!baseUrl || !apiKey || !model) return null;
+  return { baseUrl, apiKey, model };
+}
+
+/**
+ * Rebuilds the main-loop turn for the Workers side of the ladder: its own
+ * 25-tool cap (the size Workers handles reliably) and the matching system
+ * prompt. Nested director calls (plan_edit, expand_prompt) carry a single
+ * tool and their own prompt — those pass through untouched.
+ */
+function buildWorkersFallbackInput(
+  host: ReturnType<typeof getLiveEditorHost>,
+  routingContext: string,
+  priorToolNames: string[],
+): (input: LLMTurnInput) => LLMTurnInput {
+  const cfToolNames = selectToolsForPrompt(routingContext, { maxTools: 25, priorToolNames });
+  const cfTools = toOpenAITools(cfToolNames);
+  return (input) => {
+    if (input.tools.length <= cfTools.length) return input;
+    return {
+      ...input,
+      tools: cfTools,
+      ...(input.system !== undefined
+        ? { system: buildSystemPrompt(host, cfToolNames) }
+        : {}),
+    };
+  };
 }
 
 /** Reads the bytes of a reference that may live in the media library only. */
@@ -629,17 +681,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     };
 
     const host = getLiveEditorHost();
-    const llm = makeBYOKClient({
-      provider,
-      model,
-      apiKey,
-      baseUrl,
-      signal: controller.signal,
-    });
-    // Wire LLM client into host for nested director calls (plan_edit)
-    // Map settings provider to agent provider name for tool selection
-    const agentProvider = provider === "anthropic-compatible" ? "anthropic" : "openai";
-    host.llm = { client: llm, provider: agentProvider };
     const priorToolNames = get().conversation.flatMap((message) =>
       message.role === "assistant" ? message.toolUses.map((tool) => tool.name) : [],
     );
@@ -651,14 +692,88 @@ export const useChatStore = create<ChatState>((set, get) => ({
       .slice(-5)
       .map((message) => message.content)
       .join("\n");
+    // OmniRoute (local gateway) leads the zero-config path, Cloudflare Workers
+    // AI is its secondary: the ladder replays a failed completion on Workers
+    // instead of dying with the gateway. The gateway side is full-strength and
+    // gets the whole routed toolset; the Workers fallback keeps its proven
+    // 25-tool cap — the replay hands it that smaller set, system prompt
+    // included, rather than a prompt sized for the stronger model.
+    const omniRoute =
+      provider === "cloudflare" ? resolveOmniRouteLadder(settings.llmModel.trim()) : null;
     const selectedToolNames = selectToolsForPrompt(routingContext, {
-      maxTools: provider === "cloudflare" ? 25 : 120,
+      maxTools: provider === "cloudflare" && !omniRoute ? 25 : 120,
       priorToolNames,
     });
     const tools =
       provider === "anthropic-compatible"
         ? toAnthropicTools(selectedToolNames)
         : toOpenAITools(selectedToolNames); // openai-compatible and cloudflare both use OpenAI format
+
+    const baseClient = makeBYOKClient({
+      provider,
+      model,
+      apiKey,
+      baseUrl,
+      signal: controller.signal,
+    });
+    // Final fallback leg in the ladder: NVIDIA NIM (OpenAI-compatible) once the
+    // OmniRoute gateway and Cloudflare Workers AI have both failed the turn.
+    const nimBaseUrlFromEnv = (import.meta.env.VITE_NVIDIA_NIM_BASE_URL ?? "") as string;
+    const nimApiKeyFromEnv = (import.meta.env.VITE_NVIDIA_NIM_API_KEY ?? "") as string;
+    const nimModelFromEnv = (import.meta.env.VITE_NVIDIA_NIM_MODEL ?? "") as string;
+    let nimBaseUrl = "";
+    let nimModel = "";
+    let nimApiKey = "";
+    if (nimBaseUrlFromEnv) {
+      nimBaseUrl = nimBaseUrlFromEnv;
+      nimModel = nimModelFromEnv || settings.llmModel.trim();
+      nimApiKey = nimApiKeyFromEnv;
+    } else {
+      try {
+        nimBaseUrl = normalizeCompatibleBaseUrl(settings.llmBaseUrl);
+      } catch {
+        nimBaseUrl = "";
+      }
+      nimModel = settings.llmModel.trim();
+      if (settings.configuredServices.includes("openai-compatible")) {
+        try {
+          nimApiKey = (await getSecret("openai-compatible")) ?? "";
+        } catch {
+          nimApiKey = "";
+        }
+      }
+    }
+    const nimDisabled = (import.meta.env.VITE_NVIDIA_NIM_DISABLED ?? "") === "1";
+    const nimClient =
+      !nimDisabled && nimApiKey && nimBaseUrl && nimModel
+        ? makeBYOKClient({
+            provider: "openai-compatible",
+            apiKey: nimApiKey,
+            baseUrl: import.meta.env.DEV ? `${window.location.origin}/api/nim/v1` : nimBaseUrl,
+            model: nimModel,
+            signal: controller.signal,
+          })
+        : null;
+    const llm = omniRoute
+      ? makeFallbackClient({
+          primary: makeOmniRouteGatewayClient({ ...omniRoute, signal: controller.signal }),
+          secondary: baseClient,
+          secondaryInput: buildWorkersFallbackInput(host, routingContext, priorToolNames),
+          ...(nimClient ? { tertiary: nimClient } : {}),
+          onFallback: (error: unknown, leg: "primary" | "secondary" | "tertiary") => {
+            const message = (error instanceof Error ? error.message : String(error)).slice(0, 200);
+            const notice =
+              leg === "primary"
+                ? `OmniRoute unreachable (${message}) — continuing on Cloudflare Workers AI.`
+                : `Cloudflare Workers AI unreachable (${message}) — continuing on NVIDIA NIM.`;
+            updateAssistant((m) => ({ ...m, notice }));
+          },
+        })
+      : baseClient;
+    // Wire LLM client into host for nested director calls (plan_edit)
+    // Map settings provider to agent provider name for tool selection
+    const agentProvider = provider === "anthropic-compatible" ? "anthropic" : "openai";
+    host.llm = { client: llm, provider: agentProvider };
     const autoConfirm = useSettingsStore.getState().agentAutoConfirm;
     const dryRun = useSettingsStore.getState().agentDryRun;
 

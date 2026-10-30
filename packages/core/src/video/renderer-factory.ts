@@ -2,6 +2,8 @@ import type { Effect, Transform } from "../types/timeline";
 
 export type RendererType = "webgpu" | "canvas2d";
 
+const WEBGPU_INIT_TIMEOUT_MS = 10_000;
+
 export interface RendererConfig {
   canvas: HTMLCanvasElement | OffscreenCanvas;
   width: number;
@@ -85,10 +87,29 @@ export class RendererFactory {
 
     // Try WebGPU first
     if (isWebGPUSupported()) {
+      let renderer: Renderer | null = null;
+      let initialization: Promise<boolean> | null = null;
+      let initializationTimedOut = false;
       try {
         const { WebGPURenderer } = await import("./webgpu-renderer-impl");
-        const renderer = new WebGPURenderer(config);
-        const initialized = await renderer.initialize();
+        renderer = new WebGPURenderer(config);
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        initialization = renderer.initialize();
+        const initialized = await Promise.race([
+          initialization,
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => {
+              initializationTimedOut = true;
+              reject(
+                new Error(
+                  `WebGPU initialization timed out after ${WEBGPU_INIT_TIMEOUT_MS}ms`,
+                ),
+              );
+            }, WEBGPU_INIT_TIMEOUT_MS);
+          }),
+        ]).finally(() => {
+          if (timeoutId !== undefined) clearTimeout(timeoutId);
+        });
 
         if (initialized) {
           this.currentRenderer = renderer;
@@ -96,8 +117,16 @@ export class RendererFactory {
           return renderer;
         }
 
+        renderer.destroy();
         console.warn("[RendererFactory] WebGPU init failed, using Canvas2D");
       } catch (error) {
+        renderer?.destroy();
+        if (initializationTimedOut) {
+          void initialization?.then(
+            () => renderer?.destroy(),
+            () => undefined,
+          );
+        }
         console.warn("[RendererFactory] WebGPU error, using Canvas2D:", error);
       }
     }

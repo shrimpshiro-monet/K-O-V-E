@@ -10,6 +10,7 @@ import { HeadlessHost } from "../headless-host";
 import { executeTool } from "../executor";
 import { MockLLMClient, type LLMClient, type LLMResponse, type LLMTurnInput } from "../llm";
 import { getDirectorPlanState } from "./plan-state";
+import { fixture as referenceFixture } from "./mirror/mirror-fixture";
 
 // ---------------------------------------------------------------------------
 // Harness
@@ -179,6 +180,55 @@ function validPlan(overrides: Partial<Record<string, unknown>> = {}): Record<str
 // ---------------------------------------------------------------------------
 
 describe("plan_edit integrity", () => {
+  it("injects the attached reference profile into Monet without sending its OCR wording or reference footage", async () => {
+    const project: Project = {
+      ...makeProject(),
+      mirrorProfile: {
+        ...referenceFixture,
+        styleEvidence: {
+          ...referenceFixture.styleEvidence!,
+          transitions: [{
+            source: "local-pixel-analysis",
+            confidence: 0.9,
+            startFrame: 29,
+            endFrame: 31,
+            type: "hard-cut",
+          }],
+          textOverlays: [{
+            source: "local-ocr",
+            confidence: 0.55,
+            startFrame: 0,
+            endFrame: 20,
+            bounds: { x: 0.2, y: 0.7, width: 0.5, height: 0.1 },
+            text: "PRIVATE_REFERENCE_WORDING",
+          }],
+        },
+      },
+    };
+    project.mediaLibrary.items.push({
+      id: "reference-video",
+      name: "reference-only.mp4",
+      type: "video",
+      analysisRole: "reference",
+      metadata: { duration: 3 },
+    } as Project["mediaLibrary"]["items"][number]);
+    const h = harness([planResponse(validPlan())], project);
+
+    const result = await executeTool("plan_edit", { prompt: "match the reference pacing" }, h.host);
+
+    expect(result.ok).toBe(true);
+    expect(h.llm.systems.length).toBeGreaterThan(0);
+    for (const system of h.llm.systems) {
+      expect(system).toContain("Style profile target from reference footage");
+      expect(system).toContain('"type": "hard-cut"');
+      expect(system).toContain('"bounds"');
+      expect(system).not.toContain("PRIVATE_REFERENCE_WORDING");
+      expect(system).not.toContain("reference-only.mp4");
+      expect(system).toContain("footage.mp4");
+    }
+    expect(timelineClips(project).every((clip) => clip.mediaId === "video-1")).toBe(true);
+  });
+
   it("accepts a valid plan as revision 1 and reports quality as unavailable, never a synthetic score", async () => {
     const h = harness([planResponse(validPlan())]);
     const result = await executeTool("plan_edit", { prompt: "make a highlight" }, h.host);

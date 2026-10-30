@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   baselineFrameTimestamps,
+  budgetedBaselineFrameTimestamps,
   listTools,
   toAnthropicTools,
   toOpenAITools,
@@ -18,6 +19,14 @@ describe("tool registry", () => {
     const timestamps = baselineFrameTimestamps(2);
     expect(timestamps[0]).toBe(0);
     expect(timestamps.every((timestamp) => timestamp >= 0 && timestamp < 2)).toBe(true);
+    expect(new Set(timestamps).size).toBe(timestamps.length);
+  });
+
+  it("keeps long-video frame extraction within the vision budget", () => {
+    const timestamps = budgetedBaselineFrameTimestamps(418);
+    expect(timestamps).toHaveLength(60);
+    expect(timestamps[0]).toBe(0);
+    expect(timestamps.at(-1)).toBeLessThan(418);
     expect(new Set(timestamps).size).toBe(timestamps.length);
   });
 

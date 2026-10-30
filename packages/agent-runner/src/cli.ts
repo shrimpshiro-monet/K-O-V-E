@@ -1,19 +1,22 @@
 #!/usr/bin/env node
 import process from "node:process";
 import { runHeadlessEditFile } from "./run";
-import type { LlmProvider } from "./node-llm";
+import { resolveLlmProvider, type LlmProvider } from "./node-llm";
 
 interface CliArgs {
   project?: string;
   prompt?: string;
   provider: LlmProvider;
+  providerError?: string;
   model?: string;
   out?: string;
   dryRun: boolean;
 }
 
+const PROVIDERS: readonly LlmProvider[] = ["auto", "omni", "cloudflare", "anthropic", "openai"];
+
 function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { provider: "anthropic", dryRun: false };
+  const args: CliArgs = { provider: "auto", dryRun: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     const next = (): string => argv[++i] ?? "";
@@ -26,9 +29,15 @@ function parseArgs(argv: string[]): CliArgs {
       case "-m":
         args.prompt = next();
         break;
-      case "--provider":
-        args.provider = next() === "openai" ? "openai" : "anthropic";
+      case "--provider": {
+        const value = next() as LlmProvider;
+        if (PROVIDERS.includes(value)) {
+          args.provider = value;
+        } else {
+          args.providerError = `Unknown provider '${value}'. Expected one of: ${PROVIDERS.join(", ")}.`;
+        }
         break;
+      }
       case "--model":
         args.model = next();
         break;
@@ -49,14 +58,14 @@ function parseArgs(argv: string[]): CliArgs {
 function resolveApiKey(provider: LlmProvider): string {
   return (
     process.env.KOVE_ADVANCED_API_KEY ??
-    (provider === "anthropic"
-      ? process.env.ANTHROPIC_API_KEY
-      : process.env.OPENAI_API_KEY) ??
+    (provider === "openai"
+      ? process.env.OPENAI_API_KEY
+      : process.env.ANTHROPIC_API_KEY) ??
     ""
   );
 }
 
-const DEFAULT_MODEL: Record<LlmProvider, string> = {
+const DEFAULT_MODEL: Partial<Record<LlmProvider, string>> = {
   anthropic: "claude-sonnet-5",
   openai: "gpt-5.6-sol",
 };
@@ -69,12 +78,18 @@ Usage:
 Options:
   -p, --project <path>   Project JSON to edit (required)
   -m, --prompt  <text>   Natural-language editing instruction (required)
-      --provider <name>  anthropic | openai (default: anthropic)
-      --model <id>       Model id (default: provider default)
+      --provider <name>  auto | omni | cloudflare | anthropic | openai (default: auto)
+      --model <id>       Model id (default: provider default / gateway pin)
   -o, --out <path>       Output path (default: edit in place)
       --dry-run          Plan without applying mutations
 
-API key (never stored): KOVE_ADVANCED_API_KEY, or ANTHROPIC_API_KEY / OPENAI_API_KEY.`;
+Provider ladder (auto): OmniRoute gateway (.dev.vars/env) first, Cloudflare
+Workers AI second, direct anthropic/openai endpoints last. 'omni' keeps
+Workers as its secondary; 'cloudflare' | 'anthropic' | 'openai' force a side.
+
+API keys (never stored): OMNIROUTE_KEY / CLOUDFLARE_API_TOKEN come from env or
+.dev.vars; anthropic/openai use KOVE_ADVANCED_API_KEY, ANTHROPIC_API_KEY, or
+OPENAI_API_KEY.`;
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
@@ -82,24 +97,35 @@ async function main(): Promise<void> {
     process.stdout.write(`${USAGE}\n`);
     process.exit(args.project || args.prompt ? 1 : 0);
   }
-  const apiKey = resolveApiKey(args.provider);
-  if (!apiKey) {
+  if (args.providerError) {
+    process.stderr.write(`${args.providerError}\n`);
+    process.exit(1);
+  }
+  const provider = resolveLlmProvider(args.provider);
+  const keyless = provider === "omni" || provider === "cloudflare";
+  const apiKey = keyless ? "" : resolveApiKey(provider);
+  if (!keyless && !apiKey) {
     process.stderr.write(
-      `No API key found. Set KOVE_ADVANCED_API_KEY (or ${args.provider === "anthropic" ? "ANTHROPIC_API_KEY" : "OPENAI_API_KEY"}).\n`,
+      `No API key found. Set KOVE_ADVANCED_API_KEY (or ${provider === "anthropic" ? "ANTHROPIC_API_KEY" : "OPENAI_API_KEY"}).\n`,
     );
     process.exit(1);
   }
 
-  const model = args.model ?? DEFAULT_MODEL[args.provider];
+  const model = args.model ?? DEFAULT_MODEL[provider];
+  const log = (error: unknown): void => {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`Primary LLM failed (${message}) — falling back to Cloudflare Workers AI.\n`);
+  };
   try {
     const { result, saved } = await runHeadlessEditFile({
       projectPath: args.project,
       prompt: args.prompt,
-      provider: args.provider,
+      provider,
       model,
       apiKey,
       outPath: args.out,
       dryRun: args.dryRun,
+      onFallback: log,
     });
     const usage = `${result.usage.inputTokens} in / ${result.usage.outputTokens} out tokens`;
     process.stdout.write(

@@ -41,8 +41,17 @@ describe("multicam transcription", () => {
     }
     globalThis.Worker = SilentWorker as unknown as typeof Worker;
     try {
+      const audioBuffer = {
+        sampleRate: 16_000,
+        length: 16_000,
+        duration: 1,
+        numberOfChannels: 1,
+        getChannelData: () => new Float32Array(16_000),
+        copyFromChannel: () => undefined,
+        copyToChannel: () => undefined,
+      } as AudioBuffer;
       await expect(
-        transcribeWithWordTimestamps({} as AudioBuffer, { timeoutMs: 20 }),
+        transcribeWithWordTimestamps(audioBuffer, { timeoutMs: 20 }),
       ).rejects.toThrow(/timed out/i);
       expect(terminated).toBe(true);
     } finally {

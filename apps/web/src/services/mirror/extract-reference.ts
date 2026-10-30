@@ -2,9 +2,14 @@ import { openIndexedVideoFrames } from "@kove-advanced/core/mirror/decoded-frame
 import { InvalidCutDifferenceError, locateCutFrame, refineCutFrameByPeak } from "@kove-advanced/core/mirror/cut-boundary";
 import { frameToSeconds, secondsToFrame, type FrameRate } from "@kove-advanced/core/mirror/timebase";
 import { computeLabStats } from "@kove-advanced/core/color/reinhard-transfer";
-import { loadOpenCv, extractFrameMotion } from "@kove-advanced/core/vision/opencv-camera-motion";
 import { classifyDominantMove, type CameraMotionSample } from "@kove-advanced/core/vision/camera-motion-extractor";
-import { createReferenceProfile, type ReferenceProfile, type ShotProfile } from "@kove-advanced/core/mirror/reference-profile";
+import { getWarmOpenCvMotionClient } from "./opencv-motion-client";
+import {
+  createReferenceProfile,
+  type ReferenceProfile,
+  type ReferenceTransitionEvidence,
+  type ShotProfile,
+} from "@kove-advanced/core/mirror/reference-profile";
 import {
   abortable,
   analysisDimensions,
@@ -15,10 +20,20 @@ import {
   REFERENCE_PROGRESS_INTERVAL_MS,
   throwIfAborted,
 } from "./reference-measurement";
+import {
+  createLocalTextDetector,
+  detectTextInPixels,
+  mergeTextObservations,
+  normalizeTextObservations,
+  type TextObservation,
+} from "./reference-text";
 
 /** Tuned against the existing normalized, sampled-RGB difference signal.
  * Never reuse this value for luma or another signal without recalibration. */
 const CUT_DIFFERENCE_THRESHOLD = 0.23;
+const OCR_SAMPLE_BUDGET = 60;
+const OCR_TOTAL_BUDGET_MS = 10_000;
+const OCR_FRAME_TIMEOUT_MS = 1_000;
 
 export interface ExtractReferenceOptions {
   /** Called with coalesced progress: at most once per ~250ms, plus the total at the end. */
@@ -34,6 +49,22 @@ export interface ExtractReferenceOptions {
 
 interface YieldingScheduler {
   yield?: () => Promise<void>;
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
 }
 
 /** Let the tab paint and handle input between work slices.
@@ -91,9 +122,10 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
   video.preload = "auto";
   video.muted = true;
   video.src = url;
-  // WASM backend is lazy and optional. Start the import before metadata and
-  // decoder setup so a cold fetch overlaps that work instead of the sample loop.
-  const openCvReady = loadOpenCv().catch(() => null);
+  // OpenCV's Emscripten runtime lives in a shared worker (warmed at app idle):
+  // its eval pegged a thread for seconds when it ran on this thread, freezing
+  // the tab mid-measurement.
+  const motionClient = getWarmOpenCvMotionClient();
   try {
     await abortable(new Promise<void>((resolve, reject) => {
       video.onloadedmetadata = () => resolve();
@@ -126,12 +158,24 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
       if (error instanceof Error && error.name === "AbortError") throw error;
       return null;
     });
+    let activeIndexed = indexed;
+    const warnings: string[] = !indexed
+      ? ["Indexed WebCodecs decoder unavailable: HTML video seeks may not decode exact requested frames. Verify critical cuts manually."]
+      : [];
     const readFrame = async (frame: number): Promise<Uint8ClampedArray> => {
       throwIfAborted(signal);
-      if (indexed) {
-        const data = await abortable(indexed.read(frame, fps).then((image) => image.data), signal);
-        throwIfAborted(signal);
-        return data;
+      if (activeIndexed) {
+        try {
+          const data = await abortable(activeIndexed.read(frame, fps).then((image) => image.data), signal);
+          throwIfAborted(signal);
+          return data;
+        } catch (error) {
+          throwIfAborted(signal);
+          activeIndexed = null;
+          warnings.push(
+            `Indexed WebCodecs frame read failed at frame ${frame}; continuing with HTML video seeks, which may not decode exact requested frames. Verify critical cuts manually. ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
       }
       const target = Math.min(video.duration - 0.001, frameToSeconds(frame, fps) + fps.den / fps.num / 4);
       if (Math.abs(video.currentTime - target) > 0.0001) await abortable(new Promise<void>((resolve, reject) => {
@@ -141,19 +185,28 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
       throwIfAborted(signal);
       return ctx.getImageData(0, 0, width, height).data;
     };
-    // An unavailable OpenCV build does not block extraction: the sparse JS
-    // matcher below remains available.
-    let cv: Awaited<ReturnType<typeof loadOpenCv>> | null = await abortable(openCvReady, signal);
-    let previousMat: InstanceType<NonNullable<typeof cv>["Mat"]> | null = null;
+    // An unavailable OpenCV worker does not block extraction: after this short
+    // head start, the sparse JS matcher below covers the whole run.
+    const motionReady = await abortable(Promise.race([
+      motionClient.ready,
+      new Promise<boolean>((resolve) => { setTimeout(() => resolve(false), 2500); }),
+    ]), signal);
     const stepFrames = indexed && durationFrames <= 600 ? 1 : Math.max(1, Math.ceil(durationFrames / 600), Math.ceil(fps.num / fps.den / 4));
     // One warnings path for decoder precision, sparse sampling and low-confidence cuts.
-    const warnings: string[] = !indexed
-      ? ["Indexed WebCodecs decoder unavailable: HTML video seeks may not decode exact requested frames. Verify critical cuts manually."]
-      : stepFrames > 1
-        ? ["Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames."]
-        : [];
+    if (stepFrames > 1) {
+      warnings.push("Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.");
+    }
     const frames = Math.ceil(durationFrames / stepFrames);
     const shots: ShotProfile[] = [];
+    const transitions: ReferenceTransitionEvidence[] = [];
+    let textDetector: ReturnType<typeof createLocalTextDetector> = null;
+    const textObservations: TextObservation[] = [];
+    try {
+      textDetector = createLocalTextDetector();
+      if (!textDetector) warnings.push("Local OCR is unavailable in this browser; reference text overlays were not measured.");
+    } catch (error) {
+      warnings.push(`Local OCR could not be initialized: ${error instanceof Error ? error.message : String(error)}.`);
+    }
     let previous: Uint8ClampedArray | null = null;
     let previousFrame = 0, startFrame = 0, motion: CameraMotionSample[] = [], grade: ShotProfile["colorStats"];
     const finish = (endFrame: number) => {
@@ -174,6 +227,9 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
     // never grow with the source resolution, and a slow decode ends it at once.
     const budget = createWorkBudget(REFERENCE_FRAME_BUDGET_MS, now());
     let sliceFrames = 0;
+    let textDetectionFailures = 0;
+    let textDetectionMs = 0;
+    const textSampleStride = Math.max(1, Math.ceil(frames / OCR_SAMPLE_BUDGET));
     // Difference inside a cut bracket: bounded work, but a cancelled measurement
     // must not keep scanning frames.
     const guard = (a: Uint8ClampedArray, b: Uint8ClampedArray): number => {
@@ -193,6 +249,36 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
       }
       const frame = Math.min(durationFrames - 1, i * stepFrames);
       const pixels = await readFrame(frame);
+      if (
+        textDetector &&
+        i % textSampleStride === 0 &&
+        textDetectionFailures < 3 &&
+        textDetectionMs < OCR_TOTAL_BUDGET_MS
+      ) {
+        const detectionStartedAt = now();
+        try {
+          const blocks = await abortable(withTimeout(
+            detectTextInPixels(textDetector, pixels, width, height),
+            OCR_FRAME_TIMEOUT_MS,
+            "Local OCR sample exceeded its 1s analysis limit.",
+          ), signal);
+          textObservations.push(...normalizeTextObservations(
+            blocks,
+            frame,
+            Math.min(durationFrames, frame + stepFrames),
+            width,
+            height,
+          ));
+        } catch (error) {
+          throwIfAborted(signal);
+          textDetectionFailures++;
+          if (textDetectionFailures === 1) {
+            warnings.push(`Local OCR stopped after a detection error: ${error instanceof Error ? error.message : String(error)}.`);
+          }
+        } finally {
+          textDetectionMs += Math.max(0, now() - detectionStartedAt);
+        }
+      }
       // A sampled frame's grade is measured; each shot keeps the first non-boundary sample.
       const coarseDifference = previous ? difference(previous, pixels) : null;
       if (coarseDifference !== null && (!Number.isFinite(coarseDifference) || coarseDifference < 0)) {
@@ -202,6 +288,8 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
       }
       const cut = coarseDifference !== null && coarseDifference > CUT_DIFFERENCE_THRESHOLD;
       let boundary: number | null = null;
+      let transitionType: ReferenceTransitionEvidence["type"] = "unknown";
+      let transitionConfidence = 0.45;
       if (cut) {
         try {
           const refined = await refineCutFrameByPeak({
@@ -209,6 +297,8 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
             read: readFrame, difference: guard, threshold: CUT_DIFFERENCE_THRESHOLD,
           });
           boundary = refined.frame;
+          transitionType = refined.isHardCut ? "hard-cut" : "unknown";
+          transitionConfidence = refined.isHardCut ? 0.9 : 0.55;
           if (!refined.isHardCut) warnings.push(
             `Shot boundary near frame ${refined.frame} looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.`,
           );
@@ -227,6 +317,7 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
               if (!Number.isFinite(value) || value < 0) throw new InvalidCutDifferenceError(checkedFrame);
               return value;
             }, CUT_DIFFERENCE_THRESHOLD);
+            transitionConfidence = boundary === null ? 0 : 0.5;
             warnings.push(boundary === null
               ? `Peak refinement near frame ${frame} had an invalid difference; the first-crossing retry found no verified boundary.`
               : `Peak refinement near frame ${frame} had an invalid difference; using first threshold crossing at frame ${boundary} (lower-confidence).`);
@@ -240,38 +331,64 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
           }
         }
       }
-      if (boundary !== null) finish(boundary);
+      if (boundary !== null) {
+        transitions.push({
+          startFrame: Math.max(0, boundary - 1),
+          endFrame: Math.min(durationFrames, boundary + 1),
+          type: transitionType,
+          source: "local-pixel-analysis",
+          confidence: transitionConfidence,
+          ...(transitionType === "unknown" && {
+            note: "A boundary was located, but the available sample evidence does not establish the transition type.",
+          }),
+        });
+        finish(boundary);
+      }
       else if (previous) {
         let sample: CameraMotionSample | null = null;
-        if (cv && previousMat) {
-          const activeCv = cv;
-          const gray = makeGray(activeCv, pixels, width, height);
-          try {
-            sample = extractFrameMotion(activeCv, previousMat, gray, frame);
-            if (sample) { sample.translateX *= video.videoWidth / width; sample.translateY *= video.videoHeight / height; }
-          } catch { cv = null; }
-          finally { gray.delete(); }
+        if (motionReady) {
+          sample = await abortable(motionClient.sample({
+            prev: previous, curr: pixels, width, height, frame,
+            scaleX: video.videoWidth / width, scaleY: video.videoHeight / height,
+          }), signal);
         }
         motion.push(sample ?? estimateMotion(previous, pixels, width, height, frame, video.videoWidth / width));
       }
-      previousMat?.delete(); previousMat = cv ? makeGray(cv, pixels, width, height) : null;
       if (!grade) grade = computeLabStats(pixels);
       previous = pixels;
       previousFrame = frame;
       sliceFrames++;
       progress.report(i + 1, frames);
     }
-    } finally { previousMat?.delete(); indexed?.close(); }
+    } finally { indexed?.close(); }
     progress.report(frames, frames, { force: true });
     finish(durationFrames);
-    const profile = createReferenceProfile({ aspectRatio: { width: video.videoWidth, height: video.videoHeight }, fps, fpsSource: clock.fpsSource, durationFrames, shots, beatGridMs: [], ...(clock.sampleAspectRatio && { sampleAspectRatio: clock.sampleAspectRatio }), ...(clock.codedDimensions && { codedDimensions: clock.codedDimensions }), ...(clock.rotationDegrees !== undefined && { rotationDegrees: clock.rotationDegrees }), warnings });
+    if (textDetector && textDetectionMs >= OCR_TOTAL_BUDGET_MS) {
+      warnings.push("Local OCR stopped after reaching its 10s analysis budget; later sampled frames were not checked for text.");
+    }
+    const profile = createReferenceProfile({
+      aspectRatio: { width: video.videoWidth, height: video.videoHeight },
+      fps,
+      fpsSource: clock.fpsSource,
+      durationFrames,
+      shots,
+      beatGridMs: [],
+      styleEvidence: {
+        transitions,
+        textOverlays: mergeTextObservations(
+          textObservations,
+          durationFrames,
+          Math.max(1, Math.ceil(fps.num / fps.den)),
+        ),
+        effects: [],
+      },
+      ...(clock.sampleAspectRatio && { sampleAspectRatio: clock.sampleAspectRatio }),
+      ...(clock.codedDimensions && { codedDimensions: clock.codedDimensions }),
+      ...(clock.rotationDegrees !== undefined && { rotationDegrees: clock.rotationDegrees }),
+      warnings,
+    });
     return profile;
   } finally { video.removeAttribute("src"); video.load(); URL.revokeObjectURL(url); }
-}
-function makeGray(cv: Awaited<ReturnType<typeof loadOpenCv>>, pixels: Uint8ClampedArray, width: number, height: number) {
-  const gray = new cv.Mat(height, width, cv.CV_8UC1);
-  for (let i = 0; i < gray.data.length; i++) gray.data[i] = Math.round(pixels[i*4] * 0.299 + pixels[i*4+1] * 0.587 + pixels[i*4+2] * 0.114);
-  return gray;
 }
 function difference(a: Uint8ClampedArray, b: Uint8ClampedArray): number {
   let sum = 0;

@@ -413,22 +413,35 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
       writableStream: FileSystemWritableFileStream,
     ): Promise<void> => {
       const engine = getExportEngine();
+      setState((prev) => ({ ...prev, phase: "Loading export engine..." }));
       await engine.initialize();
+      setState((prev) => ({ ...prev, phase: "Preparing renderer..." }));
 
       const generator = engine.exportVideo(project, videoSettings, writableStream);
       let finalResult: ExportResult | undefined;
-
+      let lastProgressUpdateAt = 0;
+      let lastProgressPhase: string | null = null;
       while (true) {
         const { value, done } = await generator.next();
         if (done) {
           finalResult = value;
           break;
         }
-        setState((prev) => ({
-          ...prev,
-          progress: value.progress * 100,
-          phase: progressPhaseLabel(value.phase),
-        }));
+
+        const now = performance.now();
+        if (
+          value.phase !== lastProgressPhase ||
+          now - lastProgressUpdateAt >= 250 ||
+          value.phase === "complete"
+        ) {
+          setState((prev) => ({
+            ...prev,
+            progress: value.progress * 100,
+            phase: progressPhaseLabel(value.phase),
+          }));
+          lastProgressUpdateAt = now;
+          lastProgressPhase = value.phase;
+        }
       }
 
       if (finalResult?.success) {

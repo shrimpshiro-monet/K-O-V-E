@@ -9,13 +9,16 @@ import { validateEditPlan } from "@kove-advanced/creation-schema";
 import { HeadlessHost } from "../headless-host";
 import type { EditingHost } from "../host";
 import { executeTool } from "../executor";
-import {
-  makeClientFromSend,
-  withRetry,
-  llmHttpError,
-  parseRetryAfterMs,
-} from "../llm";
+import { makeClientFromSend, withRetry } from "../llm";
 import type { LLMClient, LLMSend } from "../llm";
+import {
+  loadOmniRouteConfig as loadOmniRouteProviderConfig,
+  loadWorkersAIConfig as loadWorkersAIProviderConfig,
+} from "../providers/dev-vars";
+import { makeOmniRouteSend } from "../providers/omniroute";
+import type { OmniRouteConfig, OmniTransportOptions } from "../providers/omniroute";
+import { makeWorkersAISend as makeWorkersAISendTransport } from "../providers/workers-ai";
+import type { WorkersAIConfig } from "../providers/workers-ai";
 import { getGenreById } from "../director";
 import { loadCorpus, missingAssets, resolveCorpusFile } from "./corpus";
 import type { EvalProject, EvalPrompt, PromptType } from "./corpus";
@@ -100,29 +103,10 @@ export function dumpPlanJson(
 // Cloudflare Workers AI client (same endpoint/shape the web app uses)
 // ---------------------------------------------------------------------------
 
-export interface WorkersAIConfig {
-  readonly accountId: string;
-  readonly apiToken: string;
-  readonly model: string;
-}
-
-/** Parses KEY=VALUE lines; quotes and comments are tolerated. */
-export function parseDevVars(text: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const raw of text.split("\n")) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const eq = line.indexOf("=");
-    if (eq <= 0) continue;
-    const key = line.slice(0, eq).trim();
-    let value = line.slice(eq + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    out[key] = value;
-  }
-  return out;
-}
+export type { WorkersAIConfig } from "../providers/workers-ai";
+export { parseDevVars } from "../providers/dev-vars";
+export type { OmniRouteConfig, OmniTransportOptions } from "../providers/omniroute";
+export { makeOmniRouteSend } from "../providers/omniroute";
 
 /**
  * Credential precedence: eval-scoped `KOVE_EVAL_CLOUDFLARE_*` (lets a second
@@ -131,41 +115,11 @@ export function parseDevVars(text: string): Record<string, string> {
  * must come from the same Cloudflare account or requests 403.
  */
 export function loadWorkersAIConfig(repoRoot: string = REPO_ROOT): WorkersAIConfig | null {
-  let vars: Record<string, string> = {};
-  const devVars = resolve(repoRoot, ".dev.vars");
-  if (existsSync(devVars)) {
-    vars = parseDevVars(readFileSync(devVars, "utf8"));
-  }
-  const pick = (name: string): string =>
-    process.env[`KOVE_EVAL_${name}`] || process.env[name] || vars[name] || "";
-  const accountId = pick("CLOUDFLARE_ACCOUNT_ID");
-  const apiToken = pick("CLOUDFLARE_API_TOKEN");
-  const model = pick("CLOUDFLARE_AI_MODEL") || "@cf/google/gemma-4-26b-a4b-it";
-  if (!accountId || !apiToken) return null;
-  return { accountId, apiToken, model };
-}
-
-export interface OmniRouteConfig {
-  /** OpenAI-compatible base, e.g. http://localhost:20128/v1 */
-  readonly baseUrl: string;
-  readonly apiKey: string;
-  /** Pinned model slug — never `auto`, which can switch models mid-run. */
-  readonly model: string;
+  return loadWorkersAIProviderConfig(repoRoot, "KOVE_EVAL_");
 }
 
 export function loadOmniRouteConfig(repoRoot: string = REPO_ROOT): OmniRouteConfig | null {
-  let vars: Record<string, string> = {};
-  const devVars = resolve(repoRoot, ".dev.vars");
-  if (existsSync(devVars)) {
-    vars = parseDevVars(readFileSync(devVars, "utf8"));
-  }
-  const pick = (name: string): string =>
-    process.env[`KOVE_EVAL_${name}`] || process.env[name] || vars[name] || "";
-  const baseUrl = pick("OMNIROUTE_BASE_URL") || "http://localhost:20128/v1";
-  const apiKey = pick("OMNIROUTE_KEY");
-  const model = pick("OMNIROUTE_MODEL");
-  if (!apiKey || !model) return null;
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey, model };
+  return loadOmniRouteProviderConfig(repoRoot, "KOVE_EVAL_");
 }
 
 export type EvalLLMConfig =
@@ -220,31 +174,12 @@ export function pinnedSend(send: LLMSend, pin: SamplingPinning): LLMSend {
 
 /**
  * OpenAI-compatible Workers AI transport. The API key is used per-request for
- * the Authorization header only and is never stored or logged.
+ * the Authorization header only and is never stored or logged. The transport
+ * itself lives in providers/workers-ai so the app, the CLI, and the eval
+ * harness all speak the same wire format.
  */
 export function makeWorkersAISend(cfg: WorkersAIConfig, opts: WorkersAIClientOptions = {}): LLMSend {
-  const fetchFn = opts.fetchFn ?? fetch;
-  const url = `https://api.cloudflare.com/client/v4/accounts/${cfg.accountId}/ai/v1/chat/completions`;
-  return async (body: unknown): Promise<unknown> => {
-    const res = await fetchFn(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cfg.apiToken}`,
-      },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw llmHttpError(
-        "cloudflare-ai",
-        res.status,
-        text,
-        parseRetryAfterMs(res.headers.get("retry-after")),
-      );
-    }
-    return res.json();
-  };
+  return makeWorkersAISendTransport(cfg, opts);
 }
 
 export function makeWorkersAIClient(cfg: WorkersAIConfig, opts: WorkersAIClientOptions = {}): LLMClient {
@@ -260,185 +195,20 @@ export function makeWorkersAIClient(cfg: WorkersAIConfig, opts: WorkersAIClientO
   });
 }
 
-/** OpenAI-compatible transport for a self-hosted OmniRoute gateway (or any /v1 relay). */
-interface OmniStreamToolCallDelta {
-  readonly index?: number;
-  readonly id?: string;
-  readonly function?: { readonly name?: string; readonly arguments?: string };
-}
-
-interface OmniStreamChunk {
-  readonly model?: string;
-  readonly usage?: unknown;
-  readonly error?: unknown;
-  readonly choices?: Array<{
-    readonly delta?: {
-      readonly content?: string;
-      readonly tool_calls?: OmniStreamToolCallDelta[];
-    };
-    readonly message?: {
-      readonly content?: string;
-      readonly tool_calls?: OmniStreamToolCallDelta[];
-    };
-    readonly finish_reason?: string;
-  }>;
+export interface OmniRouteEvalClientOptions extends OmniTransportOptions {
+  /** Sampling pinning; `null` opts out (never the default for baseline runs). */
+  readonly sampling?: SamplingPinning | null;
 }
 
 /**
- * Alibaba (and most OpenAI-compatible relays) hard-terminate non-streaming
- * requests once a big generation passes their sync window (~15 min), which
- * killed every 16k-token plan_edit call as a bare "fetch failed". OmniRoute
- * happily relays SSE, so the omni transport always asks for stream:true and
- * folds the chunks back into the single JSON shape parseOpenAIResponse
- * expects.
+ * Eval-side OmniRoute client: the shared gateway transport plus the pinned
+ * sampling the baseline report measures against. Product callers use the
+ * unpinned `makeOmniRouteClient` exported from ../providers/omniroute.
  */
-function aggregateOmniStream(raw: string): unknown {
-  let content = "";
-  const toolCalls: Array<{ id?: string; name?: string; args: string }> = [];
-  let finishReason: string | undefined;
-  let model: string | undefined;
-  let usage: unknown;
-  for (const line of raw.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed.startsWith("data:")) continue;
-    const payload = trimmed.slice(5).trim();
-    if (!payload || payload === "[DONE]") continue;
-    let chunk: OmniStreamChunk;
-    try {
-      chunk = JSON.parse(payload) as OmniStreamChunk;
-    } catch {
-      continue;
-    }
-    if (chunk.error) {
-      throw llmHttpError("omniroute", 502, JSON.stringify(chunk.error), undefined);
-    }
-    model ??= chunk.model;
-    usage ??= chunk.usage;
-    const choice = chunk.choices?.[0];
-    if (!choice) continue;
-    const delta = choice.delta ?? choice.message;
-    if (typeof delta?.content === "string") content += delta.content;
-    for (const tc of delta?.tool_calls ?? []) {
-      const index = typeof tc.index === "number" ? tc.index : 0;
-      const slot = (toolCalls[index] ??= { args: "" });
-      if (typeof tc.id === "string" && tc.id && !slot.id) slot.id = tc.id;
-      const fnName = tc.function?.name;
-      if (typeof fnName === "string" && fnName && !slot.name) slot.name = fnName;
-      if (typeof tc.function?.arguments === "string") slot.args += tc.function.arguments;
-    }
-    if (choice.finish_reason) finishReason = choice.finish_reason;
-  }
-  const toolCallsOut = toolCalls
-    .map((tc, index) => ({
-      id: tc.id ?? `stream-tool-call-${index}`,
-      type: "function" as const,
-      function: { name: tc.name ?? "", arguments: tc.args },
-    }))
-    .filter(tc => tc.function.name);
-  return {
-    model,
-    usage,
-    choices: [
-      {
-        index: 0,
-        message: {
-          role: "assistant",
-          ...(content ? { content } : {}),
-          ...(toolCallsOut.length > 0 ? { tool_calls: toolCallsOut } : {}),
-        },
-        finish_reason: finishReason ?? (toolCallsOut.length > 0 ? "tool_calls" : "stop"),
-      },
-    ],
-  };
-}
-
-export interface OmniTransportOptions extends WorkersAIClientOptions {
-  /** Whole-request cap. A generation that never ends must not pin a slot. */
-  readonly requestTimeoutMs?: number;
-  /** Max silence between SSE chunks before the stream is torn down. */
-  readonly idleTimeoutMs?: number;
-}
-
-export function makeOmniRouteSend(cfg: OmniRouteConfig, opts: OmniTransportOptions = {}): LLMSend {
-  const fetchFn = opts.fetchFn ?? fetch;
-  const requestTimeoutMs = opts.requestTimeoutMs ?? 30 * 60 * 1000;
-  const idleTimeoutMs = opts.idleTimeoutMs ?? 120_000;
-  const url = `${cfg.baseUrl}/chat/completions`;
-  return async (body: unknown): Promise<unknown> => {
-    const base = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
-    const controller = new AbortController();
-    const totalTimer = setTimeout(() => controller.abort(), requestTimeoutMs);
-    try {
-      const res = await fetchFn(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${cfg.apiKey}`,
-        },
-        body: JSON.stringify({ ...base, stream: true }),
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw llmHttpError(
-          "omniroute",
-          res.status,
-          text,
-          parseRetryAfterMs(res.headers.get("retry-after")),
-        );
-      }
-      const contentType = res.headers.get("content-type") ?? "";
-      if (contentType.includes("event-stream") && res.body) {
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let raw = "";
-        for (;;) {
-          let idleTimer: ReturnType<typeof setTimeout> | undefined;
-          const idle = new Promise<never>((_, reject) => {
-            idleTimer = setTimeout(() => {
-              controller.abort();
-              reject(llmHttpError("omniroute", 504, `omniroute stream idle for ${idleTimeoutMs}ms`));
-            }, idleTimeoutMs);
-          });
-          const read = reader.read();
-          // If the idle timer wins the race, controller.abort() makes this
-          // read reject shortly after — swallow it so it never surfaces as an
-          // unhandled rejection.
-          read.catch(() => undefined);
-          let chunk: ReadableStreamReadResult<Uint8Array>;
-          try {
-            chunk = await Promise.race([read, idle]);
-          } catch (error) {
-            if (error instanceof Error && "status" in error) throw error;
-            if (controller.signal.aborted) {
-              throw llmHttpError("omniroute", 504, `omniroute stream aborted: ${String(error)}`);
-            }
-            throw error;
-          } finally {
-            if (idleTimer) clearTimeout(idleTimer);
-          }
-          if (chunk.done) break;
-          raw += decoder.decode(chunk.value, { stream: true });
-        }
-        return aggregateOmniStream(raw);
-      }
-      return res.json();
-    } catch (error) {
-      if (controller.signal.aborted && !(error instanceof Error && "status" in error)) {
-        throw llmHttpError(
-          "omniroute",
-          504,
-          `omniroute request exceeded ${requestTimeoutMs}ms or was aborted`,
-        );
-      }
-      throw error;
-    } finally {
-      clearTimeout(totalTimer);
-    }
-  };
-}
-
-export function makeOmniRouteClient(cfg: OmniRouteConfig, opts: OmniTransportOptions = {}): LLMClient {
+export function makeOmniRouteClient(
+  cfg: OmniRouteConfig,
+  opts: OmniRouteEvalClientOptions = {},
+): LLMClient {
   const sampling = opts.sampling === undefined ? PINNED_SAMPLING : opts.sampling;
   const send = sampling
     ? pinnedSend(makeOmniRouteSend(cfg, opts), sampling)

@@ -189,7 +189,6 @@ export const ColorGradingSection: React.FC<ColorGradingSectionProps> = ({
       const media = project.mediaLibrary.items.find((item) => item.id === clip?.mediaId);
       const blob = media?.blob ?? await media?.fileHandle?.getFile();
       if (!clip || !blob) throw new Error("Selected clip's source media is unavailable locally.");
-      if (profile.version !== "kove.mirror.v2") throw new Error("Legacy EditDNA needs an explicit FPS selection before grading.");
       const origin = profile.shots[0]?.startFrame ?? 0;
       const shot = profile.shots.find((item) => clip.startTime >= frameToSeconds(item.startFrame - origin, profile.fps) && clip.startTime < frameToSeconds(item.endFrame - origin, profile.fps));
       if (!shot?.colorStats) throw new Error("No measured reference color for this shot.");

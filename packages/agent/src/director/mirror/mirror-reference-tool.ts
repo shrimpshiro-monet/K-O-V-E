@@ -9,5 +9,21 @@ import { rhythmSimilarity } from "@kove-advanced/core/rhythm/dtw";
 export async function mirrorReference1to1(host: EditingHost, profile: ReferenceProfile, userMediaIds: string[], targetStats?: LabStats[]) {
   const ids = await applyEditDNA(host, profile, userMediaIds, targetStats);
   const durations = ids.map((id) => host.getProject().timeline.tracks.flatMap((t) => t.clips).find((c) => c.id === id)?.duration ?? 0);
-  return { profile, projectId: host.getProject().id, shotItemIds: ids, rhythmScore: rhythmSimilarity(profile.rhythmCurve, durations.map((value) => secondsToFrame(value, profile.fps))), colorApplied: Boolean(targetStats?.some((stat, i) => stat && profile.shots[i]?.colorStats)) };
+  return { profile: withoutReferenceText(profile), projectId: host.getProject().id, shotItemIds: ids, rhythmScore: rhythmSimilarity(profile.rhythmCurve, durations.map((value) => secondsToFrame(value, profile.fps))), colorApplied: Boolean(targetStats?.some((stat, i) => stat && profile.shots[i]?.colorStats)) };
+}
+
+function withoutReferenceText(profile: ReferenceProfile): ReferenceProfile {
+  return {
+    ...profile,
+    shots: profile.shots.map((shot) => ({
+      ...shot,
+      captionWindows: shot.captionWindows.map(({ text: _text, ...window }) => window),
+    })),
+    ...(profile.styleEvidence && {
+      styleEvidence: {
+        ...profile.styleEvidence,
+        textOverlays: profile.styleEvidence.textOverlays.map(({ text: _text, ...overlay }) => overlay),
+      },
+    }),
+  };
 }

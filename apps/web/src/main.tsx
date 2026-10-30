@@ -14,6 +14,8 @@ import { registerServiceWorker } from "./services/service-worker";
 import { initCustomFonts } from "./components/editor/inspector/font-options";
 import { setEncoderBackendFactory } from "@kove-advanced/core";
 import { NativeFFmpegBackend } from "./services/native-ffmpeg-backend";
+import { getLiveEditorHost } from "./services/agent/host-singleton";
+import { createExportJobRunner } from "./services/agent/export-job-runner";
 
 const DesktopApp = React.lazy(() =>
   import("./desktop/DesktopApp").then((module) => ({
@@ -33,6 +35,8 @@ if (isDesktop) {
           "",
       ),
   );
+} else {
+  getLiveEditorHost().setJobRunner(createExportJobRunner());
 }
 
 registerServiceWorker().then((registration) => {
@@ -61,3 +65,11 @@ async function renderApplication(): Promise<void> {
 }
 
 void renderApplication();
+
+// Reference measurement runs OpenCV.js in a worker; its Emscripten eval takes
+// longer than any measurement head start, so warm it once the app is idle.
+const warmMotionWorker = () => {
+  void import("./services/mirror/opencv-motion-client").then((module) => module.warmOpenCvMotionWorker());
+};
+if (typeof requestIdleCallback === "function") requestIdleCallback(() => warmMotionWorker(), { timeout: 10_000 });
+else setTimeout(warmMotionWorker, 4_000);

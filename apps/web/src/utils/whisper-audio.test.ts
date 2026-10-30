@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { audioBufferToWhisperSamples } from "./whisper-audio";
+import { audioBufferToWhisperSamples, audioChannelsToWhisperSamples } from "./whisper-audio";
 
 function fakeAudioBuffer(channels: number[][], sampleRate: number): AudioBuffer {
   return {
@@ -31,5 +31,15 @@ describe("audioBufferToWhisperSamples", () => {
     );
     expect(samples).toHaveLength(8_000);
     expect(samples[4_000]).toBeCloseTo(0.5);
+  });
+
+  it("mixes array-like channels with a hard source-frame cap", () => {
+    const samples = audioChannelsToWhisperSamples(
+      [new Float32Array([1, 0, 0, 0]), new Float32Array([0, 1, 0, 0])],
+      32_000,
+      2,
+    );
+    expect(samples).toHaveLength(1);
+    expect(samples[0]).toBeCloseTo(0.5);
   });
 });

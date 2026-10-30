@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { callVisionWorker, pollAnalysisJob } from "./frame-extraction";
+import { callVisionWorker, parseMosaicConfig, pollAnalysisJob } from "./frame-extraction";
 
 interface FakeResponse {
   ok: boolean;
@@ -25,6 +25,21 @@ const DESCRIPTION = {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
+});
+
+describe("parseMosaicConfig", () => {
+  it("parses rows-by-columns grids", () => {
+    expect(parseMosaicConfig("4x4")).toEqual({ rows: 4, cols: 4 });
+    expect(parseMosaicConfig(" 3 X 2 ")).toEqual({ rows: 3, cols: 2 });
+  });
+
+  it("rejects empty, malformed, and out-of-range grids", () => {
+    expect(parseMosaicConfig(undefined)).toBeNull();
+    expect(parseMosaicConfig("")).toBeNull();
+    expect(parseMosaicConfig("banana")).toBeNull();
+    expect(parseMosaicConfig("0x4")).toBeNull();
+    expect(parseMosaicConfig("9x9")).toBeNull();
+  });
 });
 
 describe("callVisionWorker", () => {

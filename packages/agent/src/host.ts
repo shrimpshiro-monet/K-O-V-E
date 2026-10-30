@@ -16,7 +16,8 @@ export type JobKind =
   | "exportVideo"
   | "exportAudio"
   | "exportFrame"
-  | "extractVideoFrame";
+  | "extractVideoFrame"
+  | "extractVideoFrames";
 
 export interface JobResult {
   readonly ok: boolean;
@@ -297,6 +298,16 @@ export interface AudioSamples {
   readonly channels: readonly ArrayLike<number>[];
   readonly sampleRate: number;
 }
+
+export interface TranscriptWordEvidence {
+  readonly text: string;
+  readonly startTime: number;
+  readonly endTime: number;
+}
+
+export type MediaTranscriptionResult =
+  | { readonly status: "complete"; readonly words: readonly TranscriptWordEvidence[]; readonly warning?: string }
+  | { readonly status: "skipped"; readonly reason: string };
 
 /** A request to render the main timeline at one instant, as the user would see it in the preview. */
 export interface TimelineFrameRequest {
@@ -621,6 +632,11 @@ export interface EditingHost {
    * and report `features().analyzeAudio === false`.
    */
   loadAudioSamples?(mediaId: string, audioTrackIndex?: number): Promise<AudioSamples | null>;
+  /** Locally transcribe a bounded source-media window. Unsupported hosts omit this method. */
+  transcribeMediaAudio?(
+    mediaId: string,
+    options: { readonly maxDurationSeconds: number; readonly timeoutMs: number },
+  ): Promise<MediaTranscriptionResult>;
 
   /**
    * Render one composited frame of the main timeline. Optional: hosts without a compositor omit it

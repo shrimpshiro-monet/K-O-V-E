@@ -35,7 +35,8 @@ const DIRECT_CONFIG = {
 export type CompatibleApiService =
   | "openai-compatible"
   | "anthropic-compatible"
-  | "cloudflare";
+  | "cloudflare"
+  | "omniroute";
 export type ApiService = keyof typeof DIRECT_CONFIG | CompatibleApiService;
 
 export interface ApiFetchOptions extends globalThis.RequestInit {
@@ -106,6 +107,23 @@ export async function apiFetch(
       status: result.status,
       statusText: result.statusText,
       headers: result.headers,
+    });
+  }
+
+  if (service === "omniroute") {
+    // Local gateway: a renderer cannot reach it cross-origin, so dev traffic
+    // goes through the same-origin Vite proxy (target rewritten from
+    // OMNIROUTE_BASE_URL in .dev.vars). Desktop took the bridge path above —
+    // Node fetch has no CORS. Hosted production builds never construct an
+    // OmniRoute client, so no Pages proxy exists for this service.
+    if (path !== "/chat/completions" && path !== "/models") {
+      throw new Error(`Unsupported ${service} API path.`);
+    }
+    const normalized = normalizeCompatibleBaseUrl(baseUrl ?? "");
+    const pathBase = new URL(normalized).pathname.replace(/\/+$/, "");
+    return fetch(`/api/omni${pathBase}${path}`, {
+      ...requestOptions,
+      headers: { ...extraHeaders, Authorization: `Bearer ${apiKey}` },
     });
   }
 

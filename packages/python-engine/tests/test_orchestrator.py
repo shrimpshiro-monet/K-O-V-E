@@ -72,6 +72,7 @@ def test_orchestrator_multiple_frames():
         result = orchestrator.analyze("/fake/video.mp4")
 
     assert len(result.videos[0].segments) >= 1
+    assert mock_audio.call_count == 5
 
 
 @pytest.mark.integration

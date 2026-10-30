@@ -2,6 +2,7 @@ import { frameToSeconds } from "@kove-advanced/core/mirror/timebase";
 import { sampleReferenceProxies, grayDataUrl } from "../mirror/proxy-frames";
 import type {
   AudioSamples,
+  MediaTranscriptionResult,
   EditingHost,
   JobKind,
   JobResult,
@@ -87,6 +88,8 @@ import {
 } from "../../motion/stores/motion-store";
 import { runMotionRenderQueue } from "../../motion/render-queue-runner";
 import { createMulticamHostBridge } from "./multicam-bridge";
+import { audioChannelsToWhisperSamples } from "../../utils/whisper-audio";
+import { transcribeSamplesWithWordTimestamps } from "../multicam-transcription";
 
 const MIME_BY_EXT: Record<string, string> = {
   mp4: "video/mp4",
@@ -791,6 +794,54 @@ export class LiveEditorHost implements EditingHost {
 
   loadAudioSamples(mediaId: string, audioTrackIndex = 0): Promise<AudioSamples | null> {
     return (this.audioSource ?? decodeMediaAudio)(mediaId, audioTrackIndex);
+  }
+
+  async transcribeMediaAudio(
+    mediaId: string,
+    options: { readonly maxDurationSeconds: number; readonly timeoutMs: number },
+  ): Promise<MediaTranscriptionResult> {
+    if (!Number.isFinite(options.maxDurationSeconds) || options.maxDurationSeconds <= 0 ||
+        !Number.isFinite(options.timeoutMs) || options.timeoutMs <= 0) {
+      throw new RangeError("Transcription duration and timeout limits must be positive finite numbers.");
+    }
+    const item = useProjectStore.getState().getMediaItem(mediaId);
+    if (!item || item.type !== "video") {
+      return { status: "skipped" as const, reason: "Source video is unavailable for transcription." };
+    }
+    if (!Number.isFinite(item.metadata.duration) || item.metadata.duration <= 0) {
+      return { status: "skipped" as const, reason: "Source duration is unavailable; transcription was skipped to keep decoding bounded." };
+    }
+    if (item.metadata.duration > options.maxDurationSeconds) {
+      return {
+        status: "skipped" as const,
+        reason: `Local transcription is capped at ${options.maxDurationSeconds}s per source to bound browser memory; this video is ${Math.round(item.metadata.duration)}s.`,
+      };
+    }
+
+    const audio = await (this.audioSource ?? decodeMediaAudio)(mediaId, 0);
+    if (!audio || audio.channels.length === 0) {
+      return { status: "skipped" as const, reason: "No decodable audio track was available for local transcription." };
+    }
+    const maxFrames = Math.floor(options.maxDurationSeconds * audio.sampleRate);
+    const sourceFrames = Math.min(audio.channels[0]?.length ?? 0, maxFrames);
+    if (sourceFrames === 0) {
+      return { status: "skipped" as const, reason: "The decoded audio track contained no samples." };
+    }
+    const samples = audioChannelsToWhisperSamples(audio.channels, audio.sampleRate, sourceFrames);
+    const words = await transcribeSamplesWithWordTimestamps(samples, {
+      model: "fast",
+      timeoutMs: options.timeoutMs,
+    });
+    const capped = (audio.channels[0]?.length ?? 0) > maxFrames;
+    return {
+      status: "complete" as const,
+      words: words.map((word) => ({
+        text: word.text,
+        startTime: word.start,
+        endTime: word.end,
+      })),
+      ...(capped && { warning: `Only the first ${options.maxDurationSeconds}s were transcribed to stay within the browser audio budget.` }),
+    };
   }
 
   /**

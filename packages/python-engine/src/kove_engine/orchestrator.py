@@ -16,6 +16,7 @@ from kove_engine.segment_builder import SegmentBuilder
 from kove_engine.reference_analysis import analyze_reference_edit
 from kove_engine.forensics import analyze_sampled_sequence
 from kove_engine.types import (
+    AudioResult,
     FrameData,
     FrameDescription,
     SegmentMap,
@@ -68,17 +69,15 @@ class Orchestrator:
 
         duration = self._get_duration(video_path)
 
-        frame_descriptions = self._analyze_frames(video_path, frame_paths, duration, scene_cuts)
+        frame_descriptions, audio_results = self._analyze_frames(
+            video_path, frame_paths, duration, scene_cuts
+        )
 
         self._emit("building_segments", "Building segments...")
         segment_map = self.segment_builder.build(frame_descriptions, video_id, duration)
 
         self._emit("done", f"Analysis complete: {len(segment_map.segments)} segments")
         result = SegmentMap(videos=[segment_map])
-        audio_results = [
-            self.audio_analyzer.analyze(video_path, frame.timestamp, 1.0)
-            for frame in frame_descriptions
-        ]
         forensics = analyze_sampled_sequence(video_path, frame_paths, duration)
         return result, analyze_reference_edit(
             segment_map,
@@ -93,8 +92,9 @@ class Orchestrator:
         frame_paths: list[tuple[float, str]],
         duration: float,
         scene_cuts: list[tuple[float, float]],
-    ) -> list[FrameDescription]:
+    ) -> tuple[list[FrameDescription], list[AudioResult]]:
         descriptions: list[FrameDescription] = []
+        audio_results: list[AudioResult] = []
         prev_frame_path: str | None = None
         total = len(frame_paths)
 
@@ -114,6 +114,7 @@ class Orchestrator:
 
             motion = self.motion_analyzer.analyze(frame_data)
             audio = self.audio_analyzer.analyze(video_path, timestamp, 1.0)
+            audio_results.append(audio)
             face = self.face_analyzer.analyze(image_path)
             visual = self.visual_analyzer.analyze(image_path)
 
@@ -146,7 +147,7 @@ class Orchestrator:
 
             prev_frame_path = image_path
 
-        return descriptions
+        return descriptions, audio_results
 
     def _generate_description(
         self,

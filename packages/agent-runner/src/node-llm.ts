@@ -3,18 +3,39 @@ import {
   makeClientFromSend,
   llmHttpError,
   parseRetryAfterMs,
+  makeOmniRouteClient,
+  makeWorkersAIClient,
+  makeFallbackClient,
 } from "@kove-advanced/agent";
 import type { LLMClient, LLMSend } from "@kove-advanced/agent";
+import { loadOmniRouteConfig, loadWorkersAIConfig } from "@kove-advanced/agent/providers/dev-vars";
 
-export type LlmProvider = "anthropic" | "openai";
+export type DirectLlmProvider = "anthropic" | "openai";
+/**
+ * `auto` is the ladder: a configured OmniRoute gateway first, Cloudflare
+ * Workers AI second, direct anthropic/openai endpoints only when a key says
+ * so. `omni`/`cloudflare` force one side (omni keeps Workers as its
+ * secondary); `anthropic`/`openai` behave exactly as before.
+ */
+export type LlmProvider = DirectLlmProvider | "omni" | "cloudflare" | "auto";
 
-const ENDPOINTS: Record<LlmProvider, string> = {
+export function resolveLlmProvider(
+  provider: LlmProvider,
+  repoRoot?: string,
+): DirectLlmProvider | "omni" | "cloudflare" {
+  if (provider !== "auto") return provider;
+  if (loadOmniRouteConfig(repoRoot)) return "omni";
+  if (loadWorkersAIConfig(repoRoot)) return "cloudflare";
+  return "anthropic";
+}
+
+const ENDPOINTS: Record<DirectLlmProvider, string> = {
   anthropic: "https://api.anthropic.com/v1/messages",
   openai: "https://api.openai.com/v1/chat/completions",
 };
 
 function authHeaders(
-  provider: LlmProvider,
+  provider: DirectLlmProvider,
   apiKey: string,
 ): Record<string, string> {
   if (provider === "anthropic") {
@@ -36,7 +57,7 @@ function authHeaders(
  * preserving the BYOK no-persist guarantee on the server side.
  */
 export function makeNodeLLMSend(
-  provider: LlmProvider,
+  provider: DirectLlmProvider,
   apiKey: string,
   fetchFn: typeof fetch = fetch,
 ): LLMSend {
@@ -64,16 +85,77 @@ export function makeNodeLLMSend(
 
 export interface NodeLLMOptions {
   readonly provider: LlmProvider;
-  readonly model: string;
-  readonly apiKey: string;
+  /** Overrides the provider's configured/default model where one exists. */
+  readonly model?: string;
+  /** anthropic/openai only; gateway providers read their key from env/.dev.vars. */
+  readonly apiKey?: string;
   readonly maxTokens?: number;
   readonly fetchFn?: typeof fetch;
+  /** Notified once per gateway→Workers failover (CLI logs it to stderr). */
+  readonly onFallback?: (error: unknown) => void;
+  /** Explicit `.dev.vars` root (tests); default walks up from the cwd. */
+  readonly repoRoot?: string;
+}
+
+/**
+ * Gateway ladder client. OmniRoute leads (SSE transport, retries disabled so
+ * failover is immediate), Cloudflare Workers AI is the secondary; with only
+ * one side configured the lone side keeps its own retry policy.
+ */
+function makeGatewayClient(
+  provider: "omni" | "cloudflare",
+  opts: NodeLLMOptions,
+): LLMClient {
+  const omni = loadOmniRouteConfig(opts.repoRoot);
+  const workers = loadWorkersAIConfig(opts.repoRoot);
+
+  if (provider === "cloudflare") {
+    if (!workers) {
+      throw new Error(
+        "Cloudflare Workers AI is not configured (set CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN, in env or .dev.vars).",
+      );
+    }
+    const cfg = opts.model ? { ...workers, model: opts.model } : workers;
+    return makeWorkersAIClient(cfg, {
+      fetchFn: opts.fetchFn,
+      maxTokens: opts.maxTokens,
+    });
+  }
+
+  if (!omni) {
+    throw new Error(
+      "OmniRoute is not configured (set OMNIROUTE_KEY + OMNIROUTE_MODEL, in env or .dev.vars).",
+    );
+  }
+  const cfg = opts.model ? { ...omni, model: opts.model } : omni;
+  const primary = makeOmniRouteClient(cfg, {
+    fetchFn: opts.fetchFn,
+    maxTokens: opts.maxTokens,
+    retries: workers ? 0 : 3,
+  });
+  if (!workers) return primary;
+  const secondary = makeWorkersAIClient(workers, {
+    fetchFn: opts.fetchFn,
+    maxTokens: opts.maxTokens,
+  });
+  return makeFallbackClient({ primary, secondary, onFallback: opts.onFallback });
 }
 
 export function makeNodeLLMClient(opts: NodeLLMOptions): LLMClient {
-  const send = withRetry(makeNodeLLMSend(opts.provider, opts.apiKey, opts.fetchFn));
+  const provider = resolveLlmProvider(opts.provider);
+  if (provider === "omni" || provider === "cloudflare") {
+    return makeGatewayClient(provider, opts);
+  }
+  const apiKey = opts.apiKey ?? "";
+  if (!apiKey) {
+    throw new Error(`Missing API key for provider '${provider}'`);
+  }
+  if (!opts.model) {
+    throw new Error(`Missing model for provider '${provider}' (pass --model).`);
+  }
+  const send = withRetry(makeNodeLLMSend(provider, apiKey, opts.fetchFn));
   return makeClientFromSend({
-    provider: opts.provider,
+    provider,
     model: opts.model,
     maxTokens: opts.maxTokens,
     send,

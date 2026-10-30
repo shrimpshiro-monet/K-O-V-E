@@ -14,12 +14,20 @@ class FrameSampler:
         baseline_fps: float = 1.5,
         burst_fps: float = 10.0,
         burst_window: float = 2.0,
-        dedup_threshold: float = 0.5,
+        dedup_threshold: float = 0.001,
+        max_frames: int = 1800,
     ) -> None:
+        if baseline_fps <= 0 or burst_fps <= 0:
+            raise ValueError("Sampling rates must be greater than zero")
+        if burst_window < 0 or dedup_threshold < 0:
+            raise ValueError("Sampling windows and deduplication threshold cannot be negative")
+        if max_frames < 1:
+            raise ValueError("max_frames must be at least one")
         self.baseline_fps = baseline_fps
         self.burst_fps = burst_fps
         self.burst_window = burst_window
         self.dedup_threshold = dedup_threshold
+        self.max_frames = max_frames
 
     def sample(
         self, video_path: str, scene_cuts: list[tuple[float, float]]
@@ -45,35 +53,71 @@ class FrameSampler:
     def _compute_timestamps(
         self, duration: float, scene_cuts: list[tuple[float, float]]
     ) -> list[float]:
-        timestamps: set[float] = set()
-
-        # Baseline sampling
-        t = 0.0
-        while t < duration:
-            timestamps.add(round(t, 3))
-            t += 1.0 / self.baseline_fps
-
-        # Burst sampling around scene cuts
-        for cut_start, _cut_duration in scene_cuts:
-            burst_start = max(0.0, cut_start - self.burst_window)
-            burst_end = min(duration, cut_start + self.burst_window)
-            t = burst_start
-            while t < burst_end:
-                timestamps.add(round(t, 3))
-                t += 1.0 / self.burst_fps
-
-        sorted_times = sorted(timestamps)
-
-        # Deduplicate: merge timestamps within threshold
-        if not sorted_times:
+        if duration <= 0:
             return []
 
-        deduped = [sorted_times[0]]
-        for t in sorted_times[1:]:
-            if t - deduped[-1] >= self.dedup_threshold:
-                deduped.append(t)
+        burst_windows = [
+            (max(0.0, start - self.burst_window), min(duration, start + self.burst_window))
+            for start, _scene_duration in scene_cuts
+            if 0 <= start < duration
+        ]
+        burst_timestamps: set[float] = set()
+        for start, end in burst_windows:
+            timestamp = start
+            while timestamp < end:
+                burst_timestamps.add(round(timestamp, 3))
+                timestamp += 1.0 / self.burst_fps
 
-        return deduped
+        # Baseline samples outside burst windows preserve broad coverage while
+        # allowing the configured high-rate samples to survive deduplication.
+        baseline_timestamps: set[float] = set()
+        t = 0.0
+        while t < duration:
+            if not any(start <= t < end for start, end in burst_windows):
+                baseline_timestamps.add(round(t, 3))
+            t += 1.0 / self.baseline_fps
+
+        boundary_timestamps = {
+            round(start, 3) for start, _scene_duration in scene_cuts if 0 <= start < duration
+        }
+        candidates = sorted(burst_timestamps | baseline_timestamps | boundary_timestamps)
+
+        if not candidates:
+            return []
+
+        deduped = [candidates[0]]
+        for timestamp in candidates[1:]:
+            if timestamp - deduped[-1] >= self.dedup_threshold:
+                deduped.append(timestamp)
+
+        if len(deduped) <= self.max_frames:
+            return deduped
+
+        # Keep scene boundaries first, then sample the remaining timeline
+        # uniformly so long or cut-heavy sources cannot exceed the decode
+        # budget. If there are more cuts than the budget, retain a uniform
+        # subset of boundaries rather than returning an unbounded list.
+        mandatory = sorted(boundary_timestamps)
+        if len(mandatory) > self.max_frames:
+            return self._evenly_spaced(mandatory, self.max_frames)
+
+        remaining = self.max_frames - len(mandatory)
+        optional = [timestamp for timestamp in deduped if timestamp not in boundary_timestamps]
+        return sorted(set(mandatory + self._evenly_spaced(optional, remaining)))
+
+    @staticmethod
+    def _evenly_spaced(timestamps: list[float], count: int) -> list[float]:
+        if count <= 0 or not timestamps:
+            return []
+        if count >= len(timestamps):
+            return timestamps
+        if count == 1:
+            return [timestamps[len(timestamps) // 2]]
+        indices = {
+            round(index * (len(timestamps) - 1) / (count - 1))
+            for index in range(count)
+        }
+        return [timestamps[index] for index in sorted(indices)]
 
     def _extract_frames(
         self, video_path: str, timestamps: list[float]

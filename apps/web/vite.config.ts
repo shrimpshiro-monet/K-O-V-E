@@ -10,13 +10,17 @@ const isDesktop = process.env.KOVE_ADVANCED_DESKTOP === "1";
 /**
  * Reads .dev.vars (Cloudflare Workers local env) and injects CLOUDFLARE_*
  * values as VITE_* env vars so the frontend can auto-populate during dev.
+ * OMNIROUTE_* follows the same route, but only for a dev server or a desktop
+ * build — a hosted production bundle must never embed the gateway key, and a
+ * visitor's browser could not reach a localhost gateway anyway.
  */
 function cloudflareDevVarsPlugin() {
   const devVarsPath = path.resolve(__dirname, "../../.dev.vars");
   return {
     name: "cloudflare-dev-vars",
-    config() {
+    config(_config: unknown, env: { command: string }) {
       if (!fs.existsSync(devVarsPath)) return;
+      const injectOmni = env.command === "serve" || isDesktop;
       const content = fs.readFileSync(devVarsPath, "utf-8");
       for (const line of content.split("\n")) {
         const trimmed = line.trim();
@@ -25,7 +29,11 @@ function cloudflareDevVarsPlugin() {
         if (eqIdx === -1) continue;
         const key = trimmed.slice(0, eqIdx).trim();
         const val = trimmed.slice(eqIdx + 1).trim();
-        if (key.startsWith("CLOUDFLARE_")) {
+        const injectable =
+          key.startsWith("CLOUDFLARE_") ||
+          key === "KOVE_VISION_MOSAIC" ||
+          (injectOmni && (key.startsWith("OMNIROUTE_") || key.startsWith("NVIDIA_NIM_")));
+        if (injectable) {
           const viteKey = `VITE_${key}`;
           if (!process.env[viteKey]) {
             process.env[viteKey] = val;
@@ -106,16 +114,41 @@ export default defineConfig({
       // Read the API token directly from .dev.vars
       const devVarsPath = path.resolve(__dirname, "../../.dev.vars");
       let apiToken = "";
+      let omniOrigin = "http://localhost:20128";
+      let omniPathBase = "/v1";
+      let nimApiKey = "";
+      let nimOrigin = "https://integrate.api.nvidia.com";
+      let nimPathBase = "/v1";
       if (fs.existsSync(devVarsPath)) {
         for (const line of fs.readFileSync(devVarsPath, "utf-8").split("\n")) {
           const trimmed = line.trim();
           if (trimmed.startsWith("CLOUDFLARE_API_TOKEN=")) {
             apiToken = trimmed.slice("CLOUDFLARE_API_TOKEN=".length).trim();
-            break;
+          } else if (trimmed.startsWith("OMNIROUTE_BASE_URL=")) {
+            const value = trimmed.slice("OMNIROUTE_BASE_URL=".length).trim();
+            try {
+              const url = new URL(value);
+              omniOrigin = url.origin;
+              omniPathBase = url.pathname.replace(/\/+$/, "");
+            } catch {
+              // Keep the localhost default when the base URL is malformed.
+            }
+          } else if (trimmed.startsWith("NVIDIA_NIM_API_KEY=")) {
+            nimApiKey = trimmed.slice("NVIDIA_NIM_API_KEY=".length).trim();
+          } else if (trimmed.startsWith("NVIDIA_NIM_BASE_URL=")) {
+            const value = trimmed.slice("NVIDIA_NIM_BASE_URL=".length).trim();
+            try {
+              const url = new URL(value);
+              nimOrigin = url.origin;
+              nimPathBase = url.pathname.replace(/\/+$/, "");
+            } catch {
+              // Keep the NVIDIA NIM default when the base URL is malformed.
+            }
           }
         }
       }
       console.log("[vite] Cloudflare proxy token:", apiToken ? `${apiToken.slice(0, 8)}...` : "MISSING");
+      console.log("[vite] OmniRoute proxy:", `${omniOrigin}${omniPathBase}`);
       return {
         "/api/cf-ai": {
           target: "https://api.cloudflare.com",
@@ -126,6 +159,23 @@ export default defineConfig({
           },
           timeout: 120000,
           proxyTimeout: 120000,
+        },
+        // Same-origin lane to the local OmniRoute gateway: the browser cannot
+        // call localhost cross-origin, and the director's long generations
+        // need an untruncated stream (hence the 30-minute proxy window).
+        "/api/omni": {
+          target: omniOrigin,
+          changeOrigin: true,
+          rewrite: (p: string) => p.replace(/^\/api\/omni/, omniPathBase),
+          timeout: 1800000,
+          proxyTimeout: 1800000,
+        },
+        "/api/nim": {
+          target: nimOrigin,
+          changeOrigin: true,
+          rewrite: (p: string) => p.replace(/^\/api\/nim/, ""),
+          timeout: 1800000,
+          proxyTimeout: 1800000,
         },
       };
     })(),

@@ -12,6 +12,13 @@ vi.mock("mediabunny", () => ({
       const frame = Math.floor(timestamp * 30 + 1e-8);
       return { timestamp: frame / 30, duration: 1 / 30, canvas: { frame } };
     }
+    canvases(startTimestamp = 0) {
+      return (async function* () {
+        for (let frame = Math.max(0, Math.ceil(startTimestamp * 30 - 1e-9)); ; frame++) {
+          yield { timestamp: frame / 30, duration: 1 / 30, canvas: { frame } };
+        }
+      })();
+    }
   },
 }));
 

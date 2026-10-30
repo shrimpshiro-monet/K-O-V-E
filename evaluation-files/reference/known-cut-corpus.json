@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "synthetic-three-scene-h264",
+      "source": "evaluation-files/reference/synthetic-known-cuts.mp4",
+      "sha256": "1a3d48011c4e3620da1b3aee0f9dd90a7e10ec6b51d35b8f090df4125e54cad4",
+      "media": {
+        "width": 320,
+        "height": 180,
+        "fps": { "num": 30, "den": 1 },
+        "durationFrames": 90
+      },
+      "labels": {
+        "status": "verified-synthetic",
+        "shotBoundariesFrames": [30, 60],
+        "textOverlays": [],
+        "cameraMotion": "static"
+      }
+    },
+    {
+      "id": "captain-price-reference",
+      "source": "evaluation-files/reference videos (priority, needs to look LIKE or BETTER than)/captain price (2nd priority).MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "7a92d50cbf32a847f8a7eb968b53afe14bfb003e5c6622eca0b716fbc71feab4",
+      "media": {
+        "width": 576,
+        "height": 640,
+        "fps": { "num": 30, "den": 1 },
+        "streamDurationSeconds": 20.486654,
+        "frameCount": 605
+      },
+      "candidateProfile": "evaluation-files/reference/real-captain-price-profile.json",
+      "profileMatchStatus": "candidate-unverified",
+      "labels": {
+        "status": "pending-human-annotation",
+        "shotBoundariesFrames": null,
+        "textOverlays": null,
+        "cameraMotion": null
+      }
+    },
+    {
+      "id": "spiderman-reference",
+      "source": "evaluation-files/reference videos (priority, needs to look LIKE or BETTER than)/SPIDERMAN (IMPORTANT).MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "07ea3556bb5c8e2cdb1a9a93a606cfad8dc7e35244e65f563177cd5381752e36",
+      "media": {
+        "width": 576,
+        "height": 1104,
+        "fps": { "num": 30, "den": 1 },
+        "streamDurationSeconds": 46.6,
+        "frameCount": 1398
+      },
+      "candidateProfile": "evaluation-files/reference/real-spiderman-profile.json",
+      "profileMatchStatus": "candidate-unverified",
+      "labels": {
+        "status": "pending-human-annotation",
+        "shotBoundariesFrames": null,
+        "textOverlays": null,
+        "cameraMotion": null
+      }
+    },
+    {
+      "id": "steph-curry-reference",
+      "source": "evaluation-files/reference videos (priority, needs to look LIKE or BETTER than)/steph curry.MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "0d8a79f3f8815f0dc04e759e0328dffb9dc60a499bc1342a4b3ab39373ac34f9",
+      "media": {
+        "width": 576,
+        "height": 576,
+        "fps": { "num": 2997, "den": 100 },
+        "streamDurationSeconds": 19.155011,
+        "frameCount": 574
+      },
+      "labels": {
+        "status": "pending-human-annotation",
+        "shotBoundariesFrames": null,
+        "textOverlays": null,
+        "cameraMotion": null
+      }
+    }
+  ]
+}

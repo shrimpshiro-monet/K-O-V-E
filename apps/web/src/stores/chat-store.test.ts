@@ -7,6 +7,17 @@ const h = vi.hoisted(() => ({
   getSecret: vi.fn(async () => "test-key"),
   isSessionUnlocked: vi.fn(() => true),
   makeBYOKClient: vi.fn(() => ({ complete: vi.fn() })),
+  makeOmniRouteGatewayClient: vi.fn(() => ({ complete: vi.fn() })),
+  makeFallbackClient: vi.fn((opts: {
+    primary: unknown;
+    secondary: unknown;
+    secondaryInput?: (input: unknown) => unknown;
+    onFallback?: (error: unknown, leg?: "primary" | "secondary" | "tertiary") => void;
+    tertiary?: unknown;
+  }) => ({
+    complete: vi.fn(async (input: unknown) => (opts.secondary as { complete: (i: unknown) => Promise<unknown> }).complete(input)),
+  })),
+  selectToolsForPrompt: vi.fn((_context?: string, _options?: unknown): string[] => []),
   undo: vi.fn(async () => ({ success: true })),
   importMedia: vi.fn(async () => ({ success: true })),
   setMediaAnalysisRole: vi.fn(async () => ({ success: true })),
@@ -38,10 +49,11 @@ vi.mock("@kove-advanced/agent", async () => {
     toAnthropicTools: () => [],
     toOpenAITools: () => [],
     buildSystemPrompt: () => "system",
-    selectToolsForPrompt: () => [],
+    selectToolsForPrompt: h.selectToolsForPrompt,
     setAnalysisMode: () => {},
     parseReferenceIntent: intent.parseReferenceIntent,
     referenceIntentDirective: intent.referenceIntentDirective,
+    makeFallbackClient: h.makeFallbackClient,
   };
 });
 
@@ -65,6 +77,7 @@ vi.mock("../services/mirror/reference-flow", () => ({
 
 vi.mock("../services/agent/llm-transport", () => ({
   makeBYOKClient: h.makeBYOKClient,
+  makeOmniRouteGatewayClient: h.makeOmniRouteGatewayClient,
 }));
 
 vi.mock("./settings-store", () => ({
@@ -145,6 +158,7 @@ const sentUserContent = (): string => {
 
 describe("chat-store", () => {
   beforeEach(() => {
+    vi.unstubAllEnvs();
     store().reset();
     useChatHistoryStore.getState().clearHistory();
     vi.clearAllMocks();
@@ -341,6 +355,138 @@ describe("chat-store", () => {
         model: "gpt-custom-account-model",
       }),
     );
+  });
+
+  describe("OmniRoute → Workers ladder (zero-config provider)", () => {
+    const stubCloudflareEnv = (): void => {
+      vi.stubEnv("VITE_CLOUDFLARE_API_TOKEN", "cf-token");
+      vi.stubEnv("VITE_CLOUDFLARE_ACCOUNT_ID", "cf-acct");
+      vi.stubEnv("VITE_CLOUDFLARE_AI_MODEL", "@cf/test-model");
+    };
+    const stubGatewayEnv = (): void => {
+      vi.stubEnv("VITE_OMNIROUTE_BASE_URL", "http://localhost:20128/v1");
+      vi.stubEnv("VITE_OMNIROUTE_KEY", "omni-key");
+      vi.stubEnv("VITE_OMNIROUTE_MODEL", "vendor/pinned-model");
+    };
+    const okTurn: RunTurnImpl = impl(async ({ messages }) => ({
+      text: "ok",
+      messages,
+      toolCalls: 0,
+      stoppedReason: "end_turn",
+      committed: true,
+    }));
+    const selectOptions = (index: number): { maxTools?: number } =>
+      (h.selectToolsForPrompt.mock.calls[index]?.[1] ?? {}) as { maxTools?: number };
+
+    it("leads with the gateway and keeps Workers as the replay side", async () => {
+      h.settings.defaultLlmProvider = "cloudflare";
+      h.settings.llmModel = "";
+      stubCloudflareEnv();
+      stubGatewayEnv();
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("cut this into a highlight");
+
+      expect(h.makeOmniRouteGatewayClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          baseUrl: "http://localhost:20128/v1",
+          apiKey: "omni-key",
+          model: "vendor/pinned-model",
+        }),
+      );
+      expect(h.makeBYOKClient).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: "cloudflare", model: "@cf/test-model" }),
+      );
+      expect(h.makeFallbackClient).toHaveBeenCalledTimes(1);
+      const ladder = h.makeFallbackClient.mock.calls[0][0];
+      expect(ladder.primary).toBe(h.makeOmniRouteGatewayClient.mock.results[0].value);
+      expect(ladder.secondary).toBe(h.makeBYOKClient.mock.results[0].value);
+      expect(ladder.secondaryInput).toBeTypeOf("function");
+      expect(ladder.onFallback).toBeTypeOf("function");
+      // The gateway side gets the full routed toolset, the Workers replay the
+      // proven 25-tool cap with its matching prompt.
+      expect(selectOptions(0).maxTools).toBe(120);
+      expect(selectOptions(1).maxTools).toBe(25);
+      expect(h.runTurn).toHaveBeenCalledOnce();
+    });
+
+    it("lets a typed settings model override the gateway's pinned model", async () => {
+      h.settings.defaultLlmProvider = "cloudflare";
+      h.settings.llmModel = "vendor/user-chosen-model";
+      stubCloudflareEnv();
+      stubGatewayEnv();
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("hello");
+
+      expect(h.makeOmniRouteGatewayClient).toHaveBeenCalledWith(
+        expect.objectContaining({ model: "vendor/user-chosen-model" }),
+      );
+    });
+
+    it("keeps the gateway pinned model when the settings model is a Workers slug", async () => {
+      h.settings.defaultLlmProvider = "cloudflare";
+      h.settings.llmModel = "@cf/test-model";
+      stubCloudflareEnv();
+      stubGatewayEnv();
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("hello");
+
+      expect(h.makeOmniRouteGatewayClient).toHaveBeenCalledWith(
+        expect.objectContaining({ model: "vendor/pinned-model" }),
+      );
+      expect(h.makeBYOKClient).toHaveBeenCalledWith(
+        expect.objectContaining({ model: "@cf/test-model" }),
+      );
+    });
+
+    it("stays on Workers alone when the gateway env is absent", async () => {
+      h.settings.defaultLlmProvider = "cloudflare";
+      h.settings.llmModel = "";
+      stubCloudflareEnv();
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("hello");
+
+      expect(h.makeOmniRouteGatewayClient).not.toHaveBeenCalled();
+      expect(h.makeFallbackClient).not.toHaveBeenCalled();
+      expect(selectOptions(0).maxTools).toBe(25);
+      expect(h.runTurn).toHaveBeenCalledOnce();
+    });
+
+    it("ignores the gateway env for explicit BYOK providers", async () => {
+      stubCloudflareEnv();
+      stubGatewayEnv();
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("hello");
+
+      expect(h.makeOmniRouteGatewayClient).not.toHaveBeenCalled();
+      expect(h.makeFallbackClient).not.toHaveBeenCalled();
+      expect(h.makeBYOKClient).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: "openai-compatible" }),
+      );
+    });
+
+    it("surfaces a gateway failure as a notice while the turn continues", async () => {
+      h.settings.defaultLlmProvider = "cloudflare";
+      h.settings.llmModel = "";
+      stubCloudflareEnv();
+      stubGatewayEnv();
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("hello");
+
+      const ladder = h.makeFallbackClient.mock.calls[0][0];
+      expect(ladder.onFallback).toBeTypeOf("function");
+      ladder.onFallback?.(new Error("connect ECONNREFUSED 127.0.0.1:20128"), "primary");
+
+      const last = store().messages.at(-1);
+      expect(last?.notice).toMatch(/OmniRoute unreachable \(connect ECONNREFUSED/);
+      expect(last?.notice).toMatch(/continuing on Cloudflare Workers AI/);
+      expect(store().error ?? null).toBeNull();
+    });
   });
 
   it("runs against a keyless OpenAI-compatible endpoint", async () => {

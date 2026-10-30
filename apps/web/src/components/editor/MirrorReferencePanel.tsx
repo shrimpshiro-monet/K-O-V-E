@@ -5,7 +5,11 @@ import { ToolcraftButton as Button } from "@kove-advanced/ui";
 import { executeTool } from "@kove-advanced/agent";
 import { allocateSourceRanges } from "@kove-advanced/core/mirror/allocate-shots";
 import { probeReferenceClock as probeContainerClock } from "@kove-advanced/core/mirror/reference-clock";
-import { serializeReferenceProfile, type ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
+import {
+  REFERENCE_PROFILE_V3_LIMITATIONS,
+  serializeReferenceProfile,
+  type ReferenceProfile,
+} from "@kove-advanced/core/mirror/reference-profile";
 import type { LabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import { useProjectStore } from "../../stores/project-store";
 import { toast } from "../../stores/notification-store";
@@ -155,6 +159,15 @@ export function MirrorReferencePanel() {
     </div>}
     {profile && <>
       <p>{profile.shots.length} shots · {profile.aspectRatio.width}×{profile.aspectRatio.height} · {profile.fps.num}/{profile.fps.den} fps ({profile.fpsSource}) output timebase</p>
+      <div aria-label="Reference analysis confidence and limitations" className="space-y-1 text-text-muted">
+        <p>
+          Measured style evidence: {profile.styleEvidence?.transitions.length ?? 0} transitions ·{" "}
+          {profile.styleEvidence?.textOverlays.length ?? 0} text/overlay observations ·{" "}
+          {profile.styleEvidence?.effects.length ?? 0} effect candidates.
+        </p>
+        {profile.warnings?.map((warning, index) => <p key={`${index}-${warning}`}>Analysis note: {warning}</p>)}
+        {REFERENCE_PROFILE_V3_LIMITATIONS.map((limitation) => <p key={limitation}>Limitation: {limitation}</p>)}
+      </div>
       <div className="space-y-1">Your footage (in selection order):
         {media.map((m) => <label className="flex gap-2" key={m.id}><input type="checkbox" checked={selected.includes(m.id)} disabled={busy} onChange={() => setSelected((current) => current.includes(m.id) ? current.filter((id) => id !== m.id) : [...current, m.id])} />{m.name}</label>)}
       </div>
