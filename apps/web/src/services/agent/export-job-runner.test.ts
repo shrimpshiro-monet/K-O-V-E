@@ -54,6 +54,7 @@ describe("agent export jobs", () => {
     (window as unknown as Record<string, unknown>)["kove-advanced"] = { fs: { tempFilePath: vi.fn().mockResolvedValue("/tmp/agent.mp4") } };
     mocks.exportVideo.mockImplementation(async function* (_project, _settings, _stream, factory) {
       factory({});
+      yield { phase: "preparing", progress: 0 };
       return { success: true, stats: { fileSize: 4321 } };
     });
     const result = await createExportJobRunner()("exportVideo", { format: "mp4" });
@@ -65,7 +66,10 @@ describe("agent export jobs", () => {
 
   it("saves audio in a browser download with bitrate expressed in kbps", async () => {
     const blob = new Blob(["audio"], { type: "audio/ogg" });
-    mocks.exportAudio.mockImplementation(async function* () { return { success: true, blob }; });
+    mocks.exportAudio.mockImplementation(async function* () {
+      yield { phase: "encoding", progress: 0.5 };
+      return { success: true, blob };
+    });
     const result = await createExportJobRunner()("exportAudio", { format: "ogg" });
     expect(result).toMatchObject({ ok: true, data: { format: "ogg", storage: "browser-download", bytes: 5 } });
     expect(mocks.exportAudio.mock.calls[0][1]).toMatchObject({ format: "ogg", sampleRate: 48000, channels: 2, bitrate: 192 });
@@ -76,7 +80,10 @@ describe("agent export jobs", () => {
     mocks.initialize.mockRejectedValueOnce(new Error("engine failed"));
     await expect(createExportJobRunner()("exportVideo", {})).resolves.toMatchObject({ ok: false, error: "engine failed" });
     expect(mocks.browserWritable).not.toHaveBeenCalled();
-    mocks.exportVideo.mockImplementation(async function* () { throw new Error("encoder failed"); });
+    mocks.exportVideo.mockImplementation(async function* () {
+      yield { phase: "encoding", progress: 0.5 };
+      throw new Error("encoder failed");
+    });
     await expect(createExportJobRunner()("exportVideo", {})).resolves.toMatchObject({ ok: false, error: "encoder failed" });
     expect(writable.abort).toHaveBeenCalledOnce();
   });

@@ -180,6 +180,7 @@ vi.mock("mediabunny", () => {
 });
 
 import { ExportEngine, getExportEngine } from "./export-engine";
+import { getWavEncoder } from "../wasm/wav";
 import {
   DEFAULT_VIDEO_SETTINGS,
   DEFAULT_AUDIO_SETTINGS,
@@ -647,6 +648,61 @@ describe("ExportEngine", () => {
       expect(result.value.success).toBe(true);
       const bytes = await result.value.blob!.arrayBuffer();
       expect(new DataView(bytes).getUint32(24, true)).toBe(44100);
+    });
+
+    it("rejects a 32-bit float WAV beyond the RIFF size limit before allocating it", async () => {
+      mockRenderAudio.mockResolvedValueOnce({ buffer: { sampleRate: 48000, numberOfChannels: 1, length: 0x40000000, getChannelData: () => { throw new Error("should not read samples"); } } });
+      await exportEngine.initialize();
+      const audio = exportEngine.exportAudio(singleFrameProject(), { format: "wav", bitDepth: 32 });
+      let result;
+      do { result = await audio.next(); } while (!result.done);
+      expect(result.value.success).toBe(false);
+      expect(result.value.error?.message).toMatch(/4 GiB RIFF/);
+    });
+
+    it("falls back to JavaScript if WAV acceleration does not load promptly", async () => {
+      const samples = Float32Array.of(0, 0.5, -0.5, 0);
+      mockRenderAudio.mockResolvedValueOnce({ buffer: { sampleRate: 48000, numberOfChannels: 1, length: samples.length, getChannelData: () => samples } });
+      const load = vi.spyOn(getWavEncoder(), "ensureWasm").mockReturnValue(new Promise(() => {}));
+      try {
+        await exportEngine.initialize();
+        const audio = exportEngine.exportAudio(singleFrameProject(), { format: "wav", bitDepth: 16 });
+        expect((await audio.next()).value).toMatchObject({ phase: "preparing" });
+        expect((await audio.next()).value).toMatchObject({ phase: "encoding" });
+        vi.useFakeTimers();
+        const pending = audio.next();
+        await vi.advanceTimersByTimeAsync(3000);
+        expect((await pending).value).toMatchObject({ phase: "complete" });
+        const result = await audio.next();
+        expect(result.done && result.value.success).toBe(true);
+        if (result.done) {
+          const bytes = await result.value.blob!.arrayBuffer();
+          expect(new DataView(bytes).getInt16(46, true)).toBe(16384);
+        }
+        expect(load).toHaveBeenCalledOnce();
+      } finally {
+        vi.useRealTimers();
+        load.mockRestore();
+      }
+    });
+
+    it("cancels while WAV acceleration is loading", async () => {
+      const samples = Float32Array.of(0.5);
+      mockRenderAudio.mockResolvedValueOnce({ buffer: { sampleRate: 48000, numberOfChannels: 1, length: samples.length, getChannelData: () => samples } });
+      const load = vi.spyOn(getWavEncoder(), "ensureWasm").mockReturnValue(new Promise(() => {}));
+      try {
+        await exportEngine.initialize();
+        const audio = exportEngine.exportAudio(singleFrameProject(), { format: "wav", bitDepth: 16 });
+        await audio.next();
+        await audio.next();
+        const pending = audio.next();
+        expect(load).toHaveBeenCalledOnce();
+        exportEngine.cancel();
+        const result = await pending;
+        expect(result.done && result.value.error?.code).toBe("CANCELLED");
+      } finally {
+        load.mockRestore();
+      }
     });
 
     it("does not leave the video-export lock held after an empty audio export", async () => {

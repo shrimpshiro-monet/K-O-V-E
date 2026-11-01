@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,6 +19,16 @@ const revisedProjectPath = resolve(outputDir, "curry-project-v2.json");
 const revisedPlanPath = resolve(outputDir, "director-plan-v2.json");
 const edlPath = resolve(outputDir, "EDIT-DECISIONS-v2.md");
 const reportPath = resolve(outputDir, "render-report-v2.json");
+// This is an optional, locally authored evaluation corpus, not a fixture
+// tracked in the repository. Keep the real render test when all source files
+// exist, but do not fail clean checkouts before they can run the other tests.
+const hasCurryFixtures = [
+  projectPath,
+  sourcePath,
+  resolve(outputDir, "director-plan.json"),
+  resolve(outputDir, "white-flash.png"),
+  resolve(outputDir, "black-hold.png"),
+].every(existsSync);
 const grid = 0.45;
 const frameRate = 30;
 const act2Start = 6.75;
@@ -484,7 +495,7 @@ function reviseProject(project: Project): Project {
 }
 
 describe("Curry reference-targeted revision", () => {
-  it("revises, exports, and measures the montage through K.O.V.E.", async () => {
+  it.skipIf(!hasCurryFixtures)("revises, exports, and measures the montage through K.O.V.E. (requires local Curry evaluation assets)", async () => {
     const project = reviseProject(await loadProjectFile(projectPath));
     const oldPlan = JSON.parse(await readFile(resolve(outputDir, "director-plan.json"), "utf8")) as EditPlan;
     const plan = rebuildPlan(oldPlan);

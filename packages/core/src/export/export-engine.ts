@@ -490,6 +490,15 @@ export class ExportEngine {
 
       let blob: Blob;
       if (fullSettings.format === "wav") {
+        if (fullSettings.bitDepth !== 32) {
+          // Use the bound WASM encoder when available, but never let an
+          // unavailable/stalled module prevent a correct JavaScript export.
+          try {
+            await waitForExportStage(getWavEncoder().ensureWasm(), "loading WAV acceleration", controller.signal, 3_000);
+          } catch (error) {
+            if (controller.signal.aborted) throw error;
+          }
+        }
         blob = this.encodeWav(audioBuffer, fullSettings);
       } else {
         blob = await waitForExportStage(
@@ -1134,6 +1143,7 @@ export class ExportEngine {
     const blockAlign = numberOfChannels * bytesPerSample;
     const byteRate = sampleRate * blockAlign;
     const dataLength = buffer.length * blockAlign;
+    if (dataLength > 0xffffffff - 36) throw new RangeError("WAV exceeds the 4 GiB RIFF size limit");
     const headerLength = 44;
     const totalLength = headerLength + dataLength;
 

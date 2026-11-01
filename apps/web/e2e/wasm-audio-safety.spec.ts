@@ -16,7 +16,7 @@ const files = {
 };
 const url = (path: string) => `/@fs${path}`;
 
-test("real compiled audio WASM falls back instead of corrupting JS arrays", async ({ page }) => {
+test("real compiled audio WASM exchanges typed arrays correctly in Chromium", async ({ page }) => {
   test.skip(!hasBrowser(), "Chromium is not installed; set KOVE_E2E_CHROMIUM");
   test.skip(!Object.values(files).every(existsSync), "Run pnpm build:wasm before this test");
   await page.goto("/");
@@ -43,6 +43,7 @@ test("real compiled audio WASM falls back instead of corrupting JS arrays", asyn
     return {
       exports,
       accelerated,
+      stillUsingWasm: [fft.isUsingWasm(), beat.isUsingWasm(), wav.isUsingWasm()],
       spectrum: Array.from(spectrum.real),
       energies: Array.from(energies),
       riff: new TextDecoder().decode(bytes.subarray(0, 4)),
@@ -52,8 +53,9 @@ test("real compiled audio WASM falls back instead of corrupting JS arrays", asyn
     modules: { fft: url(`${paths.fft}/index.ts`), beat: url(`${paths.beat}/index.ts`), wav: url(`${paths.wav}/index.ts`) },
     binaries: { fft: url(files.fft), beat: url(files.beat), wav: url(files.wav) },
   });
-  expect(result.exports.every((entries) => entries.includes("allocateF32"))).toBe(true);
-  expect(result.accelerated).toEqual([false, false, false]);
+  expect(result.exports.every((entries) => entries.includes("allocateF32") && entries.includes("__pin") && entries.includes("__unpin"))).toBe(true);
+  expect(result.accelerated).toEqual([true, true, true]);
+  expect(result.stillUsingWasm).toEqual([true, true, true]);
   expect(result.spectrum).toEqual(Array(8).fill(1));
   expect(result.energies).toEqual([1, 1]);
   expect(result.riff).toBe("RIFF");

@@ -140,7 +140,7 @@ export function getMagnitude(real: Float32Array, imag: Float32Array, magnitude: 
   for (let i = 0; i < halfSize; i++) {
     const r = unchecked(real[i]);
     const im = unchecked(imag[i]);
-    unchecked((magnitude[i] = Mathf.sqrt(r * r + im * im)));
+    unchecked((magnitude[i] = <f32>Math.sqrt(<f64>r * <f64>r + <f64>im * <f64>im)));
   }
 }
 
@@ -154,7 +154,7 @@ export function getMagnitudeAndPhase(
   for (let i = 0; i < halfSize; i++) {
     const r = unchecked(real[i]);
     const im = unchecked(imag[i]);
-    unchecked((magnitudes[i] = Mathf.sqrt(r * r + im * im)));
+    unchecked((magnitudes[i] = <f32>Math.sqrt(<f64>r * <f64>r + <f64>im * <f64>im)));
     unchecked((phases[i] = Mathf.atan2(im, r)));
   }
 }
@@ -198,4 +198,10 @@ export function allocateF32(length: i32): Float32Array {
 
 export function allocateU32(length: i32): Uint32Array {
   return new Uint32Array(length);
+}
+
+// Expose data locations via the compiler rather than duplicating the
+// AssemblyScript typed-array object layout in JavaScript.
+export function dataF32(array: Float32Array): usize {
+  return array.dataStart;
 }

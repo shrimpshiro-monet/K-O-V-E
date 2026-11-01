@@ -1,7 +1,12 @@
-import { hasTypedArrayBindings } from "../typed-array-bindings";
+import { TypedArrayBindings, fetchAudioWasm, arraysOverlap, inputArray, outputArray } from "../typed-array-bindings";
 
 export type WasmWavExports = {
   encodeWav16Mono(
+    samples: Float32Array,
+    output: Uint8Array,
+    dataOffset: number,
+  ): void;
+  encodeWav24Mono(
     samples: Float32Array,
     output: Uint8Array,
     dataOffset: number,
@@ -25,10 +30,61 @@ export type WasmWavExports = {
     bitsPerSample: number,
     numSamples: number,
   ): void;
-  allocateU8(length: number): Uint8Array;
-  allocateF32(length: number): Float32Array;
   memory: WebAssembly.Memory;
 };
+
+// Keep the WASM working set bounded even when a caller encodes long audio.
+const WAV_CHUNK_FRAMES = 65_536;
+const MAX_I32 = 0x7fffffff;
+
+function canEncode(
+  left: Float32Array,
+  right: Float32Array | null,
+  output: Uint8Array,
+  offset: number,
+  bytesPerFrame: number,
+): boolean {
+  const required = offset + left.length * bytesPerFrame;
+  return Number.isSafeInteger(offset) && offset >= 0 && Number.isSafeInteger(required) &&
+    required <= output.length && (right === null || right.length >= left.length);
+}
+
+function bindWav(exports: WebAssembly.Exports): WasmWavExports {
+  const binding = new TypedArrayBindings(exports, [
+    "allocateU8", "dataU8", "encodeWav16Mono", "encodeWav24Mono",
+    "encodeWav16Stereo", "encodeWav24Stereo", "writeWavHeader",
+  ]);
+  const encode = (
+    name: string,
+    left: Float32Array,
+    right: Float32Array | null,
+    output: Uint8Array,
+    offset: number,
+    bytesPerFrame: number,
+  ): void => {
+    if (!canEncode(left, right, output, offset, bytesPerFrame)) {
+      throw new RangeError("Invalid audio WASM output or channel length");
+    }
+    for (let start = 0; start < left.length; start += WAV_CHUNK_FRAMES) {
+      const end = Math.min(left.length, start + WAV_CHUNK_FRAMES);
+      const out = output.subarray(offset + start * bytesPerFrame, offset + end * bytesPerFrame);
+      const args = [inputArray(left.subarray(start, end))];
+      if (right) args.push(inputArray(right.subarray(start, end)));
+      binding.call(name, [...args, outputArray(out), 0]);
+    }
+  };
+  return {
+    memory: binding.memory,
+    encodeWav16Mono: (samples, output, offset) => encode("encodeWav16Mono", samples, null, output, offset, 2),
+    encodeWav24Mono: (samples, output, offset) => encode("encodeWav24Mono", samples, null, output, offset, 3),
+    encodeWav16Stereo: (left, right, output, offset) => encode("encodeWav16Stereo", left, right, output, offset, 4),
+    encodeWav24Stereo: (left, right, output, offset) => encode("encodeWav24Stereo", left, right, output, offset, 6),
+    writeWavHeader: (output, channels, sampleRate, bitDepth, frames) => {
+      if (output.length < 44) throw new RangeError("WAV header output is too short");
+      binding.call("writeWavHeader", [outputArray(output.subarray(0, 44)), channels, sampleRate, bitDepth, frames]);
+    },
+  };
+}
 
 let wasmModule: WasmWavExports | null = null;
 let loadPromise: Promise<WasmWavExports | null> | null = null;
@@ -38,14 +94,10 @@ async function loadWasmModule(): Promise<WasmWavExports | null> {
     return null;
   }
 
-  try {
-    const wasmUrl = new URL("./build/wav.wasm", import.meta.url);
-    const response = await fetch(wasmUrl);
-    if (!response.ok) {
-      return null;
-    }
+  const wasmBytes = await fetchAudioWasm(new URL("./build/wav.wasm", import.meta.url));
+  if (!wasmBytes) return null;
 
-    const wasmBytes = await response.arrayBuffer();
+  try {
     const { instance } = await WebAssembly.instantiate(wasmBytes, {
       env: {
         abort: () => {
@@ -54,9 +106,19 @@ async function loadWasmModule(): Promise<WasmWavExports | null> {
       },
     });
 
-    if (!hasTypedArrayBindings(instance.exports)) return null;
-    return instance.exports as unknown as WasmWavExports;
-  } catch {
+    const bound = bindWav(instance.exports);
+    const header = new Uint8Array(44);
+    const pcm = new Uint8Array(2);
+    bound.writeWavHeader(header, 1, 48_000, 16, 1);
+    bound.encodeWav16Mono(Float32Array.of(0.5), pcm, 0);
+    if (header[0] !== 0x52 || header[1] !== 0x49 || header[2] !== 0x46 || header[3] !== 0x46 ||
+        new DataView(header.buffer).getUint32(24, true) !== 48_000 ||
+        new DataView(pcm.buffer).getInt16(0, true) !== 16_384) {
+      throw new Error("Audio WASM WAV binding failed its self-test");
+    }
+    return bound;
+  } catch (error) {
+    console.warn("[WASM WAV] Invalid module or failed self-test; using JavaScript:", error);
     return null;
   }
 }
@@ -228,42 +290,51 @@ export class WavEncoder {
     return this.useWasm;
   }
 
-  encodeWav16Mono(
-    samples: Float32Array,
-    output: Uint8Array,
-    dataOffset: number,
-  ): void {
-    if (this.useWasm && wasmModule) {
-      wasmModule.encodeWav16Mono(samples, output, dataOffset);
-    } else {
-      jsEncodeWav16Mono(samples, output, dataOffset);
-    }
+  isUsingWasm(): boolean {
+    return this.useWasm && wasmModule !== null;
   }
 
-  encodeWav16Stereo(
-    left: Float32Array,
-    right: Float32Array,
-    output: Uint8Array,
-    dataOffset: number,
-  ): void {
+  private runWasm(run: (module: WasmWavExports) => void, fallback: () => void): void {
     if (this.useWasm && wasmModule) {
-      wasmModule.encodeWav16Stereo(left, right, output, dataOffset);
-    } else {
-      jsEncodeWav16Stereo(left, right, output, dataOffset);
+      try {
+        run(wasmModule);
+        return;
+      } catch (error) {
+        console.warn("[WASM WAV] Processing failed; using JavaScript:", error);
+        this.useWasm = false;
+      }
     }
+    fallback();
   }
 
-  encodeWav24Stereo(
-    left: Float32Array,
-    right: Float32Array,
-    output: Uint8Array,
-    dataOffset: number,
-  ): void {
-    if (this.useWasm && wasmModule) {
-      wasmModule.encodeWav24Stereo(left, right, output, dataOffset);
-    } else {
-      jsEncodeWav24Stereo(left, right, output, dataOffset);
+  encodeWav16Mono(samples: Float32Array, output: Uint8Array, dataOffset: number): void {
+    if (arraysOverlap(samples, output) || !canEncode(samples, null, output, dataOffset, 2)) {
+      return jsEncodeWav16Mono(samples, output, dataOffset);
     }
+    this.runWasm(
+      (module) => module.encodeWav16Mono(samples, output, dataOffset),
+      () => jsEncodeWav16Mono(samples, output, dataOffset),
+    );
+  }
+
+  encodeWav16Stereo(left: Float32Array, right: Float32Array, output: Uint8Array, dataOffset: number): void {
+    if (arraysOverlap(left, output) || arraysOverlap(right, output) || !canEncode(left, right, output, dataOffset, 4)) {
+      return jsEncodeWav16Stereo(left, right, output, dataOffset);
+    }
+    this.runWasm(
+      (module) => module.encodeWav16Stereo(left, right, output, dataOffset),
+      () => jsEncodeWav16Stereo(left, right, output, dataOffset),
+    );
+  }
+
+  encodeWav24Stereo(left: Float32Array, right: Float32Array, output: Uint8Array, dataOffset: number): void {
+    if (arraysOverlap(left, output) || arraysOverlap(right, output) || !canEncode(left, right, output, dataOffset, 6)) {
+      return jsEncodeWav24Stereo(left, right, output, dataOffset);
+    }
+    this.runWasm(
+      (module) => module.encodeWav24Stereo(left, right, output, dataOffset),
+      () => jsEncodeWav24Stereo(left, right, output, dataOffset),
+    );
   }
 
   writeWavHeader(
@@ -273,17 +344,15 @@ export class WavEncoder {
     bitsPerSample: number,
     numSamples: number,
   ): void {
-    if (this.useWasm && wasmModule) {
-      wasmModule.writeWavHeader(
-        output,
-        numChannels,
-        sampleRate,
-        bitsPerSample,
-        numSamples,
-      );
-    } else {
-      jsWriteWavHeader(output, numChannels, sampleRate, bitsPerSample, numSamples);
+    if (output.length < 44 || [numChannels, sampleRate, bitsPerSample, numSamples].some(
+      (value) => !Number.isInteger(value) || value < 0 || value > MAX_I32,
+    )) {
+      return jsWriteWavHeader(output, numChannels, sampleRate, bitsPerSample, numSamples);
     }
+    this.runWasm(
+      (module) => module.writeWavHeader(output, numChannels, sampleRate, bitsPerSample, numSamples),
+      () => jsWriteWavHeader(output, numChannels, sampleRate, bitsPerSample, numSamples),
+    );
   }
 
   encodeFullWav(
@@ -292,9 +361,16 @@ export class WavEncoder {
     bitsPerSample: 16 | 24 = 16,
   ): Uint8Array {
     const numChannels = samples.length;
+    if (numChannels < 1 || numChannels > 2) throw new Error("WAV encoding requires one or two channels");
     const numSamples = samples[0].length;
+    if (numChannels === 2 && samples[1].length !== numSamples) {
+      throw new Error("WAV channels must have equal sample counts");
+    }
     const bytesPerSample = bitsPerSample >> 3;
     const dataSize = numSamples * numChannels * bytesPerSample;
+    // RIFF's size field includes 36 bytes after the size field; silently
+    // wrapping it would produce a WAV whose declared length is incorrect.
+    if (dataSize > 0xffffffff - 36) throw new RangeError("WAV exceeds the 4 GiB RIFF size limit");
     const output = new Uint8Array(44 + dataSize);
 
     this.writeWavHeader(output, numChannels, sampleRate, bitsPerSample, numSamples);
@@ -317,15 +393,20 @@ export class WavEncoder {
     output: Uint8Array,
     dataOffset: number,
   ): void {
-    const maxVal = 8388607;
-    for (let i = 0; i < samples.length; i++) {
-      let sample = Math.max(-1, Math.min(1, samples[i]));
-      const intSample = Math.round(sample * maxVal);
-      const offset = dataOffset + i * 3;
-      output[offset] = intSample & 0xff;
-      output[offset + 1] = (intSample >> 8) & 0xff;
-      output[offset + 2] = (intSample >> 16) & 0xff;
-    }
+    this.runWasm(
+      (module) => module.encodeWav24Mono(samples, output, dataOffset),
+      () => {
+        const maxVal = 8388607;
+        for (let i = 0; i < samples.length; i++) {
+          const sample = Math.max(-1, Math.min(1, samples[i]));
+          const intSample = Math.round(sample * maxVal);
+          const offset = dataOffset + i * 3;
+          output[offset] = intSample & 0xff;
+          output[offset + 1] = (intSample >> 8) & 0xff;
+          output[offset + 2] = (intSample >> 16) & 0xff;
+        }
+      },
+    );
   }
 }
 

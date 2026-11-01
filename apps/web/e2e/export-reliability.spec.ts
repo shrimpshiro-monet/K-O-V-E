@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { hasBrowser } from "../playwright.config";
@@ -14,6 +14,8 @@ const ffmpeg = process.env.KOVE_E2E_FFMPEG ?? "ffmpeg";
 const ffprobe = process.env.KOVE_E2E_FFPROBE ?? "ffprobe";
 const hasBinary = (name: string) => spawnSync(name, ["-version"], { stdio: "ignore" }).status === 0;
 const backendUrl = `/@fs${resolve(process.cwd(), "../../packages/core/src/export/webcodecs-backend.ts")}`;
+const wavModuleUrl = `/@fs${resolve(process.cwd(), "../../packages/core/src/wasm/wav/index.ts")}`;
+const hasBuiltWavWasm = existsSync(resolve(process.cwd(), "../../packages/core/src/wasm/wav/build/wav.wasm"));
 
 test.skip(!hasBrowser(), "Chromium is not installed; set KOVE_E2E_CHROMIUM");
 test.setTimeout(240_000);
@@ -190,6 +192,16 @@ test("exports real audible 24-bit WAV audio from the toolbar", async ({ page }, 
   expect(Number.isFinite(mean)).toBe(true);
   expect(mean).toBeGreaterThan(-50);
   await expect.poll(async () => (await states(page)).some((s) => s.complete && !s.isExporting && s.progress === 100), { timeout: 15_000 }).toBe(true);
+  if (hasBuiltWavWasm) {
+    // Use the already-loaded module URL so this observes the editor's actual
+    // encoder instance, not a second Vite module created by an HMR query.
+    const usingWasm = await page.evaluate(async (path) => {
+      const url = performance.getEntriesByType("resource").find((entry) => new URL(entry.name).pathname === path)?.name ?? path;
+      const { getWavEncoder } = await import(/* @vite-ignore */ url);
+      return getWavEncoder().isUsingWasm();
+    }, wavModuleUrl);
+    expect(usingWasm).toBe(true);
+  }
 });
 
 test("resamples a 44.1 kHz mono project to stereo 48 kHz WAV without changing pitch", async ({ page }, testInfo) => {

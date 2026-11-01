@@ -9,7 +9,8 @@ export function encodeWav16Mono(
     let sample = unchecked(samples[i]);
     sample = sample < -1.0 ? -1.0 : sample > 1.0 ? 1.0 : sample;
 
-    const intSample: i16 = <i16>(sample * 32767.0);
+    if (isNaN(sample)) sample = 0.0;
+    const intSample: i32 = <i32>Math.floor(<f64>sample * 32767.0 + 0.5);
     const offset = dataOffset + i * 2;
 
     unchecked((output[offset] = <u8>(intSample & 0xff)));
@@ -33,8 +34,10 @@ export function encodeWav16Stereo(
     rightSample =
       rightSample < -1.0 ? -1.0 : rightSample > 1.0 ? 1.0 : rightSample;
 
-    const leftInt: i16 = <i16>(leftSample * 32767.0);
-    const rightInt: i16 = <i16>(rightSample * 32767.0);
+    if (isNaN(leftSample)) leftSample = 0.0;
+    if (isNaN(rightSample)) rightSample = 0.0;
+    const leftInt: i32 = <i32>Math.floor(<f64>leftSample * 32767.0 + 0.5);
+    const rightInt: i32 = <i32>Math.floor(<f64>rightSample * 32767.0 + 0.5);
     const offset = dataOffset + i * 4;
 
     unchecked((output[offset] = <u8>(leftInt & 0xff)));
@@ -51,7 +54,6 @@ export function encodeWav24Stereo(
   dataOffset: i32,
 ): void {
   const numSamples = left.length;
-  const maxVal: f32 = 8388607.0;
 
   for (let i = 0; i < numSamples; i++) {
     let leftSample = unchecked(left[i]);
@@ -61,8 +63,10 @@ export function encodeWav24Stereo(
     rightSample =
       rightSample < -1.0 ? -1.0 : rightSample > 1.0 ? 1.0 : rightSample;
 
-    const leftInt: i32 = <i32>(leftSample * maxVal);
-    const rightInt: i32 = <i32>(rightSample * maxVal);
+    if (isNaN(leftSample)) leftSample = 0.0;
+    if (isNaN(rightSample)) rightSample = 0.0;
+    const leftInt: i32 = <i32>Math.floor(<f64>leftSample * 8388607.0 + 0.5);
+    const rightInt: i32 = <i32>Math.floor(<f64>rightSample * 8388607.0 + 0.5);
     const offset = dataOffset + i * 6;
 
     unchecked((output[offset] = <u8>(leftInt & 0xff)));
@@ -71,6 +75,23 @@ export function encodeWav24Stereo(
     unchecked((output[offset + 3] = <u8>(rightInt & 0xff)));
     unchecked((output[offset + 4] = <u8>((rightInt >> 8) & 0xff)));
     unchecked((output[offset + 5] = <u8>((rightInt >> 16) & 0xff)));
+  }
+}
+
+export function encodeWav24Mono(
+  samples: Float32Array,
+  output: Uint8Array,
+  dataOffset: i32,
+): void {
+  for (let i = 0; i < samples.length; i++) {
+    let sample = unchecked(samples[i]);
+    sample = sample < -1.0 ? -1.0 : sample > 1.0 ? 1.0 : sample;
+    if (isNaN(sample)) sample = 0.0;
+    const value: i32 = <i32>Math.floor(<f64>sample * 8388607.0 + 0.5);
+    const offset = dataOffset + i * 3;
+    unchecked((output[offset] = <u8>(value & 0xff)));
+    unchecked((output[offset + 1] = <u8>((value >> 8) & 0xff)));
+    unchecked((output[offset + 2] = <u8>((value >> 16) & 0xff)));
   }
 }
 
@@ -151,4 +172,12 @@ export function allocateU8(length: i32): Uint8Array {
 
 export function allocateF32(length: i32): Float32Array {
   return new Float32Array(length);
+}
+
+export function dataF32(array: Float32Array): usize {
+  return array.dataStart;
+}
+
+export function dataU8(array: Uint8Array): usize {
+  return array.dataStart;
 }

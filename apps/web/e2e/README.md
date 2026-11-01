@@ -197,9 +197,16 @@ KOVE_E2E_SOAK_EXPORT=1 pnpm exec playwright test e2e/export-reliability.spec.ts
 ```
 
 `wasm-audio-safety.spec.ts` loads the real compiled FFT, beat-detection, and WAV
-modules in Chromium and verifies that their raw pointer ABI falls back to the
-correct JavaScript implementations. Run `pnpm build:wasm` first; without the
-compiled files this test is skipped. See `packages/core/src/wasm/README.md`.
+modules in Chromium and verifies that the managed typed-array bindings actually
+run and copy results back correctly. The toolbar WAV test also verifies its
+encoder is accelerated when the WASM build exists. Run `pnpm build:wasm` first;
+without the compiled files the direct module test is skipped. A separate
+`wasm-production.spec.ts` drives the built editor through its UI and wraps the
+real 24-bit WASM export only to count calls; it also verifies the downloaded
+WAV with ffmpeg. To run that optional production check, build the app, serve
+`apps/web/dist` (for example with `pnpm --filter @kove-advanced/web preview`),
+and set `KOVE_E2E_PRODUCTION_URL` to the preview URL when invoking Playwright.
+See `packages/core/src/wasm/README.md`.
 
 Transparent WebM/ProRes motion-video export is intentionally blocked on desktop
 because the current compositor/encoder flattens alpha; PNG sequences preserve

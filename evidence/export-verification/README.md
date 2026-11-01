@@ -12,6 +12,11 @@ results, not as production assets.
 - `44100-mono-to-48000-stereo.wav` — real 24-bit WAV exported from a
   44.1 kHz mono timeline; ffprobe confirms 48 kHz stereo, one-second duration,
   and the test measures the original 440 Hz pitch in both channels.
+- `wasm-accelerated-24bit-stereo.wav` — the toolbar's real one-second, 48 kHz
+  stereo PCM WAV. Browser tests confirmed the managed WASM encoder was active;
+  a separate production-bundle run counted calls to the real 24-bit WASM
+  routine and produced an identical file. Mean volume: −24.1 dB. SHA-256:
+  `c5b513f13280fcc5abc644031b3264e1b2bd6d13c6fcb3e23fa87dfbfa18b8be`.
 - `agent-audio-opus.ogg` — an actual browser agent export, verified as Opus.
 - `transparent-png-sequence.zip` — two real motion frames, checked for valid
   ZIP entries, red pixels, and transparent background.
@@ -22,8 +27,9 @@ results, not as production assets.
   stubbed model responses; they do **not** demonstrate a live AI provider.
 
 The latest Chromium run passed all 15 export, director, reference-cut and
-compiled-WASM safety checks, including cancellation and a visible encoder error.
-Separate real-FFmpeg tests passed for H.264/AAC and VP9/Opus sidecar output,
+compiled-WASM safety checks, including cancellation and a visible encoder error;
+the separate production-bundle WASM export check also passed. Separate
+real-FFmpeg tests passed for H.264/AAC and VP9/Opus sidecar output,
 a ProRes encode, and 1440p, including fallback from an unavailable hardware
 encoder. These do not launch a full Electron app. Commands and prerequisites are in
 `apps/web/e2e/README.md`. A one-minute test does not prove that a much longer
