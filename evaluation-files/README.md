@@ -40,6 +40,15 @@ vary), but durations, dimensions and stream layout must stay constant.
 `baseline-*.json` reports written by live runs (`KOVE_EVAL_BASELINE=1`) are
 gitignored on purpose — they are measurements, not corpus.
 
+## Optional local Curry revision
+
+`packages/agent-runner/src/curry-revision.test.ts` exercises a separate,
+hand-authored montage against real, local-only footage. It runs only when the
+source video, `curry-project.json`, `director-plan.json`, `white-flash.png`,
+and `black-hold.png` are present in the paths named by the test. These files
+are not part of the synthetic corpus; a clean checkout reports that test as
+skipped instead of failing on the absent media.
+
 ## Local corpus overlays (`KOVE_EVAL_ROOT`)
 
 You can keep a second, **local-only** corpus — e.g. real footage with real

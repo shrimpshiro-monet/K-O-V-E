@@ -6,10 +6,11 @@ import type { FileHandle } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { ExportJob, type ExportArgs } from "../sidecar/export-job";
 import { CfrWriter } from "../sidecar/cfr";
-import { selectEncoder, probeEncoders } from "../sidecar/encoder-probe";
+import { selectUsableEncoder, probeEncoders } from "../sidecar/encoder-probe";
 import type { ExportCodec, EncodeMode } from "../sidecar/encode-args";
 
 export interface ExportStartArgs {
+  requestId?: string;
   width: number;
   height: number;
   frameRate: number;
@@ -51,13 +52,26 @@ export function initialFrameCredits(args: Pick<ExportArgs, "width" | "height">):
 
 export function resolveExportArgs(
   args: ExportStartArgs,
-  platform: NodeJS.Platform,
   encoders: string[],
   audioWavPath: string,
+  encoder: string | null,
 ): ExportArgs {
   const mode: EncodeMode = args.encodeMode ?? "balanced";
-  const encoder = selectEncoder(args.codec, platform, encoders, mode) ?? "libx264";
   const codec = (args.codec === "h265" ? "hevc" : args.codec) as ExportCodec;
+  const compatible: Record<string, readonly ExportCodec[]> = {
+    webm: ["vp8", "vp9", "av1"],
+    mp4: ["h264", "hevc", "av1"],
+    mov: ["h264", "hevc", "prores"],
+  };
+  if (!compatible[args.format]?.includes(codec)) {
+    throw new Error(`The ${args.codec} codec is not supported in ${args.format.toUpperCase()} exports. Choose a compatible codec and container.`);
+  }
+  if (!encoder) {
+    throw new Error(`No native ${args.codec.toUpperCase()} encoder is available. Install a compatible FFmpeg build or choose a different codec.`);
+  }
+  if (args.format === "webm" && !encoders.includes("libopus")) {
+    throw new Error("WebM export requires an FFmpeg build with the libopus audio encoder.");
+  }
   return {
     width: args.width,
     height: args.height,
@@ -77,8 +91,9 @@ export function resolveExportArgs(
 export async function startExport(wc: WebContents, args: ExportStartArgs): Promise<{ jobId: string }> {
   const jobId = randomUUID();
   const encoders = await probeEncoders();
+  const encoder = await selectUsableEncoder(args.codec, process.platform, encoders, args.encodeMode);
   const audioWavPath = path.join(os.tmpdir(), `kove-advanced-${jobId}.wav`);
-  const exportArgs = resolveExportArgs(args, process.platform, encoders, audioWavPath);
+  const exportArgs = resolveExportArgs(args, encoders, audioWavPath, encoder);
 
   const { port1, port2 } = new MessageChannelMain();
   const entry: JobEntry = {
@@ -127,7 +142,7 @@ export async function startExport(wc: WebContents, args: ExportStartArgs): Promi
   });
   port1.start();
 
-  wc.postMessage("kove-advanced:export-port", { jobId }, [port2]);
+  wc.postMessage("kove-advanced:export-port", { jobId, requestId: args.requestId }, [port2]);
   jobs.set(jobId, entry);
   return { jobId };
 }
@@ -165,7 +180,7 @@ export async function finishAudio(args: { jobId: string }): Promise<void> {
   startNativeExportJob(args.jobId, entry);
 }
 
-async function writeFileChunk(
+export async function writeFileChunk(
   filePath: string,
   chunk: ArrayBuffer,
   position: number,
@@ -178,14 +193,24 @@ async function writeFileChunk(
     handle = await fs.open(filePath, "w+");
   }
   try {
-    await handle.write(Buffer.from(chunk), 0, chunk.byteLength, position);
+    if (!Number.isSafeInteger(position) || position < 0) {
+      throw new Error("Audio write position must be a non-negative integer");
+    }
+    const bytes = Buffer.from(chunk);
+    let written = 0;
+    while (written < bytes.byteLength) {
+      const result = await handle.write(bytes, written, bytes.byteLength - written, position + written);
+      if (result.bytesWritten <= 0) throw new Error("Failed to write audio data to disk");
+      written += result.bytesWritten;
+    }
   } finally {
     await handle.close();
   }
 }
 
 function startNativeExportJob(jobId: string, entry: JobEntry): void {
-  if (entry.started) return;
+  // finishAudio can race cancellation while waiting for queued disk writes.
+  if (entry.started || jobs.get(jobId) !== entry) return;
   entry.job = new ExportJob(
     entry.exportArgs,
     (frame) => entry.port.postMessage({ type: "progress", frame }),
@@ -213,7 +238,7 @@ export function cancelAllExports(): void {
     } catch {
       /* best-effort kill on quit */
     }
-    void fs.rm(entry.audioWavPath, { force: true }).catch(() => {});
+    void entry.audioQueue.catch(() => undefined).then(() => fs.rm(entry.audioWavPath, { force: true })).catch(() => {});
   }
   jobs.clear();
 }
@@ -228,11 +253,14 @@ function cleanupJob(jobId: string): void {
 export async function cancelExport(args: { jobId: string }): Promise<void> {
   const entry = jobs.get(args.jobId);
   if (!entry) return;
+  jobs.delete(args.jobId);
   entry.job?.cancel();
+  // Wait for any queued write before deleting, otherwise a late write can
+  // recreate a leaked WAV (or a late finish can start a cancelled job).
+  await entry.audioQueue.catch(() => undefined);
   try {
     await fs.rm(entry.audioWavPath, { force: true });
   } catch {
     /* best-effort temp cleanup */
   }
-  jobs.delete(args.jobId);
 }

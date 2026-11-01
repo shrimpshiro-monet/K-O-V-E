@@ -29,8 +29,6 @@ import {
   trackHasAudioItems,
 } from "../timeline/timeline-items";
 
-const SEGMENTED_AUDIO_DECODE_THRESHOLD_SECONDS = 120;
-
 type MediaBunnyAudioInput = {
   getPrimaryAudioTrack(): Promise<import("mediabunny").InputAudioTrack | null>;
   getAudioTracks(): Promise<import("mediabunny").InputAudioTrack[]>;
@@ -208,12 +206,13 @@ export class AudioEngine {
     project: Project,
     startTime: number,
     duration: number,
+    options: { requireDecodableAudio?: boolean; sampleRate?: number; channels?: number } = {},
   ): Promise<RenderedAudio> {
     this.ensureInitialized();
 
     const { mediaLibrary, settings } = project;
-    const sampleRate = settings.sampleRate || this.config.sampleRate;
-    const channels = settings.channels || this.config.channels;
+    const sampleRate = options.sampleRate ?? (settings.sampleRate || this.config.sampleRate);
+    const channels = options.channels ?? (settings.channels || this.config.channels);
     const safeDuration = Math.max(duration, 0.001);
     const frameCount = Math.max(1, Math.ceil(safeDuration * sampleRate));
     const offlineContext = new OfflineAudioContext(
@@ -240,6 +239,7 @@ export class AudioEngine {
           mediaItem,
           clipInfo,
           startTime,
+          options.requireDecodableAudio ?? false,
         );
       }
     }
@@ -388,13 +388,23 @@ export class AudioEngine {
       return null;
     }
 
+    // Most browsers can decode the primary audio stream directly from an MP4
+    // or WebM container. Do that before downloading/starting FFmpeg.wasm and
+    // decoding the entire source video into a temporary WAV.
+    if (audioTrackIndex === 0) {
+      try {
+        const arrayBuffer = await mediaItem.blob.arrayBuffer();
+        const audioBuffer = await context.decodeAudioData(arrayBuffer);
+        this.mediaBuffers.set(cacheKey, audioBuffer);
+        return audioBuffer;
+      } catch {
+        // Unsupported container/codec: try the FFmpeg fallback below.
+      }
+    }
+
     if (mediaItem.type !== "audio" || audioTrackIndex !== 0) {
       try {
-        const audioBuffer = await this.extractAudioFromVideo(
-          mediaItem,
-          context,
-          audioTrackIndex,
-        );
+        const audioBuffer = await this.extractAudioFromVideo(mediaItem, context, audioTrackIndex);
         if (audioBuffer) {
           this.mediaBuffers.set(cacheKey, audioBuffer);
           return audioBuffer;
@@ -404,18 +414,6 @@ export class AudioEngine {
           this.noAudioMedia.add(cacheKey);
           return null;
         }
-      }
-    }
-
-    if (audioTrackIndex === 0) {
-      try {
-        const arrayBuffer = await mediaItem.blob.arrayBuffer();
-        const audioBuffer = await context.decodeAudioData(arrayBuffer);
-        this.mediaBuffers.set(cacheKey, audioBuffer);
-        return audioBuffer;
-      } catch {
-        this.noAudioMedia.add(cacheKey);
-        return null;
       }
     }
 
@@ -448,21 +446,30 @@ export class AudioEngine {
     mediaItem: MediaItem,
     clipInfo: AudioClipRenderInfo,
     renderStartTime: number,
+    requireDecodableAudio: boolean,
   ): Promise<void> {
     if (this.shouldUseSegmentedAudioDecoding(mediaItem, clipInfo)) {
-      const renderedSegment = await this.renderClipToContextFromSegments(
-        context,
-        mediaItem,
-        clipInfo,
-        renderStartTime,
-      );
-      if (renderedSegment) {
-        return;
+      try {
+        const renderedSegment = await this.renderClipToContextFromSegments(
+          context,
+          mediaItem,
+          clipInfo,
+          renderStartTime,
+        );
+        if (renderedSegment) return;
+      } catch (error) {
+        // A browser may decode a container that the segmented decoder cannot.
+        // Segment sources are disconnected on failure, so it is safe to try
+        // the normal browser/FFmpeg decode path without duplicating audio.
+        console.warn(`[AudioEngine] Segmented audio decoding failed for ${mediaItem.name}; trying the full decoder:`, error);
       }
     }
 
     const audioBuffer = await this.getAudioBuffer(mediaItem, context, clipInfo.audioTrackIndex ?? 0);
     if (!audioBuffer) {
+      if (requireDecodableAudio) {
+        throw new Error(`Could not decode audio from "${mediaItem.name}". Try another browser or replace the source file.`);
+      }
       return;
     }
 
@@ -505,7 +512,7 @@ export class AudioEngine {
     clipInfo: AudioClipRenderInfo,
   ): boolean {
     return (
-      mediaItem.metadata.duration >= SEGMENTED_AUDIO_DECODE_THRESHOLD_SECONDS &&
+      !!mediaItem.blob &&
       (clipInfo.speed || 1) === 1 &&
       !clipInfo.reversed &&
       !clipInfo.effects.some((effect) => effect.enabled)
@@ -631,30 +638,37 @@ export class AudioEngine {
     this.applyVolumeAutomation(volumeGainNode, clipInfo, contextStartTime);
     this.applyFades(fadeGainNode, clipInfo, contextStartTime);
 
-    let rendered = false;
+    const scheduledSources: AudioBufferSourceNode[] = [];
+    try {
+      for await (const wrapped of decoder.buffers(rangeStart, rangeEnd)) {
+        const bufferStart = wrapped.timestamp;
+        const bufferEnd = wrapped.timestamp + wrapped.duration;
+        const overlapStart = Math.max(rangeStart, bufferStart);
+        const overlapEnd = Math.min(rangeEnd, bufferEnd);
 
-    for await (const wrapped of decoder.buffers(rangeStart, rangeEnd)) {
-      const bufferStart = wrapped.timestamp;
-      const bufferEnd = wrapped.timestamp + wrapped.duration;
-      const overlapStart = Math.max(rangeStart, bufferStart);
-      const overlapEnd = Math.min(rangeEnd, bufferEnd);
-
-      if (overlapEnd <= overlapStart) {
-        continue;
+        if (overlapEnd <= overlapStart) continue;
+        const source = context.createBufferSource();
+        scheduledSources.push(source);
+        source.buffer = wrapped.buffer;
+        source.connect(volumeGainNode);
+        source.start(
+          contextStartTime + (overlapStart - rangeStart),
+          overlapStart - bufferStart,
+          overlapEnd - overlapStart,
+        );
       }
-
-      const source = context.createBufferSource();
-      source.buffer = wrapped.buffer;
-      source.connect(volumeGainNode);
-      source.start(
-        contextStartTime + (overlapStart - rangeStart),
-        overlapStart - bufferStart,
-        overlapEnd - overlapStart,
-      );
-      rendered = true;
+    } catch (error) {
+      // Offline rendering has not started yet. Remove any partially scheduled
+      // nodes before the caller tries another decoder for this same clip.
+      for (const source of scheduledSources) {
+        try { source.disconnect(); } catch { /* best effort */ }
+      }
+      throw error;
     }
 
-    return rendered;
+    // A valid track may have no packets in this range (a genuine silent gap).
+    // Do not fall back to decoding the entire source just because it is quiet.
+    return true;
   }
 
   private createClipOutputNodes(

@@ -9,9 +9,13 @@ const {
   mockVideoSourceAdd,
   mockAudioSourceAdd,
   mockVideoSourceConfigs,
+  mockAudioSourceConfigs,
+  mockOutputFormats,
   mockGetFirstEncodableVideoCodec,
+  mockGetFirstEncodableAudioCodec,
   mockOutputStart,
   mockOutputFinalize,
+  mockOutputCancel,
 } = vi.hoisted(() => {
   const mockRenderFrame = vi.fn().mockResolvedValue({
     image: { close: vi.fn() },
@@ -56,9 +60,13 @@ const {
     mockVideoSourceAdd: vi.fn().mockResolvedValue(undefined),
     mockAudioSourceAdd: vi.fn().mockResolvedValue(undefined),
     mockVideoSourceConfigs: [] as Record<string, unknown>[],
+    mockAudioSourceConfigs: [] as Record<string, unknown>[],
+    mockOutputFormats: [] as string[],
     mockGetFirstEncodableVideoCodec: vi.fn().mockResolvedValue("avc"),
+    mockGetFirstEncodableAudioCodec: vi.fn().mockResolvedValue("aac"),
     mockOutputStart: vi.fn().mockResolvedValue(undefined),
     mockOutputFinalize: vi.fn().mockResolvedValue(undefined),
+    mockOutputCancel: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -103,13 +111,20 @@ vi.mock("mediabunny", () => {
 
   class MockWebMOutputFormat extends MockMp4OutputFormat {}
   class MockMovOutputFormat extends MockMp4OutputFormat {}
+  class MockMp3OutputFormat { getSupportedAudioCodecs() { return ["mp3"]; } }
+  class MockAdtsOutputFormat { getSupportedAudioCodecs() { return ["aac"]; } }
+  class MockFlacOutputFormat { getSupportedAudioCodecs() { return ["flac"]; } }
+  class MockOggOutputFormat { getSupportedAudioCodecs() { return ["opus"]; } }
+  class MockBufferTarget { buffer = new Uint8Array([1, 2, 3]).buffer; }
 
   class MockOutput {
+    constructor(options: { format: object }) { mockOutputFormats.push(options.format.constructor.name); }
     addVideoTrack = vi.fn();
     addAudioTrack = vi.fn();
     setMetadataTags = vi.fn();
     start = mockOutputStart;
     finalize = mockOutputFinalize;
+    cancel = mockOutputCancel;
   }
 
   class MockStreamTarget {
@@ -132,7 +147,7 @@ vi.mock("mediabunny", () => {
     add = mockAudioSourceAdd;
     close = vi.fn();
 
-    constructor(_config: Record<string, unknown>) {}
+    constructor(config: Record<string, unknown>) { mockAudioSourceConfigs.push(config); }
   }
 
   class MockVideoSample {
@@ -148,18 +163,24 @@ vi.mock("mediabunny", () => {
     Output: MockOutput,
     StreamTarget: MockStreamTarget,
     Mp4OutputFormat: MockMp4OutputFormat,
+    Mp3OutputFormat: MockMp3OutputFormat,
+    AdtsOutputFormat: MockAdtsOutputFormat,
+    FlacOutputFormat: MockFlacOutputFormat,
+    OggOutputFormat: MockOggOutputFormat,
+    BufferTarget: MockBufferTarget,
     WebMOutputFormat: MockWebMOutputFormat,
     MovOutputFormat: MockMovOutputFormat,
     VideoSampleSource: MockVideoSampleSource,
     AudioBufferSource: MockAudioBufferSource,
     VideoSample: MockVideoSample,
     getFirstEncodableVideoCodec: mockGetFirstEncodableVideoCodec,
-    getFirstEncodableAudioCodec: vi.fn().mockResolvedValue("aac"),
+    getFirstEncodableAudioCodec: mockGetFirstEncodableAudioCodec,
     QUALITY_MEDIUM: 1_000_000,
   };
 });
 
 import { ExportEngine, getExportEngine } from "./export-engine";
+import { getWavEncoder } from "../wasm/wav";
 import {
   DEFAULT_VIDEO_SETTINGS,
   DEFAULT_AUDIO_SETTINGS,
@@ -268,7 +289,12 @@ describe("ExportEngine", () => {
     mockMediaEngine.isAvailable.mockReturnValue(true);
     mockMediaEngine.getExportDecoder.mockReturnValue(null);
     mockVideoSourceConfigs.length = 0;
+    mockAudioSourceConfigs.length = 0;
+    mockOutputFormats.length = 0;
     mockGetFirstEncodableVideoCodec.mockResolvedValue("avc");
+    mockGetFirstEncodableAudioCodec.mockResolvedValue("aac");
+    mockOutputStart.mockResolvedValue(undefined);
+    mockOutputFinalize.mockResolvedValue(undefined);
     mockRenderFrame.mockResolvedValue({
       image: { close: vi.fn() },
       width: 1920,
@@ -279,6 +305,7 @@ describe("ExportEngine", () => {
 
   afterEach(() => {
     exportEngine.dispose();
+    vi.unstubAllGlobals();
   });
 
   describe("initialization", () => {
@@ -464,6 +491,262 @@ describe("ExportEngine", () => {
       }
     }
 
+    function singleFrameProject(hasAudio = true): Project {
+      const project = createMockProject({
+        timeline: createMockTimeline({
+          tracks: [createMockTrack({ clips: [createMockClip({ duration: 1, outPoint: 1 })] })],
+          duration: 1,
+        }),
+      });
+      const media = project.mediaLibrary.items[0];
+      project.mediaLibrary.items[0] = { ...media, metadata: { ...media.metadata, hasAudio } };
+      return project;
+    }
+
+    async function resultOf(generator: ReturnType<ExportEngine["exportVideo"]>) {
+      for (;;) {
+        const result = await generator.next();
+        if (result.done) return result.value;
+      }
+    }
+
+    it("rejects an empty timeline before starting codecs or GPU work", async () => {
+      await exportEngine.initialize();
+      const project = createMockProject();
+      const result = await resultOf(exportEngine.exportVideo(project, {}, writableStream));
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toMatch(/timeline is empty/i);
+      expect(writableStream.abort).toHaveBeenCalled();
+      expect(mockOutputStart).not.toHaveBeenCalled();
+      expect(mockVideoEngine.initializeGPUCompositor).not.toHaveBeenCalled();
+    });
+
+    it("allows a scoped native backend when MediaBunny is unavailable", async () => {
+      await exportEngine.initialize();
+      (exportEngine as unknown as { mediabunny: unknown }).mediabunny = null;
+      const backend = {
+        requiresWebCodecsClamping: false, needsFrameThrottling: false, normalizesProResToH264: false, audioBeforeVideo: false,
+        start: vi.fn().mockResolvedValue(undefined), addVideoFrame: vi.fn().mockResolvedValue(undefined),
+        addAudioBuffer: vi.fn(), closeAudio: vi.fn(), getBytesWritten: vi.fn().mockReturnValue(100),
+        finalize: vi.fn().mockResolvedValue(undefined), abort: vi.fn().mockResolvedValue(undefined),
+      };
+      const factory = vi.fn().mockReturnValue(backend);
+      const result = await resultOf(exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream, factory));
+      expect(result.success).toBe(true);
+      expect(factory).toHaveBeenCalledWith(null);
+      expect(backend.finalize).toHaveBeenCalledOnce();
+    });
+
+    it("discards the destination if a scoped backend cannot be created", async () => {
+      await exportEngine.initialize();
+      const factory = vi.fn(() => { throw new Error("backend unavailable"); });
+      const result = await resultOf(exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream, factory));
+      expect(result.error?.message).toBe("backend unavailable");
+      expect(writableStream.abort).toHaveBeenCalled();
+    });
+
+    it("exports silent timelines without requiring any audio encoder", async () => {
+      mockGetFirstEncodableAudioCodec.mockResolvedValue(null);
+      await exportEngine.initialize();
+      const result = await resultOf(exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream));
+      expect(result.success).toBe(true);
+      expect(mockGetFirstEncodableAudioCodec).not.toHaveBeenCalled();
+      expect(mockRenderAudio).not.toHaveBeenCalled();
+      expect(mockOutputFinalize).toHaveBeenCalledTimes(1);
+    });
+
+    it("fails visibly rather than dropping audio when the browser has no supported audio codec", async () => {
+      mockGetFirstEncodableAudioCodec.mockResolvedValue(null);
+      vi.stubGlobal("AudioEncoder", { isConfigSupported: vi.fn().mockResolvedValue({ supported: false }) });
+      await exportEngine.initialize();
+      const result = await resultOf(exportEngine.exportVideo(singleFrameProject(), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream));
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toMatch(/no supported audio encoder/i);
+      expect(mockOutputStart).not.toHaveBeenCalled();
+      expect(writableStream.abort).toHaveBeenCalled();
+    });
+
+    it("cancels a stuck encoder startup and aborts its file and muxer", async () => {
+      mockOutputStart.mockImplementationOnce(() => new Promise(() => {}));
+      await exportEngine.initialize();
+      const generator = exportEngine.exportVideo(singleFrameProject(), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream);
+      expect((await generator.next()).value).toMatchObject({ phase: "preparing" });
+      const pending = generator.next();
+      await vi.waitFor(() => expect(mockOutputStart).toHaveBeenCalled());
+      exportEngine.cancel();
+      const result = await pending;
+      expect(result.done).toBe(true);
+      if (result.done) expect(result.value.error?.code).toBe("CANCELLED");
+      expect(mockOutputCancel).toHaveBeenCalled();
+      expect(writableStream.abort).toHaveBeenCalled();
+      expect(mockVideoEngine.clearCache).toHaveBeenCalled();
+    });
+
+    it("releases a frame if encoding fails", async () => {
+      const close = vi.fn();
+      mockRenderFrame.mockResolvedValue({ image: { close }, width: 640, height: 360 });
+      mockVideoSourceAdd.mockRejectedValueOnce(new Error("encoder failed"));
+      await exportEngine.initialize();
+      const result = await resultOf(exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream));
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toMatch(/encoder failed/);
+      expect(close).toHaveBeenCalled();
+      expect(writableStream.abort).toHaveBeenCalled();
+    });
+
+    it.each([
+      { format: "mp3", output: "MockMp3OutputFormat", codec: "mp3", mime: "audio/mpeg" },
+      { format: "aac", output: "MockAdtsOutputFormat", codec: "aac", mime: "audio/aac" },
+      { format: "flac", output: "MockFlacOutputFormat", codec: "flac", mime: "audio/flac" },
+      { format: "ogg", output: "MockOggOutputFormat", codec: "opus", mime: "audio/ogg" },
+    ] as const)("uses the real $format muxer and codec instead of returning WAV", async ({ format, output, codec, mime }) => {
+      const buffer = { sampleRate: 48000, numberOfChannels: 2, length: 48000 };
+      mockRenderAudio.mockResolvedValueOnce({ buffer });
+      mockGetFirstEncodableAudioCodec.mockImplementationOnce(async (codecs) => codecs[0]);
+      await exportEngine.initialize();
+      const generator = exportEngine.exportAudio(singleFrameProject(), { format, sampleRate: 48000, channels: 2, bitrate: 192 });
+      let result;
+      do { result = await generator.next(); } while (!result.done);
+      expect(result.value.success).toBe(true);
+      expect(result.value.blob?.type).toBe(mime);
+      expect(mockRenderAudio).toHaveBeenCalledWith(expect.anything(), 0, 1, { requireDecodableAudio: true, sampleRate: 48000, channels: 2 });
+      expect(mockOutputFormats).toContain(output);
+      expect(mockAudioSourceConfigs.at(-1)).toMatchObject({ codec, bitrate: 192000 });
+    });
+
+    it("reports unsupported compressed audio rather than returning a mislabeled WAV", async () => {
+      mockRenderAudio.mockResolvedValueOnce({ buffer: { sampleRate: 48000, numberOfChannels: 2, length: 48000 } });
+      mockGetFirstEncodableAudioCodec.mockResolvedValueOnce(null);
+      await exportEngine.initialize();
+      const generator = exportEngine.exportAudio(singleFrameProject(), { format: "flac" });
+      let result;
+      do { result = await generator.next(); } while (!result.done);
+      expect(result.value.success).toBe(false);
+      expect(result.value.error?.message).toMatch(/cannot encode FLAC/i);
+      expect(result.value.blob).toBeUndefined();
+    });
+
+    it("writes WAV headers using the rendered buffer's actual sample rate", async () => {
+      const samples = new Float32Array([0, 0.5, -0.5, 0]);
+      mockRenderAudio.mockResolvedValueOnce({ buffer: { sampleRate: 44100, numberOfChannels: 1, length: samples.length, getChannelData: () => samples } });
+      await exportEngine.initialize();
+      const generator = exportEngine.exportAudio(singleFrameProject(), { format: "wav", sampleRate: 48000, channels: 2, bitDepth: 32 });
+      let result;
+      do { result = await generator.next(); } while (!result.done);
+      expect(result.value.success).toBe(true);
+      const bytes = await result.value.blob!.arrayBuffer();
+      expect(new DataView(bytes).getUint32(24, true)).toBe(44100);
+    });
+
+    it("rejects a 32-bit float WAV beyond the RIFF size limit before allocating it", async () => {
+      mockRenderAudio.mockResolvedValueOnce({ buffer: { sampleRate: 48000, numberOfChannels: 1, length: 0x40000000, getChannelData: () => { throw new Error("should not read samples"); } } });
+      await exportEngine.initialize();
+      const audio = exportEngine.exportAudio(singleFrameProject(), { format: "wav", bitDepth: 32 });
+      let result;
+      do { result = await audio.next(); } while (!result.done);
+      expect(result.value.success).toBe(false);
+      expect(result.value.error?.message).toMatch(/4 GiB RIFF/);
+    });
+
+    it("falls back to JavaScript if WAV acceleration does not load promptly", async () => {
+      const samples = Float32Array.of(0, 0.5, -0.5, 0);
+      mockRenderAudio.mockResolvedValueOnce({ buffer: { sampleRate: 48000, numberOfChannels: 1, length: samples.length, getChannelData: () => samples } });
+      const load = vi.spyOn(getWavEncoder(), "ensureWasm").mockReturnValue(new Promise(() => {}));
+      try {
+        await exportEngine.initialize();
+        const audio = exportEngine.exportAudio(singleFrameProject(), { format: "wav", bitDepth: 16 });
+        expect((await audio.next()).value).toMatchObject({ phase: "preparing" });
+        expect((await audio.next()).value).toMatchObject({ phase: "encoding" });
+        vi.useFakeTimers();
+        const pending = audio.next();
+        await vi.advanceTimersByTimeAsync(3000);
+        expect((await pending).value).toMatchObject({ phase: "complete" });
+        const result = await audio.next();
+        expect(result.done && result.value.success).toBe(true);
+        if (result.done) {
+          const bytes = await result.value.blob!.arrayBuffer();
+          expect(new DataView(bytes).getInt16(46, true)).toBe(16384);
+        }
+        expect(load).toHaveBeenCalledOnce();
+      } finally {
+        vi.useRealTimers();
+        load.mockRestore();
+      }
+    });
+
+    it("cancels while WAV acceleration is loading", async () => {
+      const samples = Float32Array.of(0.5);
+      mockRenderAudio.mockResolvedValueOnce({ buffer: { sampleRate: 48000, numberOfChannels: 1, length: samples.length, getChannelData: () => samples } });
+      const load = vi.spyOn(getWavEncoder(), "ensureWasm").mockReturnValue(new Promise(() => {}));
+      try {
+        await exportEngine.initialize();
+        const audio = exportEngine.exportAudio(singleFrameProject(), { format: "wav", bitDepth: 16 });
+        await audio.next();
+        await audio.next();
+        const pending = audio.next();
+        expect(load).toHaveBeenCalledOnce();
+        exportEngine.cancel();
+        const result = await pending;
+        expect(result.done && result.value.error?.code).toBe("CANCELLED");
+      } finally {
+        load.mockRestore();
+      }
+    });
+
+    it("does not leave the video-export lock held after an empty audio export", async () => {
+      await exportEngine.initialize();
+      const audio = await exportEngine.exportAudio(createMockProject(), { format: "wav" }).next();
+      expect(audio.done).toBe(true);
+      if (audio.done) expect(audio.value.error?.message).toMatch(/timeline is empty/i);
+      const video = await resultOf(exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream));
+      expect(video.success).toBe(true);
+    });
+
+    it("cancels a stalled audio-only render and releases the export lock", async () => {
+      mockRenderAudio.mockReturnValueOnce(new Promise(() => {}));
+      await exportEngine.initialize();
+      const audio = exportEngine.exportAudio(singleFrameProject(), { format: "wav" });
+      expect((await audio.next()).value).toMatchObject({ phase: "preparing" });
+      const pending = audio.next();
+      await vi.waitFor(() => expect(mockRenderAudio).toHaveBeenCalled());
+      exportEngine.cancel();
+      const result = await pending;
+      expect(result.done).toBe(true);
+      if (result.done) expect(result.value.error?.code).toBe("CANCELLED");
+      const video = await resultOf(exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream));
+      expect(video.success).toBe(true);
+    });
+
+    it("does not let audio or image-sequence exports replace an active video export", async () => {
+      await exportEngine.initialize();
+      const video = exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream);
+      await video.next();
+      const audio = await exportEngine.exportAudio(singleFrameProject(), { format: "wav" }).next();
+      const sequence = await exportEngine.exportImageSequence(singleFrameProject()).next();
+      expect(audio.done && audio.value.error?.code).toBe("ENCODER_INIT_FAILED");
+      expect(sequence.done && sequence.value.error?.code).toBe("ENCODER_INIT_FAILED");
+      await video.return({ success: false });
+      expect(writableStream.abort).toHaveBeenCalled();
+    });
+
     it("should render long export audio in chunks and clear cached audio", async () => {
       const project = createMockProject({
         timeline: createMockTimeline({
@@ -499,9 +782,9 @@ describe("ExportEngine", () => {
       }
 
       expect(mockRenderAudio).toHaveBeenCalledTimes(3);
-      expect(mockRenderAudio).toHaveBeenNthCalledWith(1, project, 0, 15);
-      expect(mockRenderAudio).toHaveBeenNthCalledWith(2, project, 15, 15);
-      expect(mockRenderAudio).toHaveBeenNthCalledWith(3, project, 30, 10);
+      expect(mockRenderAudio).toHaveBeenNthCalledWith(1, project, 0, 15, { requireDecodableAudio: true });
+      expect(mockRenderAudio).toHaveBeenNthCalledWith(2, project, 15, 15, { requireDecodableAudio: true });
+      expect(mockRenderAudio).toHaveBeenNthCalledWith(3, project, 30, 10, { requireDecodableAudio: true });
       expect(mockAudioSourceAdd).toHaveBeenCalledTimes(3);
       expect(mockAudioEngine.clearCache).toHaveBeenCalled();
     });
@@ -512,7 +795,7 @@ describe("ExportEngine", () => {
       await drainVideoExport();
 
       expect(mockGetFirstEncodableVideoCodec).toHaveBeenCalledWith(
-        ["avc", "hevc"],
+        ["avc"],
         expect.objectContaining({ hardwareAcceleration: "prefer-hardware" }),
       );
       expect(mockVideoSourceConfigs[0]).toMatchObject({
@@ -545,12 +828,12 @@ describe("ExportEngine", () => {
 
       expect(mockGetFirstEncodableVideoCodec).toHaveBeenNthCalledWith(
         1,
-        ["avc", "hevc"],
+        ["avc"],
         expect.objectContaining({ hardwareAcceleration: "prefer-hardware" }),
       );
       expect(mockGetFirstEncodableVideoCodec).toHaveBeenNthCalledWith(
         2,
-        ["avc", "hevc"],
+        ["avc"],
         expect.objectContaining({ hardwareAcceleration: "no-preference" }),
       );
       expect(mockVideoSourceConfigs[0]).toMatchObject({
@@ -559,7 +842,29 @@ describe("ExportEngine", () => {
       });
     });
 
-    it("tries the requested codec before other container codecs", async () => {
+    it("fails visibly if the requested codec is unavailable instead of using another", async () => {
+      mockGetFirstEncodableVideoCodec.mockResolvedValue(null);
+      await exportEngine.initialize();
+      const result = await resultOf(exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, codec: "h265", frameRate: 1, width: 640, height: 360,
+      }, writableStream));
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toMatch(/cannot encode H265/i);
+      expect(mockGetFirstEncodableVideoCodec).toHaveBeenCalledWith(["hevc"], expect.anything());
+      expect(mockOutputStart).not.toHaveBeenCalled();
+    });
+
+    it("rejects an incompatible codec and container", async () => {
+      await exportEngine.initialize();
+      const result = await resultOf(exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, codec: "vp9", format: "mp4", frameRate: 1, width: 640, height: 360,
+      }, writableStream));
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toMatch(/VP9 cannot be stored in MP4/i);
+      expect(mockOutputStart).not.toHaveBeenCalled();
+    });
+
+    it("encodes only the requested codec instead of silently changing it", async () => {
       mockGetFirstEncodableVideoCodec.mockImplementation(async (codecs) => codecs[0]);
 
       await drainVideoExport({
@@ -571,7 +876,7 @@ describe("ExportEngine", () => {
       });
 
       expect(mockGetFirstEncodableVideoCodec).toHaveBeenCalledWith(
-        ["hevc", "avc"],
+        ["hevc"],
         expect.objectContaining({ hardwareAcceleration: "prefer-hardware" }),
       );
       expect(mockVideoSourceConfigs[0]).toMatchObject({

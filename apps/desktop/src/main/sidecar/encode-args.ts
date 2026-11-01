@@ -1,4 +1,4 @@
-export type ExportCodec = "h264" | "h265" | "hevc" | "av1" | "prores" | "vp9";
+export type ExportCodec = "h264" | "h265" | "hevc" | "av1" | "prores" | "vp8" | "vp9";
 export type EncodeMode = "fast" | "balanced" | "smallest";
 export type CodecFamily = "x264" | "x265" | "svtav1";
 
@@ -28,7 +28,7 @@ export function qualityToCrf(family: CodecFamily, quality: number): number {
 }
 
 export function isSoftwareEncoder(encoder: string): boolean {
-  return /^(libx264|libx265|libsvtav1|libaom|libvpx)/.test(encoder);
+  return /^(libx264|libx265|libsvtav1|libaom|libvpx|prores_ks)/.test(encoder);
 }
 
 function familyForEncoder(encoder: string): CodecFamily {
@@ -53,6 +53,7 @@ const CODEC_BPP_SCALE: Partial<Record<ExportCodec, number>> = {
   h265: 0.6,
   hevc: 0.6,
   av1: 0.55,
+  vp8: 1.0,
   vp9: 0.7,
 };
 
@@ -99,6 +100,12 @@ export function videoEncodeArgs(plan: EncodePlan): string[] {
 
   if (plan.codec === "prores") {
     args.push("-profile:v", PRORES_PROFILE_NUM[plan.proresProfile ?? "hq"]);
+  } else if (plan.encoder.startsWith("libvpx")) {
+    // libvpx does not understand x264's named presets. Zero bitrate enables
+    // constant-quality mode; cpu-used is the libvpx speed/quality control.
+    const crf = Math.round(45 - ((clampQuality(plan.quality) - 50) / 50) * 27);
+    const cpuUsed = plan.mode === "fast" ? 4 : plan.mode === "balanced" ? 2 : 1;
+    args.push("-crf", String(crf), "-b:v", "0", "-deadline", "good", "-cpu-used", String(cpuUsed));
   } else if (isSoftwareEncoder(plan.encoder)) {
     const family = familyForEncoder(plan.encoder);
     args.push("-crf", String(qualityToCrf(family, plan.quality)));

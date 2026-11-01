@@ -225,20 +225,25 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
     outputTokens: 0,
   };
 
-  const projectId = host.getProject().id ?? "__default__";
-  const hasExistingPlan = hasExistingDirectorPlan(projectId);
-  // Only force a fresh plan_edit if there's no existing director plan for this
-  // project. Follow-up editing requests ("make it shorter", "add a cut here")
-  // should use clip/effect/text tools to modify the existing timeline rather
-  // than rebuilding from scratch. A turn whose plan the app already applied
-  // (a mirrored reference structure) is in the same position.
+  const initialProject = host.getProject();
+  const projectId = initialProject.id ?? "__default__";
+  const hasClips = (): boolean => host.getProject().timeline.tracks.some((track) => track.clips.length > 0);
+  const startedWithClips = hasClips();
+  // A cached/applied plan is not evidence of an edit after its clips were
+  // deleted or a reference rebuild failed to place any shots.
+  const hasExistingPlan = startedWithClips && hasExistingDirectorPlan(projectId);
+  const appliedReferencePlan = startedWithClips && input.directorPlanApplied;
   const requiresDirectorPlan =
     enforceDirectorWorkflow &&
-    !input.directorPlanApplied &&
+    !appliedReferencePlan &&
     !hasExistingPlan &&
     DIRECTOR_REQUEST.test(latestUserPrompt(messages));
+  const hasSourceFootage = initialProject.mediaLibrary.items.some(
+    (item) => item.type === "video" && item.analysisRole !== "reference",
+  );
   let directorPlanCompleted = !requiresDirectorPlan;
   let planEditApplied = false;
+  let retriedEmptyTimeline = false;
 
   const txn = host.beginTransaction(turnLabel);
 
@@ -282,15 +287,40 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
           usage,
         };
       }
-      const response = await llm.complete({ system, messages, tools });
+      const retryInstruction = retriedEmptyTimeline
+        ? "Your previous response did not create an edit. The timeline is still empty. " +
+          "If essential information is missing, ask a specific question; otherwise call plan_edit " +
+          "for the supplied footage instead of claiming that an edit is finished."
+        : "";
+      const response = await llm.complete({
+        system: retryInstruction ? [system, retryInstruction].filter(Boolean).join("\n\n") : system,
+        messages,
+        tools,
+      });
       lastText = response.text;
       if (response.usage) {
         usage.inputTokens += response.usage.inputTokens;
         usage.outputTokens += response.usage.outputTokens;
       }
-      if (response.text) emit({ type: "text_delta", text: response.text });
 
       if (response.toolUses.length === 0) {
+        const emptyDirectorResult =
+          requiresDirectorPlan && !dryRun && !startedWithClips && hasSourceFootage && !hasClips();
+        const asksQuestion = /[?？]/.test(response.text);
+        if (emptyDirectorResult && response.stopReason !== "max_tokens" && (directorPlanCompleted || !asksQuestion)) {
+          if (!directorPlanCompleted && !retriedEmptyTimeline && step + 1 < maxSteps) {
+            // Retry once without adding a synthetic user message to the chat.
+            // Questions are left alone: vague requests may legitimately need
+            // clarification before Monet can build an edit.
+            retriedEmptyTimeline = true;
+            continue;
+          }
+          await host.rollbackTransaction(txn);
+          const message = "Monet did not create an edit: the timeline is still empty. Try again or choose another model.";
+          emit({ type: "error", error: { code: "EMPTY_DIRECTOR_TIMELINE", message } });
+          return { text: message, messages, toolCalls, stoppedReason: "error", committed: false, usage };
+        }
+        if (response.text) emit({ type: "text_delta", text: response.text });
         messages.push({ role: "assistant", content: response.text, toolUses: [] });
         host.commitTransaction(txn, turnLabel);
         emit({ type: "turn_complete", text: response.text });
@@ -304,6 +334,7 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
         };
       }
 
+      if (response.text) emit({ type: "text_delta", text: response.text });
       messages.push({
         role: "assistant",
         content: response.text,

@@ -1,4 +1,5 @@
 import { FFT as JsFFT } from "../../audio/fft";
+import { TypedArrayBindings, fetchAudioWasm, inputArray, outputArray } from "../typed-array-bindings";
 
 export type WasmFFTExports = {
   init(size: number): void;
@@ -23,28 +24,54 @@ export type WasmFFTExports = {
     imag: Float32Array,
   ): void;
   applyHannWindow(input: Float32Array, output: Float32Array): void;
-  allocateF32(length: number): Float32Array;
-  allocateU32(length: number): Uint32Array;
   memory: WebAssembly.Memory;
 };
+
+function bindFFT(exports: WebAssembly.Exports): WasmFFTExports {
+  const binding = new TypedArrayBindings(exports, [
+    "init", "getSize", "forward", "inverse", "getMagnitude",
+    "getMagnitudeAndPhase", "fromMagnitudeAndPhase", "applyHannWindow",
+  ]);
+  return {
+    memory: binding.memory,
+    init: (size) => { binding.call("init", [size]); },
+    getSize: () => binding.call("getSize") ?? 0,
+    forward: (input, real, imag) => { binding.call("forward", [inputArray(input), outputArray(real), outputArray(imag)]); },
+    inverse: (real, imag, output) => { binding.call("inverse", [inputArray(real), inputArray(imag), outputArray(output)]); },
+    getMagnitude: (real, imag, magnitude) => { binding.call("getMagnitude", [inputArray(real), inputArray(imag), outputArray(magnitude)]); },
+    getMagnitudeAndPhase: (real, imag, magnitudes, phases) => {
+      binding.call("getMagnitudeAndPhase", [inputArray(real), inputArray(imag), outputArray(magnitudes), outputArray(phases)]);
+    },
+    fromMagnitudeAndPhase: (magnitudes, phases, real, imag) => {
+      binding.call("fromMagnitudeAndPhase", [inputArray(magnitudes), inputArray(phases), outputArray(real), outputArray(imag)]);
+    },
+    applyHannWindow: (input, output) => { binding.call("applyHannWindow", [inputArray(input), outputArray(output)]); },
+  };
+}
 
 let wasmModule: WasmFFTExports | null = null;
 let loadPromise: Promise<WasmFFTExports | null> | null = null;
 let currentWasmSize = 0;
+
+function selectWasmSize(module: WasmFFTExports, size: number): void {
+  if (currentWasmSize === size) return;
+  // A failed allocation in init may have changed the module's size already.
+  // Invalidate the cache first so another instance cannot use stale tables.
+  currentWasmSize = 0;
+  module.init(size);
+  if (module.getSize() !== size) throw new Error("Audio WASM FFT rejected its size");
+  currentWasmSize = size;
+}
 
 async function loadWasmModule(): Promise<WasmFFTExports | null> {
   if (typeof WebAssembly === "undefined") {
     return null;
   }
 
-  try {
-    const wasmUrl = new URL("./build/fft.wasm", import.meta.url);
-    const response = await fetch(wasmUrl);
-    if (!response.ok) {
-      return null;
-    }
+  const wasmBytes = await fetchAudioWasm(new URL("./build/fft.wasm", import.meta.url));
+  if (!wasmBytes) return null;
 
-    const wasmBytes = await response.arrayBuffer();
+  try {
     const { instance } = await WebAssembly.instantiate(wasmBytes, {
       env: {
         abort: () => {
@@ -53,8 +80,20 @@ async function loadWasmModule(): Promise<WasmFFTExports | null> {
       },
     });
 
-    return instance.exports as unknown as WasmFFTExports;
-  } catch {
+    const bound = bindFFT(instance.exports);
+    // Exercise the actual round trip before enabling it, so stale or mismatched
+    // binaries cannot silently replace a working JavaScript implementation.
+    bound.init(8);
+    const real = new Float32Array(8);
+    const imag = new Float32Array(8);
+    bound.forward(Float32Array.from([1, 0, 0, 0, 0, 0, 0, 0]), real, imag);
+    if (real.some((value) => !Number.isFinite(value) || Math.abs(value - 1) > 1e-5) ||
+        imag.some((value) => !Number.isFinite(value) || Math.abs(value) > 1e-5)) {
+      throw new Error("Audio WASM FFT binding failed its self-test");
+    }
+    return bound;
+  } catch (error) {
+    console.warn("[WASM FFT] Invalid module or failed self-test; using JavaScript:", error);
     return null;
   }
 }
@@ -85,8 +124,11 @@ export class WasmFFT {
   private imag: Float32Array;
 
   constructor(size: number) {
-    if (size <= 0 || (size & (size - 1)) !== 0) {
-      throw new Error("FFT size must be a power of 2");
+    // The AssemblyScript loops and array lengths use signed i32 arithmetic.
+    // Reject fractional/non-finite sizes and values that could overflow the
+    // FFT loop when it doubles the final stage length.
+    if (!Number.isSafeInteger(size) || size <= 0 || size > 0x20000000 || (size & (size - 1)) !== 0) {
+      throw new Error("FFT size must be a supported power of 2");
     }
 
     this.size = size;
@@ -95,12 +137,14 @@ export class WasmFFT {
     this.real = new Float32Array(size);
     this.imag = new Float32Array(size);
 
-    if (wasmModule && currentWasmSize !== size) {
-      wasmModule.init(size);
-      currentWasmSize = size;
-      this.useWasm = true;
-    } else if (wasmModule && currentWasmSize === size) {
-      this.useWasm = true;
+    if (wasmModule) {
+      try {
+        selectWasmSize(wasmModule, size);
+        this.useWasm = true;
+      } catch (error) {
+        console.warn("[WASM FFT] Initialization failed; using JavaScript:", error);
+        this.useWasm = false;
+      }
     }
   }
 
@@ -111,11 +155,13 @@ export class WasmFFT {
 
     const available = await initWasmFFT();
     if (available && wasmModule) {
-      if (currentWasmSize !== this.size) {
-        wasmModule.init(this.size);
-        currentWasmSize = this.size;
+      try {
+        selectWasmSize(wasmModule, this.size);
+        this.useWasm = true;
+      } catch (error) {
+        console.warn("[WASM FFT] Initialization failed; using JavaScript:", error);
+        this.useWasm = false;
       }
-      this.useWasm = true;
     }
     return this.useWasm;
   }
@@ -124,40 +170,57 @@ export class WasmFFT {
     return this.size;
   }
 
-  private ensureWasmSize(): void {
-    if (this.useWasm && wasmModule && currentWasmSize !== this.size) {
-      wasmModule.init(this.size);
-      currentWasmSize = this.size;
+  isUsingWasm(): boolean {
+    return this.useWasm && wasmModule !== null;
+  }
+
+  private runWasm<T>(run: (module: WasmFFTExports) => T, fallback: () => T): T {
+    if (this.useWasm && wasmModule) {
+      try {
+        selectWasmSize(wasmModule, this.size);
+        return run(wasmModule);
+      } catch (error) {
+        // A runtime trap or memory-allocation failure must not corrupt the
+        // user's analysis. All JS inputs remain untouched until copy-back.
+        console.warn("[WASM FFT] Processing failed; using JavaScript:", error);
+        this.useWasm = false;
+      }
     }
+    return fallback();
   }
 
   forward(input: Float32Array): { real: Float32Array; imag: Float32Array } {
-    if (this.useWasm && wasmModule) {
-      this.ensureWasmSize();
-      wasmModule.forward(input, this.real, this.imag);
+    return this.runWasm((module) => {
+      // The JS FFT zero-pads short input and treats NaN as zero. AssemblyScript
+      // uses unchecked indexing, so pass exactly one safe, normalized frame.
+      let frame = input.subarray(0, this.size);
+      if (frame.length !== this.size || frame.some(Number.isNaN)) {
+        frame = new Float32Array(this.size);
+        frame.set(input.subarray(0, this.size));
+        for (let i = 0; i < frame.length; i++) if (Number.isNaN(frame[i])) frame[i] = 0;
+      }
+      module.forward(frame, this.real, this.imag);
       return { real: this.real.slice(), imag: this.imag.slice() };
-    }
-    return this.jsFFT.forward(input);
+    }, () => this.jsFFT.forward(input));
   }
 
   inverse(real: Float32Array, imag: Float32Array): Float32Array {
-    if (this.useWasm && wasmModule) {
-      this.ensureWasmSize();
+    if (real.length < this.size || imag.length < this.size) return this.jsFFT.inverse(real, imag);
+    return this.runWasm((module) => {
       const output = new Float32Array(this.size);
-      wasmModule.inverse(real, imag, output);
+      module.inverse(real.subarray(0, this.size), imag.subarray(0, this.size), output);
       return output;
-    }
-    return this.jsFFT.inverse(real, imag);
+    }, () => this.jsFFT.inverse(real, imag));
   }
 
   getMagnitude(real: Float32Array, imag: Float32Array): Float32Array {
-    if (this.useWasm && wasmModule) {
-      this.ensureWasmSize();
-      const magnitude = new Float32Array(this.size / 2);
-      wasmModule.getMagnitude(real, imag, magnitude);
+    const half = this.size / 2;
+    if (real.length < half || imag.length < half) return this.jsFFT.getMagnitude(real, imag);
+    return this.runWasm((module) => {
+      const magnitude = new Float32Array(half);
+      module.getMagnitude(real.subarray(0, half), imag.subarray(0, half), magnitude);
       return magnitude;
-    }
-    return this.jsFFT.getMagnitude(real, imag);
+    }, () => this.jsFFT.getMagnitude(real, imag));
   }
 
   getPower(real: Float32Array, imag: Float32Array): Float32Array {
@@ -168,38 +231,37 @@ export class WasmFFT {
     real: Float32Array,
     imag: Float32Array,
   ): { magnitudes: Float32Array; phases: Float32Array } {
-    if (this.useWasm && wasmModule) {
-      this.ensureWasmSize();
-      const magnitudes = new Float32Array(this.size / 2);
-      const phases = new Float32Array(this.size / 2);
-      wasmModule.getMagnitudeAndPhase(real, imag, magnitudes, phases);
+    const half = this.size / 2;
+    if (real.length < half || imag.length < half) return this.jsFFT.getMagnitudeAndPhase(real, imag);
+    return this.runWasm((module) => {
+      const magnitudes = new Float32Array(half);
+      const phases = new Float32Array(half);
+      module.getMagnitudeAndPhase(real.subarray(0, half), imag.subarray(0, half), magnitudes, phases);
       return { magnitudes, phases };
-    }
-    return this.jsFFT.getMagnitudeAndPhase(real, imag);
+    }, () => this.jsFFT.getMagnitudeAndPhase(real, imag));
   }
 
   fromMagnitudeAndPhase(
     magnitudes: Float32Array,
     phases: Float32Array,
   ): { real: Float32Array; imag: Float32Array } {
-    if (this.useWasm && wasmModule) {
-      this.ensureWasmSize();
+    if (magnitudes.length > this.size || phases.length < magnitudes.length) {
+      return this.jsFFT.fromMagnitudeAndPhase(magnitudes, phases);
+    }
+    return this.runWasm((module) => {
       const real = new Float32Array(this.size);
       const imag = new Float32Array(this.size);
-      wasmModule.fromMagnitudeAndPhase(magnitudes, phases, real, imag);
+      module.fromMagnitudeAndPhase(magnitudes, phases.subarray(0, magnitudes.length), real, imag);
       return { real, imag };
-    }
-    return this.jsFFT.fromMagnitudeAndPhase(magnitudes, phases);
+    }, () => this.jsFFT.fromMagnitudeAndPhase(magnitudes, phases));
   }
 
   applyHannWindow(data: Float32Array): Float32Array {
-    if (this.useWasm && wasmModule) {
-      this.ensureWasmSize();
+    return this.runWasm((module) => {
       const output = new Float32Array(data.length);
-      wasmModule.applyHannWindow(data, output);
+      module.applyHannWindow(data, output);
       return output;
-    }
-    return this.jsFFT.applyHannWindow(data);
+    }, () => this.jsFFT.applyHannWindow(data));
   }
 
   applySynthesisWindow(data: Float32Array): Float32Array {

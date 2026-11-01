@@ -175,7 +175,11 @@ export function parseMosaicConfig(value: string | null | undefined): MosaicConfi
 }
 
 export function readMosaicConfig(): MosaicConfig | null {
-  return parseMosaicConfig(import.meta.env?.VITE_KOVE_VISION_MOSAIC);
+  // The frame worker is also imported by non-Vite packages, which do not load
+  // Vite's ambient ImportMeta declarations. The environment may be absent.
+  return parseMosaicConfig(
+    (import.meta as ImportMeta & { env?: { VITE_KOVE_VISION_MOSAIC?: string } }).env?.VITE_KOVE_VISION_MOSAIC,
+  );
 }
 
 async function base64FromBlob(blob: Blob): Promise<string> {

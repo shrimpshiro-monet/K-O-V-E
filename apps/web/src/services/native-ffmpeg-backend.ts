@@ -84,6 +84,65 @@ function writeAscii(view: DataView, offset: number, value: string): void {
   }
 }
 
+interface ExportPortWaiter {
+  promise: Promise<MessagePort>;
+  expect(jobId: string): void;
+  cancel(): void;
+}
+
+function createExportPortWaiter(): ExportPortWaiter {
+  let expectedId: string | null = null;
+  let settled = false;
+  const pending = new Map<string, MessagePort>();
+  let resolvePromise!: (port: MessagePort) => void;
+  let rejectPromise!: (error: Error) => void;
+  const promise = new Promise<MessagePort>((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+  // A failed IPC start can precede awaiting this promise.
+  void promise.catch(() => undefined);
+
+  const cleanup = () => {
+    clearTimeout(timer);
+    window.removeEventListener("message", handler);
+    // Unmatched ports may belong to another concurrent waiter.
+    pending.clear();
+  };
+  const succeed = (port: MessagePort) => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    resolvePromise(port);
+  };
+  const fail = (message: string) => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    rejectPromise(new Error(message));
+  };
+  const handler = (event: MessageEvent) => {
+    const data = event.data as Record<string, unknown> | null;
+    const port = event.ports[0];
+    const jobId = data?.jobId;
+    if (!data?.["__kove-advancedExportPort"] || typeof jobId !== "string" || !port) return;
+    if (expectedId === jobId) succeed(port);
+    else if (!expectedId) pending.set(jobId, port);
+    // If it belongs to another active export, leave its port to that waiter.
+  };
+  const timer = setTimeout(() => fail("Timed out waiting for the native export channel"), 15_000);
+  window.addEventListener("message", handler);
+  return {
+    promise,
+    expect(jobId) {
+      expectedId = jobId;
+      const port = pending.get(jobId);
+      if (port) succeed(port);
+    },
+    cancel: () => fail("Native export channel was cancelled"),
+  };
+}
+
 export class NativeFFmpegBackend implements EncoderBackend {
   readonly requiresWebCodecsClamping = false;
   // Native FFmpeg applies backpressure through frame credits. Clearing the
@@ -117,6 +176,7 @@ export class NativeFFmpegBackend implements EncoderBackend {
   private done: Promise<void> = Promise.resolve();
   private resolveDone: (() => void) | null = null;
   private rejectDone: ((reason: Error) => void) | null = null;
+  private cancelPortWait: (() => void) | null = null;
 
   private readback: OffscreenCanvas | null = null;
   private readbackCtx: OffscreenCanvasRenderingContext2D | null = null;
@@ -167,10 +227,13 @@ export class NativeFFmpegBackend implements EncoderBackend {
       this.resolveDone = resolve;
       this.rejectDone = reject;
     });
+    // The encoder may fail before finalize() begins awaiting completion.
+    void this.done.catch(() => undefined);
 
-    const portPromise = this.awaitExportPort();
-
-    const session = await bridge.export.start({
+    const waiter = createExportPortWaiter();
+    this.cancelPortWait = waiter.cancel;
+    try {
+      const session = await bridge.export.start({
       width: settings.width,
       height: settings.height,
       frameRate: settings.frameRate,
@@ -186,8 +249,9 @@ export class NativeFFmpegBackend implements EncoderBackend {
       proresProfile: settings.proresProfile,
     });
 
-    const port = await portPromise;
     this.jobId = session.jobId;
+    waiter.expect(session.jobId);
+    const port = await waiter.promise;
     this.port = port;
     this.credits = 0;
 
@@ -211,26 +275,14 @@ export class NativeFFmpegBackend implements EncoderBackend {
       }
     };
     port.start();
-  }
-
-  private awaitExportPort(): Promise<MessagePort> {
-    return new Promise<MessagePort>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        window.removeEventListener("message", handler);
-        reject(new Error("Timed out waiting for the native export channel"));
-      }, 15000);
-
-      const handler = (event: MessageEvent) => {
-        const data = event.data as Record<string, unknown> | null;
-        if (data?.["__kove-advancedExportPort"] && event.ports.length > 0) {
-          clearTimeout(timeout);
-          window.removeEventListener("message", handler);
-          resolve(event.ports[0]);
-        }
-      };
-
-      window.addEventListener("message", handler);
-    });
+    } catch (error) {
+      waiter.cancel();
+      if (this.jobId) await bridge.export.cancel(this.jobId).catch(() => undefined);
+      this.jobId = null;
+      throw error;
+    } finally {
+      this.cancelPortWait = null;
+    }
   }
 
   async addAudioBuffer(buffer: AudioBuffer): Promise<void> {
@@ -278,15 +330,15 @@ export class NativeFFmpegBackend implements EncoderBackend {
   ): Promise<void> {
     const port = this.port;
     if (!port) {
+      frame.close();
       throw new Error("NativeFFmpegBackend not started");
     }
 
-    const waitStart = performance.now();
-    await this.waitForFrameCredit();
-    this.creditWaitMsTotal += performance.now() - waitStart;
-
     let rgba: ArrayBuffer;
     try {
+      const waitStart = performance.now();
+      await this.waitForFrameCredit();
+      this.creditWaitMsTotal += performance.now() - waitStart;
       rgba = this.readbackFrame(frame);
     } finally {
       frame.close();
@@ -318,15 +370,30 @@ export class NativeFFmpegBackend implements EncoderBackend {
         );
       }
     } finally {
+      this.port?.close();
+      this.port = null;
+      this.jobId = null;
       this.releaseReadbackBuffers();
     }
   }
 
   async abort(): Promise<void> {
-    if (this.jobId && window["kove-advanced"]) {
-      await window["kove-advanced"].export.cancel(this.jobId);
+    this.failed = true;
+    this.cancelPortWait?.();
+    const canceled = new Error("Native export was cancelled");
+    canceled.name = "AbortError";
+    this.rejectDone?.(canceled);
+    this.port?.close();
+    this.port = null;
+    const jobId = this.jobId;
+    this.jobId = null;
+    try {
+      if (jobId && window["kove-advanced"]) {
+        await window["kove-advanced"].export.cancel(jobId);
+      }
+    } finally {
+      this.releaseReadbackBuffers();
     }
-    this.releaseReadbackBuffers();
   }
 
   private async waitForFrameCredit(): Promise<void> {

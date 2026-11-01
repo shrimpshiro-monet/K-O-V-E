@@ -6,6 +6,7 @@ export const CHANNELS = {
   fsWriteFile: "kove-advanced:fs:writeFile",
   fsOpenWrite: "kove-advanced:fs:openWrite",
   fsWriteChunk: "kove-advanced:fs:writeChunk",
+  fsTruncateWrite: "kove-advanced:fs:truncateWrite",
   fsCloseWrite: "kove-advanced:fs:closeWrite",
   fsAbortWrite: "kove-advanced:fs:abortWrite",
   fsRevealInFolder: "kove-advanced:fs:revealInFolder",

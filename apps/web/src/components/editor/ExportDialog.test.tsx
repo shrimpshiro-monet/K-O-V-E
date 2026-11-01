@@ -51,6 +51,17 @@ describe("ExportDialog", () => {
     ).toBeInTheDocument();
   });
 
+  it("sends the explicitly acknowledged H.264 fallback as MP4 settings", () => {
+    const onExport = vi.fn();
+    render(<ExportDialog isOpen onClose={vi.fn()} onExport={onExport} duration={1} />);
+    fireEvent.click(screen.getByRole("radio", { name: "Custom Settings" }));
+    fireEvent.change(screen.getByLabelText("Codec"), { target: { value: "prores" } });
+    expect(screen.getByRole("button", { name: "Export Video" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Export as H.264 anyway" }));
+    fireEvent.click(screen.getByRole("button", { name: "Export Video" }));
+    expect(onExport).toHaveBeenCalledWith(expect.objectContaining({ format: "mp4", codec: "h264" }));
+  });
+
   it("exports source settings from the quick action", () => {
     const onClose = vi.fn();
     const onExport = vi.fn();

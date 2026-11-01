@@ -170,3 +170,67 @@ Failure artifacts (screenshots, traces, DOM snapshots) land in
   distro's libc/libstdc++ and a config where `--single-process`,
   `--in-process-gpu` and `--no-zygote` are filtered out; pass the binary via
   `KOVE_E2E_CHROMIUM`.
+
+## Export reliability smoke test
+
+`export-reliability.spec.ts` generates its own picture and a short source video
+with a sine-wave audio track, imports them through the editor, and downloads
+actual MP4s and a 24-bit WAV. It checks the streams, duration, decoded picture
+pixels, and audio volume with `ffprobe`/`ffmpeg`. It also verifies 44.1 kHz mono
+to 48 kHz stereo resampling and pitch, browser agent video/Opus downloads,
+unsupported audio-codec errors, and a streamed transparent PNG ZIP (including
+CRC and alpha checks). `unzip` is required for the ZIP check. Separate tests
+deliberately stall the encoder or inject an encoder error to check cancellation
+and the visible error state; they do not mock successful exports. Run just this
+suite with:
+
+```bash
+# From apps/web. Install Playwright Chromium and put ffmpeg/ffprobe on PATH.
+pnpm exec playwright test e2e/export-reliability.spec.ts
+# Optional: also exercise 16 seconds of audio across the 15-second chunk boundary
+KOVE_E2E_LONG_EXPORT=1 pnpm exec playwright test e2e/export-reliability.spec.ts
+# Optional: verify a five-second 1080p, 30-fps export
+KOVE_E2E_HD_EXPORT=1 pnpm exec playwright test e2e/export-reliability.spec.ts
+# Optional: soak-test a one-minute 1080p, 30-fps export with audio
+KOVE_E2E_SOAK_EXPORT=1 pnpm exec playwright test e2e/export-reliability.spec.ts
+# Optional overrides: KOVE_E2E_CHROMIUM, KOVE_E2E_FFMPEG, KOVE_E2E_FFPROBE
+```
+
+`wasm-audio-safety.spec.ts` loads the real compiled FFT, beat-detection, and WAV
+modules in Chromium and verifies that the managed typed-array bindings actually
+run and copy results back correctly. The toolbar WAV test also verifies its
+encoder is accelerated when the WASM build exists. Run `pnpm build:wasm` first;
+without the compiled files the direct module test is skipped. A separate
+`wasm-production.spec.ts` drives the built editor through its UI and wraps the
+real 24-bit WASM export only to count calls; it also verifies the downloaded
+WAV with ffmpeg. To run that optional production check, build the app, serve
+`apps/web/dist` (for example with `pnpm --filter @kove-advanced/web preview`),
+and set `KOVE_E2E_PRODUCTION_URL` to the preview URL when invoking Playwright.
+See `packages/core/src/wasm/README.md`.
+
+For a non-gating local performance comparison, run
+`KOVE_E2E_AUDIO_BENCHMARK=1 pnpm exec playwright test e2e/wasm-audio-benchmark.spec.ts`
+from `apps/web` after building WASM. It reports three warmed timings for the
+actual managed FFT, WAV and RMS adapters versus JavaScript, including transfer
+costs. Results depend on the browser, device and workload; the test asserts that
+the intended paths ran, not a particular speedup.
+
+Transparent WebM/ProRes motion-video export is intentionally blocked on desktop
+because the current compositor/encoder flattens alpha; PNG sequences preserve
+transparency. On the web, the motion render queue warns before an explicit
+H.264 fallback.
+
+`director-empty-timeline.spec.ts` also drives the real chat and timeline in
+Chromium with deliberately stubbed model responses. It verifies both the
+bounded empty-timeline failure and a retry that calls the real `plan_edit` tool;
+it is not a live-provider test.
+
+The Captain Price emulation runner accepts `KOVE_SOURCE_VIDEO`,
+`KOVE_STYLE_REFERENCE`, `KOVE_E2E_PROMPT`, and `KOVE_E2E_OUT`; source and
+reference are checked by their actual filenames. `KOVE_E2E_HEADLESS=1` makes
+it exit after saving results for CI. `KOVE_EXPORT_TIMEOUT_MS` sets the total
+export deadline, while `KOVE_EXPORT_STALL_TIMEOUT_MS` sets the maximum time
+without a progress/state change. The runner verifies that the downloaded video
+can be decoded, records export state and recent relevant console errors on
+failure, and labels local recovery separately from a Monet-created timeline.
+A passing recovery does not mean a live AI provider succeeded.

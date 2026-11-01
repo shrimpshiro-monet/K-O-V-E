@@ -130,7 +130,7 @@ describe("RenderQueuePanel ProRes/alpha guardrail", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("does not warn when the native desktop backend is available", () => {
+  it("blocks desktop transparent video instead of silently discarding alpha", () => {
     setDesktop(true);
     seedQueuedJob("mp4");
     render(<RenderQueuePanel composition={composition()} embedded />);
@@ -138,10 +138,9 @@ describe("RenderQueuePanel ProRes/alpha guardrail", () => {
     const select = screen.getByRole("combobox");
     fireEvent.change(select, { target: { value: "mov-prores4444" } });
 
-    expect(
-      screen.queryByText(/Web export can't produce ProRes or alpha/i),
-    ).not.toBeInTheDocument();
-    expect(startButton()).not.toBeDisabled();
+    expect(screen.getByText(/Transparent video export is not supported yet/i)).toBeInTheDocument();
+    expect(startButton()).toBeDisabled();
+    expect(screen.getByRole("button", { name: /current/i })).toBeDisabled();
   });
 
   it("states the encoded format on a completed web ProRes job", () => {

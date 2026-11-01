@@ -53,6 +53,7 @@ export function createStoredZip(
   const CENTRAL_HEADER_SIZE = 46;
   const END_RECORD_SIZE = 22;
 
+  if (entries.length > 0xffff) throw new Error("createStoredZip: ZIP32 supports at most 65,535 entries");
   const prepared: PreparedEntry[] = [];
   let localSectionSize = 0;
   for (const entry of entries) {
@@ -63,6 +64,9 @@ export function createStoredZip(
       throw new Error("createStoredZip: entry data must be a Uint8Array");
     }
     const nameBytes = encodeName(entry.name);
+    if (nameBytes.length > 0xffff || entry.data.length > 0xffffffff) {
+      throw new Error("createStoredZip: entry exceeds ZIP32 limits");
+    }
     prepared.push({
       nameBytes,
       data: entry.data,
@@ -78,6 +82,7 @@ export function createStoredZip(
   }
 
   const totalSize = localSectionSize + centralSectionSize + END_RECORD_SIZE;
+  if (totalSize > 0xffffffff) throw new Error("createStoredZip: archive exceeds ZIP32's 4 GB limit");
   const backing = new ArrayBuffer(totalSize);
   const buffer = new Uint8Array(backing);
   const view = new DataView(backing);
@@ -133,4 +138,78 @@ export function createStoredZip(
   writeUint16(view, cursor + 20, 0);
 
   return buffer;
+}
+
+/** A ZIP32 writer that retains only central-directory metadata, not image data. */
+export class StreamingStoredZipWriter {
+  private offset = 0;
+  private readonly entries: Array<{
+    nameBytes: Uint8Array;
+    size: number;
+    crc: number;
+    localHeaderOffset: number;
+  }> = [];
+  private finalized = false;
+
+  constructor(private readonly writable: Pick<FileSystemWritableFileStream, "write">) {}
+
+  async add(name: string, data: Uint8Array<ArrayBuffer>): Promise<void> {
+    if (this.finalized) throw new Error("ZIP archive is already finalized");
+    if (!name || !(data instanceof Uint8Array)) throw new Error("ZIP entries require a name and byte data");
+    const nameBytes = encodeName(name);
+    if (this.entries.length >= 0xffff || nameBytes.length > 0xffff || data.length > 0xffffffff) {
+      throw new Error("PNG sequence exceeds ZIP's size or frame-count limit. Export a shorter range.");
+    }
+    const nextOffset = this.offset + 30 + nameBytes.length + data.length;
+    if (nextOffset > 0xffffffff) {
+      throw new Error("PNG sequence exceeds ZIP's 4 GB limit. Export a shorter range.");
+    }
+    const crc = crc32(data);
+    const header = new Uint8Array(30 + nameBytes.length);
+    const view = new DataView(header.buffer);
+    writeUint32(view, 0, 0x04034b50);
+    writeUint16(view, 4, 20);
+    writeUint16(view, 6, 0x0800); // UTF-8 filenames
+    writeUint32(view, 14, crc);
+    writeUint32(view, 18, data.length);
+    writeUint32(view, 22, data.length);
+    writeUint16(view, 26, nameBytes.length);
+    header.set(nameBytes, 30);
+    await this.writable.write(header);
+    await this.writable.write(data);
+    this.entries.push({ nameBytes, size: data.length, crc, localHeaderOffset: this.offset });
+    this.offset = nextOffset;
+  }
+
+  async finalize(): Promise<void> {
+    if (this.finalized) throw new Error("ZIP archive is already finalized");
+    this.finalized = true;
+    const centralStart = this.offset;
+    const centralSize = this.entries.reduce((total, entry) => total + 46 + entry.nameBytes.length, 0);
+    if (centralStart + centralSize + 22 > 0xffffffff) {
+      throw new Error("PNG sequence exceeds ZIP's 4 GB limit. Export a shorter range.");
+    }
+    const central = new Uint8Array(centralSize + 22);
+    const view = new DataView(central.buffer);
+    let cursor = 0;
+    for (const entry of this.entries) {
+      writeUint32(view, cursor, 0x02014b50);
+      writeUint16(view, cursor + 4, 20);
+      writeUint16(view, cursor + 6, 20);
+      writeUint16(view, cursor + 8, 0x0800);
+      writeUint32(view, cursor + 16, entry.crc);
+      writeUint32(view, cursor + 20, entry.size);
+      writeUint32(view, cursor + 24, entry.size);
+      writeUint16(view, cursor + 28, entry.nameBytes.length);
+      writeUint32(view, cursor + 42, entry.localHeaderOffset);
+      central.set(entry.nameBytes, cursor + 46);
+      cursor += 46 + entry.nameBytes.length;
+    }
+    writeUint32(view, cursor, 0x06054b50);
+    writeUint16(view, cursor + 8, this.entries.length);
+    writeUint16(view, cursor + 10, this.entries.length);
+    writeUint32(view, cursor + 12, centralSize);
+    writeUint32(view, cursor + 16, centralStart);
+    await this.writable.write(central);
+  }
 }

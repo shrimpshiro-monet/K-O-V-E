@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildWavHeader,
   encodeAudioBufferToPcm16,
@@ -75,5 +75,77 @@ describe("native ffmpeg backend helpers", () => {
     expect(view.getInt16(2, true)).toBe(8192);
     expect(view.getInt16(4, true)).toBe(-8192);
     expect(view.getInt16(6, true)).toBe(-8192);
+  });
+});
+
+
+describe("native export channel lifecycle", () => {
+  const settings = { width: 16, height: 16, frameRate: 1, codec: "h264", format: "mp4", bitrate: 1000,
+    audioSettings: { sampleRate: 48000, channels: 2 } } as never;
+  const project = { timeline: { duration: 1 } } as never;
+  const start = vi.fn();
+  const cancel = vi.fn();
+  const makePort = () => ({ start: vi.fn(), close: vi.fn(), postMessage: vi.fn(), onmessage: null }) as unknown as MessagePort;
+  const sendPort = (jobId: string, port: MessagePort) => {
+    const event = new MessageEvent("message", { data: { "__kove-advancedExportPort": true, jobId }, ports: [port] });
+    window.dispatchEvent(event);
+  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cancel.mockResolvedValue(undefined);
+    (window as unknown as Record<string, unknown>)["kove-advanced"] = { export: { start, cancel } };
+  });
+  afterEach(() => { delete (window as unknown as Record<string, unknown>)["kove-advanced"]; });
+
+  it("cleans the port listener when IPC startup fails", async () => {
+    start.mockRejectedValueOnce(new Error("unsupported encoder"));
+    const remove = vi.spyOn(window, "removeEventListener");
+    const backend = new NativeFFmpegBackend(() => "/tmp/out.mp4");
+    await expect(backend.start(settings, project)).rejects.toThrow("unsupported encoder");
+    expect(remove).toHaveBeenCalledWith("message", expect.any(Function));
+    remove.mockRestore();
+  });
+
+  it("matches out-of-order ports to their jobs without closing the other job's port", async () => {
+    let resolveFirst!: (value: { jobId: string }) => void;
+    let resolveSecond!: (value: { jobId: string }) => void;
+    start.mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+    const one = new NativeFFmpegBackend(() => "/tmp/one.mp4");
+    const two = new NativeFFmpegBackend(() => "/tmp/two.mp4");
+    const pendingOne = one.start(settings, project);
+    const pendingTwo = two.start(settings, project);
+    const portOne = makePort(), portTwo = makePort();
+    sendPort("one", portOne);
+    sendPort("two", portTwo);
+    resolveSecond({ jobId: "two" });
+    resolveFirst({ jobId: "one" });
+    await Promise.all([pendingOne, pendingTwo]);
+    expect(portOne.start).toHaveBeenCalledOnce();
+    expect(portTwo.start).toHaveBeenCalledOnce();
+    expect(portOne.close).not.toHaveBeenCalled();
+    expect(portTwo.close).not.toHaveBeenCalled();
+    await Promise.all([one.abort(), two.abort()]);
+    expect(cancel).toHaveBeenCalledWith("one");
+    expect(cancel).toHaveBeenCalledWith("two");
+  });
+
+  it("cancels a late-starting job after the caller already aborted", async () => {
+    let resolveStart!: (value: { jobId: string }) => void;
+    start.mockReturnValueOnce(new Promise((resolve) => { resolveStart = resolve; }));
+    const backend = new NativeFFmpegBackend(() => "/tmp/out.mp4");
+    const pending = backend.start(settings, project);
+    const assertion = expect(pending).rejects.toThrow(/cancelled/i);
+    await backend.abort();
+    resolveStart({ jobId: "late" });
+    await assertion;
+    expect(cancel).toHaveBeenCalledWith("late");
+  });
+
+  it("closes a frame even when the backend has not started", async () => {
+    const close = vi.fn();
+    const backend = new NativeFFmpegBackend(() => "/tmp/out.mp4");
+    await expect(backend.addVideoFrame({ close } as unknown as ImageBitmap, 0)).rejects.toThrow(/not started/i);
+    expect(close).toHaveBeenCalledOnce();
   });
 });

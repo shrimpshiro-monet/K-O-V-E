@@ -21,13 +21,14 @@ import {
   motionRenderer,
 } from "@kove-advanced/core";
 import { resolveCreationMotionSceneBinding } from "@kove-advanced/core/creation/index";
+import { waitForExportStage } from "@kove-advanced/core/export/export-watchdog";
 import {
   createDownloadWritable,
   mimeForExt,
 } from "../services/export-runner";
 import { createWebMotionAssetResolver } from "./motion-asset-resolver";
 import { NativeFFmpegBackend } from "../services/native-ffmpeg-backend";
-import { createStoredZip, type ZipStoreEntry } from "./zip-store";
+import { StreamingStoredZipWriter } from "./zip-store";
 
 export interface ExportMotionCompositionFrameOptions {
   readonly composition: MotionComposition;
@@ -714,6 +715,13 @@ export async function exportMotionCompositionScene({
     });
   }
 
+  // The native video compositor currently flattens frames to black and the
+  // encoder drops their alpha channel. Refuse to label that output transparent.
+  // PNG sequences preserve alpha and are available on both platforms.
+  if (requestedDescriptor.transparent && hasNativeMotionExportBackend()) {
+    throw new Error("Transparent video export is not supported yet. Choose PNG Sequence (ZIP) to preserve transparency, or MP4 for opaque video.");
+  }
+
   const { format: encodedFormat, normalizedToH264 } =
     resolveEncodedMotionFormat(requestedDescriptor);
   const descriptor =
@@ -751,7 +759,12 @@ export async function exportMotionCompositionScene({
     mimeForExt(descriptor.extension),
   );
   const engine = getExportEngine();
-  await engine.initialize();
+  try {
+    await waitForExportStage(engine.initialize(), "loading the motion export engine");
+  } catch (error) {
+    await writable.abort().catch(() => undefined);
+    throw error;
+  }
 
   const generator = engine.exportVideo(exportProject, settings, writable);
   let finalResult: ExportResult | undefined;
@@ -842,85 +855,62 @@ async function exportMotionCompositionScenePngSequence({
   const supersample = clampSupersample(scale * 2);
   const frameRate = Math.max(1, composition.frameRate);
   const totalFrames = resolvedRange.frameCount;
-  const entries: ZipStoreEntry[] = [];
   const outputWidth = scaleEncoderDimension(composition.width, scale);
   const outputHeight = scaleEncoderDimension(composition.height, scale);
-  const pngTarget =
-    scale === 1
-      ? undefined
-      : { width: outputWidth, height: outputHeight };
+  const pngTarget = scale === 1 ? undefined : { width: outputWidth, height: outputHeight };
+  if (totalFrames > 0xffff) {
+    throw new Error("PNG sequence exceeds ZIP's 65,535-frame limit. Export a shorter range.");
+  }
 
   onProgress?.(createExportProgress("preparing", 0, 0, totalFrames));
+  const canceledResult = (framesRendered: number): ExportMotionCompositionSceneResult => ({
+    filename: resolvedFilename, width: outputWidth, height: outputHeight,
+    duration: resolvedRange.endTime - resolvedRange.startTime,
+    framesRendered, encodedFormat: descriptor.id, canceled: true,
+  });
+  if (isCanceled?.()) return canceledResult(0);
 
-  for (let offset = 0; offset < totalFrames; offset += 1) {
-    if (isCanceled?.()) {
-      return {
-        filename: resolvedFilename,
-        width: outputWidth,
-        height: outputHeight,
-        duration: resolvedRange.endTime - resolvedRange.startTime,
-        framesRendered: offset,
-        encodedFormat: descriptor.id,
-        canceled: true,
-      };
-    }
-    const frameIndex = resolvedRange.startFrame + offset;
-    const frameTime = clampTime(frameIndex / frameRate, composition.duration);
-    const bitmap = await getMotionFrameRenderer().render(composition, frameTime, {
-      compositionLibrary: library,
-      assetResolver,
-      supersample,
-    });
-    try {
-      const blob = await imageBitmapToPngBlob(bitmap, pngTarget);
-      const data = new Uint8Array(await blob.arrayBuffer());
-      const name = `frame-${(offset + 1).toString().padStart(5, "0")}.png`;
-      entries.push({ name, data });
-    } finally {
-      bitmap.close();
-    }
-    onProgress?.(
-      createExportProgress(
-        "rendering",
-        (offset + 1) / totalFrames,
-        offset + 1,
-        totalFrames,
-      ),
-    );
-  }
-
-  if (isCanceled?.()) {
-    return {
-      filename: resolvedFilename,
-      width: outputWidth,
-      height: outputHeight,
-      duration: resolvedRange.endTime - resolvedRange.startTime,
-      framesRendered: entries.length,
-      encodedFormat: descriptor.id,
-      canceled: true,
-    };
-  }
-
-  const zipBytes = createStoredZip(entries);
-  const writable = await createDownloadWritable(
-    resolvedFilename,
-    mimeForExt(descriptor.extension),
-  );
+  // Open the destination first and stream each PNG into the ZIP as it renders.
+  // Holding every frame plus a second full archive in memory can exhaust the
+  // browser on long or high-resolution animations.
+  const writable = await createDownloadWritable(resolvedFilename, mimeForExt(descriptor.extension));
+  const zip = new StreamingStoredZipWriter(writable);
+  let finished = false;
+  let renderedFrames = 0;
   try {
-    await writable.write(new Blob([zipBytes], { type: "application/zip" }));
-  } finally {
+    for (let offset = 0; offset < totalFrames; offset += 1) {
+      if (isCanceled?.()) return canceledResult(renderedFrames);
+      const frameIndex = resolvedRange.startFrame + offset;
+      const frameTime = clampTime(frameIndex / frameRate, composition.duration);
+      const bitmap = await getMotionFrameRenderer().render(composition, frameTime, {
+        compositionLibrary: library, assetResolver, supersample,
+      });
+      try {
+        const blob = await imageBitmapToPngBlob(bitmap, pngTarget);
+        const data = new Uint8Array(await blob.arrayBuffer());
+        const name = `frame-${(offset + 1).toString().padStart(5, "0")}.png`;
+        await zip.add(name, data);
+      } finally {
+        bitmap.close();
+      }
+      renderedFrames += 1;
+      onProgress?.(createExportProgress("rendering", renderedFrames / totalFrames, renderedFrames, totalFrames));
+    }
+    if (isCanceled?.()) return canceledResult(renderedFrames);
+    await zip.finalize();
     await writable.close();
+    finished = true;
+  } finally {
+    if (!finished) await writable.abort().catch(() => undefined);
   }
-  onProgress?.(
-    createExportProgress("complete", 1, totalFrames, totalFrames),
-  );
+  onProgress?.(createExportProgress("complete", 1, totalFrames, totalFrames));
 
   return {
     filename: resolvedFilename,
     width: outputWidth,
     height: outputHeight,
     duration: resolvedRange.endTime - resolvedRange.startTime,
-    framesRendered: entries.length,
+    framesRendered: renderedFrames,
     encodedFormat: descriptor.id,
   };
 }

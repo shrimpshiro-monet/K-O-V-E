@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pnpm --filter @kove-advanced/web dev",
     "build:wasm": "pnpm --filter @kove-advanced/core build:wasm",
-    "build": "pnpm build:wasm && pnpm --filter @kove-advanced/web build",
+    "build": "pnpm --filter @kove-advanced/web build",
     "preview": "pnpm --filter @kove-advanced/web preview",
     "deploy": "pnpm build && pnpm --filter @kove-advanced/web deploy",
     "deploy:preview": "pnpm build && pnpm --filter @kove-advanced/web deploy:preview",

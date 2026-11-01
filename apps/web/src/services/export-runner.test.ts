@@ -16,6 +16,7 @@ const { mockEngine, getExportEngineMock } = vi.hoisted(() => {
   const engine = {
     initialize: vi.fn().mockResolvedValue(undefined),
     exportVideo: vi.fn(),
+    exportAudio: vi.fn(),
     cancel: vi.fn(),
   };
   return {
@@ -164,9 +165,25 @@ describe("useExportRunner", () => {
 
     expect(mockEngine.initialize).toHaveBeenCalledTimes(1);
     expect(result.current.state.complete).toBe(true);
+    expect(result.current.state.isExporting).toBe(false);
     expect(result.current.state.phase).toBe("Saved!");
     expect(result.current.state.progress).toBe(100);
     expect(onExported).toHaveBeenCalledWith(settings);
+  });
+
+  it("keeps a successful export successful if its notification fails", async () => {
+    mockEngine.exportVideo.mockImplementation(() => successGenerator());
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { result } = renderHook(() => useExportRunner({
+      project: fakeProject(), onExported: () => { throw new Error("analytics unavailable"); },
+    }));
+    const factory = vi.fn();
+    act(() => result.current.beginExport());
+    await act(async () => { await result.current.runExport({ format: "mp4" }, "mp4", fakeStream(), factory); });
+    expect(result.current.state).toMatchObject({ complete: true, isExporting: false, error: null });
+    expect(mockEngine.exportVideo.mock.calls[0][3]).toBe(factory);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("throws and surfaces error on failed result", async () => {
@@ -208,6 +225,108 @@ describe("useExportRunner", () => {
     });
     expect(result.current.state.isExporting).toBe(false);
     expect(result.current.state.error).toBeNull();
+  });
+
+  it("cancels stalled initialization, aborts the destination, and never starts a generator", async () => {
+    mockEngine.initialize.mockReturnValueOnce(new Promise(() => {}));
+    const writable = fakeStream();
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    let pending!: Promise<void>;
+    act(() => { pending = result.current.runExport({ format: "mp4" }, "mp4", writable); });
+    const assertion = expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    act(() => result.current.cancel());
+    await act(async () => { await assertion; });
+    expect(writable.abort).toHaveBeenCalled();
+    expect(mockEngine.exportVideo).not.toHaveBeenCalled();
+    expect(result.current.state).toMatchObject({ isExporting: false, error: null, complete: false });
+  });
+
+  it("does not let an old cancelled run reset a newer export", async () => {
+    mockEngine.initialize.mockReturnValueOnce(new Promise(() => {}));
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    let oldRun!: Promise<void>;
+    act(() => { oldRun = result.current.runExport({ format: "mp4" }, "mp4", fakeStream()); });
+    const oldError = oldRun.catch((error: unknown) => error);
+    act(() => { result.current.cancel(); result.current.beginExport(); });
+    const error = await oldError;
+    act(() => result.current.failExport(error));
+    expect(error).toMatchObject({ name: "AbortError" });
+    expect(result.current.state).toMatchObject({ isExporting: true, phase: "Initializing...", error: null });
+  });
+
+  it("aborts the file and exposes an initialization failure", async () => {
+    mockEngine.initialize.mockRejectedValueOnce(new Error("renderer unavailable"));
+    const writable = fakeStream();
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    await act(async () => {
+      try { await result.current.runExport({ format: "mp4" }, "mp4", writable); }
+      catch (error) { result.current.failExport(error); }
+    });
+    expect(writable.abort).toHaveBeenCalled();
+    expect(mockEngine.exportVideo).not.toHaveBeenCalled();
+    expect(result.current.state).toMatchObject({ isExporting: false, error: "renderer unavailable", complete: false });
+  });
+
+  it("writes a successful audio export and reports completion", async () => {
+    mockEngine.exportAudio.mockImplementation(async function* () {
+      yield { phase: "rendering", progress: 0.5 };
+      return { success: true, blob: fakeBlob([new Uint8Array([1, 2, 3])]) } as ExportResult;
+    });
+    const writable = fakeStream();
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    await act(async () => { await result.current.runAudioExport({ format: "wav" }, writable); });
+    expect(writable.write).toHaveBeenCalledTimes(1);
+    expect(writable.close).toHaveBeenCalledTimes(1);
+    expect(result.current.state).toMatchObject({ isExporting: false, complete: true, progress: 100, error: null });
+  });
+
+  it("cancels an audio render and discards the incomplete file", async () => {
+    let rejectRender!: (error: Error) => void;
+    const rendering = new Promise<void>((_resolve, reject) => { rejectRender = reject; });
+    const renderStarted = vi.fn();
+    mockEngine.exportAudio.mockImplementation(async function* () {
+      yield { phase: "preparing", progress: 0 };
+      renderStarted();
+      await rendering;
+      return { success: true, blob: fakeBlob([new Uint8Array([1])]) } as ExportResult;
+    });
+    mockEngine.cancel.mockImplementationOnce(() => rejectRender(new DOMException("Cancelled", "AbortError")));
+    const writable = fakeStream();
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    let pending!: Promise<void>;
+    act(() => { pending = result.current.runAudioExport({ format: "wav" }, writable); });
+    const assertion = expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    await act(async () => { await vi.waitFor(() => expect(renderStarted).toHaveBeenCalled()); });
+    act(() => result.current.cancel());
+    await act(async () => { await assertion; });
+    expect(writable.abort).toHaveBeenCalled();
+    expect(writable.close).not.toHaveBeenCalled();
+    expect(result.current.state).toMatchObject({ isExporting: false, complete: false, error: null });
+  });
+
+  it("cancels a stalled audio-file write instead of reporting completion", async () => {
+    mockEngine.exportAudio.mockImplementation(async function* () {
+      yield { phase: "preparing", progress: 0 };
+      return { success: true, blob: fakeBlob([new Uint8Array([1, 2, 3])]) } as ExportResult;
+    });
+    const writable = fakeStream();
+    vi.mocked(writable.write).mockReturnValueOnce(new Promise(() => {}));
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    let pending!: Promise<void>;
+    act(() => { pending = result.current.runAudioExport({ format: "wav" }, writable); });
+    const assertion = expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    await act(async () => { await vi.waitFor(() => expect(writable.write).toHaveBeenCalled()); });
+    act(() => result.current.cancel());
+    await act(async () => { await assertion; });
+    expect(writable.abort).toHaveBeenCalled();
+    expect(writable.close).not.toHaveBeenCalled();
+    expect(result.current.state).toMatchObject({ isExporting: false, complete: false, error: null });
   });
 
   it("cancel calls engine.cancel and resets state", () => {
@@ -298,6 +417,8 @@ describe("useExportRunner showSavePicker fallback", () => {
   });
 
   afterEach(() => {
+    // Release delayed download resources while their mocked OPFS methods still exist.
+    window.dispatchEvent(new Event("pagehide"));
     vi.restoreAllMocks();
     urlApi.createObjectURL = originalCreate;
     urlApi.revokeObjectURL = originalRevoke;
@@ -463,6 +584,125 @@ describe("useExportRunner showSavePicker fallback", () => {
     await writable.write(chunk);
 
     expect(writeChunk).toHaveBeenCalledWith("handle-1", chunk, 0);
+  });
+
+  it("writes Blob ZIP data, seek/truncate commands and holes in the memory fallback", async () => {
+    delete win.showSaveFilePicker;
+    const writable = await createDownloadWritable("frames.zip", mimeForExt("zip"));
+    await writable.write(new Blob([new Uint8Array([65, 66])], { type: "application/zip" }));
+    await writable.write({ type: "write", position: 4, data: new Uint8Array([69, 70]) });
+    await writable.write({ type: "seek", position: 2 });
+    await writable.write(new Uint8Array([67]));
+    await writable.write({ type: "truncate", size: 5 });
+    await writable.close();
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    const bytes = await new Promise<Uint8Array>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(blob);
+    });
+    expect(blob.type).toBe("application/zip");
+    expect([...bytes]).toEqual([65, 66, 67, 0, 69]);
+    await expect(writable.write(new Uint8Array([1]))).rejects.toThrow(/closed/i);
+  });
+
+  it("rejects invalid data and aborts without downloading the memory fallback", async () => {
+    delete win.showSaveFilePicker;
+    const writable = await createDownloadWritable("frames.zip", mimeForExt("zip"));
+    await expect(writable.write({} as never)).rejects.toThrow(/unsupported data/i);
+    await expect(writable.seek(-1)).rejects.toThrow(/non-negative/i);
+    await writable.abort();
+    expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it("writes Blob data and truncation commands to the desktop stream", async () => {
+    const writeChunk = vi.fn().mockResolvedValue(undefined);
+    const truncateWrite = vi.fn().mockResolvedValue(undefined);
+    const abortWrite = vi.fn().mockResolvedValue(undefined);
+    win["kove-advanced"] = { platform: "desktop", fs: {
+      showSaveDialog: vi.fn().mockResolvedValue("/tmp/frames.zip"),
+      openWrite: vi.fn().mockResolvedValue("handle-1"), writeChunk, truncateWrite,
+      closeWrite: vi.fn().mockResolvedValue(undefined), abortWrite,
+    } };
+    const writable = await createDownloadWritable("frames.zip", mimeForExt("zip"));
+    await writable.write(new Blob([new Uint8Array([1, 2, 3])]));
+    await writable.write({ type: "write", position: 1, data: new Uint8Array([9]) });
+    await writable.truncate(2);
+    expect(writeChunk).toHaveBeenNthCalledWith(1, "handle-1", new Uint8Array([1, 2, 3]), 0);
+    expect(writeChunk).toHaveBeenNthCalledWith(2, "handle-1", new Uint8Array([9]), 1);
+    expect(truncateWrite).toHaveBeenCalledWith("handle-1", 2);
+    await writable.abort();
+    expect(abortWrite).toHaveBeenCalledOnce();
+  });
+
+  it("cleans up OPFS files when opening or publishing them fails", async () => {
+    delete win.showSaveFilePicker;
+    const removeEntry = vi.fn().mockResolvedValue(undefined);
+    const fileHandle = { createWritable: vi.fn().mockRejectedValueOnce(new Error("open failed")) };
+    setOpfs({ getDirectory: vi.fn().mockResolvedValue({
+      getFileHandle: vi.fn().mockResolvedValue(fileHandle), removeEntry,
+    }) });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fallback = await createDownloadWritable("fallback.zip", "application/zip");
+    expect(removeEntry).toHaveBeenCalledTimes(1);
+    await fallback.abort();
+    fileHandle.createWritable.mockResolvedValueOnce({ close: vi.fn().mockResolvedValue(undefined) });
+    Object.assign(fileHandle, { getFile: vi.fn().mockRejectedValue(new Error("read failed")) });
+    const opfs = await createDownloadWritable("broken.zip", "application/zip");
+    await expect(opfs.close()).rejects.toThrow("read failed");
+    expect(removeEntry).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
+  });
+
+  it("releases a successful OPFS download on pagehide", async () => {
+    delete win.showSaveFilePicker;
+    const removeEntry = vi.fn().mockResolvedValue(undefined);
+    setOpfs({ getDirectory: vi.fn().mockResolvedValue({
+      getFileHandle: vi.fn().mockResolvedValue({
+        createWritable: vi.fn().mockResolvedValue({ close: vi.fn().mockResolvedValue(undefined) }),
+        getFile: vi.fn().mockResolvedValue(new Blob(["ok"])),
+      }), removeEntry,
+    }) });
+    const writable = await createDownloadWritable("ok.zip", "application/zip");
+    await writable.close();
+    expect(removeEntry).not.toHaveBeenCalled();
+    window.dispatchEvent(new Event("pagehide"));
+    expect(removeEntry).toHaveBeenCalledTimes(1);
+    expect(urlApi.revokeObjectURL).toHaveBeenCalledWith("blob:fake");
+  });
+
+  it("does not sweep an old OPFS export that another tab still owns", async () => {
+    delete win.showSaveFilePicker;
+    const stamp = Date.now() - 2 * 60 * 60 * 1000;
+    const active = `.kove-advanced-export-${stamp}-active.tmp`;
+    const stale = `.kove-advanced-export-${stamp}-stale.tmp`;
+    const removeEntry = vi.fn().mockResolvedValue(undefined);
+    async function* keys() { yield active; yield stale; }
+    setOpfs({ getDirectory: vi.fn().mockResolvedValue({
+      keys, removeEntry, getFileHandle: vi.fn().mockResolvedValue({
+        createWritable: vi.fn().mockResolvedValue({ abort: vi.fn().mockResolvedValue(undefined) }),
+      }),
+    }) });
+    const originalLocks = Object.getOwnPropertyDescriptor(navigator, "locks");
+    const request = vi.fn((name: string, _options: unknown, callback: (lock: unknown) => Promise<void>) =>
+      Promise.resolve(callback(name.endsWith(active) ? null : { name })));
+    Object.defineProperty(navigator, "locks", { configurable: true, value: { request } });
+    try {
+      const writable = await createDownloadWritable("new.zip", "application/zip");
+      expect(removeEntry).toHaveBeenCalledWith(stale);
+      expect(removeEntry).not.toHaveBeenCalledWith(active);
+      await writable.abort();
+    } finally {
+      if (originalLocks) Object.defineProperty(navigator, "locks", originalLocks);
+      else delete (navigator as unknown as Record<string, unknown>).locks;
+    }
+  });
+
+  it("recognizes cross-realm AbortError objects from the picker", async () => {
+    win.showSaveFilePicker = vi.fn().mockRejectedValue({ name: "AbortError" });
+    await expect(createDownloadWritable("cancel.zip", "application/zip")).rejects.toMatchObject({ name: "AbortError" });
+    expect(createObjectURL).not.toHaveBeenCalled();
   });
 
   it("createDownloadWritable rethrows AbortError when the native save dialog is cancelled", async () => {

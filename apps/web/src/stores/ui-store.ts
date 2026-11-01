@@ -146,11 +146,15 @@ export interface UIState {
     isExporting: boolean;
     progress: number;
     phase: string;
+    error: string | null;
+    complete: boolean;
   };
   setExportState: (state: {
     isExporting: boolean;
     progress: number;
     phase: string;
+    error: string | null;
+    complete: boolean;
   }) => void;
   startEffectApplication: (clipId: string, label?: string) => void;
   finishEffectApplication: () => void;
@@ -251,6 +255,8 @@ export const useUIStore = create<UIState>()(
           isExporting: false,
           progress: 0,
           phase: "",
+          error: null,
+          complete: false,
         },
 
         setExportState: (state) => set({ exportState: state }),

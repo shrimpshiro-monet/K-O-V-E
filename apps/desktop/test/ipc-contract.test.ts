@@ -230,13 +230,43 @@ describe("resolveExportArgs", () => {
         audioSampleRate: 48000, audioChannels: 2,
         encodeMode: "smallest", quality: 90,
       },
-      "darwin",
       ["libx265", "hevc_videotoolbox"],
       "/tmp/a.wav",
+      "libx265",
     );
     expect(out.mode).toBe("smallest");
     expect(out.quality).toBe(90);
     expect(out.encoder).toBe("libx265");
     expect(out.codec).toBe("hevc");
+  });
+
+  it("rejects missing encoders and incompatible containers rather than claiming success", () => {
+    const args = {
+      width: 320, height: 180, frameRate: 30, codec: "vp9", format: "webm",
+      bitrateKbps: 2000, outputPath: "/tmp/o.webm", totalFrames: 30,
+      audioSampleRate: 48000, audioChannels: 2,
+    };
+    expect(() => resolveExportArgs(args, ["libx264", "libopus"], "/tmp/a.wav", null)).toThrow(/No native VP9 encoder/i);
+    expect(() => resolveExportArgs(args, ["libvpx-vp9"], "/tmp/a.wav", "libvpx-vp9")).toThrow(/libopus/i);
+    expect(resolveExportArgs(args, ["libvpx-vp9", "libopus"], "/tmp/a.wav", "libvpx-vp9").encoder).toBe("libvpx-vp9");
+    expect(() => resolveExportArgs({ ...args, codec: "h264" }, ["libx264", "libopus"], "/tmp/a.wav", "libx264")).toThrow(/not supported in WEBM/i);
+  });
+});
+
+describe("native audio writes", () => {
+  it("retries short writes at the correct offset and closes the file", async () => {
+    const { promises: fs } = await import("node:fs");
+    const { vi } = await import("vitest");
+    const write = vi.fn(async (_bytes: Buffer, _offset: number, length: number, _position: number) => ({ bytesWritten: Math.min(2, length) }));
+    const close = vi.fn().mockResolvedValue(undefined);
+    const open = vi.spyOn(fs, "open").mockResolvedValue({ write, close } as never);
+    try {
+      const { writeFileChunk } = await import("../src/main/ipc/export");
+      await writeFileChunk("/tmp/audio.wav", new Uint8Array([1, 2, 3, 4, 5]).buffer, 10);
+      expect(write.mock.calls.map((call) => call.slice(1))).toEqual([[0, 5, 10], [2, 3, 12], [4, 1, 14]]);
+      expect(close).toHaveBeenCalledOnce();
+    } finally {
+      open.mockRestore();
+    }
   });
 });
