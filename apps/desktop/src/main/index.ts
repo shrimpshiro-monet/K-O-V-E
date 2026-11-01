@@ -156,6 +156,11 @@ app.whenReady().then(() => {
     }),
     ({ handleId, data, position }) => fileWriters.writeChunk(handleId, data, position),
   );
+  handle(
+    CHANNELS.fsTruncateWrite,
+    z.object({ handleId: z.string(), size: z.number().int().nonnegative() }),
+    ({ handleId, size }) => fileWriters.truncate(handleId, size),
+  );
   handle(CHANNELS.fsCloseWrite, z.object({ handleId: z.string() }), ({ handleId }) =>
     fileWriters.close(handleId),
   );

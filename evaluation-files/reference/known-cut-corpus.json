@@ -4,7 +4,7 @@
     {
       "id": "synthetic-three-scene-h264",
       "source": "evaluation-files/reference/synthetic-known-cuts.mp4",
-      "sha256": "1a3d48011c4e3620da1b3aee0f9dd90a7e10ec6b51d35b8f090df4125e54cad4",
+      "sha256": "72d029b0f4b0c3c7f75111d1c3f42a6eb187fa2c758c631b7231df2897bc0d61",
       "media": {
         "width": 320,
         "height": 180,

@@ -170,3 +170,53 @@ Failure artifacts (screenshots, traces, DOM snapshots) land in
   distro's libc/libstdc++ and a config where `--single-process`,
   `--in-process-gpu` and `--no-zygote` are filtered out; pass the binary via
   `KOVE_E2E_CHROMIUM`.
+
+## Export reliability smoke test
+
+`export-reliability.spec.ts` generates its own picture and a short source video
+with a sine-wave audio track, imports them through the editor, and downloads
+actual MP4s and a 24-bit WAV. It checks the streams, duration, decoded picture
+pixels, and audio volume with `ffprobe`/`ffmpeg`. It also verifies 44.1 kHz mono
+to 48 kHz stereo resampling and pitch, browser agent video/Opus downloads,
+unsupported audio-codec errors, and a streamed transparent PNG ZIP (including
+CRC and alpha checks). `unzip` is required for the ZIP check. Separate tests
+deliberately stall the encoder or inject an encoder error to check cancellation
+and the visible error state; they do not mock successful exports. Run just this
+suite with:
+
+```bash
+# From apps/web. Install Playwright Chromium and put ffmpeg/ffprobe on PATH.
+pnpm exec playwright test e2e/export-reliability.spec.ts
+# Optional: also exercise 16 seconds of audio across the 15-second chunk boundary
+KOVE_E2E_LONG_EXPORT=1 pnpm exec playwright test e2e/export-reliability.spec.ts
+# Optional: verify a five-second 1080p, 30-fps export
+KOVE_E2E_HD_EXPORT=1 pnpm exec playwright test e2e/export-reliability.spec.ts
+# Optional: soak-test a one-minute 1080p, 30-fps export with audio
+KOVE_E2E_SOAK_EXPORT=1 pnpm exec playwright test e2e/export-reliability.spec.ts
+# Optional overrides: KOVE_E2E_CHROMIUM, KOVE_E2E_FFMPEG, KOVE_E2E_FFPROBE
+```
+
+`wasm-audio-safety.spec.ts` loads the real compiled FFT, beat-detection, and WAV
+modules in Chromium and verifies that their raw pointer ABI falls back to the
+correct JavaScript implementations. Run `pnpm build:wasm` first; without the
+compiled files this test is skipped. See `packages/core/src/wasm/README.md`.
+
+Transparent WebM/ProRes motion-video export is intentionally blocked on desktop
+because the current compositor/encoder flattens alpha; PNG sequences preserve
+transparency. On the web, the motion render queue warns before an explicit
+H.264 fallback.
+
+`director-empty-timeline.spec.ts` also drives the real chat and timeline in
+Chromium with deliberately stubbed model responses. It verifies both the
+bounded empty-timeline failure and a retry that calls the real `plan_edit` tool;
+it is not a live-provider test.
+
+The Captain Price emulation runner accepts `KOVE_SOURCE_VIDEO`,
+`KOVE_STYLE_REFERENCE`, `KOVE_E2E_PROMPT`, and `KOVE_E2E_OUT`; source and
+reference are checked by their actual filenames. `KOVE_E2E_HEADLESS=1` makes
+it exit after saving results for CI. `KOVE_EXPORT_TIMEOUT_MS` sets the total
+export deadline, while `KOVE_EXPORT_STALL_TIMEOUT_MS` sets the maximum time
+without a progress/state change. The runner verifies that the downloaded video
+can be decoded, records export state and recent relevant console errors on
+failure, and labels local recovery separately from a Monet-created timeline.
+A passing recovery does not mean a live AI provider succeeded.

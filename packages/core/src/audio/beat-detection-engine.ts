@@ -106,7 +106,9 @@ export class BeatDetectionEngine {
     const { windowSize, hopSize, sensitivity } = this.config;
     const onsets: number[] = [];
 
-    const numFrames = Math.floor((samples.length - windowSize) / hopSize);
+    // A clip can be shorter than the analysis window; do not construct a
+    // negative-length array. Include the final complete window at the boundary.
+    const numFrames = Math.max(0, Math.floor((samples.length - windowSize) / hopSize) + 1);
     const energiesF32 = new Float32Array(numFrames);
 
     this.wasmProcessor.computeRMSEnergies(samples, windowSize, hopSize, energiesF32);

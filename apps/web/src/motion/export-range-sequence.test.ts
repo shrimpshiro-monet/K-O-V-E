@@ -240,7 +240,9 @@ describe("motion export range / resolution / png-sequence", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     bitmapData = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3, 4]);
-    createDownloadWritableMock.mockResolvedValue({ close: vi.fn() });
+    createDownloadWritableMock.mockResolvedValue({
+      write: vi.fn().mockResolvedValue(undefined), close: vi.fn().mockResolvedValue(undefined), abort: vi.fn().mockResolvedValue(undefined),
+    });
     initializeMock.mockResolvedValue(undefined);
     vi.stubGlobal(
       "Blob",
@@ -310,6 +312,13 @@ describe("motion export range / resolution / png-sequence", () => {
     expect(descriptor?.transparent).toBe(true);
   });
 
+  it("rejects ZIP32 frame counts that would otherwise silently corrupt the archive", async () => {
+    await expect(exportMotionCompositionScene({
+      project: makeProject(), composition: { ...composition, duration: 3000 }, format: "png-sequence",
+    })).rejects.toThrow(/65,535-frame limit/i);
+    expect(createDownloadWritableMock).not.toHaveBeenCalled();
+  });
+
   it("throws INVALID when range start is not before end", async () => {
     await expect(
       exportMotionCompositionScene({
@@ -356,6 +365,8 @@ describe("motion export range / resolution / png-sequence", () => {
       return { width: composition.width, height: composition.height, close: vi.fn() };
     });
     setupCanvasStub();
+    const abort = vi.fn().mockResolvedValue(undefined);
+    createDownloadWritableMock.mockResolvedValue({ write: vi.fn().mockResolvedValue(undefined), close: vi.fn(), abort });
 
     const result = await exportMotionCompositionScene({
       project: makeProject(),
@@ -366,7 +377,7 @@ describe("motion export range / resolution / png-sequence", () => {
 
     expect((result as { canceled?: boolean }).canceled).toBe(true);
     expect(renderMock.mock.calls.length).toBeLessThanOrEqual(4);
-    expect(createDownloadWritableMock).not.toHaveBeenCalled();
+    expect(abort).toHaveBeenCalledOnce();
   });
 
   it("aborts the opened writable and terminates the encoder when a video export is canceled mid-run", async () => {
@@ -432,6 +443,40 @@ describe("motion export range / resolution / png-sequence", () => {
     expect(writeMock).not.toHaveBeenCalled();
     expect(returnCalled).toBe(true);
   });
+
+  it("aborts rather than publishing a PNG sequence after a write failure", async () => {
+    setupCanvasStub();
+    const abort = vi.fn().mockResolvedValue(undefined);
+    const close = vi.fn().mockResolvedValue(undefined);
+    createDownloadWritableMock.mockResolvedValue({
+      write: vi.fn().mockRejectedValue(new Error("disk full")), abort, close,
+    });
+    await expect(exportMotionCompositionScene({
+      project: makeProject(), composition, format: "png-sequence",
+      range: { startTime: 0, endTime: 1 / 30 },
+    })).rejects.toThrow("disk full");
+    expect(abort).toHaveBeenCalledOnce();
+    expect(close).not.toHaveBeenCalled();
+  });
+
+  it("aborts an opened video destination if engine initialization fails", async () => {
+    const abort = vi.fn().mockResolvedValue(undefined);
+    createDownloadWritableMock.mockResolvedValue({ abort });
+    initializeMock.mockRejectedValueOnce(new Error("initialization failed"));
+    await expect(exportMotionCompositionScene({ project: makeProject(), composition, format: "mp4" }))
+      .rejects.toThrow("initialization failed");
+    expect(abort).toHaveBeenCalledOnce();
+    expect(exportVideoMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["webm-alpha", "mov-prores4444"] as const)(
+    "does not label opaque desktop frames as %s transparent video", async (format) => {
+      Object.defineProperty(window, "kove-advanced", { configurable: true, value: { platform: "desktop" } });
+      await expect(exportMotionCompositionScene({ project: makeProject(), composition, format }))
+        .rejects.toThrow(/PNG Sequence.*transparency/i);
+      expect(createDownloadWritableMock).not.toHaveBeenCalled();
+    },
+  );
 
   it("encodes png-sequence frames at scaled dimensions when resolutionScale < 1", async () => {
     const canvasSizes: Array<{ width: number; height: number }> = [];
@@ -575,12 +620,10 @@ describe("motion export range / resolution / png-sequence", () => {
 
   it("produces a stored ZIP whose central directory lists the range frames with valid CRCs", async () => {
     setupCanvasStub();
-    let capturedBytes: Uint8Array | null = null;
+    const chunks: Uint8Array[] = [];
     createDownloadWritableMock.mockImplementation(async () => ({
-      write: async (chunk: { bytes: Uint8Array }) => {
-        capturedBytes = chunk.bytes;
-      },
-      close: vi.fn(),
+      write: async (chunk: Uint8Array) => { chunks.push(chunk.slice()); },
+      close: vi.fn(), abort: vi.fn(),
     }));
 
     const result = await exportMotionCompositionScene({
@@ -591,8 +634,10 @@ describe("motion export range / resolution / png-sequence", () => {
     });
 
     expect(result.framesRendered).toBe(30);
-    expect(capturedBytes).not.toBeNull();
-    const zip = capturedBytes as unknown as Uint8Array;
+    expect(chunks.length).toBe(61); // one header and PNG per frame, then central directory
+    const zip = new Uint8Array(chunks.reduce((size, chunk) => size + chunk.length, 0));
+    let offset = 0;
+    for (const chunk of chunks) { zip.set(chunk, offset); offset += chunk.length; }
     const entries = parseCentralDirectory(zip);
     expect(entries).toHaveLength(30);
     expect(entries[0].name).toBe("frame-00001.png");
@@ -678,12 +723,10 @@ describe("motion export range / resolution / png-sequence", () => {
 
   it("clamps a range that exceeds the composition duration", async () => {
     setupCanvasStub();
-    let capturedBytes: Uint8Array | null = null;
+    const chunks: Uint8Array[] = [];
     createDownloadWritableMock.mockImplementation(async () => ({
-      write: async (chunk: { bytes: Uint8Array }) => {
-        capturedBytes = chunk.bytes;
-      },
-      close: vi.fn(),
+      write: async (chunk: Uint8Array) => { chunks.push(chunk.slice()); },
+      close: vi.fn(), abort: vi.fn(),
     }));
 
     await exportMotionCompositionScene({
@@ -693,7 +736,9 @@ describe("motion export range / resolution / png-sequence", () => {
       range: { startTime: -3, endTime: 999 },
     });
 
-    const zip = capturedBytes as unknown as Uint8Array;
+    const zip = new Uint8Array(chunks.reduce((size, chunk) => size + chunk.length, 0));
+    let offset = 0;
+    for (const chunk of chunks) { zip.set(chunk, offset); offset += chunk.length; }
     const entries = parseCentralDirectory(zip);
     expect(entries.length).toBe(Math.round(5 * 30));
   });

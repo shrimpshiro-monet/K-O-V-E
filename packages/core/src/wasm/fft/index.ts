@@ -1,4 +1,5 @@
 import { FFT as JsFFT } from "../../audio/fft";
+import { hasTypedArrayBindings } from "../typed-array-bindings";
 
 export type WasmFFTExports = {
   init(size: number): void;
@@ -53,6 +54,7 @@ async function loadWasmModule(): Promise<WasmFFTExports | null> {
       },
     });
 
+    if (!hasTypedArrayBindings(instance.exports)) return null;
     return instance.exports as unknown as WasmFFTExports;
   } catch {
     return null;

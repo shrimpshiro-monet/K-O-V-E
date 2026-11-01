@@ -1,8 +1,9 @@
 import type { JSX } from "react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ToolcraftButton as Button } from "@kove-advanced/ui";
 import type { VideoExportSettings } from "@kove-advanced/core";
-import { setEncoderBackendFactory, WebCodecsBackend } from "@kove-advanced/core";
+import { WebCodecsBackend } from "@kove-advanced/core";
+import { waitForExportStage } from "@kove-advanced/core/export/export-watchdog";
 import { useProjectStore } from "../../stores/project-store";
 import { ExportDialog } from "../../components/editor/ExportDialog";
 import { deriveSourceExportMatch } from "../../services/export-source-match";
@@ -43,6 +44,7 @@ function shouldUseWebCodecs(settings: VideoExportSettings): boolean {
 export function DesktopExportButton(): JSX.Element {
   const project = useProjectStore((state) => state.project);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const activeExport = useRef<AbortController | null>(null);
 
   const {
     state,
@@ -58,12 +60,28 @@ export function DesktopExportButton(): JSX.Element {
   useEffect(() => {
     const open = () => setIsDialogOpen(true);
     window.addEventListener("kove-advanced:menu:export", open);
-    return () => window.removeEventListener("kove-advanced:menu:export", open);
+    return () => {
+      activeExport.current?.abort();
+      window.removeEventListener("kove-advanced:menu:export", open);
+    };
   }, []);
+
+  const cancelExport = useCallback(() => {
+    activeExport.current?.abort();
+    cancel();
+  }, [cancel]);
 
   const handleExport = useCallback(
     async (settings: VideoExportSettings) => {
       setIsDialogOpen(false);
+      activeExport.current?.abort();
+      const controller = new AbortController();
+      activeExport.current = controller;
+      const ensureCurrent = () => {
+        if (controller.signal.aborted || activeExport.current !== controller) {
+          throw new DOMException("Export cancelled", "AbortError");
+        }
+      };
 
       try {
         const ext = extForFormat(settings.format, settings.codec);
@@ -73,6 +91,15 @@ export function DesktopExportButton(): JSX.Element {
           ext,
           { streamToFile: useWebCodecs },
         );
+        if (controller.signal.aborted || activeExport.current !== controller) {
+          await waitForExportStage(
+            Promise.resolve().then(() => writable.abort()),
+            "discarding the cancelled export",
+            undefined,
+            5_000,
+          ).catch(() => undefined);
+          ensureCurrent();
+        }
 
         beginExport();
 
@@ -86,44 +113,43 @@ export function DesktopExportButton(): JSX.Element {
             settings.upscaling?.enabled && needsUpscaling ? settings.upscaling : undefined,
         };
 
+        const nativeFactory = () => new NativeFFmpegBackend(resolveExportOutputPath);
         if (useWebCodecs) {
           const videoCodec = settings.codec === "h265" ? "hevc" : "avc";
-          setEncoderBackendFactory((mediabunny) =>
-            mediabunny
-              ? new WebCodecsBackend(mediabunny, {
-                  hardwareAcceleration: "prefer-hardware",
-                  videoCodecs: [videoCodec],
-                  // Desktop streams frames to disk and uses the hardware encoder,
-                  // so export at the full (matched) resolution — no browser clamp.
-                  clampResolution: false,
-                })
-              : new NativeFFmpegBackend(resolveExportOutputPath),
-          );
           try {
-            await runExport(exportSettings, ext, writable);
+            await runExport(exportSettings, ext, writable, (mediabunny) => {
+              if (!mediabunny) throw new Error("MediaBunny is unavailable for WebCodecs export");
+              return new WebCodecsBackend(mediabunny, {
+                hardwareAcceleration: "prefer-hardware",
+                videoCodecs: [videoCodec],
+                // Desktop streams frames to disk; retain the full resolution.
+                clampResolution: false,
+              });
+            });
           } catch (webCodecsError) {
-            console.warn(
-              "[Export] WebCodecs export failed; falling back to native ffmpeg:",
-              webCodecsError,
-            );
-            try {
-              await writable.abort?.();
-            } catch {}
-            setEncoderBackendFactory(
-              () => new NativeFFmpegBackend(resolveExportOutputPath),
-            );
-            await runExport(exportSettings, ext, NOOP_WRITABLE);
+            if (webCodecsError && typeof webCodecsError === "object" && "name" in webCodecsError && webCodecsError.name === "AbortError") {
+              throw webCodecsError;
+            }
+            console.warn("[Export] WebCodecs export failed; falling back to native ffmpeg:", webCodecsError);
+            await waitForExportStage(
+              Promise.resolve().then(() => writable.abort()),
+              "discarding the failed WebCodecs export",
+              controller.signal,
+              5_000,
+            ).catch(() => undefined);
+            ensureCurrent();
+            await runExport(exportSettings, ext, NOOP_WRITABLE, nativeFactory);
           }
         } else {
-          setEncoderBackendFactory(
-            () => new NativeFFmpegBackend(resolveExportOutputPath),
-          );
-          await runExport(exportSettings, ext, writable);
+          await runExport(exportSettings, ext, writable, nativeFactory);
         }
 
+        ensureCurrent();
         finishExportSoon();
       } catch (error) {
-        failExport(error);
+        if (activeExport.current === controller) failExport(error);
+      } finally {
+        if (activeExport.current === controller) activeExport.current = null;
       }
     },
     [project, runExport, showSavePicker, beginExport, finishExportSoon, failExport],
@@ -136,7 +162,7 @@ export function DesktopExportButton(): JSX.Element {
         variant="secondary"
         size="sm"
         style={NO_DRAG}
-        onClick={cancel}
+        onClick={cancelExport}
         className="mr-2"
         aria-label="Cancel export"
       />

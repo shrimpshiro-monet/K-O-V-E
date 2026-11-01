@@ -26,6 +26,7 @@ import { getWavEncoder } from "../wasm/wav";
 import type { EncoderBackend, EncoderBackendFactory } from "./encoder-backend";
 import { WebCodecsBackend } from "./webcodecs-backend";
 import { resolveWebCodecsExportLimits } from "./webcodecs-limits";
+import { waitForExportStage } from "./export-watchdog";
 import {
   getMediaItemCapabilities,
   trackHasAudioItems,
@@ -120,7 +121,7 @@ export class ExportEngine {
   }
 
   private ensureInitialized(): void {
-    if (!this.initialized || !this.mediabunny) {
+    if (!this.initialized) {
       throw new Error("ExportEngine not initialized. Call initialize() first.");
     }
   }
@@ -129,17 +130,31 @@ export class ExportEngine {
     project: Project,
     settings: Partial<VideoExportSettings> = {},
     writableStream?: FileSystemWritableFileStream,
+    backendFactory?: EncoderBackendFactory,
   ): AsyncGenerator<ExportProgress, ExportResult> {
     this.ensureInitialized();
 
-    if (!this.mediabunny) {
-      const errorMessage = this.isWebCodecsSupported()
+    const rejectBeforeStarting = async (message: string, code: ExportError["code"]): Promise<ExportResult> => {
+      if (writableStream) {
+        await waitForExportStage(
+          Promise.resolve().then(() => writableStream.abort()),
+          "discarding the incomplete file",
+          undefined,
+          5_000,
+        ).catch(() => undefined);
+      }
+      return { success: false, error: this.createError(code, message, "preparing") };
+    };
+
+    const selectedFactory = backendFactory ?? encoderBackendFactory;
+    if (!this.mediabunny && !selectedFactory) {
+      const message = this.isWebCodecsSupported()
         ? "MediaBunny library failed to load. Please refresh the page and try again."
         : "Video export requires WebCodecs API which is not supported in your browser. Please use Chrome, Edge, or another WebCodecs-compatible browser.";
-      return {
-        success: false,
-        error: this.createError("UNSUPPORTED_CODEC", errorMessage, "preparing"),
-      };
+      return rejectBeforeStarting(message, "UNSUPPORTED_CODEC");
+    }
+    if (this.abortController) {
+      return rejectBeforeStarting("Another export is still running. Wait for it to finish or cancel it first.", "ENCODER_INIT_FAILED");
     }
 
     const fullSettings: VideoExportSettings = {
@@ -150,10 +165,35 @@ export class ExportEngine {
         ...settings.audioSettings,
       },
     };
+    const { timeline } = project;
+    const timelineDuration = this.calculateTimelineDuration(timeline);
+    if (!Number.isFinite(timelineDuration) || timelineDuration <= 0) {
+      return rejectBeforeStarting("Timeline is empty. Add clips before exporting.", "MUXER_ERROR");
+    }
+    if (!writableStream) {
+      return rejectBeforeStarting("No writable stream provided. Export requires a file destination.", "MUXER_ERROR");
+    }
+    if (
+      !Number.isFinite(fullSettings.width) || fullSettings.width <= 0 ||
+      !Number.isFinite(fullSettings.height) || fullSettings.height <= 0 ||
+      !Number.isFinite(fullSettings.frameRate) || fullSettings.frameRate <= 0
+    ) {
+      return rejectBeforeStarting("Export dimensions and frame rate must be positive numbers.", "INVALID_SETTINGS");
+    }
 
-    const backend = encoderBackendFactory
-      ? encoderBackendFactory(this.mediabunny)
-      : new WebCodecsBackend(this.mediabunny!);
+    // Per-run factories avoid changing the shared desktop default while another
+    // export is starting. Native backends do not require MediaBunny.
+    let backend: EncoderBackend;
+    try {
+      backend = selectedFactory
+        ? selectedFactory(this.mediabunny)
+        : new WebCodecsBackend(this.mediabunny!);
+    } catch (error) {
+      return rejectBeforeStarting(
+        error instanceof Error ? error.message : "Could not create the export encoder.",
+        "ENCODER_INIT_FAILED",
+      );
+    }
 
     if (backend.normalizesProResToH264 && fullSettings.codec === "prores") {
       fullSettings.codec = "h264";
@@ -161,217 +201,211 @@ export class ExportEngine {
       fullSettings.bitrate = 25000;
       fullSettings.quality = 95;
     }
-
-    const { timeline } = project;
-    const timelineDuration = this.calculateTimelineDuration(timeline);
-
     if (backend.requiresWebCodecsClamping) {
-      Object.assign(
-        fullSettings,
-        resolveWebCodecsExportLimits(fullSettings, timelineDuration).settings,
-      );
+      Object.assign(fullSettings, resolveWebCodecsExportLimits(fullSettings, timelineDuration).settings);
     }
 
-    this.abortController = new AbortController();
+    const controller = new AbortController();
+    this.abortController = controller;
     this.currentExport = { startTime: Date.now(), framesRendered: 0 };
-
-    await this.initializeGPUForExport(
-      fullSettings.width,
-      fullSettings.height,
-    );
-
-    this.videoEngine?.resetExportState();
-    if (this.videoEngine) {
-      this.videoEngine.exportMode = true;
-    }
-
-    if (timelineDuration <= 0) {
-      return {
-        success: false,
-        error: this.createError(
-          "MUXER_ERROR",
-          "Timeline is empty. Add clips before exporting.",
-          "preparing",
-        ),
-      };
-    }
-
-    if (!writableStream) {
-      return {
-        success: false,
-        error: this.createError(
-          "MUXER_ERROR",
-          "No writable stream provided. Export requires a file destination.",
-          "preparing",
-        ),
-      };
-    }
-
     const totalFrames = Math.ceil(timelineDuration * fullSettings.frameRate);
+    const hasAudio = timeline.tracks.some(
+      (track) => !track.muted && trackHasAudioItems(project, track.id),
+    );
+    const shouldUpscale = this.shouldApplyUpscaling(project, fullSettings);
+    let failurePhase: ExportProgress["phase"] = "preparing";
+    let finished = false;
 
     try {
+      // Report immediately, before any GPU/codec work, so a stuck stage is visible.
       yield this.createProgress("preparing", 0, totalFrames, 0, 0);
 
-      await backend.start(fullSettings, project, writableStream);
+      controller.signal.throwIfAborted();
+      // renderFrame composites through Canvas2D and initializes its effects
+      // independently. The separate GPU compositor is only needed for the
+      // optional upscaler; starting it for every export can wedge on GPU setup.
+      if (shouldUpscale) {
+        const gpuReady = await waitForExportStage(
+          this.initializeGPUForExport(fullSettings.width, fullSettings.height),
+          "initializing the upscaler",
+          controller.signal,
+          30_000,
+        );
+        if (!gpuReady || !this.upscalingEngine?.isInitialized()) {
+          throw new Error("AI upscaling is unavailable on this device. Turn it off and try exporting again.");
+        }
+      }
+
+      controller.signal.throwIfAborted();
+      this.videoEngine?.resetExportState();
+      if (this.videoEngine) this.videoEngine.exportMode = true;
+      await waitForExportStage(backend.start(fullSettings, project, writableStream), "starting the encoder", controller.signal);
 
       if (backend.audioBeforeVideo) {
+        if (hasAudio) {
+          failurePhase = "encoding";
+          yield this.createProgress("encoding", 0, totalFrames, 0, backend.getBytesWritten());
+        }
         try {
-          await this.encodeTimelineAudioToBackend(project, backend);
+          for await (const fraction of this.encodeTimelineAudioToBackend(project, backend, controller.signal)) {
+            yield this.createProgress("encoding", fraction * 0.1, totalFrames, 0, backend.getBytesWritten());
+          }
         } finally {
           this.audioEngine?.clearCache();
         }
-        await backend.closeAudio();
+        await waitForExportStage(Promise.resolve(backend.closeAudio()), "closing the audio encoder", controller.signal);
       }
 
+      failurePhase = "preparing";
       const mediaEngine = getMediaEngine();
       const videoMediaIds: string[] = [];
       for (const track of project.timeline.tracks) {
         for (const clip of track.clips) {
-          const mediaItem = project.mediaLibrary.items.find(
-            (m) => m.id === clip.mediaId,
-          );
+          const mediaItem = project.mediaLibrary.items.find((m) => m.id === clip.mediaId);
           if (
-            mediaItem?.blob &&
-            getMediaItemCapabilities(mediaItem).visual &&
-            mediaItem.type === "video" &&
-            !videoMediaIds.includes(mediaItem.id)
+            mediaItem?.blob && getMediaItemCapabilities(mediaItem).visual &&
+            mediaItem.type === "video" && !videoMediaIds.includes(mediaItem.id)
           ) {
             videoMediaIds.push(mediaItem.id);
             try {
-              await mediaEngine.createExportDecoder(
-                mediaItem.id,
-                mediaItem.blob,
-                fullSettings.width,
+              await waitForExportStage(
+                mediaEngine.createExportDecoder(mediaItem.id, mediaItem.blob, fullSettings.width),
+                `opening video ${mediaItem.name}`,
+                controller.signal,
               );
-            } catch {}
+            } catch (error) {
+              if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) throw error;
+              // The video engine can still use its normal decoder/seek fallback.
+              console.warn(`[ExportEngine] Could not create export decoder for ${mediaItem.name}:`, error);
+            }
           }
         }
       }
 
+      failurePhase = "rendering";
+      const renderStartProgress = hasAudio && backend.audioBeforeVideo ? 0.1 : 0;
+      const renderEndProgress = hasAudio && !backend.audioBeforeVideo ? 0.9 : 0.98;
       let renderMsTotal = 0;
       for (let frame = 0; frame < totalFrames; frame++) {
-        if (this.abortController.signal.aborted) {
-          throw this.createError(
-            "CANCELLED",
-            "Export cancelled by user",
-            "rendering",
-          );
-        }
-
+        controller.signal.throwIfAborted();
         const time = frame / fullSettings.frameRate;
         const renderStart = performance.now();
-        const rendered = await this.videoEngine!.renderFrame(
-          project,
-          time,
-          fullSettings.width,
-          fullSettings.height,
-        );
+        const renderPromise = this.videoEngine!.renderFrame(project, time, fullSettings.width, fullSettings.height);
+        // A renderer may settle after cancellation/timeout. Release its late bitmap.
+        void renderPromise.then((result) => {
+          if (controller.signal.aborted) result.image.close();
+        }, () => undefined);
+        const rendered = await waitForExportStage(renderPromise, `rendering frame ${frame + 1} of ${totalFrames}`, controller.signal);
         renderMsTotal += performance.now() - renderStart;
-        const shouldUpscale = this.shouldApplyUpscaling(project, fullSettings);
         let frameImage = rendered.image;
 
         if (shouldUpscale && this.upscalingEngine?.isInitialized()) {
-          const upscaled = await this.upscalingEngine.upscaleImageBitmap(
-            frameImage,
-            fullSettings.width,
-            fullSettings.height,
-            fullSettings.upscaling!,
-          );
-          frameImage.close();
-          frameImage = upscaled;
+          try {
+            const upscaled = await waitForExportStage(
+              this.upscalingEngine.upscaleImageBitmap(frameImage, fullSettings.width, fullSettings.height, fullSettings.upscaling!),
+              `upscaling frame ${frame + 1} of ${totalFrames}`,
+              controller.signal,
+            );
+            frameImage.close();
+            frameImage = upscaled;
+          } catch (error) {
+            frameImage.close();
+            throw error;
+          }
         }
 
-        await backend.addVideoFrame(
-          frameImage,
-          time,
-          1 / fullSettings.frameRate,
-        );
-
+        try {
+          await waitForExportStage(
+            backend.addVideoFrame(frameImage, time, 1 / fullSettings.frameRate),
+            `encoding frame ${frame + 1} of ${totalFrames}`,
+            controller.signal,
+          );
+        } catch (error) {
+          // A stalled encoder may never settle and release the frame itself.
+          frameImage.close();
+          throw error;
+        }
         this.currentExport!.framesRendered = frame + 1;
 
         if (backend.needsFrameThrottling && (frame + 1) % 5 === 0) {
-          // Yield to the browser without invalidating decoder state. Clearing
-          // these caches during a sequential export forces fresh seeks and can
-          // repeat source frames, which shows up as brief pauses in the file.
-          await new Promise((resolve) => setTimeout(resolve, 2));
+          // Yield without invalidating sequential decoder state.
+          await waitForExportStage(new Promise<void>((resolve) => setTimeout(resolve, 2)), "yielding to the browser", controller.signal);
         }
 
+        const fraction = (frame + 1) / totalFrames;
         yield this.createProgress(
           "rendering",
-          (frame + 1) / totalFrames,
+          renderStartProgress + fraction * (renderEndProgress - renderStartProgress),
           totalFrames,
           frame + 1,
           backend.getBytesWritten(),
         );
       }
 
-      if (totalFrames > 0) {
-        console.info(
-          `[export] render=${(renderMsTotal / totalFrames).toFixed(1)}ms/f frames=${totalFrames}`,
-        );
-      }
+      console.info(`[export] render=${(renderMsTotal / totalFrames).toFixed(1)}ms/f frames=${totalFrames}`);
 
       if (!backend.audioBeforeVideo) {
+        if (hasAudio) {
+          failurePhase = "encoding";
+          yield this.createProgress("encoding", 0.9, totalFrames, totalFrames, backend.getBytesWritten());
+        }
         try {
-          await this.encodeTimelineAudioToBackend(project, backend);
+          for await (const fraction of this.encodeTimelineAudioToBackend(project, backend, controller.signal)) {
+            yield this.createProgress("encoding", 0.9 + fraction * 0.08, totalFrames, totalFrames, backend.getBytesWritten());
+          }
         } finally {
           this.audioEngine?.clearCache();
         }
-        await backend.closeAudio();
+        await waitForExportStage(Promise.resolve(backend.closeAudio()), "closing the audio encoder", controller.signal);
       }
 
       mediaEngine.disposeAllExportDecoders();
       mediaEngine.clearFrameCache();
       this.videoEngine?.clearVideoElementCache();
       this.videoEngine?.clearCache();
-      if (this.videoEngine) {
-        this.videoEngine.exportMode = false;
-      }
+      if (this.videoEngine) this.videoEngine.exportMode = false;
 
-      yield this.createProgress(
-        "muxing",
-        0.98,
-        totalFrames,
-        totalFrames,
-        backend.getBytesWritten(),
-      );
-
-      await backend.finalize();
-
-      yield this.createProgress(
-        "complete",
-        1,
-        totalFrames,
-        totalFrames,
-        backend.getBytesWritten(),
-      );
-
-      return {
-        success: true,
-        stats: this.calculateStats(totalFrames, backend.getBytesWritten()),
-      };
+      failurePhase = "muxing";
+      yield this.createProgress("muxing", 0.98, totalFrames, totalFrames, backend.getBytesWritten());
+      controller.signal.throwIfAborted();
+      await waitForExportStage(backend.finalize(), "finalizing the video file", controller.signal);
+      finished = true;
+      yield this.createProgress("complete", 1, totalFrames, totalFrames, backend.getBytesWritten());
+      return { success: true, stats: this.calculateStats(totalFrames, backend.getBytesWritten()) };
     } catch (error) {
-      await backend.abort();
-      if (error && typeof error === "object" && "code" in error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return { success: false, error: this.createError("CANCELLED", "Export cancelled by user", failurePhase) };
+      }
+      if (error instanceof Error && error.name === "TimeoutError") {
+        return { success: false, error: this.createError("TIMEOUT", error.message, failurePhase) };
+      }
+      if (error && typeof error === "object" && "code" in error && typeof error.code === "string" && "message" in error) {
         return { success: false, error: error as ExportError };
       }
       return {
         success: false,
-        error: this.createError(
-          "FRAME_ENCODE_FAILED",
-          error instanceof Error ? error.message : "Unknown error",
-          "rendering",
-        ),
+        error: this.createError("FRAME_ENCODE_FAILED", error instanceof Error ? error.message : "Unknown error", failurePhase),
       };
     } finally {
-      this.abortController = null;
+      if (!finished) {
+        controller.abort();
+        // A codec can also stall during teardown; never leave the UI waiting for it.
+        await waitForExportStage(
+          Promise.allSettled([
+            Promise.resolve().then(() => backend.abort()),
+            Promise.resolve().then(() => writableStream.abort()),
+          ]),
+          "discarding the incomplete export",
+          undefined,
+          5_000,
+        ).catch(() => undefined);
+      }
+      if (this.abortController === controller) this.abortController = null;
       this.currentExport = null;
       this.audioEngine?.clearCache();
       this.videoEngine?.clearVideoElementCache();
       this.videoEngine?.clearCache();
-      if (this.videoEngine) {
-        this.videoEngine.exportMode = false;
-      }
+      if (this.videoEngine) this.videoEngine.exportMode = false;
       try {
         getMediaEngine().disposeAllExportDecoders();
         getMediaEngine().clearFrameCache();
@@ -408,13 +442,9 @@ export class ExportEngine {
       };
     }
 
-    this.abortController = new AbortController();
-    this.currentExport = { startTime: Date.now(), framesRendered: 0 };
-
     const { timeline } = project;
     const timelineDuration = this.calculateTimelineDuration(timeline);
-
-    if (timelineDuration <= 0) {
+    if (!Number.isFinite(timelineDuration) || timelineDuration <= 0) {
       return {
         success: false,
         error: this.createError(
@@ -424,10 +454,28 @@ export class ExportEngine {
         ),
       };
     }
+    if (this.abortController) {
+      return {
+        success: false,
+        error: this.createError("ENCODER_INIT_FAILED", "Another export is still running. Wait for it to finish or cancel it first.", "preparing"),
+      };
+    }
+
+    const controller = new AbortController();
+    this.abortController = controller;
+    this.currentExport = { startTime: Date.now(), framesRendered: 0 };
 
     try {
       yield this.createProgress("preparing", 0, 1, 0, 0);
-      const audioBuffer = await this.renderTimelineAudio(project);
+      controller.signal.throwIfAborted();
+      const audioBuffer = await waitForExportStage(
+        this.renderTimelineAudio(project, 0, timelineDuration, {
+          sampleRate: fullSettings.sampleRate,
+          channels: fullSettings.channels,
+        }),
+        "rendering audio",
+        controller.signal,
+      );
 
       if (!audioBuffer) {
         throw this.createError(
@@ -438,18 +486,22 @@ export class ExportEngine {
       }
 
       yield this.createProgress("encoding", 0.5, 1, 0, 0);
+      controller.signal.throwIfAborted();
 
-      // Encode based on format
       let blob: Blob;
-
       if (fullSettings.format === "wav") {
         blob = this.encodeWav(audioBuffer, fullSettings);
       } else {
-        // Use MediaBunny for other formats
-        blob = await this.encodeAudioWithMediaBunny(audioBuffer, fullSettings);
+        blob = await waitForExportStage(
+          this.encodeAudioWithMediaBunny(audioBuffer, fullSettings, controller.signal),
+          "encoding audio",
+          controller.signal,
+        );
       }
 
+      controller.signal.throwIfAborted();
       yield this.createProgress("complete", 1, 1, 1, blob.size);
+      controller.signal.throwIfAborted();
 
       return {
         success: true,
@@ -463,6 +515,12 @@ export class ExportEngine {
         },
       };
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return { success: false, error: this.createError("CANCELLED", "Export cancelled by user", "encoding") };
+      }
+      if (error instanceof Error && error.name === "TimeoutError") {
+        return { success: false, error: this.createError("TIMEOUT", error.message, "encoding") };
+      }
       if (error && typeof error === "object" && "code" in error) {
         return { success: false, error: error as ExportError };
       }
@@ -475,8 +533,10 @@ export class ExportEngine {
         ),
       };
     } finally {
-      this.abortController = null;
+      controller.abort();
+      if (this.abortController === controller) this.abortController = null;
       this.currentExport = null;
+      this.audioEngine?.clearCache();
     }
   }
 
@@ -584,7 +644,14 @@ export class ExportEngine {
       ...settings,
     };
 
-    this.abortController = new AbortController();
+    if (this.abortController) {
+      return {
+        success: false,
+        error: this.createError("ENCODER_INIT_FAILED", "Another export is still running. Wait for it to finish or cancel it first.", "preparing"),
+      };
+    }
+    const controller = new AbortController();
+    this.abortController = controller;
     this.currentExport = { startTime: Date.now(), framesRendered: 0 };
 
     const framesToExport = fullSettings.endFrame - fullSettings.startFrame + 1;
@@ -594,7 +661,7 @@ export class ExportEngine {
       yield this.createProgress("preparing", 0, framesToExport, 0, 0);
 
       for (let i = 0; i < framesToExport; i++) {
-        if (this.abortController.signal.aborted) {
+        if (controller.signal.aborted) {
           throw this.createError(
             "CANCELLED",
             "Export cancelled by user",
@@ -649,7 +716,7 @@ export class ExportEngine {
         ),
       };
     } finally {
-      this.abortController = null;
+      if (this.abortController === controller) this.abortController = null;
       this.currentExport = null;
     }
   }
@@ -895,6 +962,7 @@ export class ExportEngine {
     project: Project,
     startTime: number = 0,
     duration?: number,
+    output?: Pick<AudioExportSettings, "sampleRate" | "channels">,
   ): Promise<AudioBuffer | null> {
     const { timeline } = project;
 
@@ -923,112 +991,108 @@ export class ExportEngine {
       project,
       startTime,
       renderDuration,
+      { requireDecodableAudio: true, ...output },
     );
 
     return rendered.buffer;
   }
 
-  private async encodeTimelineAudioToBackend(
+  private async *encodeTimelineAudioToBackend(
     project: Project,
     backend: EncoderBackend,
-  ): Promise<void> {
+    signal: AbortSignal,
+  ): AsyncGenerator<number> {
     const timelineDuration = this.calculateTimelineDuration(project.timeline);
-    if (timelineDuration <= 0) {
-      return;
-    }
+    const hasAudio = project.timeline.tracks.some(
+      (track) => !track.muted && trackHasAudioItems(project, track.id),
+    );
+    if (timelineDuration <= 0 || !hasAudio) return;
 
     const chunkDuration = ExportEngine.AUDIO_EXPORT_CHUNK_DURATION_SECONDS;
-
-    for (
-      let startTime = 0;
-      startTime < timelineDuration;
-      startTime += chunkDuration
-    ) {
-      if (this.abortController?.signal.aborted) {
-        throw this.createError(
-          "CANCELLED",
-          "Export cancelled by user",
-          "encoding",
+    for (let startTime = 0; startTime < timelineDuration; startTime += chunkDuration) {
+      signal.throwIfAborted();
+      const currentChunkDuration = Math.min(chunkDuration, timelineDuration - startTime);
+      const audioBuffer = await waitForExportStage(
+        this.renderTimelineAudio(project, startTime, currentChunkDuration),
+        `rendering audio at ${Math.round(startTime)} seconds`,
+        signal,
+      );
+      if (audioBuffer) {
+        await waitForExportStage(
+          backend.addAudioBuffer(audioBuffer),
+          `encoding audio at ${Math.round(startTime)} seconds`,
+          signal,
         );
       }
-
-      const currentChunkDuration = Math.min(
-        chunkDuration,
-        timelineDuration - startTime,
-      );
-      const audioBuffer = await this.renderTimelineAudio(
-        project,
-        startTime,
-        currentChunkDuration,
-      );
-
-      if (!audioBuffer) {
-        continue;
-      }
-
-      await backend.addAudioBuffer(audioBuffer);
-
-      // Yield between chunks so the browser can reclaim the previous buffer
-      // before the next long-running render starts.
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      yield Math.min((startTime + currentChunkDuration) / timelineDuration, 1);
+      // Yield between chunks so the browser can reclaim the previous buffer.
+      await waitForExportStage(new Promise<void>((resolve) => setTimeout(resolve, 0)), "yielding to the browser", signal);
     }
   }
 
   private async encodeAudioWithMediaBunny(
     buffer: AudioBuffer,
     settings: AudioExportSettings,
+    signal: AbortSignal,
   ): Promise<Blob> {
     const {
       Output,
       BufferTarget,
       Mp3OutputFormat,
-      AudioSampleSource,
-      AudioSample,
+      AdtsOutputFormat,
+      FlacOutputFormat,
+      OggOutputFormat,
+      AudioBufferSource,
       getFirstEncodableAudioCodec,
     } = this.mediabunny!;
     let outputFormat;
     switch (settings.format) {
-      case "mp3":
-        outputFormat = new Mp3OutputFormat();
-        break;
-      case "aac":
-      case "flac":
-      case "ogg":
+      case "mp3": outputFormat = new Mp3OutputFormat(); break;
+      case "aac": outputFormat = new AdtsOutputFormat(); break;
+      case "flac": outputFormat = new FlacOutputFormat(); break;
+      case "ogg": outputFormat = new OggOutputFormat(); break;
       default:
-        return this.encodeWav(buffer, settings);
+        throw this.createError("UNSUPPORTED_CODEC", `Unsupported audio format: ${settings.format}`, "preparing");
+    }
+
+    const bitrate = settings.bitrate * 1000;
+    const audioCodec = await waitForExportStage(
+      getFirstEncodableAudioCodec(outputFormat.getSupportedAudioCodecs(), {
+        numberOfChannels: buffer.numberOfChannels,
+        sampleRate: buffer.sampleRate,
+        bitrate,
+      }),
+      `selecting a ${settings.format.toUpperCase()} audio encoder`,
+      signal,
+    );
+    if (!audioCodec) {
+      throw this.createError(
+        "UNSUPPORTED_CODEC",
+        `This browser cannot encode ${settings.format.toUpperCase()} audio. Choose WAV or another supported format.`,
+        "preparing",
+      );
     }
 
     const target = new BufferTarget();
     const output = new Output({ format: outputFormat, target });
+    let finished = false;
+    try {
+      const audioSource = new AudioBufferSource({ codec: audioCodec, bitrate });
+      output.addAudioTrack(audioSource);
+      await waitForExportStage(output.start(), "starting the audio encoder", signal);
+      await waitForExportStage(audioSource.add(buffer), "encoding audio samples", signal);
+      audioSource.close();
+      await waitForExportStage(output.finalize(), "finalizing the audio file", signal);
+      finished = true;
 
-    const audioCodec = await getFirstEncodableAudioCodec(
-      outputFormat.getSupportedAudioCodecs(),
-    );
-
-    const audioSource = new AudioSampleSource({
-      codec: audioCodec || "mp3",
-      bitrate: settings.bitrate * 1000,
-    });
-
-    output.addAudioTrack(audioSource);
-    await output.start();
-    const audioSamples = AudioSample.fromAudioBuffer(buffer, 0);
-    for (const sample of audioSamples) {
-      await audioSource.add(sample);
-      sample.close();
+      const resultBuffer = target.buffer;
+      if (!resultBuffer?.byteLength) throw new Error("Audio encoding produced no data");
+      return new Blob([resultBuffer], { type: this.getAudioMimeType(settings.format) });
+    } finally {
+      if (!finished) {
+        await waitForExportStage(output.cancel(), "stopping the audio encoder", undefined, 5_000).catch(() => undefined);
+      }
     }
-
-    audioSource.close();
-    await output.finalize();
-
-    const resultBuffer = target.buffer;
-    if (!resultBuffer) {
-      throw new Error("Audio encoding failed");
-    }
-
-    return new Blob([resultBuffer], {
-      type: this.getAudioMimeType(settings.format),
-    });
   }
 
   private encodeWav(buffer: AudioBuffer, settings: AudioExportSettings): Blob {
@@ -1036,7 +1100,9 @@ export class ExportEngine {
       buffer.numberOfChannels,
       settings.channels,
     );
-    const sampleRate = settings.sampleRate;
+    // The WAV header must describe the actual rendered samples, not merely a
+    // requested rate (which would otherwise change playback speed and pitch).
+    const sampleRate = buffer.sampleRate;
     const bitDepth = settings.bitDepth;
 
     if (bitDepth === 32) {

@@ -1,4 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { renameSync, rmSync } from "node:fs";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { resolveFfmpegPath } from "./ffmpeg-path";
 import { videoEncodeArgs, type EncodeMode, type ExportCodec } from "./encode-args";
 
@@ -42,8 +45,8 @@ export function buildFfmpegArgs(a: ExportArgs): string[] {
       frameRate: a.frameRate,
       proresProfile: a.proresProfile,
     }),
-    "-c:a", "aac",
-    "-movflags", "+faststart",
+    "-c:a", a.format === "webm" ? "libopus" : "aac",
+    ...(a.format === "mp4" || a.format === "mov" ? ["-movflags", "+faststart"] : []),
     "-progress", "pipe:2",
     a.outputPath,
   ];
@@ -54,6 +57,9 @@ export class ExportJob {
   private progressBuf = "";
   private stderrTail = "";
   private finished = false;
+  private canceled = false;
+  private settled = false;
+  private partialPath: string | null = null;
 
   constructor(
     private readonly args: ExportArgs,
@@ -63,7 +69,14 @@ export class ExportJob {
   ) {}
 
   start(): void {
-    this.proc = spawn(resolveFfmpegPath(), buildFfmpegArgs(this.args));
+    if (this.proc || this.finished) throw new Error("export job already started or cancelled");
+    // Encode alongside the destination so the final rename is atomic. Keep a
+    // recognizable extension for FFmpeg's muxer selection.
+    this.partialPath = path.join(
+      path.dirname(this.args.outputPath),
+      `.${path.basename(this.args.outputPath)}.${randomUUID()}.partial.${this.args.format}`,
+    );
+    this.proc = spawn(resolveFfmpegPath(), buildFfmpegArgs({ ...this.args, outputPath: this.partialPath }));
     this.proc.stderr.on("data", (chunk: Buffer) => {
       const text = chunk.toString();
       this.progressBuf += text;
@@ -83,18 +96,27 @@ export class ExportJob {
     });
     this.proc.on("error", (e) => {
       this.finished = true;
-      this.onError(e.message);
+      this.reportError(e.message);
     });
     this.proc.on("close", (code) => {
       this.finished = true;
-      if (code === 0) {
-        this.onDone();
-      } else {
-        const detail = this.stderrTail.trim();
-        this.onError(
-          `ffmpeg exited with code ${code}${detail ? `: ${detail}` : ""}`,
-        );
+      if (!this.canceled && !this.settled) {
+        if (code === 0 && this.partialPath) {
+          try {
+            // Synchronous rename prevents cancel from interleaving between the
+            // successful exit check and publication on the main event loop.
+            renameSync(this.partialPath, this.args.outputPath);
+            this.settled = true;
+            this.onDone();
+          } catch (error) {
+            this.reportError(`Could not save exported video: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        } else {
+          const detail = this.stderrTail.trim();
+          this.reportError(`ffmpeg exited with code ${code}${detail ? `: ${detail}` : ""}`);
+        }
       }
+      this.removePartial();
     });
   }
 
@@ -102,7 +124,7 @@ export class ExportJob {
     const proc = this.proc;
     if (!proc) throw new Error("job not started");
     if (this.finished || !proc.stdin.writable) {
-      return;
+      throw new Error("ffmpeg stopped accepting video frames");
     }
     if (proc.stdin.write(frame)) {
       return;
@@ -127,7 +149,22 @@ export class ExportJob {
   }
 
   cancel(): void {
+    if (this.settled) return;
+    this.canceled = true;
     this.finished = true;
-    this.proc?.kill("SIGKILL");
+    if (this.proc) this.proc.kill("SIGKILL");
+    else this.removePartial();
+  }
+
+  private reportError(message: string): void {
+    if (this.settled || this.canceled) return;
+    this.settled = true;
+    this.onError(message);
+  }
+
+  private removePartial(): void {
+    if (!this.partialPath) return;
+    try { rmSync(this.partialPath, { force: true }); } catch { /* best-effort cleanup */ }
+    this.partialPath = null;
   }
 }

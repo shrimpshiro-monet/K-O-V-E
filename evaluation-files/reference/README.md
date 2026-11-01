@@ -15,6 +15,25 @@ reuse labels after replacing a media file. The two existing
 `real-*-profile.json` files are analyzer outputs, **not ground truth**. Their
 comparison against themselves only checks metric invariants.
 
+The original synthetic fixture was missing from the checkout, so the checked-in
+replacement was generated from one second each of solid red, green and blue.
+FFprobe confirms 90 H.264 frames at 320×180 and 30 fps; FFmpeg scene detection
+finds cuts at 1 and 2 seconds (frames 30 and 60). Its new SHA-256 is pinned in
+the corpus. To regenerate the image content with FFmpeg:
+
+```bash
+ffmpeg -y -f lavfi -i 'color=c=red:s=320x180:r=30:d=1' \
+  -f lavfi -i 'color=c=green:s=320x180:r=30:d=1' \
+  -f lavfi -i 'color=c=blue:s=320x180:r=30:d=1' \
+  -filter_complex '[0:v][1:v][2:v]concat=n=3:v=1:a=0,format=yuv420p[v]' \
+  -map '[v]' -c:v libx264 -threads 1 -preset veryfast -crf 18 -g 30 -bf 0 \
+  -frames:v 90 -movflags +faststart evaluation-files/reference/synthetic-known-cuts.mp4
+```
+
+Encoder versions may produce different bytes; if regenerated, re-verify the
+media clock and cut frames before updating the hash, rather than reusing labels
+blindly.
+
 ## Run the known-cut browser test
 
 With a local Chrome installed:

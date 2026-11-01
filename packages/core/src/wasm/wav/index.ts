@@ -1,3 +1,5 @@
+import { hasTypedArrayBindings } from "../typed-array-bindings";
+
 export type WasmWavExports = {
   encodeWav16Mono(
     samples: Float32Array,
@@ -52,6 +54,7 @@ async function loadWasmModule(): Promise<WasmWavExports | null> {
       },
     });
 
+    if (!hasTypedArrayBindings(instance.exports)) return null;
     return instance.exports as unknown as WasmWavExports;
   } catch {
     return null;

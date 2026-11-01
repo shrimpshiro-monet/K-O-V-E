@@ -1,3 +1,5 @@
+import { hasTypedArrayBindings } from "../typed-array-bindings";
+
 export type WasmBeatDetectionExports = {
   computeRMSEnergies(
     samples: Float32Array,
@@ -48,6 +50,7 @@ async function loadWasmModule(): Promise<WasmBeatDetectionExports | null> {
       },
     });
 
+    if (!hasTypedArrayBindings(instance.exports)) return null;
     return instance.exports as unknown as WasmBeatDetectionExports;
   } catch {
     return null;

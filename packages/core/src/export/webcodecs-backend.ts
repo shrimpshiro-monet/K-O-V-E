@@ -1,6 +1,7 @@
 import { CODEC_MAP, type VideoExportSettings, type AudioExportSettings, type ExportError } from "./types";
 import type { Project } from "../types/project";
 import type { EncoderBackend } from "./encoder-backend";
+import { trackHasAudioItems } from "../timeline/timeline-items";
 
 type MediaBunnyModule = typeof import("mediabunny");
 type AudioBufferSourceInstance = InstanceType<MediaBunnyModule["AudioBufferSource"]>;
@@ -34,6 +35,11 @@ export class WebCodecsBackend implements EncoderBackend {
   private audioSource: AudioBufferSourceInstance | null = null;
   private writableStream: FileSystemWritableFileStream | null = null;
   private bytesWritten = 0;
+  private aborted = false;
+
+  private throwIfAborted(): void {
+    if (this.aborted) throw new DOMException("Export cancelled", "AbortError");
+  }
 
   constructor(mediabunny: MediaBunnyModule, options?: WebCodecsBackendOptions) {
     this.mediabunny = mediabunny;
@@ -98,6 +104,9 @@ export class WebCodecsBackend implements EncoderBackend {
       chunkSize: 4 * 1024 * 1024,
     });
     const output = new Output({ format: outputFormat, target });
+    // Retain it as soon as it exists, including while codec selection/start is
+    // pending, so cancellation can release resources during initialization.
+    this.output = output;
 
     const supportedVideoCodecs = outputFormat.getSupportedVideoCodecs();
     const requestedVideoCodec = CODEC_MAP[settings.codec] as VideoCodecName | undefined;
@@ -106,15 +115,20 @@ export class WebCodecsBackend implements EncoderBackend {
     const preferredVideoCodecs = requestedVideoCodecs.filter((codec) =>
       supportedVideoCodecs.includes(codec),
     );
-    const videoCodecCandidates =
-      preferredVideoCodecs && preferredVideoCodecs.length > 0
-        ? [
-            ...preferredVideoCodecs,
-            ...supportedVideoCodecs.filter(
-              (codec: VideoCodecName) => !preferredVideoCodecs.includes(codec),
-            ),
-          ]
-        : supportedVideoCodecs;
+    if (requestedVideoCodecs.length > 0 && preferredVideoCodecs.length === 0) {
+      const error: ExportError = {
+        code: "UNSUPPORTED_CODEC",
+        message: `${settings.codec.toUpperCase()} cannot be stored in ${settings.format.toUpperCase()}. Choose a compatible codec and container.`,
+        phase: "preparing",
+        recoverable: false,
+      };
+      throw error;
+    }
+    // Do not silently encode a different codec than the one the user chose.
+    // Hardware can still fall back to software for this same codec.
+    const videoCodecCandidates = requestedVideoCodecs.length > 0
+      ? preferredVideoCodecs
+      : supportedVideoCodecs;
     const targetVideoBitrate = settings.bitrate ? settings.bitrate * 1000 : QUALITY_MEDIUM;
     const hardwarePreferences: HardwarePreference[] =
       this.hardwareAcceleration === "no-preference"
@@ -131,6 +145,7 @@ export class WebCodecsBackend implements EncoderBackend {
         hardwareAcceleration,
       } as unknown as Parameters<typeof getFirstEncodableVideoCodec>[1];
       videoCodec = await getFirstEncodableVideoCodec(videoCodecCandidates, encodeOptions);
+      this.throwIfAborted();
       if (videoCodec) {
         selectedHardwareAcceleration = hardwareAcceleration;
         break;
@@ -140,18 +155,12 @@ export class WebCodecsBackend implements EncoderBackend {
     if (!videoCodec) {
       const error: ExportError = {
         code: "UNSUPPORTED_CODEC",
-        message: "No supported video codec found",
+        message: `This browser cannot encode ${settings.codec.toUpperCase()} video. Choose a supported codec or use the desktop app.`,
         phase: "preparing",
         recoverable: false,
       };
       throw error;
     }
-
-    const audioCodecResult = await this.findSupportedAudioCodec(
-      outputFormat,
-      settings.audioSettings,
-      getFirstEncodableAudioCodec,
-    );
 
     const videoSource = new VideoSampleSource({
       codec: videoCodec,
@@ -159,20 +168,33 @@ export class WebCodecsBackend implements EncoderBackend {
       keyFrameInterval: settings.keyframeInterval / settings.frameRate,
       hardwareAcceleration: selectedHardwareAcceleration,
     });
-    const audioSource = new AudioBufferSource({
-      codec: audioCodecResult.codec as "aac" | "opus" | "mp3",
-      bitrate: audioCodecResult.bitrate,
-    });
     output.addVideoTrack(videoSource);
-    output.addAudioTrack(audioSource);
-    output.setMetadataTags({
-      title: project.name,
-      date: new Date(),
-    });
 
+    // A still-image or fully muted timeline needs no audio encoder or empty
+    // muxer track. Some browsers cannot encode AAC at all; that must not prevent
+    // a perfectly valid silent video from being exported.
+    const hasAudio = project.timeline.tracks.some(
+      (track) => !track.muted && trackHasAudioItems(project, track.id),
+    );
+    let audioSource: AudioBufferSourceInstance | null = null;
+    if (hasAudio) {
+      const audioCodecResult = await this.findSupportedAudioCodec(
+        outputFormat,
+        settings.audioSettings,
+        getFirstEncodableAudioCodec,
+      );
+      this.throwIfAborted();
+      audioSource = new AudioBufferSource({
+        codec: audioCodecResult.codec as "aac" | "opus" | "mp3",
+        bitrate: audioCodecResult.bitrate,
+      });
+      output.addAudioTrack(audioSource);
+    }
+    output.setMetadataTags({ title: project.name, date: new Date() });
+
+    this.throwIfAborted();
     await output.start();
-
-    this.output = output;
+    this.throwIfAborted();
     this.videoSource = videoSource;
     this.audioSource = audioSource;
   }
@@ -193,18 +215,16 @@ export class WebCodecsBackend implements EncoderBackend {
     timestampSec: number,
     durationSec: number,
   ): Promise<void> {
-    if (!this.videoSource) {
-      throw new Error("Encoder backend not started");
+    let videoSample: InstanceType<MediaBunnyModule["VideoSample"]> | null = null;
+    try {
+      if (!this.videoSource) throw new Error("Encoder backend not started");
+      const { VideoSample } = this.mediabunny;
+      videoSample = new VideoSample(frame, { timestamp: timestampSec, duration: durationSec });
+      await this.videoSource.add(videoSample);
+    } finally {
+      videoSample?.close();
+      frame.close();
     }
-    const { VideoSample } = this.mediabunny;
-    const videoSample = new VideoSample(frame, {
-      timestamp: timestampSec,
-      duration: durationSec,
-    });
-
-    await this.videoSource.add(videoSample);
-    videoSample.close();
-    frame.close();
   }
 
   async finalize(): Promise<void> {
@@ -214,9 +234,13 @@ export class WebCodecsBackend implements EncoderBackend {
   }
 
   async abort(): Promise<void> {
-    try {
-      await this.writableStream?.abort();
-    } catch {}
+    this.aborted = true;
+    // Cancel the muxer/encoders as well as the file. Either operation can fail
+    // independently (or the output may not have started yet).
+    await Promise.allSettled([
+      Promise.resolve().then(() => this.output?.cancel()),
+      Promise.resolve().then(() => this.writableStream?.abort()),
+    ]);
   }
 
   private async findSupportedAudioCodec(
@@ -269,11 +293,9 @@ export class WebCodecsBackend implements EncoderBackend {
       }
     }
 
-    const defaultCodec = await getFirstEncodableAudioCodec(supportedCodecs);
-    return {
-      codec: defaultCodec || "aac",
-      bitrate: 128000,
-    };
+    throw new Error(
+      "No supported audio encoder is available for this export format. Try another format or browser.",
+    );
   }
 
   private async isAudioConfigSupported(

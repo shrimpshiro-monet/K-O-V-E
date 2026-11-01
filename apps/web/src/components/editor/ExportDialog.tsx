@@ -73,7 +73,7 @@ import {
 import { EDITING_FRAME_RATE_OPTIONS } from "./editing-frame-rate";
 
 const WEB_EXPORT_GUARDRAIL_MESSAGE =
-  "Web export can't produce ProRes or alpha — this will encode H.264 without transparency. Use the desktop app for ProRes/alpha.";
+  "Web export can't produce ProRes or alpha — this will encode H.264 without transparency. Desktop supports ProRes; use a PNG sequence for transparency.";
 
 interface ExportDialogProps {
   isOpen: boolean;
@@ -405,6 +405,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         : customSettings;
     const settings: VideoExportSettings = {
       ...chosen,
+      ...(guardrailActive ? { format: "mp4" as const, codec: "h264" as const } : {}),
       encodeMode: customSettings.encodeMode ?? "balanced",
     };
     onExport(settings);
@@ -417,6 +418,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     onExport,
     onClose,
     guardrailBlocking,
+    guardrailActive,
   ]);
 
   const handleMatchSourceExport = useCallback(() => {

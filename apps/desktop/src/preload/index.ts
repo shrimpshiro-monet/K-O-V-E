@@ -2,6 +2,8 @@ import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { CHANNELS } from "../shared/channels";
 import type { McpBridgeRequest } from "../shared/mcp";
 
+let nextExportRequestId = 0;
+
 contextBridge.exposeInMainWorld("kove-advanced", {
   platform: "desktop",
   publicOrigin: "https://app.kove-advanced.video",
@@ -21,6 +23,8 @@ contextBridge.exposeInMainWorld("kove-advanced", {
     openWrite: (p: string) => ipcRenderer.invoke(CHANNELS.fsOpenWrite, { path: p }),
     writeChunk: (handleId: string, data: ArrayBuffer | Uint8Array, position: number) =>
       ipcRenderer.invoke(CHANNELS.fsWriteChunk, { handleId, data, position }),
+    truncateWrite: (handleId: string, size: number) =>
+      ipcRenderer.invoke(CHANNELS.fsTruncateWrite, { handleId, size }),
     closeWrite: (handleId: string) => ipcRenderer.invoke(CHANNELS.fsCloseWrite, { handleId }),
     abortWrite: (handleId: string) => ipcRenderer.invoke(CHANNELS.fsAbortWrite, { handleId }),
     revealInFolder: (p: string) => ipcRenderer.invoke(CHANNELS.fsRevealInFolder, { path: p }),
@@ -32,17 +36,48 @@ contextBridge.exposeInMainWorld("kove-advanced", {
   },
   export: {
     start: (args: unknown) =>
-      new Promise((resolve) => {
-        ipcRenderer.once("kove-advanced:export-port", (event, meta) => {
-          const { jobId } = meta as { jobId: string };
+      new Promise<{ jobId: string }>((resolve, reject) => {
+        const requestId = `${Date.now()}-${++nextExportRequestId}-${Math.random().toString(36).slice(2)}`;
+        let settled = false;
+        let failed = false;
+        let invokedJobId: string | undefined;
+        const cleanup = () => {
+          clearTimeout(timer);
+          ipcRenderer.removeListener("kove-advanced:export-port", handler);
+        };
+        const fail = (error: unknown) => {
+          if (settled) return;
+          settled = true;
+          failed = true;
+          cleanup();
+          if (invokedJobId) void ipcRenderer.invoke(CHANNELS.exportCancel, { jobId: invokedJobId }).catch(() => undefined);
+          reject(error);
+        };
+        const handler = (event: Electron.IpcRendererEvent, meta: { jobId: string; requestId?: string }) => {
+          if (meta.requestId !== requestId || settled) return;
           const [port] = event.ports;
-          // A live MessagePort cannot survive contextBridge serialization into
-          // the main world, so forward it via window.postMessage transfer (the
-          // documented Electron path) and resolve with just the jobId.
-          window.postMessage({ "__kove-advancedExportPort": true, jobId }, "*", [port]);
-          resolve({ jobId });
-        });
-        ipcRenderer.invoke(CHANNELS.exportStart, args);
+          invokedJobId = meta.jobId;
+          if (!port) return fail(new Error("Native export did not provide a message channel"));
+          try {
+            // MessagePorts must be transferred to the main world, not serialized.
+            window.postMessage({ "__kove-advancedExportPort": true, jobId: meta.jobId }, "*", [port]);
+          } catch (error) {
+            port.close();
+            return fail(error);
+          }
+          settled = true;
+          cleanup();
+          resolve({ jobId: meta.jobId });
+        };
+        const timer = setTimeout(() => fail(new Error("Timed out starting the native export")), 15_000);
+        ipcRenderer.on("kove-advanced:export-port", handler);
+        const payload = typeof args === "object" && args !== null ? args : {};
+        void ipcRenderer.invoke(CHANNELS.exportStart, { ...payload, requestId })
+          .then(({ jobId }: { jobId: string }) => {
+            invokedJobId = jobId;
+            if (failed) void ipcRenderer.invoke(CHANNELS.exportCancel, { jobId }).catch(() => undefined);
+          })
+          .catch(fail);
       }),
     writeAudioWav: (jobId: string, wav: ArrayBuffer) =>
       ipcRenderer.invoke(CHANNELS.exportWriteAudioWav, { jobId, wav }),

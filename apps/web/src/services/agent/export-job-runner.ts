@@ -6,9 +6,10 @@ import type {
   ExportResult,
 } from "@kove-advanced/core/export/types";
 import type { Project } from "@kove-advanced/core/types/project";
-import { getExportEngine, setEncoderBackendFactory, WebCodecsBackend } from "@kove-advanced/core";
+import { getExportEngine, WebCodecsBackend } from "@kove-advanced/core";
+import { waitForExportStage } from "@kove-advanced/core/export/export-watchdog";
 import { useProjectStore } from "../../stores/project-store";
-import { NativeFFmpegBackend } from "../native-ffmpeg-backend";
+import { createDesktopStreamWritable, createDownloadWritable, writeBlobToWritable } from "../export-runner";
 import { renderMotionCompositionFrameToDataUrl } from "../../motion/export-motion-frame";
 import { getMediaBridge, initializeMediaBridge } from "../../bridges/media-bridge";
 import { loadMediaBlob } from "../media-storage";
@@ -54,7 +55,8 @@ function audioSettings(format: string): Partial<AudioExportSettings> {
   const fmt = (AUDIO_FORMATS.has(format as AudioExportSettings["format"])
     ? format
     : "wav") as AudioExportSettings["format"];
-  return { format: fmt, sampleRate: 48000, bitDepth: 16, bitrate: 192000, channels: 2 };
+  // Export settings express bitrate in kilobits per second.
+  return { format: fmt, sampleRate: 48000, bitDepth: 16, bitrate: 192, channels: 2 };
 }
 
 async function drainExport(
@@ -67,81 +69,9 @@ async function drainExport(
   return step.value;
 }
 
-function toUint8(data: unknown): Uint8Array {
-  if (data instanceof Uint8Array) return data;
-  if (data instanceof ArrayBuffer) return new Uint8Array(data);
-  if (ArrayBuffer.isView(data)) {
-    const view = data as ArrayBufferView;
-    return new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
-  }
-  throw new Error("Unsupported chunk type written to export stream");
-}
-
-interface MemoryWritable {
-  readonly writable: FileSystemWritableFileStream;
-  getBlob(type: string): Blob;
-}
-
-function createMemoryWritable(): MemoryWritable {
-  const parts: Array<{ pos: number; data: Uint8Array }> = [];
-  let position = 0;
-  let size = 0;
-
-  const writeChunk = (u8: Uint8Array): void => {
-    parts.push({ pos: position, data: u8 });
-    position += u8.byteLength;
-    if (position > size) size = position;
-  };
-
-  const sink = {
-    async seek(pos: number): Promise<void> {
-      position = pos;
-    },
-    async truncate(next: number): Promise<void> {
-      size = next;
-    },
-    async close(): Promise<void> {},
-    async abort(): Promise<void> {},
-    async write(chunk: unknown): Promise<void> {
-      if (chunk && typeof chunk === "object" && "type" in chunk) {
-        const cmd = chunk as { type: string; data?: unknown; position?: number; size?: number };
-        if (cmd.type === "seek") {
-          if (typeof cmd.position === "number") position = cmd.position;
-          return;
-        }
-        if (cmd.type === "truncate") {
-          if (typeof cmd.size === "number") size = cmd.size;
-          return;
-        }
-        if (cmd.type === "write") {
-          if (typeof cmd.position === "number") position = cmd.position;
-          writeChunk(toUint8(cmd.data));
-          return;
-        }
-      }
-      writeChunk(toUint8(chunk));
-    },
-  };
-
-  return {
-    writable: sink as unknown as FileSystemWritableFileStream,
-    getBlob(type: string): Blob {
-      const buffer = new Uint8Array(size);
-      for (const part of parts) buffer.set(part.data, part.pos);
-      return new Blob([buffer], { type });
-    },
-  };
-}
-
 function sanitizeName(name: string | undefined): string {
   const base = (name ?? "export").replace(/[^a-z0-9._-]+/gi, "_").replace(/^_+|_+$/g, "");
   return base.slice(0, 60) || "export";
-}
-
-function nativeBackendFactory() {
-  return new NativeFFmpegBackend(
-    () => (window as unknown as Record<string, string | undefined>).__kove_advancedExportPath ?? "",
-  );
 }
 
 async function saveExportLocally(
@@ -150,34 +80,23 @@ async function saveExportLocally(
   ext: string,
   contentType: string,
 ): Promise<JobResult> {
+  if (!blob.size) return { ok: false, error: "Export produced no data" };
   const bridge = window["kove-advanced"]?.fs;
-  if (!bridge) return { ok: false, error: "Local export storage is unavailable" };
   const filename = `${sanitizeName(projectName)}-${Date.now()}.${ext}`;
-  const path = await bridge.tempFilePath(ext);
-  const handleId = await bridge.openWrite(path);
-  const reader = blob.stream().getReader();
-  let position = 0;
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      await bridge.writeChunk(handleId, value, position);
-      position += value.byteLength;
-    }
-    await bridge.closeWrite(handleId);
-  } catch (error) {
-    await bridge.abortWrite(handleId).catch(() => {});
-    throw error;
-  }
+  const path = bridge ? await bridge.tempFilePath(ext) : undefined;
+  const writable = path
+    ? await createDesktopStreamWritable(path)
+    : await createDownloadWritable(filename, contentType);
+  await writeBlobToWritable(blob, writable);
   return {
     ok: true,
     data: {
-      path,
+      ...(path ? { path } : {}),
       filename,
       bytes: blob.size,
       format: ext,
       contentType,
-      storage: "local",
+      storage: path ? "local" : "browser-download",
     },
   };
 }
@@ -267,35 +186,42 @@ export function createExportJobRunner(): JobRunner {
         const format = typeof params.format === "string" ? params.format : "mp4";
         const ext = VIDEO_FORMATS.has(format as VideoExportSettings["format"]) ? format : "mp4";
         const settings = videoSettings(format, project);
-        const videoCodec = settings.codec === "h265" ? "hevc" : "avc";
-        setEncoderBackendFactory((mediabunny) =>
-          mediabunny
-            ? new WebCodecsBackend(mediabunny, {
-                hardwareAcceleration: "prefer-hardware",
-                videoCodecs: [videoCodec],
-                clampResolution: false,
-              })
-            : nativeBackendFactory(),
-        );
-        const sink = createMemoryWritable();
+        const videoCodec = settings.codec === "h265" ? "hevc" : settings.codec === "vp9" ? "vp9" : "avc";
+        const bridge = window["kove-advanced"]?.fs;
+        const contentType = VIDEO_MIME[ext];
+        const filename = `${sanitizeName(project.name)}-${Date.now()}.${ext}`;
+        await waitForExportStage(engine.initialize(), "loading the export engine");
+        const path = bridge ? await bridge.tempFilePath(ext) : undefined;
+        const writable = path
+          ? await createDesktopStreamWritable(path)
+          : await createDownloadWritable(filename, contentType);
         let result: ExportResult;
         try {
-          result = await drainExport(engine.exportVideo(project, settings, sink.writable));
-        } finally {
-          setEncoderBackendFactory(() => nativeBackendFactory());
+          result = await drainExport(engine.exportVideo(project, settings, writable, (mediabunny) => {
+            if (!mediabunny) throw new Error("MediaBunny is unavailable for video export");
+            return new WebCodecsBackend(mediabunny, {
+              hardwareAcceleration: "prefer-hardware",
+              videoCodecs: [videoCodec],
+              clampResolution: !bridge,
+            });
+          }));
+        } catch (error) {
+          await writable.abort().catch(() => undefined);
+          throw error;
         }
         if (!result.success) {
           return { ok: false, error: result.error?.message ?? "Video export failed" };
         }
-        const contentType = VIDEO_MIME[ext];
-        const blob = result.blob ?? sink.getBlob(contentType);
-        if (blob.size === 0) {
-          return { ok: false, error: "Video export produced no data" };
-        }
-        return await saveExportLocally(blob, project.name, ext, blob.type || contentType);
+        const bytes = result.stats?.fileSize ?? 0;
+        if (bytes <= 0) return { ok: false, error: "Video export produced no data" };
+        return {
+          ok: true,
+          data: { ...(path ? { path } : {}), filename, bytes, format: ext, contentType, storage: path ? "local" : "browser-download" },
+        };
       }
 
       if (kind === "exportAudio") {
+        await waitForExportStage(engine.initialize(), "loading the export engine");
         const format = typeof params.format === "string" ? params.format : "wav";
         const result = await drainExport(engine.exportAudio(project, audioSettings(format)));
         if (!result.success || !result.blob) {

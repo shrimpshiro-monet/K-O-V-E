@@ -16,19 +16,17 @@ import { useThemeStore } from "../../stores/theme-store";
 import { useSettingsStore } from "../../stores/settings-store";
 import { useRouter } from "../../hooks/use-router";
 import {
-  getExportEngine,
   getDeviceProfile,
   estimateExportTime,
   type VideoExportSettings,
   type AudioExportSettings,
-  type ExportResult,
   type DeviceProfile,
   type TimeEstimate,
 } from "@kove-advanced/core";
 import { ExportDialog } from "./ExportDialog";
 import { CompressDialog } from "./CompressDialog";
 import { deriveSourceExportMatch } from "../../services/export-source-match";
-import { useExportRunner, extForFormat, exportFilename, writeBlobToWritable } from "../../services/export-runner";
+import { useExportRunner, extForFormat, exportFilename } from "../../services/export-runner";
 import { ScreenRecorder } from "./ScreenRecorder";
 import { HistoryPanel } from "./inspector/HistoryPanel";
 import { ProjectSwitcher } from "./ProjectSwitcher";
@@ -207,9 +205,8 @@ export const Toolbar: React.FC = () => {
   const {
     state: exportState,
     runExport,
+    runAudioExport,
     showSavePicker,
-    reportProgress,
-    markComplete,
     beginExport,
     finishExportSoon,
     failExport,
@@ -221,12 +218,8 @@ export const Toolbar: React.FC = () => {
   const [exportEstimates, setExportEstimates] = useState<Map<string, TimeEstimate>>(new Map());
 
   useEffect(() => {
-    setGlobalExportState({
-      isExporting: exportState.isExporting,
-      progress: exportState.progress,
-      phase: exportState.phase,
-    });
-  }, [exportState.isExporting, exportState.progress, exportState.phase, setGlobalExportState]);
+    setGlobalExportState(exportState);
+  }, [exportState, setGlobalExportState]);
 
   useEffect(() => {
     if (isExportOpen && !deviceProfile) {
@@ -276,9 +269,6 @@ export const Toolbar: React.FC = () => {
 
           beginExport();
 
-          const engine = getExportEngine();
-          await engine.initialize();
-
           const audioSettings: Partial<AudioExportSettings> = {
             format: "wav",
             sampleRate: 48000,
@@ -286,29 +276,11 @@ export const Toolbar: React.FC = () => {
             bitDepth: 24,
           };
 
-          const generator = engine.exportAudio(project, audioSettings);
-          let finalResult: ExportResult | undefined;
-
-          while (true) {
-            const { value, done } = await generator.next();
-            if (done) {
-              finalResult = value;
-              break;
-            }
-            reportProgress(value.progress, value.phase);
-          }
-
-          if (finalResult?.success && finalResult.blob) {
-            await writeBlobToWritable(finalResult.blob, writable);
-            markComplete();
-            track(AnalyticsEvents.PROJECT_EXPORTED, {
-              format: "wav",
-              duration: project.timeline?.duration ?? 0,
-            });
-          } else {
-            try { await writable.abort(); } catch { void 0; }
-            throw new Error(finalResult?.error?.message || "Export failed");
-          }
+          await runAudioExport(audioSettings, writable);
+          track(AnalyticsEvents.PROJECT_EXPORTED, {
+            format: "wav",
+            duration: project.timeline?.duration ?? 0,
+          });
         } else {
           const base = {
             width: project.settings.width,
@@ -342,7 +314,7 @@ export const Toolbar: React.FC = () => {
         failExport(error);
       }
     },
-    [project, track, runExport, showSavePicker, beginExport, reportProgress, markComplete, finishExportSoon, failExport],
+    [project, track, runExport, runAudioExport, showSavePicker, beginExport, finishExportSoon, failExport],
   );
 
   const handleCustomExport = useCallback(
@@ -610,6 +582,8 @@ export const Toolbar: React.FC = () => {
           <button
             type="button"
             onClick={handleCancelExport}
+            aria-label="Cancel export"
+            title={`${exportState.phase} — click to cancel`}
             className="flex items-center gap-1.5 rounded-[8px] bg-bg-3 px-[18px] py-[9px] text-[13px] font-semibold text-fg-2"
           >
             <Icon name="square.and.arrow.up" size={13} ariaHidden />
@@ -620,9 +594,11 @@ export const Toolbar: React.FC = () => {
           <button
             type="button"
             onClick={resetError}
+            aria-label={`Dismiss export error: ${exportState.error}`}
+            title={exportState.error}
             className="flex max-w-[180px] items-center gap-1.5 truncate rounded-[8px] bg-destructive px-[18px] py-[9px] text-[13px] font-semibold text-destructive-foreground"
           >
-            <span className="truncate">{exportState.error}</span>
+            <span role="alert" className="truncate">{exportState.error}</span>
             <Icon name="xmark" size={11} ariaHidden />
           </button>
         ) : exportState.complete ? (

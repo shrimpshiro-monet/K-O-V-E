@@ -27,6 +27,15 @@ describe("buildFfmpegArgs", () => {
     expect(a).not.toContain("-b:v");
   });
 
+  it("uses Opus audio in WebM without MP4-specific movflags", () => {
+    const args = buildFfmpegArgs({
+      ...base, codec: "vp9", encoder: "libvpx-vp9", format: "webm", outputPath: "/tmp/out.webm",
+    });
+    expect(args[args.indexOf("-c:a") + 1]).toBe("libopus");
+    expect(args).not.toContain("-movflags");
+    expect(args).not.toContain("-preset");
+  });
+
   it("prores writes profile + 10-bit and keeps aac audio", () => {
     const a = buildFfmpegArgs({
       ...base, codec: "prores", encoder: "prores_videotoolbox",

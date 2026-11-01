@@ -69,6 +69,14 @@ describe("videoEncodeArgs", () => {
     expect(smallest[smallest.indexOf("-preset") + 1]).toBe("5");
   });
 
+  it("uses libvpx constant-quality speed options instead of x264 presets", () => {
+    const args = videoEncodeArgs({ codec: "vp9", encoder: "libvpx-vp9", mode: "balanced", ...base });
+    expect(args[args.indexOf("-b:v") + 1]).toBe("0");
+    expect(args[args.indexOf("-cpu-used") + 1]).toBe("2");
+    expect(args).toContain("-crf");
+    expect(args).not.toContain("-preset");
+  });
+
   it("hardware balanced uses capped VBR derived from resolution/quality", () => {
     const plan: EncodePlan = { codec: "hevc", encoder: "hevc_videotoolbox", mode: "balanced", ...base };
     const args = videoEncodeArgs(plan);

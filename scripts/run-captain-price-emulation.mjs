@@ -6,7 +6,7 @@ import { createServer as createNetServer } from "node:net";
 import { createInterface } from "node:readline";
 import { createRequire } from "node:module";
 import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -37,10 +37,14 @@ const outputDir = resolve(
   process.env.KOVE_E2E_OUT ??
     join(repoRoot, "run-outputs", `captain-price-emulation-${new Date().toISOString().replaceAll(":", "-")}`),
 );
-const prompt =
+const sourceName = basename(sourcePath);
+const referenceName = basename(referencePath);
+const prompt = process.env.KOVE_E2E_PROMPT ??
   "/reference Create an energetic, punchy Steph Curry highlight edit following the attached reference's pacing and visual style. Keep Curry's scoring plays, dribbles, celebrations, and crowd reactions; cut dead air, slow setup, and repetition. Use only the source footage, and aim for roughly 20 seconds to match the reference length.";
 const turnTimeoutMs = Number(process.env.KOVE_TURN_TIMEOUT_MS ?? 45 * 60_000);
 const exportTimeoutMs = Number(process.env.KOVE_EXPORT_TIMEOUT_MS ?? 15 * 60_000);
+const exportStallTimeoutMs = Number(process.env.KOVE_EXPORT_STALL_TIMEOUT_MS ?? 3 * 60_000);
+const headless = process.env.KOVE_E2E_HEADLESS === "1";
 const sleep = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
 const startedAt = Date.now();
 const log = (...parts) =>
@@ -52,6 +56,10 @@ let context;
 let page;
 let browserClosed = false;
 let finishedSuccessfully = false;
+let latestReport = null;
+let lastExportState = null;
+let exportStarted = false;
+const exportConsole = [];
 
 function readDevVars(path) {
   if (!existsSync(path)) return {};
@@ -773,20 +781,16 @@ async function saveJson(name, value) {
   writeFileSync(join(outputDir, name), `${JSON.stringify(value, null, 2)}\n`);
 }
 
-async function waitForFileInProject(namePattern, timeoutMs = 240_000) {
+async function waitForFileInProject(name, timeoutMs = 240_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const snapshot = await getProjectSnapshot(page);
-    if (
-      snapshot.media.some(
-        (media) => namePattern.test(media.name) && Number(media.duration) > 0,
-      )
-    ) {
+    if (snapshot.media.some((media) => media.name === name && Number(media.duration) > 0)) {
       return snapshot;
     }
     await sleep(1500);
   }
-  throw new Error(`Timed out importing ${namePattern}.`);
+  throw new Error(`Timed out importing ${name}.`);
 }
 
 async function dismissTour() {
@@ -882,6 +886,9 @@ async function driveDirectorTurn() {
     const hasAssistantReply =
       lastUserIndex >= 0 &&
       chat.messages.slice(lastUserIndex + 1).some((message) => message.role === "assistant");
+    if (chat.error && !observedRunning && !hasAssistantReply) {
+      throw new Error(`Monet could not start: ${chat.error}`);
+    }
     if (
       (observedRunning || hasAssistantReply) &&
       chat.status === "idle" &&
@@ -891,6 +898,10 @@ async function driveDirectorTurn() {
       return chat;
     }
     if (chat.status === "error") {
+      if (project.clips.length === 0) {
+        log(`Monet stopped without an edit: ${chat.error ?? "unknown error"}. Trying the documented recovery path.`);
+        return chat;
+      }
       throw new Error(`Monet stopped with an error: ${chat.error ?? "unknown error"}`);
     }
     await sleep(1800);
@@ -916,7 +927,58 @@ async function getExportState() {
   });
 }
 
-async function exportTimeline() {
+async function verifyDownloadedVideo(path, expectedDuration) {
+  await page.evaluate(() => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.id = "kove-emulation-export-verification";
+    input.hidden = true;
+    document.body.appendChild(input);
+  });
+  try {
+    await page.locator("#kove-emulation-export-verification").setInputFiles(path);
+    const video = await page.evaluate(() => new Promise((resolvePromise, reject) => {
+      const input = document.getElementById("kove-emulation-export-verification");
+      const file = input?.files?.[0];
+      if (!file) return reject(new Error("Could not reopen the downloaded file."));
+      const url = URL.createObjectURL(file);
+      const element = document.createElement("video");
+      let finished = false;
+      const timer = setTimeout(() => finish(new Error("Timed out decoding the downloaded video.")), 60_000);
+      const finish = (error) => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+        const result = { duration: element.duration, width: element.videoWidth, height: element.videoHeight };
+        element.onloadeddata = null;
+        element.onerror = null;
+        element.removeAttribute("src");
+        element.load();
+        URL.revokeObjectURL(url);
+        if (error) reject(error);
+        else resolvePromise(result);
+      };
+      element.muted = true;
+      element.preload = "auto";
+      element.onloadeddata = () => finish();
+      element.onerror = () => finish(new Error("The downloaded file is not a decodable video."));
+      element.src = url;
+      element.load();
+    }));
+    if (!Number.isFinite(video.duration) || video.duration <= 0 || !video.width || !video.height) {
+      throw new Error("The downloaded file has no valid video duration or dimensions.");
+    }
+    const tolerance = Math.max(0.5, expectedDuration * 0.05);
+    if (expectedDuration > 0 && Math.abs(video.duration - expectedDuration) > tolerance) {
+      throw new Error(`The downloaded video is ${video.duration.toFixed(2)}s, but the timeline is ${expectedDuration.toFixed(2)}s.`);
+    }
+    return video;
+  } finally {
+    await page.locator("#kove-emulation-export-verification").evaluate((input) => input.remove()).catch(() => {});
+  }
+}
+
+async function exportTimeline(expectedDuration) {
   await installExportDiagnostics();
   const pickerPresent = await page.evaluate(() => "showSaveFilePicker" in window);
   if (pickerPresent) {
@@ -936,12 +998,17 @@ async function exportTimeline() {
   log("Export started; waiting for the real browser render/download.");
 
   const deadline = Date.now() + exportTimeoutMs;
+  let lastActivity = Date.now();
+  let fingerprint = "";
   let lastProgress = -1;
   let lastPhase = "";
+  let completedAt = null;
   while (Date.now() < deadline) {
     const result = await Promise.race([
       downloadPromise.then((download) => ({ download })),
-      sleep(3000).then(() => null),
+      // Completion is shown briefly before the toolbar resets; sample often
+      // enough to catch a completed state even if no download is emitted.
+      sleep(1000).then(() => null),
     ]);
     if (result?.download) {
       const filename = result.download.suggestedFilename() || "curry-captain-edit.mp4";
@@ -949,10 +1016,17 @@ async function exportTimeline() {
       await result.download.saveAs(destination);
       const bytes = statSync(destination).size;
       if (bytes <= 0) throw new Error("The export completed but produced an empty file.");
-      return { ok: true, file: destination, bytes, pickerPresent };
+      const verification = await verifyDownloadedVideo(destination, expectedDuration);
+      return { ok: true, file: destination, bytes, pickerPresent, verification };
     }
     const state = await getExportState();
+    lastExportState = state;
     if (state?.error) throw new Error(`Export failed: ${state.error}`);
+    const nextFingerprint = JSON.stringify(state);
+    if (nextFingerprint !== fingerprint) {
+      fingerprint = nextFingerprint;
+      lastActivity = Date.now();
+    }
     if (
       state &&
       (state.phase !== lastPhase ||
@@ -963,10 +1037,22 @@ async function exportTimeline() {
       log(`Export: ${state.progress.toFixed(0)}% ${state.phase}`);
     }
     if (state?.complete) {
-      throw new Error("The editor reports export complete but Chrome produced no download.");
+      completedAt ??= Date.now();
+      if (Date.now() - completedAt > 10_000) {
+        throw new Error("The editor reports export complete but Chrome produced no download.");
+      }
+    }
+    if (Date.now() - lastActivity > exportStallTimeoutMs) {
+      throw new Error(
+        `Export stalled for ${Math.round(exportStallTimeoutMs / 1000)} seconds at ` +
+        `${state?.progress?.toFixed(1) ?? "unknown"}% (${state?.phase || "starting"}).`,
+      );
     }
   }
-  throw new Error(`Export did not finish within ${Math.round(exportTimeoutMs / 60_000)} minutes.`);
+  throw new Error(
+    `Export did not finish within ${Math.round(exportTimeoutMs / 60_000)} minutes. ` +
+    `Last state: ${JSON.stringify(lastExportState)}.`,
+  );
 }
 
 async function installExportDiagnostics() {
@@ -1058,8 +1144,13 @@ function attachNetworkLogging(targetPage) {
     }
   });
   targetPage.on("console", (message) => {
-    if (message.text().startsWith("[emulation]") || message.text().startsWith("[emulation-export]")) {
-      log(message.text());
+    const text = message.text();
+    if (text.startsWith("[emulation]") || text.startsWith("[emulation-export]")) {
+      log(text);
+    }
+    if ((message.type() === "error" || message.type() === "warning") && /export|encoder|decoder|webgpu|mediabunny|ffmpeg/i.test(text)) {
+      exportConsole.push({ type: message.type(), text: text.slice(0, 500) });
+      if (exportConsole.length > 30) exportConsole.shift();
     }
   });
   targetPage.on("pageerror", (error) => log(`[browser error] ${error.message.slice(0, 300)}`));
@@ -1218,6 +1309,9 @@ async function main() {
   if (!Number.isInteger(activeVisionFrameBudget) || activeVisionFrameBudget < 2) {
     throw new Error("KOVE_VISION_FRAME_BUDGET must be an integer greater than or equal to 2.");
   }
+  for (const [name, value] of [["KOVE_TURN_TIMEOUT_MS", turnTimeoutMs], ["KOVE_EXPORT_TIMEOUT_MS", exportTimeoutMs], ["KOVE_EXPORT_STALL_TIMEOUT_MS", exportStallTimeoutMs]]) {
+    if (!Number.isFinite(value) || value <= 0) throw new Error(`${name} must be a positive number of milliseconds.`);
+  }
   for (const [label, path] of [
     ["source", sourcePath],
     ["style reference", referencePath],
@@ -1323,7 +1417,7 @@ async function main() {
       ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
       : undefined);
   browser = await chromium.launch({
-    headless: false,
+    headless,
     ...(chromePath ? { executablePath: chromePath } : {}),
     args: ["--autoplay-policy=no-user-gesture-required"],
   });
@@ -1364,17 +1458,17 @@ async function main() {
   }
   await page.screenshot({ path: join(outputDir, "screens", "01-ai-mode.png") });
 
-  log("Importing the Curry source video into the editor.");
+  log(`Importing source video: ${sourceName}.`);
   await page.locator('input[aria-label="Import media"]').setInputFiles(sourcePath);
-  let project = await waitForFileInProject(/Steph Curry IGNITES/i);
-  log(`Source imported (${project.media.find((item) => /Steph Curry IGNITES/i.test(item.name))?.duration ?? "duration unknown"}s).`);
+  let project = await waitForFileInProject(sourceName);
+  log(`Source imported (${project.media.find((item) => item.name === sourceName)?.duration ?? "duration unknown"}s).`);
   await page.screenshot({ path: join(outputDir, "screens", "02-source-imported.png") });
 
-  log("Attaching Captain Price as a style reference (not source footage).");
+  log(`Attaching ${referenceName} as a style reference (not source footage).`);
   await page.locator('input[aria-label="Attach reference video"]').setInputFiles(referencePath);
   await waitFor(
-    "Captain Price reference attachment",
-    async () => (await getChatSnapshot(page)).reference?.name === "captain price (2nd priority).MP4",
+    "reference attachment",
+    async () => (await getChatSnapshot(page)).reference?.name === referenceName,
     null,
     300_000,
   );
@@ -1396,6 +1490,10 @@ async function main() {
   project = await getProjectSnapshot(page);
   let recovery = null;
   if (project.clips.length === 0) {
+    const lastAssistant = [...chat.messages].reverse().find((message) => message.role === "assistant");
+    if (chat.status !== "error" && lastAssistant?.text?.trim().endsWith("?")) {
+      throw new Error(`Monet needs clarification before editing: ${lastAssistant.text}`);
+    }
     recovery = await recoverTimelineWithLocalAgentAndMeasuredReference();
     project = await getProjectSnapshot(page);
   }
@@ -1405,8 +1503,11 @@ async function main() {
 
   const toolCalls = chat.messages.flatMap((message) => message.toolCalls);
   const extract = toolCalls.find((tool) => tool.name === "extract_segments") ?? null;
-  const report = {
-    verdict: project.clips.length > 0 ? "TIMELINE_POPULATED" : "EMPTY_TIMELINE",
+  const report = latestReport = {
+    verdict: project.clips.length > 0 ? (recovery ? "TIMELINE_RECOVERED" : "TIMELINE_POPULATED") : "EMPTY_TIMELINE",
+    timelineOrigin: recovery ? "RECOVERY" : "MONET",
+    monetStatus: chat.status,
+    monetError: chat.error ?? null,
     prompt,
     source: sourcePath,
     styleReference: referencePath,
@@ -1458,7 +1559,7 @@ async function main() {
   }
   if (
     project.clips.some(
-      (clip) => clip.mediaName?.toLowerCase() === "captain price (2nd priority).mp4",
+      (clip) => clip.mediaName?.toLowerCase() === referenceName.toLowerCase(),
     )
   ) {
     throw new Error("The style reference was placed on the timeline as source footage.");
@@ -1467,16 +1568,19 @@ async function main() {
     throw new Error("The reference's measured style profile was not attached to the edit.");
   }
 
-  const exportResult = await exportTimeline();
+  exportStarted = true;
+  const exportResult = await exportTimeline(project.duration);
   report.export = exportResult;
-  report.verdict = "EXPORTED";
+  report.verdict = recovery ? "RECOVERY_EXPORTED" : "EXPORTED";
   await saveJson("report.json", report);
   await page.screenshot({ path: join(outputDir, "screens", "06-exported.png") });
-  log(`Export saved (${exportResult.bytes} bytes): ${exportResult.file}`);
+  log(`Export saved and decoded (${exportResult.bytes} bytes): ${exportResult.file}`);
   log(`Evidence saved to ${outputDir}`);
-  log("Chrome will stay open for inspection. Close the Chrome window or press Ctrl+C to stop the local services.");
-  finishedSuccessfully = true;
-  await page.waitForEvent("close", { timeout: 0 }).catch(() => {});
+  if (!headless) {
+    log("Chrome will stay open for inspection. Close the Chrome window or press Ctrl+C to stop the local services.");
+    finishedSuccessfully = true;
+    await page.waitForEvent("close", { timeout: 0 }).catch(() => {});
+  }
 }
 
 process.once("SIGINT", () => {
@@ -1492,13 +1596,44 @@ try {
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   log(`EMULATION FAILED: ${message}`);
+  let project = null;
+  let chat = null;
+  let state = lastExportState;
   if (page && !browserClosed) {
     await page.screenshot({ path: join(outputDir, "screens", "failure.png") }).catch(() => {});
+    [project, chat, state] = await Promise.all([
+      getProjectSnapshot(page).catch(() => null),
+      getChatSnapshot(page).catch(() => null),
+      getExportState().catch(() => lastExportState),
+    ]);
+  }
+  try {
+    mkdirSync(outputDir, { recursive: true });
+    latestReport ??= {
+      verdict: "FAILED",
+      prompt,
+      source: sourcePath,
+      styleReference: referencePath,
+      timeline: project,
+      monetStatus: chat?.status ?? null,
+      monetError: chat?.error ?? null,
+      export: null,
+    };
+    latestReport.verdict = "FAILED";
+    latestReport.failure = message;
+    if (exportStarted) latestReport.export = { ok: false, error: message, state };
+    await saveJson("report.json", latestReport);
     await saveJson("failure.json", {
       error: message,
+      exportState: state,
+      exportConsole,
+      timeline: project,
+      chat,
       network: networkCounts,
       at: new Date().toISOString(),
-    }).catch(() => {});
+    });
+  } catch (reportError) {
+    log(`Could not write failure evidence: ${reportError instanceof Error ? reportError.message : String(reportError)}`);
   }
   process.exitCode = 1;
 } finally {

@@ -58,7 +58,9 @@ interface RenderQueuePanelProps {
 }
 
 const WEB_EXPORT_GUARDRAIL_MESSAGE =
-  "Web export can't produce ProRes or alpha — this will encode H.264 without transparency. Use the desktop app for ProRes/alpha.";
+  "Web export can't produce ProRes or alpha — this will encode H.264 without transparency. Choose PNG Sequence to preserve transparency.";
+const DESKTOP_ALPHA_UNAVAILABLE_MESSAGE =
+  "Transparent video export is not supported yet. Choose PNG Sequence to preserve transparency, or MP4 for opaque video.";
 
 const WEB_NORMALIZED_RESULT_NOTE = "Encoded H.264 (ProRes unavailable on web)";
 
@@ -122,8 +124,9 @@ export function RenderQueuePanel({
     useState(false);
   const isNativeExportAvailable = useMemo(detectNativeExportAvailable, []);
   const requiresNativeExport = formatRequiresNativeExport(selectedFormat);
-  const guardrailActive = requiresNativeExport && !isNativeExportAvailable;
-  const guardrailBlocking = guardrailActive && !h264FallbackAcknowledged;
+  const desktopAlphaUnavailable = requiresNativeExport && isNativeExportAvailable;
+  const guardrailActive = requiresNativeExport;
+  const guardrailBlocking = desktopAlphaUnavailable || (guardrailActive && !h264FallbackAcknowledged);
 
   useEffect(() => {
     if (!guardrailActive) {
@@ -325,9 +328,9 @@ export function RenderQueuePanel({
             >
               <span className="flex items-start gap-2 text-[11px] leading-snug text-status-warning">
                 <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-                {WEB_EXPORT_GUARDRAIL_MESSAGE}
+                {desktopAlphaUnavailable ? DESKTOP_ALPHA_UNAVAILABLE_MESSAGE : WEB_EXPORT_GUARDRAIL_MESSAGE}
               </span>
-              {h264FallbackAcknowledged ? (
+              {desktopAlphaUnavailable ? null : h264FallbackAcknowledged ? (
                 <span className="text-[10.5px] text-fg-muted">
                   Will encode H.264 without transparency.
                 </span>
@@ -346,13 +349,13 @@ export function RenderQueuePanel({
             <Button
               label="Current"
               icon={Plus}
-              disabled={isRunning}
+              disabled={isRunning || desktopAlphaUnavailable}
               onClick={() => addComposition(composition)}
             />
             <Button
               label="All Scenes"
               icon={Plus}
-              disabled={isRunning || compositions.length === 0}
+              disabled={isRunning || desktopAlphaUnavailable || compositions.length === 0}
               onClick={addAllScenes}
             />
           </div>

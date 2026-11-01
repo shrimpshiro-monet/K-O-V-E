@@ -189,6 +189,7 @@ export interface KoveAdvancedBridge {
     writeFile(path: string, data: string): Promise<void>;
     openWrite(path: string): Promise<string>;
     writeChunk(handleId: string, data: ArrayBuffer | Uint8Array, position: number): Promise<void>;
+    truncateWrite?(handleId: string, size: number): Promise<void>;
     closeWrite(handleId: string): Promise<void>;
     abortWrite(handleId: string): Promise<void>;
     revealInFolder(path: string): Promise<void>;
