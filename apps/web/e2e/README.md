@@ -208,6 +208,13 @@ WAV with ffmpeg. To run that optional production check, build the app, serve
 and set `KOVE_E2E_PRODUCTION_URL` to the preview URL when invoking Playwright.
 See `packages/core/src/wasm/README.md`.
 
+For a non-gating local performance comparison, run
+`KOVE_E2E_AUDIO_BENCHMARK=1 pnpm exec playwright test e2e/wasm-audio-benchmark.spec.ts`
+from `apps/web` after building WASM. It reports three warmed timings for the
+actual managed FFT, WAV and RMS adapters versus JavaScript, including transfer
+costs. Results depend on the browser, device and workload; the test asserts that
+the intended paths ran, not a particular speedup.
+
 Transparent WebM/ProRes motion-video export is intentionally blocked on desktop
 because the current compositor/encoder flattens alpha; PNG sequences preserve
 transparency. On the web, the motion render queue warns before an explicit

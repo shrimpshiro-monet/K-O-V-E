@@ -26,9 +26,9 @@ results, not as production assets.
   clip on the timeline after a retry. Both director screenshots use deliberately
   stubbed model responses; they do **not** demonstrate a live AI provider.
 
-The latest Chromium run passed all 15 export, director, reference-cut and
-compiled-WASM safety checks, including cancellation and a visible encoder error;
-the separate production-bundle WASM export check also passed. Separate
+A Chromium run passed all 16 export, director, reference-cut,
+compiled-WASM safety and production-bundle checks, including cancellation and a
+visible encoder error. Separate
 real-FFmpeg tests passed for H.264/AAC and VP9/Opus sidecar output,
 a ProRes encode, and 1440p, including fallback from an unavailable hardware
 encoder. These do not launch a full Electron app. Commands and prerequisites are in

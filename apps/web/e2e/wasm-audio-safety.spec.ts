@@ -14,7 +14,7 @@ const files = {
   beat: `${paths.beat}/build/beat.wasm`,
   wav: `${paths.wav}/build/wav.wasm`,
 };
-const url = (path: string) => `/@fs${path}`;
+const url = (path: string) => `/@fs/${path.replace(/\\/g, "/").replace(/^\/+/, "")}`;
 
 test("real compiled audio WASM exchanges typed arrays correctly in Chromium", async ({ page }) => {
   test.skip(!hasBrowser(), "Chromium is not installed; set KOVE_E2E_CHROMIUM");

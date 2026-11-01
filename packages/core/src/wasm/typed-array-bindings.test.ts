@@ -125,6 +125,8 @@ describe("real AssemblyScript audio bindings", () => {
     expect(small.isUsingWasm()).toBe(true);
     expect(large.isUsingWasm()).toBe(true);
     const short = Float32Array.of(1, Number.NaN, 0.5);
+    const single = new WasmFFT(1);
+    expect(Object.is(single.forward(Float32Array.of(-0)).real[0], new FFT(1).forward(Float32Array.of(-0)).real[0])).toBe(true);
     expectClose(small.forward(short).real, new FFT(8).forward(short).real);
     expectClose(large.forward(Float32Array.of(1, 2)).real, new FFT(32).forward(Float32Array.of(1, 2)).real);
     expectClose(small.forward(short).real, new FFT(8).forward(short).real);
@@ -133,6 +135,28 @@ describe("real AssemblyScript audio bindings", () => {
     const mags = new Float32Array(10).fill(1);
     expectClose(small.fromMagnitudeAndPhase(mags, mags).real, new FFT(8).fromMagnitudeAndPhase(mags, mags).real);
     expect(small.isUsingWasm()).toBe(true);
+  });
+
+  it("matches JavaScript across many deterministic FFT sizes and frames", () => {
+    let seed = 0x12345678;
+    const random = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 0x100000000 * 2 - 1;
+    };
+    for (const size of [1, 2, 4, 8, 16, 32, 64, 128, 512, 2048]) {
+      const actual = new WasmFFT(size);
+      const js = new FFT(size);
+      for (let frame = 0; frame < 8; frame++) {
+        const samples = Float32Array.from({ length: size }, random);
+        const expectedSpectrum = js.forward(samples);
+        const spectrum = actual.forward(samples);
+        expectClose(spectrum.real, expectedSpectrum.real, 0.001);
+        expectClose(spectrum.imag, expectedSpectrum.imag, 0.001);
+        expectClose(actual.inverse(spectrum.real, spectrum.imag), js.inverse(spectrum.real, spectrum.imag), 0.0001);
+        expectClose(actual.getMagnitude(spectrum.real, spectrum.imag), js.getMagnitude(spectrum.real, spectrum.imag), 0.001);
+      }
+      expect(actual.isUsingWasm()).toBe(true);
+    }
   });
 
   it("matches JS WAV headers and PCM for mono/stereo 16/24-bit over chunk boundaries", () => {
@@ -169,6 +193,20 @@ describe("real AssemblyScript audio bindings", () => {
     // An unsupported shape should not disable acceleration for later calls.
     expect(wav.isUsingWasm()).toBe(true);
     expect(await wav.ensureWasm()).toBe(true);
+  });
+
+  it("writes exact PCM at an unaligned offset without touching surrounding bytes", async () => {
+    const { instance } = await WebAssembly.instantiate(binaries.get("wav")!.slice().buffer, {
+      env: { abort: () => { throw new Error("WASM abort"); } },
+    });
+    const binding = new TypedArrayBindings(instance.exports, ["allocateU8", "dataU8", "encodeWav16Stereo"]);
+    const left = Float32Array.of(-1, -0.5, -1 / 32767, -0, 0, 1 / 32767, 0.5, 1, NaN, Infinity);
+    const right = Float32Array.from(left, (value) => -value);
+    const actual = new Uint8Array(left.length * 4 + 3).fill(0xa5);
+    const expected = actual.slice();
+    binding.call("encodeWav16Stereo", [inputArray(left), inputArray(right), outputArray(actual), 1]);
+    wavJs.encodeWav16Stereo(left, right, expected, 1);
+    expectBytes(actual, expected);
   });
 
   it("preserves order-dependent PCM results for overlapping typed-array views", () => {
@@ -254,9 +292,45 @@ describe("real AssemblyScript audio bindings", () => {
     const precise = Float32Array.of(1, 2, 2);
     expect(beat.calculateMean(precise)).toBe(beatJs.calculateMean(precise));
     expect(beat.calculateStdDev(precise, 5 / 3)).toBe(beatJs.calculateStdDev(precise, 5 / 3));
+    for (const values of [Float32Array.of(1, -0, 0), Float32Array.of(-0, -1, 0), Float32Array.of(NaN, 1, 0)]) {
+      expect(Object.is(beat.calculateMedian(values), beatJs.calculateMedian(values))).toBe(true);
+    }
     const veryDistant = new Int32Array(1);
     expect(beat.findPeaks(Float32Array.of(0, 1, 0), 0.5, 0x7fffffff, veryDistant)).toBe(1);
     expect(veryDistant[0]).toBe(1);
+    expect(beat.isUsingWasm()).toBe(true);
+  });
+
+  it("matches JavaScript beat operations for randomized and partial arrays", () => {
+    let seed = 0xc0ffee;
+    const random = () => {
+      seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
+      return seed / 0x100000000;
+    };
+    for (let trial = 0; trial < 80; trial++) {
+      const length = trial % 35;
+      const input = Float32Array.from({ length }, () => Math.floor(random() * 9) / 4 - 1);
+      const window = trial % 11 + 1;
+      const hop = trial % 7 + 1;
+      const actualRms = new Float32Array(12);
+      const expectedRms = new Float32Array(12);
+      beat.computeRMSEnergies(input, window, hop, actualRms);
+      beatJs.computeRMSEnergies(input, window, hop, expectedRms);
+      expectClose(actualRms, expectedRms, 1e-6);
+      const actualSmooth = new Float32Array(length);
+      const expectedSmooth = new Float32Array(length);
+      beat.smoothArray(input, actualSmooth, window);
+      beatJs.smoothArray(input, expectedSmooth, window);
+      expectClose(actualSmooth, expectedSmooth, 1e-6);
+      expect(beat.calculateMedian(input)).toBe(beatJs.calculateMedian(input));
+      expect(beat.calculateMean(input)).toBe(beatJs.calculateMean(input));
+      const mean = beatJs.calculateMean(input);
+      expect(beat.calculateStdDev(input, mean)).toBe(beatJs.calculateStdDev(input, mean));
+      const actualPeaks = new Int32Array(4).fill(-1);
+      const expectedPeaks = new Int32Array(4).fill(-1);
+      expect(beat.findPeaks(input, 0.13, hop, actualPeaks)).toBe(beatJs.findPeaks(input, 0.13, hop, expectedPeaks));
+      expect(Array.from(actualPeaks)).toEqual(Array.from(expectedPeaks));
+    }
     expect(beat.isUsingWasm()).toBe(true);
   });
 

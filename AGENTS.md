@@ -45,9 +45,9 @@ pnpm --filter @kove-advanced/core test:run
 # Dev server (web app)
 pnpm dev            # starts Vite dev server on http://localhost:5173
 
-# Build (requires WASM first)
-pnpm build:wasm     # builds AssemblyScript WASM modules
-pnpm build          # builds web app
+# Build (the web/desktop renderer builds compile WASM automatically)
+pnpm build:wasm     # build only the AssemblyScript WASM modules
+pnpm build          # build WASM and the web app
 
 # Desktop app
 pnpm --filter @kove-advanced/desktop build:renderer
@@ -74,7 +74,7 @@ pnpm --filter @kove-advanced/desktop dev
 
 ## Gotchas
 
-- **WASM build required before full build**: `pnpm build:wasm` runs AssemblyScript compiler for FFT, WAV, and beat-detection modules. Output goes to `packages/core/src/wasm/*/build/`.
+- **Audio WASM build**: Root, web, and desktop renderer builds automatically compile FFT, WAV, and beat-detection modules. `pnpm build:wasm` can also build them independently into `packages/core/src/wasm/*/build/`. Run it before browser tests when using the dev server.
 - **Desktop is CommonJS**: `apps/desktop` uses `"type": "commonjs"` while every other package is `"type": "module"`. The main process is bundled via tsup.
 - **Desktop renderer build is a prerequisite**: `apps/desktop/build:renderer` runs `KOVE_ADVANCED_DESKTOP=1 pnpm --filter @kove-advanced/web build`, which activates desktop-specific Vite plugins.
 - **Vite dev server needs COOP/COEP headers**: SharedArrayBuffer (used by FFmpeg.wasm) requires `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`. Configured in `apps/web/vite.config.ts`.

@@ -299,9 +299,10 @@ export class BeatDetectionProcessor {
   }
 
   calculateMedian(arr: Float32Array): number {
-    // JS sort defines the fallback behavior for NaNs; avoid an unordered WASM
-    // quick-select changing its answer or spinning on such input.
-    if (arr.some(Number.isNaN)) return jsCalculateMedian(arr);
+    // JS sort defines the behavior for NaNs and preserves the original order
+    // of equal +0/-0 values. An in-place quick-select is not stable, so retain
+    // that exact behavior on these unusual inputs without disabling WASM.
+    if (arr.some((value) => Number.isNaN(value) || Object.is(value, -0))) return jsCalculateMedian(arr);
     return this.runWasm((module) => module.calculateMedian(arr), () => jsCalculateMedian(arr));
   }
 

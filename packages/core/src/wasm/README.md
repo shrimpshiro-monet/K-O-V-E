@@ -15,6 +15,9 @@ Build all three modules from the repository root:
 pnpm build:wasm
 ```
 
+The root, web, and desktop renderer production builds also build these modules
+before bundling, so a clean checkout does not silently ship without them.
+
 The builds require `--runtime incremental --exportRuntime`; old `--runtime
 stub` binaries are rejected because their allocations cannot be reclaimed. The
 loaders validate the required ABI and run small real round-trip self-tests
@@ -27,6 +30,14 @@ independent copies would change the result, without disabling later WASM calls.
 `isUsingWasm()` on each processor reports whether that instance is currently
 accelerated; module-level availability alone does not prove a particular
 operation succeeded.
+
+The AssemblyScript hot loops use direct linear-memory loads and stores to avoid
+per-sample managed-array overhead. These routines are internal ABI entry points:
+call them through the adapters, which validate lengths and overlapping arrays,
+pin the allocations, and chunk large transfers. Raw callers must provide the
+same invariants; WASM linear-memory bounds alone do not protect individual
+arrays from out-of-bounds writes. Median inputs containing NaN or negative zero
+use JavaScript to preserve its stable sorting semantics.
 
 `typed-array-bindings.test.ts` compiles the actual sources and compares WASM
 with JavaScript for FFT, WAV PCM and beat analysis, including memory reuse,
