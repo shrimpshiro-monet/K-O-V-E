@@ -10,10 +10,9 @@ export interface PlannedSegment {
   readonly effectSpecs?: readonly PlannedEffectSpec[];
   readonly layout?: EditPlanLayout;
   /**
-   * Camera motion inside the shot (slow push, punch-in, handheld drift, …).
-   * Compiled into clip transform keyframes by `compileCameraMoves`, so the
-   * footage moves the way an editor would move it — a static shot is the
-   * single loudest tell of a machine-made edit.
+   * Optional camera motion inside the shot (slow push, punch-in, handheld drift, …).
+   * Compiled into clip transform keyframes by `compileCameraMoves`; omit it when
+   * a static composition better serves the footage.
    */
   readonly cameraMoves?: readonly PlannedCameraMove[];
   readonly rationale: string;

@@ -1,0 +1,34 @@
+[
+ {
+  "t": 32648,
+  "label": "ExportEngine.initialize:enter"
+ },
+ {
+  "t": 32649,
+  "label": "ExportEngine.initialize:exit"
+ },
+ {
+  "t": 32649,
+  "label": "ExportEngine.initializeGPUForExport:enter"
+ },
+ {
+  "t": 32649,
+  "label": "VideoEngine.initializeGPUCompositor:enter"
+ },
+ {
+  "t": 32860,
+  "label": "GPU.requestAdapter:enter"
+ },
+ {
+  "t": 32860,
+  "label": "GPU.requestAdapter:ret"
+ },
+ {
+  "t": 32888,
+  "label": "VideoEngine.initializeGPUCompositor:exit"
+ },
+ {
+  "t": 32888,
+  "label": "ExportEngine.initializeGPUForExport:exit"
+ }
+]

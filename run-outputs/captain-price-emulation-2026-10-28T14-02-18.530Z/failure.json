@@ -1,0 +1,11 @@
+{
+  "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('group', { name: 'Reference intent' }).getByRole('button', { name: 'Reference', exact: true })\n    - locator resolved to <button type=\"button\" aria-pressed=\"false\" title=\"Style guidance only — the reference is never cut as footage\" class=\"px-2 py-0.5 text-[10px] font-medium transition-colors text-fg-muted hover:bg-bg-3 hover:text-fg\">Reference</button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black/80 pointer-events-auto\"></div> from <div class=\"fixed inset-0 z-[100] pointer-events-none\">…</div> subtree intercepts pointer events\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black/80 pointer-events-auto\"></div> from <div class=\"fixed inset-0 z-[100] pointer-events-none\">…</div> subtree intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    49 × waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <div class=\"fixed inset-0 bg-black/80 pointer-events-auto\"></div> from <div class=\"fixed inset-0 z-[100] pointer-events-none\">…</div> subtree intercepts pointer events\n     - retrying click action\n       - waiting 500ms\n",
+  "network": {
+    "visionWorker": 0,
+    "python": 0,
+    "omni": 0,
+    "cloudflareApi": 0,
+    "responses": []
+  },
+  "at": "2026-10-28T14:03:24.931Z"
+}

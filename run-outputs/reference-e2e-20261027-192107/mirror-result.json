@@ -1,0 +1,131 @@
+{
+  "run": "mirror",
+  "prompt": "/mirror recreate this style using my source footage",
+  "mode": {
+    "original": "eco",
+    "during": "eco",
+    "restoredTo": "eco"
+  },
+  "chat": {
+    "status": "idle",
+    "error": null,
+    "usage": {
+      "inputTokens": 0,
+      "outputTokens": 0
+    },
+    "gatewayResponses": {
+      "total": 0,
+      "ok": 0,
+      "statuses": []
+    },
+    "messages": []
+  },
+  "vision": {
+    "analysisModeDuringRun": "eco",
+    "extractSegmentsCalled": false,
+    "extractSegmentsSummary": null,
+    "visionWorkerRequests": 0,
+    "localVisionRequests": 0,
+    "verdict": "extract_segments was never called by the model in this turn — no AI vision executed"
+  },
+  "timeline": {
+    "beforeClipCount": 0,
+    "afterClipCount": 0,
+    "midClipCount": null,
+    "referenceOnTimeline": false,
+    "offSourceClips": [],
+    "mirrorProfile": false,
+    "directorPlanRevision": null
+  },
+  "changes": {
+    "cutsAndTiming": {
+      "clipCountBefore": 0,
+      "clipCountAfter": 0,
+      "videoClipCount": 0,
+      "cutBoundaries": [],
+      "timelineDurationBefore": 0,
+      "timelineDurationAfter": 0,
+      "settingsAfter": {
+        "width": 1920,
+        "height": 1080,
+        "frameRate": 30
+      }
+    },
+    "cameraAndKeyframes": {
+      "clipsWithKeyframes": 0,
+      "totalKeyframes": 0,
+      "cameraKeyframeClips": 0,
+      "properties": []
+    },
+    "text": {
+      "textClipCount": 0,
+      "texts": [],
+      "subtitleCount": 0
+    },
+    "transitionsAndEffects": {
+      "transitionCount": 0,
+      "transitions": [],
+      "effectTypes": [],
+      "clipsWithEffects": 0
+    },
+    "color": {
+      "clipsWithColorGrading": 0
+    },
+    "audio": {
+      "audioEffectTypes": [],
+      "clipsWithFade": 0,
+      "clipsWithNonDefaultVolume": 0,
+      "clipsWithSpeedChange": 0,
+      "clipsWithAutomation": 0
+    },
+    "structure": {
+      "mirrorProfile": false,
+      "directorPlanRevision": null,
+      "trackCount": 0
+    }
+  },
+  "approvals": [],
+  "playback": null,
+  "export": {
+    "attempted": false,
+    "ok": false,
+    "file": null,
+    "bytes": null,
+    "ffprobe": null,
+    "state": null,
+    "error": "skipped: timeline empty",
+    "fsaPickerPresent": false,
+    "fsaPickerRemoved": false,
+    "notes": [
+      "export skipped because the timeline stayed empty"
+    ]
+  },
+  "turnTimedOut": false,
+  "events": [
+    "66ms notice: Measuring the reference…",
+    "101ms state: status=running mode=ai clips=0 tokens=0/0",
+    "10087ms notice: Measuring the reference… 9/175 frames",
+    "28033ms notice: Measuring the reference… 26/175 frames",
+    "38303ms state: status=running mode=ai clips=0 tokens=0/0",
+    "51089ms notice: Measuring the reference… 49/175 frames",
+    "59117ms state: status=running mode=ai clips=0 tokens=0/0",
+    "75398ms notice: Measuring the reference… 69/175 frames",
+    "89729ms state: status=running mode=ai clips=0 tokens=0/0",
+    "109936ms notice: Measuring the reference… 89/175 frames",
+    "126921ms state: status=running mode=ai clips=0 tokens=0/0",
+    "148522ms notice: Measuring the reference… 111/175 frames",
+    "164423ms state: status=running mode=ai clips=0 tokens=0/0",
+    "185387ms notice: Measuring the reference… 132/175 frames",
+    "201783ms state: status=running mode=ai clips=0 tokens=0/0",
+    "238467ms state: status=idle mode=eco clips=0 tokens=0/0",
+    "240376ms turn finished: status=idle after 240s"
+  ],
+  "failures": [
+    "analysis mode during run was \"eco\", expected \"ai\"",
+    "no successful chat completion through the configured gateway (responses seen: 0)",
+    "timeline is still empty after the turn",
+    "reference EditDNA (mirrorProfile) was not attached to the project",
+    "export failed: skipped: timeline empty (export skipped because the timeline stayed empty)"
+  ],
+  "verdict": "FAIL"
+}

@@ -20,7 +20,7 @@ import {
   withWarnings,
 } from "./multicam-units";
 import { extractSegments as runFrameWorkerPipeline } from "@kove-advanced/frame-worker";
-import type { ExtractedFrame } from "@kove-advanced/frame-worker";
+import type { ExtractedFrame, VisionWorkerInputSnapshot } from "@kove-advanced/frame-worker";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId, buildDensityContract, EFFECT_PARAM_BLOCK } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
@@ -359,7 +359,10 @@ import type { LottieAnimation } from "@kove-advanced/core/types/lottie";
 import type { MediaItem } from "@kove-advanced/core/types/project";
 import { EASING_TYPES, type EasingType } from "@kove-advanced/core/types/timeline";
 import type {
+  AIInputDirectorRequest,
   EditingHost,
+  OverlayRef,
+  TextOverlayOptions,
   JobKind,
   ExportMotionSceneFormat,
   ExportMotionSceneOptions,
@@ -504,6 +507,122 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 
 function optionalNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+const MAX_TEXT_CLIPS_PER_BATCH = 24;
+const MAX_AI_INPUT_PREVIEW_IMAGES = 24;
+
+function selectVisionInputPreviews(
+  snapshots: readonly VisionWorkerInputSnapshot[],
+): readonly VisionWorkerInputSnapshot[] {
+  const imageRefs = snapshots.flatMap((snapshot, videoIndex) =>
+    snapshot.batches.flatMap((batch, batchIndex) =>
+      batch.images.map((image, imageIndex) => ({ videoIndex, batchIndex, imageIndex, image })),
+    ),
+  );
+  const selected = new Set<number>();
+  const count = Math.min(imageRefs.length, MAX_AI_INPUT_PREVIEW_IMAGES);
+  for (let index = 0; index < count; index += 1) {
+    selected.add(count === 1 ? 0 : Math.round((index * (imageRefs.length - 1)) / (count - 1)));
+  }
+  const selectedByBatch = new Map<string, Set<number>>();
+  [...selected].forEach((index) => {
+    const ref = imageRefs[index];
+    if (!ref) return;
+    const key = `${ref.videoIndex}:${ref.batchIndex}`;
+    const indexes = selectedByBatch.get(key) ?? new Set<number>();
+    indexes.add(ref.imageIndex);
+    selectedByBatch.set(key, indexes);
+  });
+
+  return snapshots.map((snapshot, videoIndex) => ({
+    ...snapshot,
+    batches: snapshot.batches.map((batch, batchIndex) => ({
+      ...batch,
+      images: batch.images.filter((_, imageIndex) =>
+        selectedByBatch.get(`${videoIndex}:${batchIndex}`)?.has(imageIndex) ?? false,
+      ),
+    })),
+  }));
+}
+
+function textOverlayOptions(clip: Record<string, unknown>): TextOverlayOptions {
+  const animationObject = asRecord(clip.animation);
+  const animation =
+    typeof clip.animation === "string"
+      ? clip.animation
+      : typeof animationObject?.type === "string"
+        ? animationObject.type
+        : typeof animationObject?.preset === "string"
+          ? animationObject.preset
+          : undefined;
+  const position = vec2FromObject(clip.position);
+  const animationInSec = optionalNumber(animationObject?.inDuration ?? clip.animationInSec);
+  const animationOutSec = optionalNumber(animationObject?.outDuration ?? clip.animationOutSec);
+
+  return {
+    text: String(clip.text ?? ""),
+    startSec: optionalNumber(clip.startTime) ?? 0,
+    durationSec: optionalNumber(clip.duration) ?? 3,
+    trackId: typeof clip.trackId === "string" ? clip.trackId : undefined,
+    style: asRecord(clip.style),
+    ...(position ? { position } : {}),
+    ...(animation ? { animation } : {}),
+    ...(animationInSec !== undefined ? { animationInSec } : {}),
+    ...(animationOutSec !== undefined ? { animationOutSec } : {}),
+  };
+}
+
+async function createTextClip(
+  clip: Record<string, unknown>,
+  host: EditingHost,
+): Promise<ToolResult> {
+  host.requireOpenProject();
+  const text = typeof clip.text === "string" ? clip.text.trim() : "";
+  if (!text) return fail("clip.text is required", "INVALID_PARAMS");
+
+  if (host.createTextOverlay) {
+    const options = textOverlayOptions(clip);
+    const ref: OverlayRef = await host.createTextOverlay({ ...options, text });
+    return ok(`Created text "${text}"${options.animation ? ` (${options.animation})` : ""}`, ref);
+  }
+
+  const id = typeof clip.id === "string" && clip.id.trim() ? clip.id : genId();
+  const result = await host.applyAction({
+    type: "text/create",
+    id: genId(),
+    timestamp: Date.now(),
+    params: { clip: { ...clip, id, text } },
+  });
+  return result.success
+    ? ok(`Created text "${text}"`, { id, actionId: result.actionId })
+    : fail(result.error?.message ?? "text/create failed", result.error?.code);
+}
+
+async function removeCreatedText(
+  host: EditingHost,
+  ids: readonly string[],
+): Promise<Array<{ readonly id: string; readonly message: string }>> {
+  const failures: Array<{ readonly id: string; readonly message: string }> = [];
+  for (const id of ids) {
+    try {
+      const removed = host.removeOverlay
+        ? await host.removeOverlay("text", id)
+        : (await host.applyAction({
+            type: "text/remove",
+            id: genId(),
+            timestamp: Date.now(),
+            params: { clipId: id },
+          })).success;
+      if (!removed) failures.push({ id, message: "Host did not remove the overlay." });
+    } catch (error) {
+      failures.push({
+        id,
+        message: error instanceof Error ? error.message : "Unknown cleanup error",
+      });
+    }
+  }
+  return failures;
 }
 
 function hashStringToSeed(value: string): number {
@@ -11690,6 +11809,7 @@ async function captureBaselineFrames(
   host: EditingHost,
   mediaId: string,
   duration: number,
+  onProgress?: (completed: number, total: number) => void,
 ): Promise<{ frames: ExtractedFrame[]; firstError?: string }> {
   const frames: ExtractedFrame[] = [];
   const timestamps = budgetedBaselineFrameTimestamps(duration);
@@ -11699,6 +11819,7 @@ async function captureBaselineFrames(
     mediaId,
     timestamps,
     maxWidth: 320,
+    ...(onProgress ? { onProgress } : {}),
   });
   if (batch.ok) {
     const data = batch.data;
@@ -11746,6 +11867,7 @@ async function captureBaselineFrames(
         width: job.data.width,
         height: job.data.height,
       });
+      onProgress?.(frames.length, timestamps.length);
       break;
     }
   }
@@ -16909,46 +17031,136 @@ const TOOLS: RegisteredTool[] = [
     name: "create_text_clip",
     domain: "text",
     title: "Create text",
-    description: "Create a text overlay that renders immediately. Pass { clip: { text, startTime, duration, style?, trackId? } }. A text track is created automatically if needed.",
+    description: "Create one text overlay. For multiple separate overlays, prefer create_text_clips so they are added in one tool call. Pass { clip: { text, startTime, duration, style?, position?, animation?, trackId? } }.",
     inputSchema: obj({ clip: { type: "object" } }, ["clip"]),
     readOnly: false,
     destructive: false,
     expensive: false,
+    handler: async (args, host) => createTextClip(asRecord(args.clip) ?? {}, host),
+  },
+  {
+    name: "create_text_clips",
+    domain: "text",
+    title: "Create multiple text overlays",
+    description:
+      `Create a batch of 1-${MAX_TEXT_CLIPS_PER_BATCH} text overlays in one tool call. Use this instead of repeated create_text_clip calls. Use one clip per readable phrase or title, not one clip per word. Each item: { text, startTime, duration, style?, position?, animation?, animationInSec?, animationOutSec?, trackId? }. A text track is created automatically if needed.`,
+    inputSchema: {
+      type: "object",
+      properties: {
+        clips: {
+          type: "array",
+          minItems: 1,
+          maxItems: MAX_TEXT_CLIPS_PER_BATCH,
+          items: {
+            type: "object",
+            properties: {
+              text: { type: "string" },
+              startTime: { type: "number" },
+              duration: { type: "number" },
+              style: { type: "object" },
+              position: {
+                type: "object",
+                properties: { x: { type: "number" }, y: { type: "number" } },
+                required: ["x", "y"],
+                additionalProperties: false,
+              },
+              animation: { type: "string" },
+              animationInSec: { type: "number" },
+              animationOutSec: { type: "number" },
+              trackId: { type: "string" },
+            },
+            required: ["text", "startTime", "duration"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["clips"],
+      additionalProperties: false,
+    },
+    readOnly: false,
+    destructive: false,
+    expensive: false,
+    strict: true,
     handler: async (args, host) => {
       host.requireOpenProject();
-      const clip = (args.clip ?? {}) as Record<string, unknown>;
-      const text = String(clip.text ?? "");
-      if (!text) return fail("clip.text is required", "INVALID_PARAMS");
-      if (typeof host.createTextOverlay === "function") {
-        const animObj = (clip.animation ?? {}) as Record<string, unknown>;
-        const animation =
-          typeof clip.animation === "string"
-            ? clip.animation
-            : typeof animObj.type === "string"
-              ? animObj.type
-              : typeof animObj.preset === "string"
-                ? animObj.preset
-                : undefined;
-        const ref = await host.createTextOverlay({
-          text,
-          startSec: typeof clip.startTime === "number" ? clip.startTime : 0,
-          durationSec: typeof clip.duration === "number" ? clip.duration : 3,
-          trackId: typeof clip.trackId === "string" ? clip.trackId : undefined,
-          style: (clip.style as Record<string, unknown>) ?? undefined,
-          animation,
-        });
-        return ok(`Created text "${text}"${animation ? ` (${animation})` : ""}`, ref);
+      const clips = args.clips;
+      if (
+        !Array.isArray(clips) ||
+        clips.length === 0 ||
+        clips.length > MAX_TEXT_CLIPS_PER_BATCH
+      ) {
+        return fail(
+          `clips must contain 1-${MAX_TEXT_CLIPS_PER_BATCH} overlays.`,
+          "INVALID_PARAMS",
+        );
       }
-      const action: Action = {
-        type: "text/create",
-        id: genId(),
-        timestamp: Date.now(),
-        params: { clip },
-      };
-      const result = await host.applyAction(action);
-      return result.success
-        ? ok(`Created text "${text}"`, { actionId: result.actionId })
-        : fail(result.error?.message ?? "text/create failed", result.error?.code);
+
+      const invalidIndex = clips.findIndex((value) => {
+        const clip = asRecord(value);
+        const duration = optionalNumber(clip?.duration);
+        return (
+          !clip ||
+          typeof clip.text !== "string" ||
+          !clip.text.trim() ||
+          optionalNumber(clip.startTime) === undefined ||
+          duration === undefined ||
+          duration <= 0
+        );
+      });
+      if (invalidIndex >= 0) {
+        return fail(
+          `Text overlay ${invalidIndex + 1} needs non-empty text, a numeric startTime, and positive duration.`,
+          "INVALID_PARAMS",
+        );
+      }
+
+      const created: Array<{ readonly id: string; readonly text: string }> = [];
+      try {
+        for (const value of clips) {
+          const clip = asRecord(value)!;
+          const result = await createTextClip(clip, host);
+          if (!result.ok) {
+            const cleanupFailures = await removeCreatedText(
+              host,
+              created.map((entry) => entry.id),
+            );
+            const cleanup = cleanupFailures.length > 0
+              ? ` Cleanup failed: ${cleanupFailures.map(({ id, message }) => `${id}: ${message}`).join("; ")}.`
+              : "";
+            return fail(
+              `Text batch failed after ${created.length}/${clips.length} overlays: ${result.summary}.${cleanup}`,
+              "TEXT_BATCH_FAILED",
+              { created, cleanupFailures },
+            );
+          }
+          const data = asRecord(result.data);
+          const id = typeof data?.id === "string" ? data.id : undefined;
+          if (!id) {
+            const cleanupFailures = await removeCreatedText(
+              host,
+              created.map((entry) => entry.id),
+            );
+            return fail(
+              `Text batch created ${created.length + 1} overlay(s), but could not recover the new overlay ID.${cleanupFailures.length > 0 ? ` Cleanup failed: ${cleanupFailures.map(({ id, message }) => `${id}: ${message}`).join("; ")}.` : ""}`,
+              "TEXT_BATCH_FAILED",
+              { created, cleanupFailures },
+            );
+          }
+          created.push({ id, text: String(clip.text) });
+        }
+      } catch (error) {
+        const cleanupFailures = await removeCreatedText(
+          host,
+          created.map((entry) => entry.id),
+        );
+        const message = error instanceof Error ? error.message : "Unknown overlay creation error";
+        return fail(
+          `Text batch failed after ${created.length}/${clips.length} overlays: ${message}.${cleanupFailures.length > 0 ? ` Cleanup failed: ${cleanupFailures.map(({ id, message }) => `${id}: ${message}`).join("; ")}.` : ""}`,
+          "TEXT_BATCH_FAILED",
+          { created, cleanupFailures },
+        );
+      }
+      return ok(`Created ${created.length} text overlays in one batch.`, { created });
     },
   },
   {
@@ -33532,6 +33744,23 @@ const TOOLS: RegisteredTool[] = [
           return m ? `"${m.name}" (${id})` : id;
         }).join(", ");
 
+        host.reportAIInputTrace?.({
+          vision: {
+            worker: "metadata-only",
+            frameCount: 0,
+            videos: videos.map((video) => ({
+              videoId: video.videoId,
+              name: mediaMap.get(video.videoId)?.name ?? video.videoId,
+              duration: video.duration,
+              frameCount: 0,
+              batches: [],
+            })),
+            segmentMap: transcriptResult.segmentMap,
+            referenceAnalysis,
+            note: "No frame images were available; this map was built from media metadata.",
+          },
+        });
+
         return ok(
           `extract_segments: generated basic SegmentMap for ${videoMediaIds.length} video(s) [${videoList}] (vision worker not available and local Python analysis engine unreachable — using metadata only). ${transcriptResult.warnings.length ? transcriptResult.warnings.join(" ") : "Local transcript evidence added where available."}`,
           { segmentMap: transcriptResult.segmentMap, referenceAnalysis, videoCount: videoMediaIds.length, totalSegments: videos.length, frameCount: 0, videoMediaIds, transcriptWarnings: transcriptResult.warnings },
@@ -33556,7 +33785,20 @@ const TOOLS: RegisteredTool[] = [
         if (media.type !== "video") return fail(`Media id "${id}" is type "${media.type}", not video`, "INVALID_MEDIA");
 
         const duration = media.metadata.duration;
-        const { frames, firstError } = await captureBaselineFrames(host, id, duration);
+        const name = media.name ?? id;
+        host.reportAIInputTrace?.({
+          progress: `Extracting frames from ${name} (${videoInputs.length + 1}/${videoMediaIds.length})`,
+        });
+        const { frames, firstError } = await captureBaselineFrames(
+          host,
+          id,
+          duration,
+          (completed, total) => {
+            host.reportAIInputTrace?.({
+              progress: `Extracting frames from ${name} (${videoInputs.length + 1}/${videoMediaIds.length}): ${completed}/${total}`,
+            });
+          },
+        );
         if (frames.length === 0) {
           const hint = firstError
             ? ` (job error: ${firstError})`
@@ -33568,14 +33810,31 @@ const TOOLS: RegisteredTool[] = [
 
       const visionUrl = _analysisMode === "ai" ? VISION_WORKER_URL : null;
       const primaryUrl = visionUrl ?? LOCAL_ANALYZER_URL;
+      host.reportAIInputTrace?.({
+        progress: `Sending ${videoInputs.reduce((sum, video) => sum + video.frames.length, 0)} sampled frame(s) to ${visionUrl ? "the vision worker" : "the local Python analyzer"}`,
+      });
       let result: Awaited<ReturnType<typeof runFrameWorkerPipeline>>;
+      let actualWorker: "vision-worker" | "local-analyzer" = visionUrl
+        ? "vision-worker"
+        : "local-analyzer";
+      const visionInputSnapshots: VisionWorkerInputSnapshot[] = [];
       try {
-        result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl: primaryUrl });
+        result = await runFrameWorkerPipeline({
+          videos: videoInputs,
+          workerUrl: primaryUrl,
+          onVisionInput: (snapshot) => visionInputSnapshots.push(snapshot),
+        });
       } catch (error) {
         if (!visionUrl) throw error;
         const detail = error instanceof Error ? error.message : String(error);
         analysisNote = `AI vision didn't work (${detail}) — local Python analysis engine used instead.`;
-        result = await runFrameWorkerPipeline({ videos: videoInputs, workerUrl: LOCAL_ANALYZER_URL });
+        actualWorker = "local-analyzer";
+        visionInputSnapshots.length = 0;
+        result = await runFrameWorkerPipeline({
+          videos: videoInputs,
+          workerUrl: LOCAL_ANALYZER_URL,
+          onVisionInput: (snapshot) => visionInputSnapshots.push(snapshot),
+        });
       }
       const sourceIds = new Set(sourceMediaIds);
       const sourceSegmentMap = {
@@ -33593,6 +33852,40 @@ const TOOLS: RegisteredTool[] = [
           role: referenceMediaIds.has(video.videoId) ? "reference" : "source",
         })),
       };
+      const previewSnapshots = selectVisionInputPreviews(visionInputSnapshots);
+      host.reportAIInputTrace?.({
+        progress: `Vision analysis complete: ${result.frameCount} frame(s), ${transcriptResult.segmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0)} segment(s)`,
+      });
+      host.reportAIInputTrace?.({
+        vision: {
+          worker: actualWorker,
+          frameCount: result.frameCount,
+          videos: previewSnapshots.map((snapshot) => {
+            const media = mediaMap.get(snapshot.videoId);
+            return {
+              videoId: snapshot.videoId,
+              name: media?.name ?? snapshot.videoId,
+              duration: snapshot.duration,
+              frameCount: snapshot.frameCount,
+              batches: snapshot.batches.map((batch) => ({
+                batchIndex: batch.batchIndex,
+                sourceTimestamps: batch.sourceTimestamps,
+                imageCount: batch.imageCount,
+                images: batch.images.map((image) => ({
+                  timestamp: image.timestamp,
+                  width: image.width,
+                  height: image.height,
+                  imageDataBase64: image.imageData,
+                })),
+                ...(batch.mosaic ? { mosaic: batch.mosaic } : {}),
+              })),
+            };
+          }),
+          segmentMap: transcriptResult.segmentMap,
+          referenceAnalysis,
+          ...(analysisNote ? { note: analysisNote } : {}),
+        },
+      });
 
       // Build a user-friendly video list for the response
       const videoList = videoMediaIds.map((id) => {
@@ -33958,6 +34251,7 @@ const TOOLS: RegisteredTool[] = [
           ? toAnthropicTools(["submit_edit_plan"])
           : toOpenAITools(["submit_edit_plan"]);
 
+      const directorRequests: AIInputDirectorRequest[] = [];
       const requestPlan = async (system: string, messages: LoopMessage[]) => {
         // Workers AI intermittently 408s/fetch-drops on long generations;
         // retries with a compactness steer and shrinking token caps turn a
@@ -33965,16 +34259,28 @@ const TOOLS: RegisteredTool[] = [
         // it would just burn the clock until the report excludes it.
         let attemptMessages = messages;
         for (let attempt = 0; ; attempt++) {
+          const maxTokens =
+            attempt === 0
+              ? DIRECTOR_PLAN_MAX_TOKENS
+              : DIRECTOR_PLAN_RETRY_TOKENS[
+                  Math.min(attempt - 1, DIRECTOR_PLAN_RETRY_TOKENS.length - 1)
+                ];
+          const request: AIInputDirectorRequest = {
+            system,
+            messages: attemptMessages,
+            tools: planTools,
+            maxTokens,
+          };
+          directorRequests.push(request);
+          host.reportAIInputTrace?.({
+            director: {
+              provider: host.llm!.provider,
+              segmentMap: resolvedMap,
+              requests: [...directorRequests],
+            },
+          });
           try {
-            return await host.llm!.client.complete({
-              system,
-              messages: attemptMessages,
-              tools: planTools,
-              maxTokens:
-                attempt === 0
-                  ? DIRECTOR_PLAN_MAX_TOKENS
-                  : DIRECTOR_PLAN_RETRY_TOKENS[Math.min(attempt - 1, DIRECTOR_PLAN_RETRY_TOKENS.length - 1)],
-            });
+            return await host.llm!.client.complete(request);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             const quota = /quota|allocation|used up|429|code.?:?4006/i.test(message);

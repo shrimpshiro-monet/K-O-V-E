@@ -86,17 +86,14 @@ interface ActionParam {
 const fieldHandlerParams = new Map<string, string>();
 
 /**
- * Fields a plan review reads. `minimumMotionMoments` and
- * `minimumOnBeatCutRatio` are optional in the schema and the slow preset omits
- * the former, so the docs must not assume they are present.
+ * Fields a plan review reads. Camera movement is optional rather than a quota;
+ * minimumMotionMoments and minimumOnBeatCutRatio are optional in the schema.
  */
 const REQUIRED_DENSITY_FIELDS = [
   "shotsPerMinute",
   "effectHitsPerMinute",
   "minimumEffectTypes",
   "minimumTreatedShotRatio",
-  "minimumCameraMoveRatio",
-  "minimumCameraMoveVariety",
   "minimumSpeedRamps",
   "textsPerMinute",
   "minimumTextAnimations",

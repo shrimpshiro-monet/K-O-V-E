@@ -21,7 +21,7 @@ export * from "./llm";
 export * from "./fallback";
 export * from "./providers/omniroute";
 export * from "./providers/workers-ai";
-export { runTurn } from "./loop";
+export { isDirectorRequest, runTurn } from "./loop";
 export type { RunTurnInput, RunTurnResult, StopReason } from "./loop";
 export { buildSystemPrompt } from "./system-prompt";
 export { selectToolsForPrompt, DEFAULT_AGENT_TOOL_LIMIT } from "./tool-router";

@@ -1,0 +1,716 @@
+.
+├── AGENTS.md
+├── AI_DIRECTOR_FLOW.md
+├── ARCHITECTURE.md
+├── ASTRYX.md
+├── CONTRIBUTING.md
+├── DESIGN_LANGUAGE_FILES.md
+├── EDITING-SURFACE.md
+├── KOVE_ADVANCED_HANDBOFF.md
+├── LICENSE
+├── Openreel Video
+│   └── Openreel Video.xcodeproj
+│       ├── project.xcworkspace
+│       │   └── xcuserdata
+│       └── xcuserdata
+│           └── augustusotu.xcuserdatad
+├── README.md
+├── UI_CATALOG.md
+├── agent-reach-venv
+│   ├── bin
+│   │   ├── Activate.ps1
+│   │   ├── activate
+│   │   ├── activate.csh
+│   │   ├── activate.fish
+│   │   ├── agent-reach
+│   │   ├── dotenv
+│   │   ├── fastapi
+│   │   ├── httpx
+│   │   ├── idna
+│   │   ├── markdown-it
+│   │   ├── mid3cp
+│   │   ├── mid3iconv
+│   │   ├── mid3v2
+│   │   ├── moggsplit
+│   │   ├── mutagen-inspect
+│   │   ├── mutagen-pony
+│   │   ├── normalizer
+│   │   ├── pip
+│   │   ├── pip3
+│   │   ├── pip3.12
+│   │   ├── py.test
+│   │   ├── pygmentize
+│   │   ├── pytest
+│   │   ├── python -> python3.12
+│   │   ├── python3 -> python3.12
+│   │   ├── python3.12 -> /Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12
+│   │   ├── websockets
+│   │   └── yt-dlp
+│   ├── include
+│   │   └── python3.12
+│   ├── lib
+│   │   └── python3.12
+│   │       └── site-packages
+│   ├── pyvenv.cfg
+│   └── share
+│       ├── bash-completion
+│       │   └── completions
+│       ├── doc
+│       │   └── yt_dlp
+│       ├── fish
+│       │   └── vendor_completions.d
+│       ├── man
+│       │   └── man1
+│       └── zsh
+│           └── site-functions
+├── apps
+│   ├── desktop
+│   │   ├── DISTRIBUTION.md
+│   │   ├── LICENSES
+│   │   │   ├── BLENDER.md
+│   │   │   ├── FFMPEG.md
+│   │   │   ├── GPL-2.0.txt
+│   │   │   └── GPL-3.0.txt
+│   │   ├── RIGGING.md
+│   │   ├── build
+│   │   │   ├── entitlements.mac.plist
+│   │   │   └── icon.png
+│   │   ├── electron-builder.yml
+│   │   ├── package.json
+│   │   ├── resources
+│   │   │   ├── aurora
+│   │   │   ├── bin
+│   │   │   └── rigging
+│   │   ├── scripts
+│   │   │   ├── build-manifest.mjs
+│   │   │   ├── fetch-ffmpeg.mjs
+│   │   │   └── prepare-aurora-native.mjs
+│   │   ├── src
+│   │   │   ├── aurora-host
+│   │   │   ├── main
+│   │   │   ├── mcp-shim
+│   │   │   ├── preload
+│   │   │   └── shared
+│   │   ├── test
+│   │   │   ├── app-menu.test.ts
+│   │   │   ├── aurora-fixture.ts
+│   │   │   ├── aurora-golden.test.ts
+│   │   │   ├── aurora-preview-session.test.ts
+│   │   │   ├── aurora-render-preview.test.ts
+│   │   │   ├── aurora-sequence-session.test.ts
+│   │   │   ├── blender-path.test.ts
+│   │   │   ├── build-args.test.ts
+│   │   │   ├── cfr.test.ts
+│   │   │   ├── cloud-fetch.test.ts
+│   │   │   ├── encode-args.test.ts
+│   │   │   ├── encoder-probe.test.ts
+│   │   │   ├── export-integration.test.ts
+│   │   │   ├── ffmpeg-path.test.ts
+│   │   │   ├── fs-writer.test.ts
+│   │   │   ├── goldens
+│   │   │   ├── gpu-cache-migration.test.ts
+│   │   │   ├── hardware.test.ts
+│   │   │   ├── ipc-contract.test.ts
+│   │   │   ├── keychain.test.ts
+│   │   │   ├── media-integration.test.ts
+│   │   │   ├── media-job.test.ts
+│   │   │   ├── parity.md
+│   │   │   ├── probe-streams.test.ts
+│   │   │   ├── progress-parse.test.ts
+│   │   │   ├── rigging-backend.test.ts
+│   │   │   └── window-controls.test.ts
+│   │   ├── tsconfig.json
+│   │   └── tsup.config.ts
+│   ├── image
+│   │   ├── eslint.config.js
+│   │   ├── index.html
+│   │   ├── package.json
+│   │   ├── postcss.config.js
+│   │   ├── public
+│   │   │   ├── favicon.svg
+│   │   │   ├── manifest.json
+│   │   │   └── sw.js
+│   │   ├── src
+│   │   │   ├── App.tsx
+│   │   │   ├── adjustments
+│   │   │   ├── app.test.ts
+│   │   │   ├── components
+│   │   │   ├── effects
+│   │   │   ├── filters
+│   │   │   ├── hooks
+│   │   │   ├── index.css
+│   │   │   ├── main.tsx
+│   │   │   ├── services
+│   │   │   ├── stores
+│   │   │   ├── test
+│   │   │   ├── tools
+│   │   │   ├── types
+│   │   │   ├── utils
+│   │   │   └── vite-env.d.ts
+│   │   ├── tailwind.config.js
+│   │   ├── tsconfig.json
+│   │   ├── vite.config.ts
+│   │   └── vitest.config.ts
+│   ├── studio
+│   │   ├── e2e
+│   │   │   └── effect.spec.ts
+│   │   ├── eslint.config.js
+│   │   ├── index.html
+│   │   ├── package.json
+│   │   ├── playwright.config.ts
+│   │   ├── postcss.config.js
+│   │   ├── public
+│   │   │   ├── favicon.svg
+│   │   │   └── samples
+│   │   ├── src
+│   │   │   ├── App.tsx
+│   │   │   ├── commands.tsx
+│   │   │   ├── components
+│   │   │   ├── data.ts
+│   │   │   ├── effect
+│   │   │   ├── filter
+│   │   │   ├── hub
+│   │   │   ├── icons.tsx
+│   │   │   ├── index.css
+│   │   │   ├── lib
+│   │   │   ├── main.tsx
+│   │   │   ├── publish
+│   │   │   ├── test
+│   │   │   └── tutorials
+│   │   ├── tailwind.config.js
+│   │   ├── test-results
+│   │   │   ├── histogram-diff-Real-Histog-2edb1-orks-with-real-browser-APIs
+│   │   │   └── histogram-diff-Real-Histog-bbc02-n-visually-different-frames
+│   │   ├── tsconfig.json
+│   │   ├── vite.config.ts
+│   │   └── vitest.config.ts
+│   └── web
+│       ├── components.json
+│       ├── e2e
+│       │   ├── README.md
+│       │   ├── asset-server.mjs
+│       │   ├── fixtures
+│       │   ├── setup-assets.mjs
+│       │   ├── stub-segmenter-runtime.cjs
+│       │   └── vision.spec.ts
+│       ├── eslint.config.js
+│       ├── functions
+│       │   └── api
+│       ├── index.html
+│       ├── package.json
+│       ├── playwright.config.ts
+│       ├── postcss.config.js
+│       ├── public
+│       │   ├── _headers
+│       │   ├── _redirects
+│       │   ├── backdrop
+│       │   ├── favicon.svg
+│       │   ├── fonts
+│       │   ├── manifest.json
+│       │   ├── sw.js
+│       │   └── workers
+│       ├── scripts
+│       │   ├── check-desktop-bundle.mjs
+│       │   ├── smoke-render-timeline-frame.md
+│       │   └── vendor-fonts.mjs
+│       ├── src
+│       │   ├── App.test.tsx
+│       │   ├── App.tsx
+│       │   ├── bridges
+│       │   ├── components
+│       │   ├── config
+│       │   ├── desktop
+│       │   ├── hooks
+│       │   ├── index.css
+│       │   ├── main.tsx
+│       │   ├── motion
+│       │   ├── pages
+│       │   ├── services
+│       │   ├── stores
+│       │   ├── styles
+│       │   ├── test
+│       │   ├── types
+│       │   ├── utils
+│       │   └── workers
+│       ├── tailwind.config.js
+│       ├── tsconfig.json
+│       ├── vite-plugins
+│       │   ├── prune-fonts.test.ts
+│       │   ├── prune-fonts.ts
+│       │   ├── strip-ffmpeg.test.ts
+│       │   └── strip-ffmpeg.ts
+│       ├── vite.config.ts
+│       ├── vitest.config.ts
+│       └── wrangler.toml
+├── arena-env-setup.sh
+├── bun.lock
+├── captain price (2nd priority).MP4
+├── creating-views
+│   ├── README.md
+│   └── project
+│       ├── Editor (standalone).html
+│       ├── Editor.dc.html
+│       ├── support.js
+│       └── uploads
+│           ├── f6f4c71a91611d33b121d1d4d94ec5d7f46a9f66e1f6c9109147666c51795e4e.PNG
+│           └── weee.png
+├── current-editor-empty.png
+├── docs
+│   ├── AGENT-CAPABILITIES.md
+│   ├── AGENT-GUIDE.md
+│   ├── AGENT-LOUDNESS.md
+│   ├── AGENT-RENDER.md
+│   ├── AGENT-SCHEMA-VALIDATION.md
+│   ├── AGENT-TOOL-AUDIT.md
+│   ├── AGENT-UX-TESTING.md
+│   ├── AGENT-VISION.md
+│   ├── AUTH-BROKER.md
+│   └── superpowers
+│       ├── plans
+│       │   ├── 2026-09-09-python-engine-integration.md
+│       │   └── 2026-09-09-python-video-analysis-engine.md
+│       └── specs
+│           ├── 2026-09-09-python-engine-integration-design.md
+│           └── 2026-09-09-python-video-analysis-engine-design.md
+├── e2e-harness
+│   ├── GENRE-COMBO-CLOSURE.md
+│   ├── PARITY-MATRIX.md
+│   ├── bootstrap.sh
+│   ├── export-verify-motion.cjs
+│   ├── export-verify.cjs
+│   ├── hue-verify.cjs
+│   ├── llm-stub.mjs
+│   ├── probe-render.cjs
+│   ├── run.cjs
+│   └── verify-render.cjs
+├── evaluation-files
+│   ├── 2025 Italian Grand Prix Highlights.mp4
+│   ├── Bad Bunny's Apple Music Super Bowl Halftime Show.mp4
+│   ├── High Quality Steph Curry Clips for Edits! (2024-25).mp4
+│   ├── Kendrick Lamar's Apple Music Super Bowl Halftime Show.mp4
+│   ├── MikeRoss.mp4
+│   ├── README.md
+│   ├── Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4
+│   ├── audio
+│   │   ├── 21 Savage - a lot ft. J. Cole.mp3
+│   │   ├── Dave - Raindance (ft. Tems).mp3
+│   │   ├── Outfit (with 21 Savage).mp3
+│   │   └── Timeless (w_ adlibs).mp3
+│   ├── baseline-r1-include-18.json
+│   ├── baseline-r1-include-27.json
+│   ├── baseline-r1-include-27.json.failures
+│   │   ├── game-01
+│   │   │   └── game-01-vague#run0.json
+│   │   ├── multi-01
+│   │   │   ├── multi-01-detailed#run0.json
+│   │   │   └── multi-01-genre#run0.json
+│   │   ├── multi-02
+│   │   │   └── multi-02-vague#run0.json
+│   │   ├── multi-03
+│   │   │   └── multi-03-genre#run0.json
+│   │   ├── pod-02
+│   │   │   └── pod-02-vague#run0.json
+│   │   └── sport-01
+│   │       ├── sport-01-detailed#run0.json
+│   │       └── sport-01-genre#run0.json
+│   ├── baseline-r1-include-4.json
+│   ├── baseline-r1-include-4.json.failures
+│   │   ├── multi-01
+│   │   │   ├── multi-01-detailed#run0.json
+│   │   │   └── multi-01-genre#run0.json
+│   │   └── pod-02
+│   │       └── pod-02-vague#run0.json
+│   ├── baseline-r2-include-1.json
+│   ├── baseline-r2-include-1.json.failures
+│   │   └── multi-01
+│   │       └── multi-01-detailed#run0.json
+│   ├── baseline-r2-include-8.json
+│   ├── baseline-r2-include-8.json.failures
+│   │   ├── game-01
+│   │   │   └── game-01-vague#run0.json
+│   │   ├── multi-01
+│   │   │   ├── multi-01-detailed#run0.json
+│   │   │   ├── multi-01-detailed#run1.json
+│   │   │   ├── multi-01-genre#run0.json
+│   │   │   └── multi-01-genre#run1.json
+│   │   ├── multi-02
+│   │   │   ├── multi-02-vague#run0.json
+│   │   │   └── multi-02-vague#run1.json
+│   │   ├── multi-03
+│   │   │   ├── multi-03-genre#run0.json
+│   │   │   └── multi-03-genre#run1.json
+│   │   ├── pod-02
+│   │   │   └── pod-02-vague#run0.json
+│   │   └── sport-01
+│   │       └── sport-01-genre#run0.json
+│   ├── baseline-smoke.json
+│   ├── baseline-v0.json
+│   ├── baseline-v0.json.failures
+│   │   ├── game-01
+│   │   │   └── game-01-detailed#run0.json
+│   │   ├── multi-02
+│   │   │   └── multi-02-vague#run0.json
+│   │   ├── multi-03
+│   │   │   └── multi-03-vague#run0.json
+│   │   ├── pod-01
+│   │   │   └── pod-01-vague#run0.json
+│   │   ├── pod-02
+│   │   │   └── pod-02-detailed#run0.json
+│   │   └── sport-02
+│   │       └── sport-02-genre#run0.json
+│   ├── eval-live-stub-report.json
+│   ├── generate-assets.mjs
+│   ├── media
+│   │   ├── cam-a.mp4
+│   │   ├── cam-b.mp4
+│   │   ├── gameplay-a.mp4
+│   │   ├── gameplay-b.mp4
+│   │   ├── keynote.mp4
+│   │   ├── screen-cap.mp4
+│   │   ├── sprint.mp4
+│   │   ├── stream-cam.mp4
+│   │   ├── stream-game.mp4
+│   │   └── talking-head.mp4
+│   ├── milesmorales.mp4.mp4
+│   ├── music
+│   │   ├── piano-bed.mp3
+│   │   └── synth-loop.mp3
+│   ├── podcast #1.mp4
+│   ├── podcast 2.mp4
+│   ├── projects.json
+│   ├── reference
+│   │   ├── ref-documentary.mp4
+│   │   └── ref-highlight.mp4
+│   └── reference videos (priority, needs to look LIKE or BETTER than)
+│       ├── SPIDERMAN (IMPORTANT).MP4
+│       ├── captain price (2nd priority).MP4
+│       └── steph curry.MP4
+├── infra
+│   ├── cloudflare
+│   │   ├── openreel-r2-cors.json
+│   │   └── whisper-tiny-r2.md
+│   └── transcribe-gpu
+│       ├── Dockerfile
+│       ├── Dockerfile.cpu
+│       ├── docker-compose.cpu.yml
+│       ├── docker-compose.yml
+│       ├── main.py
+│       ├── requirements.txt
+│       └── setup.sh
+├── llm.txt
+├── logs
+│   ├── Screenshot 2026-09-13 at 20.44.15.png
+│   ├── Screenshot 2026-09-15 at 10.15.38.png
+│   └── Screenshot 2026-09-15 at 10.17.41.png
+├── mediabunny.d.ts
+├── monet-kove-flow-spec.md
+├── motion-baseline.png
+├── package.json
+├── packages
+│   ├── agent
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── checkpoints.test.ts
+│   │   │   ├── checkpoints.ts
+│   │   │   ├── creation-product-motion.test.ts
+│   │   │   ├── creation-product-motion.ts
+│   │   │   ├── director
+│   │   │   ├── editing-surface.test.ts
+│   │   │   ├── eval
+│   │   │   ├── executor.test.ts
+│   │   │   ├── executor.ts
+│   │   │   ├── gen-docs-cli.ts
+│   │   │   ├── gen-docs.test.ts
+│   │   │   ├── gen-docs.ts
+│   │   │   ├── headless-host.test.ts
+│   │   │   ├── headless-host.ts
+│   │   │   ├── host-history-contract.ts
+│   │   │   ├── host-history.headless.test.ts
+│   │   │   ├── host.ts
+│   │   │   ├── index.ts
+│   │   │   ├── llm.test.ts
+│   │   │   ├── llm.ts
+│   │   │   ├── loop-budget.test.ts
+│   │   │   ├── loop-toolcap.test.ts
+│   │   │   ├── loop.test.ts
+│   │   │   ├── loop.ts
+│   │   │   ├── measure-export.test.ts
+│   │   │   ├── motion-scene3d-lighting.test.ts
+│   │   │   ├── multicam-units.ts
+│   │   │   ├── observability.test.ts
+│   │   │   ├── observability.ts
+│   │   │   ├── registry-lifecycle.test.ts
+│   │   │   ├── registry.action-catalog.test.ts
+│   │   │   ├── registry.ai-shader.test.ts
+│   │   │   ├── registry.behind-subject-boundary.test.ts
+│   │   │   ├── registry.comp-level.test.ts
+│   │   │   ├── registry.effect-keyframe.test.ts
+│   │   │   ├── registry.effect-reorder-ripple.test.ts
+│   │   │   ├── registry.export.test.ts
+│   │   │   ├── registry.expression.test.ts
+│   │   │   ├── registry.fingerprint.test.ts
+│   │   │   ├── registry.intensity-synthesis.test.ts
+│   │   │   ├── registry.layer-ops.test.ts
+│   │   │   ├── registry.mask-path.test.ts
+│   │   │   ├── registry.multicam-units.test.ts
+│   │   │   ├── registry.multicam.test.ts
+│   │   │   ├── registry.paper-shaders.test.ts
+│   │   │   ├── registry.parity-widening.test.ts
+│   │   │   ├── registry.paths-kf.test.ts
+│   │   │   ├── registry.render-queue.test.ts
+│   │   │   ├── registry.roving.test.ts
+│   │   │   ├── registry.scene3d-edit.test.ts
+│   │   │   ├── registry.shaders.test.ts
+│   │   │   ├── registry.shape-contents.test.ts
+│   │   │   ├── registry.test.ts
+│   │   │   ├── registry.text-expr.test.ts
+│   │   │   ├── registry.text-shader.test.ts
+│   │   │   ├── registry.ts
+│   │   │   ├── registry.video-shader-effect.test.ts
+│   │   │   ├── registry.wiring.test.ts
+│   │   │   ├── retry.test.ts
+│   │   │   ├── schema-conformance.test.ts
+│   │   │   ├── schema-legacy-tools.json
+│   │   │   ├── schema-validate.test.ts
+│   │   │   ├── schema-validate.ts
+│   │   │   ├── serialize-paging.test.ts
+│   │   │   ├── serialize.ts
+│   │   │   ├── subagents.test.ts
+│   │   │   ├── subagents.ts
+│   │   │   ├── system-prompt.ts
+│   │   │   ├── test-fixtures.ts
+│   │   │   ├── tool-reachability.test.ts
+│   │   │   ├── tool-router.test.ts
+│   │   │   ├── tool-router.ts
+│   │   │   ├── tools-audio-analysis.test.ts
+│   │   │   ├── tools-audio-analysis.ts
+│   │   │   ├── tools-discovery.ts
+│   │   │   ├── tools-history.ts
+│   │   │   ├── tools-render.test.ts
+│   │   │   ├── tools-render.ts
+│   │   │   ├── tools-subagents.ts
+│   │   │   ├── tools-vision.test.ts
+│   │   │   ├── tools-vision.ts
+│   │   │   └── types.ts
+│   │   ├── tsconfig.json
+│   │   └── vitest.config.ts
+│   ├── agent-runner
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── cli.ts
+│   │   │   ├── evals
+│   │   │   ├── export-queue.test.ts
+│   │   │   ├── export-queue.ts
+│   │   │   ├── index.ts
+│   │   │   ├── node-llm.test.ts
+│   │   │   ├── node-llm.ts
+│   │   │   ├── project-io.test.ts
+│   │   │   ├── project-io.ts
+│   │   │   ├── run.test.ts
+│   │   │   └── run.ts
+│   │   ├── tsconfig.json
+│   │   └── tsup.config.ts
+│   ├── core
+│   │   ├── package.json
+│   │   ├── scripts
+│   │   │   └── loudness-oracle.py
+│   │   ├── src
+│   │   │   ├── actions
+│   │   │   ├── ai
+│   │   │   ├── animation
+│   │   │   ├── audio
+│   │   │   ├── capabilities
+│   │   │   ├── creation
+│   │   │   ├── device
+│   │   │   ├── editing-templates
+│   │   │   ├── effects
+│   │   │   ├── export
+│   │   │   ├── graphics
+│   │   │   ├── index.ts
+│   │   │   ├── media
+│   │   │   ├── motion
+│   │   │   ├── multicam
+│   │   │   ├── photo
+│   │   │   ├── playback
+│   │   │   ├── qc
+│   │   │   ├── storage
+│   │   │   ├── template
+│   │   │   ├── test
+│   │   │   ├── text
+│   │   │   ├── timeline
+│   │   │   ├── types
+│   │   │   ├── utils
+│   │   │   ├── video
+│   │   │   └── wasm
+│   │   ├── tsconfig.json
+│   │   ├── tsconfig.tsbuildinfo
+│   │   └── vitest.config.ts
+│   ├── creation-agent
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── index.ts
+│   │   │   ├── tools.test.ts
+│   │   │   ├── tools.ts
+│   │   │   └── types.ts
+│   │   └── tsconfig.json
+│   ├── creation-bindings
+│   │   ├── native
+│   │   │   ├── addon.c
+│   │   │   └── binding.gyp
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── index.test.ts
+│   │   │   ├── index.ts
+│   │   │   └── wasm.ts
+│   │   ├── tsconfig.json
+│   │   └── wasm
+│   │       └── creation_core.wat
+│   ├── creation-core
+│   │   ├── CMakeLists.txt
+│   │   ├── README.md
+│   │   ├── include
+│   │   │   └── creation_core.h
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── aurora_renderer.cpp
+│   │   │   └── creation_core.cpp
+│   │   └── tests
+│   │       └── test_creation_core.cpp
+│   ├── creation-schema
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── director
+│   │   │   ├── index.ts
+│   │   │   ├── primitives.ts
+│   │   │   ├── product-cinematic.test.ts
+│   │   │   ├── product-cinematic.ts
+│   │   │   ├── types.ts
+│   │   │   └── validate.ts
+│   │   └── tsconfig.json
+│   ├── frame-worker
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── frame-extraction.test.ts
+│   │   │   ├── frame-extraction.ts
+│   │   │   ├── index.ts
+│   │   │   └── worker.ts
+│   │   ├── test
+│   │   │   └── frame-extraction.test.ts
+│   │   ├── tsconfig.json
+│   │   └── wrangler.toml
+│   ├── fxpkg
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── abi.ts
+│   │   │   ├── blueprints.ts
+│   │   │   ├── compiler
+│   │   │   ├── domain.ts
+│   │   │   ├── fxpkg.test.ts
+│   │   │   ├── index.ts
+│   │   │   ├── manifest.ts
+│   │   │   ├── money.test.ts
+│   │   │   ├── money.ts
+│   │   │   ├── nodelib.ts
+│   │   │   ├── package.ts
+│   │   │   ├── sha256.ts
+│   │   │   ├── types.ts
+│   │   │   └── validator.ts
+│   │   └── tsconfig.json
+│   ├── image-core
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── adjustments.ts
+│   │   │   ├── commands.test.ts
+│   │   │   ├── commands.ts
+│   │   │   ├── index.ts
+│   │   │   ├── mask.ts
+│   │   │   ├── migration.ts
+│   │   │   ├── operations.test.ts
+│   │   │   ├── operations.ts
+│   │   │   ├── project.ts
+│   │   │   ├── schema.test.ts
+│   │   │   ├── schema.ts
+│   │   │   └── selection.ts
+│   │   └── tsconfig.json
+│   ├── python-engine
+│   │   ├── README.md
+│   │   ├── __pycache__
+│   │   │   ├── server.cpython-311.pyc
+│   │   │   ├── server.cpython-312.pyc
+│   │   │   └── server.cpython-39.pyc
+│   │   ├── fixtures
+│   │   │   └── sample.txt
+│   │   ├── jobs.db
+│   │   ├── pyproject.toml
+│   │   ├── server.py
+│   │   ├── src
+│   │   │   └── kove_engine
+│   │   └── tests
+│   │       ├── __init__.py
+│   │       ├── __pycache__
+│   │       ├── test_audio_analyzer.py
+│   │       ├── test_classifier.py
+│   │       ├── test_face_analyzer.py
+│   │       ├── test_forensics.py
+│   │       ├── test_frame_sampler.py
+│   │       ├── test_job_store.py
+│   │       ├── test_motion_analyzer.py
+│   │       ├── test_orchestrator.py
+│   │       ├── test_reference_analysis.py
+│   │       ├── test_scene_detector.py
+│   │       ├── test_segment_builder.py
+│   │       ├── test_server.py
+│   │       ├── test_types.py
+│   │       └── test_visual_analyzer.py
+│   └── ui
+│       ├── components.json
+│       ├── package.json
+│       ├── src
+│       │   ├── components
+│       │   ├── index.ts
+│       │   ├── lib
+│       │   └── styles
+│       ├── tsconfig.json
+│       └── tsconfig.tsbuildinfo
+├── patches
+│   ├── @ffmpeg__core-mt@0.12.6.patch
+│   └── @ffmpeg__core@0.12.6.patch
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+├── scripts
+│   ├── filters
+│   │   ├── README.md
+│   │   ├── __init__.py
+│   │   ├── deploy.sh
+│   │   ├── generate.py
+│   │   ├── lut.py
+│   │   ├── manifest.py
+│   │   ├── manifest_schema.json
+│   │   ├── recipe.py
+│   │   ├── recipes
+│   │   │   └── cinematic
+│   │   ├── requirements.txt
+│   │   ├── tests
+│   │   │   ├── __init__.py
+│   │   │   ├── fixtures
+│   │   │   ├── test_generate.py
+│   │   │   ├── test_lut.py
+│   │   │   ├── test_recipe_loader.py
+│   │   │   └── test_transforms.py
+│   │   └── transforms.py
+│   ├── start-issue.sh
+│   └── upload-vidstab-r2.sh
+├── session-ses_eb66.md
+├── session-ses_ecf0.md
+├── session-ses_ed67.md
+├── session-ses_ee40.md
+├── session-ses_ee45.md
+├── session-ses_ef9b.md
+├── session-ses_f18a.md
+├── start.sh
+├── test.md
+├── tree.md
+├── tree.txt
+└── tsconfig.base.json
+
+219 directories, 495 files

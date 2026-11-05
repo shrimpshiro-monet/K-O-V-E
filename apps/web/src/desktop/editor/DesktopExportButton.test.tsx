@@ -21,7 +21,21 @@ vi.mock("../../services/native-ffmpeg-backend", () => ({
   NativeFFmpegBackend: class NativeFFmpegBackend {},
 }));
 vi.mock("@kove-advanced/ui", () => ({
-  ToolcraftButton: ({ label, onClick }: { label: string; onClick?: () => void }) => <button onClick={onClick}>{label}</button>,
+  ToolcraftButton: ({
+    label,
+    onClick,
+    title,
+    "aria-label": ariaLabel,
+  }: {
+    label: string;
+    onClick?: () => void;
+    title?: string;
+    "aria-label"?: string;
+  }) => (
+    <button onClick={onClick} title={title} aria-label={ariaLabel}>
+      {label}
+    </button>
+  ),
 }));
 vi.mock("@/icons/Icon", () => ({ Icon: () => null }));
 vi.mock("../../services/export-source-match", () => ({ deriveSourceExportMatch: () => null }));
@@ -99,7 +113,7 @@ describe("desktop video export fallback", () => {
     await waitFor(() => expect(mocks.abort).toHaveBeenCalled());
     mocks.state.isExporting = true;
     rendered.rerender(<DesktopExportButton />);
-    fireEvent.click(screen.getByRole("button", { name: "0%" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel export" }));
     await waitFor(() => expect(mocks.failExport).toHaveBeenCalled());
     expect(mocks.cancel).toHaveBeenCalled();
     expect(mocks.failExport.mock.calls[0][0]).toMatchObject({ name: "AbortError" });
@@ -117,5 +131,15 @@ describe("desktop video export fallback", () => {
     expect(mocks.abort).toHaveBeenCalled();
     expect(mocks.runExport.mock.calls[1][3]()).toBeInstanceOf(NativeFFmpegBackend);
     expectNoGlobalFactoryMutation();
+  });
+
+  it("exposes the full export error when the desktop error button truncates it", () => {
+    const message = "Export stalled while finalizing the video file for 120 seconds.";
+    Object.assign(mocks.state, { error: message });
+
+    render(<DesktopExportButton />);
+
+    const errorButton = screen.getByRole("button", { name: `Dismiss export error: ${message}` });
+    expect(errorButton).toHaveAttribute("title", message);
   });
 });

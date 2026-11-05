@@ -1,0 +1,11 @@
+{
+  "error": "AI analysis mode did not become ready within 10 seconds.",
+  "network": {
+    "visionWorker": 0,
+    "python": 0,
+    "omni": 0,
+    "cloudflareApi": 0,
+    "responses": []
+  },
+  "at": "2026-10-28T13:55:43.634Z"
+}

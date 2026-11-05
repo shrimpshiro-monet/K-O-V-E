@@ -1,0 +1,37 @@
+{
+  "error": "page.evaluate: Execution context was destroyed, most likely because of a navigation.",
+  "network": {
+    "visionWorker": 1,
+    "python": 1,
+    "omni": 2,
+    "cloudflareApi": 1,
+    "responses": [
+      {
+        "time": 1793362843200,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793363262523,
+        "status": 502,
+        "path": "/analyze-frames"
+      },
+      {
+        "time": 1793363274623,
+        "status": 200,
+        "path": "/analyze-frames"
+      },
+      {
+        "time": 1793363510119,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793363561856,
+        "status": 401,
+        "path": "/api/cf-ai/client/v4/accounts/24bf285c5281e4bfe0b1e9b9687a819f/ai/v1/chat/completions"
+      }
+    ]
+  },
+  "at": "2026-10-30T12:50:13.700Z"
+}

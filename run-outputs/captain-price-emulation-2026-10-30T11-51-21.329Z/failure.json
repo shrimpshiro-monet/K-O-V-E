@@ -1,0 +1,37 @@
+{
+  "error": "Monet stopped with an error: Could not reach the compatible endpoint. Check its URL, availability, and browser CORS settings.",
+  "network": {
+    "visionWorker": 1,
+    "python": 1,
+    "omni": 2,
+    "cloudflareApi": 1,
+    "responses": [
+      {
+        "time": 1793361202389,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793361557120,
+        "status": 502,
+        "path": "/analyze-frames"
+      },
+      {
+        "time": 1793361570399,
+        "status": 200,
+        "path": "/analyze-frames"
+      },
+      {
+        "time": 1793361584571,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793361660711,
+        "status": 401,
+        "path": "/api/cf-ai/client/v4/accounts/24bf285c5281e4bfe0b1e9b9687a819f/ai/v1/chat/completions"
+      }
+    ]
+  },
+  "at": "2026-10-30T12:01:08.367Z"
+}

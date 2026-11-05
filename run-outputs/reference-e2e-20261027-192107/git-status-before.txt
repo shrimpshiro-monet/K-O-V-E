@@ -1,0 +1,84 @@
+ M AI_DIRECTOR_FLOW.md
+ M apps/desktop/src/main/ipc/cloud.ts
+ M apps/web/src/components/editor/MirrorReferencePanel.tsx
+ M apps/web/src/components/editor/inspector/ColorGradingSection.tsx
+ M apps/web/src/main.tsx
+ M apps/web/src/services/agent/live-host.test.ts
+ M apps/web/src/services/agent/live-host.ts
+ M apps/web/src/services/agent/llm-transport.test.ts
+ M apps/web/src/services/agent/llm-transport.ts
+ M apps/web/src/services/api-proxy.ts
+ M apps/web/src/services/mirror/extract-reference.test.ts
+ M apps/web/src/services/mirror/extract-reference.ts
+ M apps/web/src/services/multicam-transcription.test.ts
+ M apps/web/src/services/multicam-transcription.ts
+ M apps/web/src/stores/chat-store.test.ts
+ M apps/web/src/stores/chat-store.ts
+ M apps/web/src/types/global.d.ts
+ M apps/web/src/utils/whisper-audio.test.ts
+ M apps/web/src/utils/whisper-audio.ts
+ M apps/web/vite.config.ts
+ M evaluation-files/plans/pod-01/pod-01-detailed-run0.json
+ M evaluation-files/plans/pod-01/pod-01-detailed-run1.json
+ M evaluation-files/plans/pod-01/pod-01-detailed-run2.json
+ M evaluation-files/plans/pod-01/pod-01-vague-run0.json
+ M evaluation-files/plans/pod-01/pod-01-vague-run1.json
+ M evaluation-files/plans/pod-01/pod-01-vague-run2.json
+ M packages/agent-runner/src/cli.ts
+ M packages/agent-runner/src/index.ts
+ M packages/agent-runner/src/node-llm.test.ts
+ M packages/agent-runner/src/node-llm.ts
+ M packages/agent-runner/src/run.ts
+ M packages/agent/src/director/director-prompt.test.ts
+ M packages/agent/src/director/director-prompt.ts
+ M packages/agent/src/director/mirror/apply-editdna.ts
+ M packages/agent/src/director/mirror/mirror-fixture.ts
+ M packages/agent/src/director/mirror/mirror-reference-tool.ts
+ M packages/agent/src/director/mirror/mirror.applyEditDNA.workflow.test.ts
+ M packages/agent/src/director/mirror/mirror.extractEditDNA.test.ts
+ M packages/agent/src/director/plan-edit-integrity.test.ts
+ M packages/agent/src/eval/baseline.ts
+ M packages/agent/src/host.ts
+ M packages/agent/src/index.ts
+ M packages/agent/src/registry.ts
+ M packages/core/src/index.ts
+ M packages/core/src/mirror/decoded-frames.test.ts
+ M packages/core/src/mirror/decoded-frames.ts
+ M packages/core/src/mirror/reference-profile.ts
+ M packages/creation-schema/src/director/index.ts
+ M packages/creation-schema/src/director/segment-map.ts
+ M packages/python-engine/src/kove_engine/analyzers/frame_sampler.py
+ M packages/python-engine/src/kove_engine/orchestrator.py
+ M packages/python-engine/tests/test_frame_sampler.py
+ M packages/python-engine/tests/test_orchestrator.py
+?? apps/studio/e2e-monet.mjs
+?? apps/studio/e2e-replicate.mjs
+?? apps/studio/repro-freeze.mjs
+?? apps/web/e2e/reference-analysis.spec.ts
+?? apps/web/src/services/mirror/opencv-motion-client.ts
+?? apps/web/src/services/mirror/reference-text.test.ts
+?? apps/web/src/services/mirror/reference-text.ts
+?? apps/web/src/workers/opencv-motion-worker.ts
+?? "captain price (2nd priority).MP4"
+?? evaluation-files/reference/README.md
+?? evaluation-files/reference/known-cut-corpus.json
+?? packages/agent/src/director/transcript-evidence.test.ts
+?? packages/agent/src/director/transcript-evidence.ts
+?? packages/agent/src/eval/reference-fidelity.test.ts
+?? packages/agent/src/eval/reference-fidelity.ts
+?? packages/agent/src/fallback.test.ts
+?? packages/agent/src/fallback.ts
+?? packages/agent/src/providers/
+?? packages/core/src/mirror/reference-profile.test.ts
+?? packages/python-engine/.venv/
+?? run-outputs/
+?? session-ses_ea61.md
+?? session-ses_eb66.md
+?? session-ses_ecf0.md
+?? session-ses_ed67.md
+?? session-ses_ee40.md
+?? session-ses_ee45.md
+?? session-ses_ef9b.md
+?? session-ses_f18a.md
+?? tree.md
+?? tree.txt

@@ -31,8 +31,12 @@ function cloudflareDevVarsPlugin() {
         const val = trimmed.slice(eqIdx + 1).trim();
         const injectable =
           key.startsWith("CLOUDFLARE_") ||
+          key.startsWith("LOUDFLARE_") ||
           key === "KOVE_VISION_MOSAIC" ||
-          (injectOmni && (key.startsWith("OMNIROUTE_") || key.startsWith("NVIDIA_NIM_")));
+          (injectOmni &&
+            (key.startsWith("OMNIROUTE_") ||
+              key.startsWith("NVIDIA_NIM_") ||
+              key.startsWith("AGENT_FALLBACK_")));
         if (injectable) {
           const viteKey = `VITE_${key}`;
           if (!process.env[viteKey]) {
@@ -114,6 +118,8 @@ export default defineConfig({
       // Read the API token directly from .dev.vars
       const devVarsPath = path.resolve(__dirname, "../../.dev.vars");
       let apiToken = "";
+      let apiToken2 = "";
+      let apiToken3 = "";
       let omniOrigin = "http://localhost:20128";
       let omniPathBase = "/v1";
       let nimApiKey = "";
@@ -124,6 +130,10 @@ export default defineConfig({
           const trimmed = line.trim();
           if (trimmed.startsWith("CLOUDFLARE_API_TOKEN=")) {
             apiToken = trimmed.slice("CLOUDFLARE_API_TOKEN=".length).trim();
+          } else if (trimmed.startsWith("CLOUDFLARE_API_TOKEN_2=")) {
+            apiToken2 = trimmed.slice("CLOUDFLARE_API_TOKEN_2=".length).trim();
+          } else if (trimmed.startsWith("CLOUDFLARE_API_TOKEN_3=")) {
+            apiToken3 = trimmed.slice("CLOUDFLARE_API_TOKEN_3=".length).trim();
           } else if (trimmed.startsWith("OMNIROUTE_BASE_URL=")) {
             const value = trimmed.slice("OMNIROUTE_BASE_URL=".length).trim();
             try {
@@ -147,19 +157,23 @@ export default defineConfig({
           }
         }
       }
-      console.log("[vite] Cloudflare proxy token:", apiToken ? `${apiToken.slice(0, 8)}...` : "MISSING");
+      console.log("[vite] Cloudflare proxy token:", apiToken ? "configured" : "MISSING");
       console.log("[vite] OmniRoute proxy:", `${omniOrigin}${omniPathBase}`);
-      return {
-        "/api/cf-ai": {
-          target: "https://api.cloudflare.com",
-          changeOrigin: true,
-          rewrite: (p: string) => p.replace(/^\/api\/cf-ai/, ""),
-          headers: {
-            Authorization: `Bearer ${apiToken}`,
-          },
-          timeout: 120000,
-          proxyTimeout: 120000,
+      const cfProxy = (token: string) => ({
+        target: "https://api.cloudflare.com",
+        changeOrigin: true,
+        rewrite: (p: string) => p.replace(/^\/api\/cf-ai(-[23])?/, ""),
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
+        timeout: 120000,
+        proxyTimeout: 120000,
+      });
+      return {
+        // Account-specific lanes must precede the default prefix.
+        "/api/cf-ai-2": cfProxy(apiToken2),
+        "/api/cf-ai-3": cfProxy(apiToken3),
+        "/api/cf-ai": cfProxy(apiToken),
         // Same-origin lane to the local OmniRoute gateway: the browser cannot
         // call localhost cross-origin, and the director's long generations
         // need an untruncated stream (hence the 30-minute proxy window).

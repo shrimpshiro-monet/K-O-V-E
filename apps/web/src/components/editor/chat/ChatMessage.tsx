@@ -1,5 +1,6 @@
 import type { JSX } from "react";
-import { Bot, Paperclip, User } from "@/icons/lucide-compat";
+import { useEffect, useState } from "react";
+import { Bot, Loader2, Paperclip, User } from "@/icons/lucide-compat";
 import type { ChatMessage as ChatMessageData } from "../../../stores/chat-store";
 import { MarkdownMessage } from "./MarkdownMessage";
 import { ToolCallCard } from "./ToolCallCard";
@@ -15,6 +16,24 @@ export function ChatMessage({
 }): JSX.Element {
   const isUser = message.role === "user";
   const send = useChatStore((s) => s.send);
+  const [now, setNow] = useState(Date.now);
+  const activeTool = message.toolCalls.find((call) => call.status === "running");
+
+  useEffect(() => {
+    if (!pending) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [pending]);
+
+  const elapsedSeconds = message.startedAt
+    ? Math.max(0, Math.floor((now - message.startedAt) / 1000))
+    : null;
+  const elapsedLabel = elapsedSeconds === null
+    ? null
+    : `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, "0")}`;
+  const activityLabel = activeTool
+    ? `Using tool: ${activeTool.name}`
+    : message.notice ?? "Waiting for Monet's next response";
 
   return (
     <div className="flex gap-2">
@@ -46,10 +65,25 @@ export function ChatMessage({
             </span>
           </div>
         )}
-        {!isUser && pending && !message.text && message.toolCalls.length === 0 && (
-          <div className="flex items-center gap-1.5 py-1 text-[12px] text-fg-muted" role="status">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-            <span>Thinking…</span>
+        {!isUser && pending && (
+          <div
+            className="flex items-start gap-2 rounded-md border border-accent/30 bg-accent-soft/40 px-2.5 py-2 text-[12px] text-fg"
+            role="status"
+          >
+            <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin text-accent" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <div className="font-medium">{activityLabel}</div>
+              {activeTool && message.notice && (
+                <div className="mt-0.5 break-words text-[10px] text-fg-muted">
+                  {message.notice}
+                </div>
+              )}
+            </div>
+            {elapsedLabel && (
+              <span className="shrink-0 font-mono text-[10px] tabular-nums text-fg-muted">
+                {elapsedLabel}
+              </span>
+            )}
           </div>
         )}
         {!isUser && message.expansion && (
@@ -66,7 +100,7 @@ export function ChatMessage({
             ))}
           </div>
         )}
-        {!isUser && message.notice && (
+        {!isUser && message.notice && !pending && (
           <div className="rounded-md border border-border bg-bg-2/70 px-2.5 py-2 text-[11px] leading-relaxed text-fg-2">
             {message.notice}
           </div>

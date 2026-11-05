@@ -76,11 +76,12 @@ export class MediaBridge {
       timeoutMs = 2500,
     ) =>
       new Promise<void>((resolve, reject) => {
-        let timeoutId: number | undefined;
+        const timeoutId = window.setTimeout(
+          () => finish(new Error("Video thumbnail decode timed out")),
+          timeoutMs,
+        );
         const finish = (error?: Error) => {
-          if (timeoutId !== undefined) {
-            window.clearTimeout(timeoutId);
-          }
+          window.clearTimeout(timeoutId);
           video.removeEventListener(eventName, onEvent);
           video.removeEventListener("error", onError);
           if (error) reject(error);
@@ -89,10 +90,6 @@ export class MediaBridge {
         const onEvent = () => finish();
         const onError = () => finish(new Error("Video thumbnail decode failed"));
 
-        timeoutId = window.setTimeout(
-          () => finish(new Error("Video thumbnail decode timed out")),
-          timeoutMs,
-        );
         video.addEventListener(eventName, onEvent, { once: true });
         video.addEventListener("error", onError, { once: true });
       });
@@ -217,6 +214,7 @@ export class MediaBridge {
     file: Blob,
     timestamps: readonly number[],
     width = 320,
+    onProgress?: (completed: number, total: number) => void,
   ): Promise<Array<{ timestamp: number; imageDataBase64: string; width: number; height: number }>> {
     if (typeof document === "undefined") {
       throw new Error("Video frame extraction requires a browser document");
@@ -294,6 +292,7 @@ export class MediaBridge {
           throw new Error(`Could not encode the video frame at ${timestamp.toFixed(3)}s`);
         }
         frames.push({ timestamp, imageDataBase64, width, height });
+        onProgress?.(frames.length, timestamps.length);
       }
       return frames;
     } finally {

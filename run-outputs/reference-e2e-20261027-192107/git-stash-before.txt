@@ -1,0 +1,2 @@
+stash@{0}: On main: wip: local reverts before PR pull
+stash@{1}: WIP on main: 140e6d4d feat(validate): warn on effect specs with no params or intensity

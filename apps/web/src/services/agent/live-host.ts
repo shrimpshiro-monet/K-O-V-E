@@ -234,6 +234,7 @@ export class LiveEditorHost implements EditingHost {
    * share the session's LLM client. Matches EditingHost["llm"].
    */
   llm?: EditingHost["llm"];
+  reportAIInputTrace?: EditingHost["reportAIInputTrace"];
   private jobRunner?: JobRunner;
   private mirrorReference: Blob | null = null;
 

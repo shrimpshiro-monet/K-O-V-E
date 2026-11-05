@@ -1,0 +1,8 @@
+{
+  "attempted": true,
+  "ok": false,
+  "timeBefore": "?",
+  "timeAfter": "?",
+  "hashChanged": false,
+  "note": "time ? -> ?, frameHashChanged=false"
+}

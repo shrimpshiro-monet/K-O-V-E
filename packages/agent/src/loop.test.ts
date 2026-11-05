@@ -13,6 +13,30 @@ const tools = toAnthropicTools();
 const userMsg = (content: string): LoopMessage[] => [{ role: "user", content }];
 
 describe("runTurn", () => {
+  it("allows a useful edit to finish beyond the former 12-step default", async () => {
+    const script: LLMResponse[] = [
+      ...Array.from({ length: 13 }, (_, index) => ({
+        text: "",
+        stopReason: "tool_use" as const,
+        toolUses: [{
+          id: `marker-${index}`,
+          name: "add_marker",
+          input: { time: index, label: `M${index}`, color: "#fff" },
+        }],
+      })),
+      { text: "Done.", stopReason: "end_turn", toolUses: [] },
+    ];
+    const result = await runTurn({
+      host: new HeadlessHost(makeEmptyProject()),
+      llm: new MockLLMClient(script),
+      tools,
+      messages: userMsg("add timeline markers"),
+    });
+
+    expect(result.stoppedReason).toBe("end_turn");
+    expect(result.toolCalls).toBe(13);
+  });
+
   it("runs the director checkup and blocks edits before direct planning", async () => {
     const host = new HeadlessHost(makeProjectWithClip());
     const events: AgentEvent[] = [];

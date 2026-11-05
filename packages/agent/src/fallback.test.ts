@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { makeFallbackClient } from "./fallback";
+import { makeFallbackClient, makeFallbackLadder } from "./fallback";
 import type { LLMClient, LLMTurnInput, LLMResponse } from "./llm";
 
 const input: LLMTurnInput = {
@@ -180,5 +180,125 @@ describe("makeFallbackClient", () => {
     });
 
     await expect(llm.complete(input)).rejects.toThrow("nim down");
+  });
+});
+
+describe("makeFallbackLadder", () => {
+  it("walks an ordered provider chain beyond three legs", async () => {
+    const first = vi.fn(async () => {
+      throw new TypeError("gateway down");
+    });
+    const second = vi.fn(async () => {
+      throw new TypeError("workers quota");
+    });
+    const third = vi.fn(async () => {
+      throw new TypeError("nim down");
+    });
+    const fourth = vi.fn(async () => response("from-backup"));
+    const onFallback = vi.fn();
+    const llm = makeFallbackLadder({
+      legs: [
+        { name: "OmniRoute", client: client(first) },
+        { name: "Cloudflare", client: client(second) },
+        { name: "NVIDIA NIM", client: client(third) },
+        { name: "Backup", client: client(fourth) },
+      ],
+      onFallback,
+    });
+
+    await expect(llm.complete(input)).resolves.toMatchObject({ text: "from-backup" });
+    expect(onFallback.mock.calls.map((call) => [call[1], call[2]])).toEqual([
+      ["OmniRoute", "Cloudflare"],
+      ["Cloudflare", "NVIDIA NIM"],
+      ["NVIDIA NIM", "Backup"],
+    ]);
+  });
+
+  it("adapts each leg's input independently", async () => {
+    const seen: string[] = [];
+    const llm = makeFallbackLadder({
+      legs: [
+        {
+          name: "primary",
+          client: client(async () => {
+            throw new TypeError("down");
+          }),
+        },
+        {
+          name: "secondary",
+          client: client(async (replayed) => {
+            seen.push(replayed.system ?? "");
+            throw new TypeError("down");
+          }),
+          input: (replayed) => ({ ...replayed, system: "small-toolset" }),
+        },
+        {
+          name: "third",
+          client: client(async (replayed) => {
+            seen.push(replayed.system ?? "");
+            return response("ok");
+          }),
+          input: (replayed) => ({ ...replayed, system: "backup-toolset" }),
+        },
+      ],
+    });
+
+    await llm.complete(input);
+    expect(seen).toEqual(["small-toolset", "backup-toolset"]);
+  });
+
+  it("treats an empty completion as a leg failure and uses the next provider", async () => {
+    const empty = vi.fn(async () => ({ text: "", toolUses: [], stopReason: "end_turn" as const }));
+    const healthy = vi.fn(async () => response("from-backup"));
+    const onFallback = vi.fn();
+    const llm = makeFallbackLadder({
+      legs: [
+        { name: "Cloudflare", client: client(empty) },
+        { name: "NVIDIA NIM", client: client(healthy) },
+      ],
+      acceptResponse: (candidate) => candidate.text.trim().length > 0 || candidate.toolUses.length > 0,
+      onFallback,
+    });
+
+    await expect(llm.complete(input)).resolves.toMatchObject({ text: "from-backup" });
+    expect(onFallback).toHaveBeenCalledTimes(1);
+    expect(onFallback.mock.calls[0][1]).toBe("Cloudflare");
+    expect(onFallback.mock.calls[0][2]).toBe("NVIDIA NIM");
+  });
+
+  it("returns the final response when every leg is unusable", async () => {
+    const empty = (label: string) =>
+      client(async () => ({ text: label, toolUses: [], stopReason: "end_turn" as const }));
+    const llm = makeFallbackLadder({
+      legs: [
+        { name: "a", client: empty("") },
+        { name: "b", client: empty("") },
+      ],
+      acceptResponse: (candidate) => candidate.text.trim().length > 0,
+    });
+
+    await expect(llm.complete(input)).resolves.toMatchObject({ text: "" });
+  });
+
+  it("never skips the final leg even while it is cooling", async () => {
+    let clock = 1_000;
+    const first = vi.fn(async () => {
+      throw new TypeError("primary down");
+    });
+    const last = vi.fn(async () => response("from-last"));
+    const llm = makeFallbackLadder({
+      legs: [
+        { name: "first", client: client(first) },
+        { name: "last", client: client(last) },
+      ],
+      cooldownMs: 60_000,
+      now: () => clock,
+    });
+
+    await llm.complete(input);
+    clock += 1_000;
+    await llm.complete(input);
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(last).toHaveBeenCalledTimes(2);
   });
 });

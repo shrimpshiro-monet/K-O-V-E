@@ -174,10 +174,15 @@ export function createExportJobRunner(): JobRunner {
             : 320;
         const mediaBridge = getMediaBridge();
         if (!mediaBridge.isInitialized()) await initializeMediaBridge();
+        const onProgress =
+          typeof params.onProgress === "function"
+            ? params.onProgress as (completed: number, total: number) => void
+            : undefined;
         const frames = await mediaBridge.extractVideoFrames(
           mediaBlob,
           frameTimes,
           maxWidth,
+          onProgress,
         );
         return { ok: true, data: { frames } };
       }

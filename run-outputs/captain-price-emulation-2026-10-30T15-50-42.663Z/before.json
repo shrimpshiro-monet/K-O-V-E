@@ -1,0 +1,31 @@
+{
+  "id": "7a3963ad-a299-423c-a8d6-da58e5246410",
+  "name": "New Project",
+  "settings": {
+    "width": 1920,
+    "height": 1080,
+    "frameRate": 30,
+    "sampleRate": 48000,
+    "channels": 2
+  },
+  "duration": 0,
+  "media": [
+    {
+      "id": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+      "name": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+      "type": "video",
+      "analysisRole": null,
+      "duration": 418.2378231292517
+    },
+    {
+      "id": "b8a111a0-91c3-464a-b95c-2b39f1b8c388",
+      "name": "captain price (2nd priority).MP4",
+      "type": "video",
+      "analysisRole": "reference",
+      "duration": 20.730136054421767
+    }
+  ],
+  "tracks": [],
+  "clips": [],
+  "mirrorProfile": false
+}

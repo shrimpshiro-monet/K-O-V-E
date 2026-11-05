@@ -1,0 +1,40 @@
+{
+  "projectId": "05e31f8a-eb90-4fc9-b8bb-2faf434789ae",
+  "projectName": "New Project",
+  "settings": {
+    "width": 1920,
+    "height": 1080,
+    "frameRate": 30
+  },
+  "duration": 0,
+  "media": [
+    {
+      "id": "6d48ea53-baaa-433c-ba8e-0e0fb57fb518",
+      "name": "milesmorales.mp4.mp4",
+      "type": "video",
+      "analysisRole": null,
+      "duration": 214.3201814058957,
+      "width": 640,
+      "height": 360,
+      "isPending": false
+    },
+    {
+      "id": "f27728ef-1a1b-4ebd-9f2a-9b1cffc501b5",
+      "name": "SPIDERMAN (IMPORTANT).MP4",
+      "type": "video",
+      "analysisRole": "reference",
+      "duration": 46.6,
+      "width": 576,
+      "height": 1104,
+      "isPending": false
+    }
+  ],
+  "tracks": [],
+  "clips": [],
+  "transitions": [],
+  "textClips": [],
+  "subtitles": 0,
+  "mirrorProfile": false,
+  "directorPlanRevision": null,
+  "hasOpenProject": true
+}

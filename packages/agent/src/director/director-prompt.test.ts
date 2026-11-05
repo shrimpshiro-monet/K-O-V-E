@@ -78,7 +78,7 @@ describe("director prompt", () => {
     const contract = buildDensityContract("30 second tiktok edit", PRE_BAKED_GENRES[0]);
     expect(contract.targetDuration).toBe(30);
     expect(contract.shots[0]).toBeGreaterThanOrEqual(12);
-    expect(contract.cameraMoves).toBeGreaterThan(5);
+    expect(contract.cameraMoves).toBe(0);
     expect(contract.effectHits[0]).toBeGreaterThan(0);
     expect(contract.texts[1]).toBeGreaterThanOrEqual(contract.texts[0]);
 
@@ -95,6 +95,13 @@ describe("director prompt", () => {
     expect(prompt).toContain("slow-push");
     expect(prompt).toContain("snap-zoom");
     expect(prompt).toContain("cameraMoves");
+    expect(prompt).toContain("camera motion is optional");
+    expect(prompt).toContain("never add them as a quota");
+    expect(prompt).toContain("Do not add cameraMoves to every shot");
+    expect(prompt).toContain("A speed ramp is not a camera move");
+    expect(prompt).toContain("brief reduced-speed hold");
+    expect(prompt).toContain("stay at 1x through the rest of the shot");
+    expect(prompt).not.toContain("cameraMoves), effects or effectSpecs");
     expect(prompt).toContain("zoom-blur");
     // No unresolved template tokens may ship to the model.
     expect(prompt).not.toContain("{MOVE_ATLAS}");
@@ -143,6 +150,8 @@ describe("director prompt", () => {
   it("pins the v2 operating contract: plan-only, sequential layout, contract length", () => {
     const prompt = buildDirectorPrompt(segmentMap, "make a 30s tiktok edit", PRE_BAKED_GENRES[0]);
 
+    expect(DIRECTOR_SYSTEM_PROMPT).toContain("Preserve the source footage's orientation and horizon");
+
     // The phantom workflow is gone (audit contradiction 3): the director call
     // only ever receives submit_edit_plan, so it must never be told to execute.
     expect(prompt).toContain("You have ONE job: call submit_edit_plan");
@@ -163,6 +172,28 @@ describe("director prompt", () => {
     // C1: the param scales are the generated table, never hand-written prose.
     expect(prompt).toContain('- contrast: { "value": 0..2 x (default 1');
     expect(prompt).toContain('- brightness: { "value": -100..100 % (default 0');
+  });
+
+  it("gives the director subpoints and examples for editorial decisions", () => {
+    for (const section of [
+      "# Story and structure",
+      "# Cuts",
+      "# Rhythm",
+      "# Treatment choices (give every tool one job)",
+      "- **Hook — earn attention immediately.**",
+      "- **Payoff — spend the strongest evidence.**",
+      "- **Use the right cut.**",
+      "- **Fast example (social highlight):**",
+      "- **Medium example (vlog/tutorial):**",
+      "- **Slow example (documentary/podcast):**",
+      "- **Transitions change the relationship between shots.**",
+      "- **Effects shape a specific visual moment.**",
+      "- **Sound gives cuts weight and the edit a pulse.**",
+      "- **Layout changes viewpoint.**",
+      "Prefer one clear treatment per moment.",
+    ]) {
+      expect(DIRECTOR_SYSTEM_PROMPT).toContain(section);
+    }
   });
 
   it("passes analyzed segment signals into the director prompt", () => {

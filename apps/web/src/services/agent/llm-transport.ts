@@ -22,6 +22,10 @@ export interface CloudflareAIOptions {
   readonly model?: string;
   readonly maxTokens?: number;
   readonly signal?: AbortSignal;
+  /** Dev-only same-origin proxy prefix; ignored in production builds. */
+  readonly proxyPrefix?: string;
+  /** Transport retries; 0 when a fallback ladder owns failover. */
+  readonly retries?: number;
 }
 
 /** Ensure content is always a string (Cloudflare rejects arrays/null). */
@@ -46,6 +50,7 @@ function makeCloudflareSend(
   accountId: string,
   apiToken: string,
   signal?: AbortSignal,
+  proxyPrefix = "/api/cf-ai",
 ) {
   return async (body: unknown): Promise<unknown> => {
     if (signal?.aborted) {
@@ -55,7 +60,7 @@ function makeCloudflareSend(
     const normalized = normalizeCloudflareBody(body);
     const isDev = import.meta.env.DEV;
     const url = isDev
-      ? `/api/cf-ai/client/v4/accounts/${accountId}/ai/v1/chat/completions`
+      ? `${proxyPrefix}/client/v4/accounts/${accountId}/ai/v1/chat/completions`
       : `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -102,8 +107,8 @@ function normalizeCloudflareBody(body: unknown): unknown {
  */
 export function makeCloudflareAIClient(opts: CloudflareAIOptions): LLMClient {
   const send = withRetry(
-    makeCloudflareSend(opts.accountId, opts.apiToken, opts.signal),
-    { signal: opts.signal },
+    makeCloudflareSend(opts.accountId, opts.apiToken, opts.signal, opts.proxyPrefix),
+    { signal: opts.signal, retries: opts.retries ?? 3 },
   );
   return makeClientFromSend({
     provider: "openai",
@@ -207,6 +212,10 @@ export interface BYOKClientOptions {
   readonly baseUrl?: string;
   readonly maxTokens?: number;
   readonly signal?: AbortSignal;
+  /** Cloudflare only: dev proxy prefix for a secondary account. */
+  readonly cloudflareProxyPrefix?: string;
+  /** Cloudflare only: transport retries; 0 when a ladder owns failover. */
+  readonly cloudflareRetries?: number;
 }
 
 /**
@@ -223,6 +232,8 @@ export function makeBYOKClient(opts: BYOKClientOptions): LLMClient {
       model: opts.model,
       maxTokens: opts.maxTokens,
       signal: opts.signal,
+      proxyPrefix: opts.cloudflareProxyPrefix,
+      retries: opts.cloudflareRetries,
     });
   }
 

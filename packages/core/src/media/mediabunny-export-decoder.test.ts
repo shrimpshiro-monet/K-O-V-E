@@ -138,4 +138,67 @@ describe("ExportFrameDecoder", () => {
     expect(canvases).toHaveBeenNthCalledWith(1, 1.5);
     expect(canvases).toHaveBeenNthCalledWith(2, 0.25);
   });
+
+  it("seeks across large forward jumps instead of decoding unselected source footage", async () => {
+    class MockOffscreenCanvas {
+      width: number;
+      height: number;
+
+      constructor(width: number, height: number) {
+        this.width = width;
+        this.height = height;
+      }
+
+      getContext() {
+        return { clearRect: vi.fn(), drawImage: vi.fn() };
+      }
+    }
+    vi.stubGlobal("OffscreenCanvas", MockOffscreenCanvas);
+
+    const frames = Array.from({ length: 11 }, (_, timestamp) => ({
+      canvas: new MockOffscreenCanvas(320, 180),
+      timestamp,
+      duration: 1,
+    }));
+    const decodedTimestamps: number[] = [];
+    const canvases = vi.fn((startTimestamp: number) => {
+      const startIndex = findFrameAtOrBefore(frames, startTimestamp);
+      return (async function* () {
+        for (const frame of frames.slice(startIndex)) {
+          decodedTimestamps.push(frame.timestamp);
+          yield frame;
+        }
+      })();
+    });
+    class MockCanvasSink {
+      canvases = canvases;
+    }
+    class MockInput {
+      async getPrimaryVideoTrack() {
+        return {
+          displayWidth: 320,
+          displayHeight: 180,
+          canDecode: vi.fn().mockResolvedValue(true),
+        };
+      }
+    }
+
+    const decoder = new ExportFrameDecoder({
+      Input: MockInput,
+      ALL_FORMATS: [],
+      BlobSource: class {},
+      CanvasSink: MockCanvasSink,
+    } as unknown as typeof import("mediabunny"), new Blob(["video"]));
+
+    await decoder.initialize();
+    await decoder.getFrame(0);
+    await decoder.getFrame(0.5);
+    await decoder.getFrame(8);
+
+    expect(canvases).toHaveBeenNthCalledWith(1, 0);
+    expect(canvases).toHaveBeenNthCalledWith(2, 8);
+    expect(decodedTimestamps).not.toContain(5);
+    expect(decodedTimestamps).not.toContain(6);
+    expect(decodedTimestamps).not.toContain(7);
+  });
 });

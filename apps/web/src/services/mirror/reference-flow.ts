@@ -117,7 +117,10 @@ export async function attachReferenceProfile(profile: ReferenceProfile): Promise
 export async function applyReferenceStructure(
   profile: ReferenceProfile,
   media: readonly ReferenceSourceMedia[],
+  onProgress?: (message: string) => void,
+  signal?: AbortSignal,
 ): Promise<{ shotItemIds: string[]; summary: string; warnings: string[] }> {
+  throwIfAborted(signal);
   if (!media.length) throw new Error("No source footage to rebuild from the reference");
   const availableSeconds = media.reduce((sum, item) => sum + item.duration, 0);
   const fitted = fitProfileToFootage(profile, availableSeconds);
@@ -129,6 +132,8 @@ export async function applyReferenceStructure(
   );
   const statsByRange = new Map<string, LabStats>();
   for (let i = 0; i < applied.shots.length; i++) {
+    throwIfAborted(signal);
+    onProgress?.(`Decoding source frame for reference shot ${i + 1}/${applied.shots.length}`);
     const range = ranges[i];
     const item = media.find((m) => m.id === range.mediaId);
     const blob = item?.blob;
@@ -139,10 +144,14 @@ export async function applyReferenceStructure(
       (await sampleVideoStats(
         blob,
         range.inPoint + Math.min(0.25, (range.outPoint - range.inPoint) / 2),
+        signal,
       ));
     statsByRange.set(key, measured);
     stats.push(measured);
+    onProgress?.(`Matched reference shot ${i + 1}/${applied.shots.length}`);
   }
+  throwIfAborted(signal);
+  onProgress?.("Applying reference structure with mirror_reference_1to1");
   const result = await runExclusive(() =>
     executeTool(
       "mirror_reference_1to1",

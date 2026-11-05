@@ -12,7 +12,11 @@ vi.mock("@kove-advanced/core/vision/opencv-camera-motion", () => ({
   extractFrameMotion: vi.fn(),
 }));
 
-import { extractReference, type ExtractReferenceOptions } from "./extract-reference";
+import {
+  extractReference,
+  sampleVideoStats,
+  type ExtractReferenceOptions,
+} from "./extract-reference";
 import {
   REFERENCE_ANALYSIS_MAX_DIMENSION,
   REFERENCE_FRAME_BUDGET_MS,
@@ -122,6 +126,37 @@ function steppingClock(stepMs: number): () => number {
 }
 
 describe("extractReference peak boundary wiring", () => {
+  it("fails instead of waiting forever when source video metadata never loads", async () => {
+    vi.useFakeTimers();
+    URL.createObjectURL = vi.fn(() => "blob:source");
+    URL.revokeObjectURL = vi.fn();
+    const video = {
+      muted: false,
+      preload: "",
+      readyState: 0,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      removeAttribute: vi.fn(),
+      load: vi.fn(),
+    } as unknown as HTMLVideoElement;
+    const createElement = document.createElement.bind(document);
+    vi.spyOn(document, "createElement").mockImplementation(((tag: string) =>
+      tag === "video" ? video : createElement(tag)) as typeof document.createElement);
+
+    try {
+      const sampling = sampleVideoStats(new Blob(["source"]));
+      const timedOut = expect(sampling).rejects.toThrow(
+        "Timed out loading source video metadata",
+      );
+      await vi.advanceTimersByTimeAsync(15_000);
+      await timedOut;
+      expect(video.removeAttribute).toHaveBeenCalledWith("src");
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:source");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("extracts sparse local OCR observations into normalized, caveated overlay evidence", async () => {
     const close = vi.fn();
     const detect = vi.fn(async () => [{

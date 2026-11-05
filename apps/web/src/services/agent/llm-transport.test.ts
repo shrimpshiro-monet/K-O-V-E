@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
   apiFetch: vi.fn(),
@@ -8,7 +8,11 @@ vi.mock("../api-proxy", () => ({
   apiFetch: h.apiFetch,
 }));
 
-import { makeBYOKClient, makeOmniRouteGatewayClient } from "./llm-transport";
+import {
+  makeBYOKClient,
+  makeCloudflareAIClient,
+  makeOmniRouteGatewayClient,
+} from "./llm-transport";
 
 describe("compatible LLM transport", () => {
   beforeEach(() => {
@@ -147,5 +151,39 @@ describe("OmniRoute gateway transport", () => {
       text: "calling the tool.",
       stopReason: "tool_use",
     });
+  });
+});
+
+describe("Cloudflare Workers AI transport", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("routes a secondary account through its own dev proxy", async () => {
+    const fetchMock = vi.fn(
+      async (..._args: Parameters<typeof fetch>): Promise<Response> => {
+        void _args;
+        return Response.json({
+          choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
+        });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = makeCloudflareAIClient({
+      accountId: "acct-3",
+      apiToken: "token-3",
+      model: "@cf/test-model",
+      proxyPrefix: "/api/cf-ai-3",
+      retries: 0,
+    });
+
+    await expect(
+      client.complete({ messages: [{ role: "user", content: "hello" }], tools: [] }),
+    ).resolves.toMatchObject({ text: "ok" });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/cf-ai-3/client/v4/accounts/acct-3/ai/v1/chat/completions");
+    expect((init?.headers as Record<string, string>).Authorization).toBeUndefined();
   });
 });

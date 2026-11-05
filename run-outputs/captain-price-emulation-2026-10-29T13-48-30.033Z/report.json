@@ -1,0 +1,221 @@
+{
+  "verdict": "TIMELINE_POPULATED",
+  "prompt": "/reference Create an energetic, punchy Steph Curry highlight edit following the attached reference's pacing and visual style. Keep Curry's scoring plays, dribbles, celebrations, and crowd reactions; cut dead air, slow setup, and repetition. Use only the source footage, and aim for roughly 20 seconds to match the reference length.",
+  "source": "/Users/hamza/Desktop/k.o.v.e/evaluation-files/Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+  "styleReference": "/Users/hamza/Desktop/k.o.v.e/captain price (2nd priority).MP4",
+  "analysisMode": "ai",
+  "vision": {
+    "summary": null,
+    "status": null,
+    "localPythonRequests": 1,
+    "workersAIRequests": 1,
+    "omniRouteResponses": 2,
+    "cloudflareAiProxyResponses": 0,
+    "workerFrameBudget": 60,
+    "visionProxy": {
+      "requests": 1,
+      "inputFrames": 60,
+      "forwardedFrames": 60,
+      "cloudflareRequests": 1,
+      "omniFallbackBatches": 0,
+      "omniFallbackFrames": 0,
+      "nimFallbackBatches": 0,
+      "nimFallbackFrames": 0
+    },
+    "recovery": {
+      "ok": true,
+      "summary": "extract_segments: analyzed 1 video(s) [\"Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4\" (41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7)], 1 reference(s), 60 frame(s), 60 source segment(s) in 21266ms. AI vision didn't work (Vision worker error: {\"error\":\"Primary vision failed; OmniRoute/NVIDIA NIM fallback unavailable or failed: Workers AI returned HTTP 400.\"}) — local Python analysis engine used instead. 41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7: Local transcription is capped at 120s per source to bound browser memory; this video is 418s.",
+      "error": null,
+      "frameCount": 60,
+      "segmentCount": 60
+    },
+    "responses": [
+      {
+        "time": 1793281846885,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793282400309,
+        "status": 502,
+        "path": "/analyze-frames"
+      },
+      {
+        "time": 1793282412699,
+        "status": 200,
+        "path": "/analyze-frames"
+      },
+      {
+        "time": 1793282590428,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      }
+    ]
+  },
+  "timeline": {
+    "clipCount": 10,
+    "duration": 20.669558145838984,
+    "media": [
+      {
+        "id": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "name": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "type": "video",
+        "analysisRole": null,
+        "duration": 418.2378231292517
+      },
+      {
+        "id": "20ec3cc7-c35a-4132-bccc-e03f47731f06",
+        "name": "captain price (2nd priority).MP4",
+        "type": "video",
+        "analysisRole": "reference",
+        "duration": 20.730136054421767
+      }
+    ],
+    "tracks": [
+      {
+        "id": "track-f041d5a4-f9ed-447a-9653-3e3ab7045e6c",
+        "name": "Video 1",
+        "type": "video",
+        "clipCount": 10
+      }
+    ],
+    "clips": [
+      {
+        "id": "e8235693-0f61-48f3-9065-fbc9d60a9829",
+        "mediaId": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 0,
+        "duration": 2.066955814583898,
+        "inPoint": 0,
+        "outPoint": 2.066955814583898,
+        "effects": []
+      },
+      {
+        "id": "b7a61463-c1a5-499e-ac85-b22cfb8c79e5",
+        "mediaId": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 2.066955814583898,
+        "duration": 1.7958796421794525,
+        "inPoint": 2.066955814583898,
+        "outPoint": 3.8628354567633507,
+        "effects": []
+      },
+      {
+        "id": "5247c8cc-1c71-42a1-98a3-d4b6b663987e",
+        "mediaId": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 3.8628354567633503,
+        "duration": 1.4231499051233396,
+        "inPoint": 3.8628354567633507,
+        "outPoint": 5.2859853618866905,
+        "effects": []
+      },
+      {
+        "id": "164921c3-1789-41db-ac6b-62b7516c50f2",
+        "mediaId": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 5.2859853618866905,
+        "duration": 0.44049878015722416,
+        "inPoint": 5.2859853618866905,
+        "outPoint": 5.7264841420439145,
+        "effects": []
+      },
+      {
+        "id": "50379e57-a714-46b1-9b66-45a53cfe3723",
+        "mediaId": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 5.7264841420439145,
+        "duration": 9.894280292762266,
+        "inPoint": 5.7264841420439145,
+        "outPoint": 15.62076443480618,
+        "effects": []
+      },
+      {
+        "id": "6c086e6e-6b86-4051-9586-170745dfaca8",
+        "mediaId": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 15.62076443480618,
+        "duration": 0.44049878015722416,
+        "inPoint": 15.62076443480618,
+        "outPoint": 16.061263214963404,
+        "effects": []
+      },
+      {
+        "id": "0072fdcc-5cb8-4001-aee3-d278560caec6",
+        "mediaId": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 16.061263214963404,
+        "duration": 0.47438330170777987,
+        "inPoint": 16.061263214963404,
+        "outPoint": 16.535646516671182,
+        "effects": []
+      },
+      {
+        "id": "733f0158-0b6c-4110-88e9-55cf5dbe9d59",
+        "mediaId": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 16.535646516671186,
+        "duration": 0.033884521550555706,
+        "inPoint": 16.535646516671182,
+        "outPoint": 16.569531038221736,
+        "effects": []
+      },
+      {
+        "id": "590d5162-4ec6-4f8e-88ec-cdfcef63b1a4",
+        "mediaId": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 16.56953103822174,
+        "duration": 0.9148820818650041,
+        "inPoint": 16.569531038221736,
+        "outPoint": 17.484413120086742,
+        "effects": []
+      },
+      {
+        "id": "0be99b45-d03b-4b40-94d1-7a3ff7090922",
+        "mediaId": "41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 17.484413120086746,
+        "duration": 3.1851450257522362,
+        "inPoint": 17.484413120086742,
+        "outPoint": 20.669558145838977,
+        "effects": []
+      }
+    ],
+    "styleProfileAttached": true
+  },
+  "recovery": {
+    "vision": {
+      "ok": true,
+      "summary": "extract_segments: analyzed 1 video(s) [\"Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4\" (41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7)], 1 reference(s), 60 frame(s), 60 source segment(s) in 21266ms. AI vision didn't work (Vision worker error: {\"error\":\"Primary vision failed; OmniRoute/NVIDIA NIM fallback unavailable or failed: Workers AI returned HTTP 400.\"}) — local Python analysis engine used instead. 41e3d1a3-e307-49e8-8ae5-b86e5fd88bc7: Local transcription is capped at 120s per source to bound browser memory; this video is 418s.",
+      "error": null,
+      "frameCount": 60,
+      "segmentCount": 60
+    },
+    "reference": {
+      "fps": {
+        "num": 3689,
+        "den": 125
+      },
+      "shotCount": 10,
+      "warnings": [
+        "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+        "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+        "Indexed WebCodecs frame read failed at frame 0; continuing with HTML video seeks, which may not decode exact requested frames. Verify critical cuts manually. Source frame 0 is unavailable from the indexed decoder",
+        "Shot boundary near frame 489 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+        "Beat grid confidence is low (bpm 120); cut-to-beat scoring may be unreliable.",
+        "Local transcription failed (Failed to fetch); caption windows were not extracted."
+      ]
+    },
+    "directorPlan": {
+      "ok": false,
+      "summary": "Director returned no EditPlan (stopReason: end_turn). Text: I don't see any footage provided for analysis. Please share the video file or describe the footage you'd like me to analyze so I can create an edit plan for you.",
+      "error": "Director returned no EditPlan (stopReason: end_turn). Text: I don't see any footage provided for analysis. Please share the video file or describe the footage you'd like me to analyze so I can create an edit plan for you."
+    },
+    "applied": {
+      "summary": "Mirrored 10 editable shots; rhythm 100.0%.",
+      "warnings": []
+    },
+    "clipCount": 10
+  },
+  "export": null
+}

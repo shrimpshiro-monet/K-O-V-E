@@ -1,0 +1,11 @@
+{
+  "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Eco', exact: true }).first()\n    - locator resolved to <button type=\"button\" title=\"Local analysis (free)\" class=\"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25\">…</button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black/80 pointer-events-auto\"></div> from <div class=\"fixed inset-0 z-[100] pointer-events-none\">…</div> subtree intercepts pointer events\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black/80 pointer-events-auto\"></div> from <div class=\"fixed inset-0 z-[100] pointer-events-none\">…</div> subtree intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    50 × waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <div class=\"fixed inset-0 bg-black/80 pointer-events-auto\"></div> from <div class=\"fixed inset-0 z-[100] pointer-events-none\">…</div> subtree intercepts pointer events\n     - retrying click action\n       - waiting 500ms\n",
+  "network": {
+    "visionWorker": 0,
+    "python": 0,
+    "omni": 0,
+    "cloudflareApi": 0,
+    "responses": []
+  },
+  "at": "2026-10-28T13:52:28.757Z"
+}

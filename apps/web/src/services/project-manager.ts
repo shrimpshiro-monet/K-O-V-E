@@ -27,8 +27,8 @@ interface WindowWithFilePicker extends Window {
 }
 
 interface FileHandleWithPermissions extends FileSystemFileHandle {
-  queryPermission?: (options: { mode: string }) => Promise<string>;
-  requestPermission?: (options: { mode: string }) => Promise<string>;
+  queryPermission?: (options: { mode: "read" | "readwrite" }) => Promise<PermissionState>;
+  requestPermission?: (options: { mode: "read" | "readwrite" }) => Promise<PermissionState>;
 }
 
 type NativeFileRef = { kind: "native"; path: string };
@@ -380,7 +380,18 @@ class ProjectManager {
         return true;
       }
 
-      const writable = await (handle as FileSystemFileHandle).createWritable();
+      const fileHandle = handle as FileHandleWithPermissions;
+      if (fileHandle.queryPermission || fileHandle.requestPermission) {
+        let permission = await fileHandle.queryPermission?.({ mode: "readwrite" });
+        if (permission !== "granted") {
+          permission = await fileHandle.requestPermission?.({ mode: "readwrite" });
+        }
+        if (permission !== "granted") {
+          throw new Error("Write permission was not granted for this project file.");
+        }
+      }
+
+      const writable = await fileHandle.createWritable();
       const data = JSON.stringify(project, null, 2);
       await writable.write(data);
       await writable.close();

@@ -1,0 +1,82 @@
+{
+  "error": "Export did not finish within 30 minutes.",
+  "network": {
+    "visionWorker": 1,
+    "python": 0,
+    "omni": 11,
+    "cloudflareApi": 2,
+    "responses": [
+      {
+        "time": 1793375566480,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376002761,
+        "status": 200,
+        "path": "/analyze-frames"
+      },
+      {
+        "time": 1793376003814,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376049381,
+        "status": 200,
+        "path": "/api/cf-ai/client/v4/accounts/5a1151e166f556fad816485f369bde3b/ai/v1/chat/completions"
+      },
+      {
+        "time": 1793376125156,
+        "status": 200,
+        "path": "/api/cf-ai/client/v4/accounts/5a1151e166f556fad816485f369bde3b/ai/v1/chat/completions"
+      },
+      {
+        "time": 1793376126188,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376432605,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376443860,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376590530,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376738701,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376879446,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376893137,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376901470,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793377158536,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      }
+    ]
+  },
+  "at": "2026-10-30T16:49:52.310Z"
+}

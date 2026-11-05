@@ -1,0 +1,172 @@
+{
+  "run": "reference",
+  "prompt": "/reference make an edit in this style, keeping the source footage's story and content",
+  "mode": {
+    "original": "eco",
+    "during": "ai",
+    "restoredTo": "eco"
+  },
+  "chat": {
+    "status": "idle",
+    "error": null,
+    "usage": {
+      "inputTokens": 47898,
+      "outputTokens": 742
+    },
+    "gatewayResponses": {
+      "total": 1,
+      "ok": 1,
+      "statuses": [
+        200
+      ]
+    },
+    "messages": [
+      {
+        "role": "user",
+        "text": "/reference make an edit in this style, keeping the source footage's story and content",
+        "toolCalls": []
+      },
+      {
+        "role": "assistant",
+        "text": "I need to find the source footage to perform the edit. I will list the available media to identify the file tagged with `analysisRole=source`.I need to find the source footage to perform the edit. I will list the available media to identify the file tagged with `analysisRole=source`.",
+        "toolCalls": [
+          {
+            "name": "get_capabilities",
+            "status": "done",
+            "ok": true,
+            "summary": "get_capabilities ok",
+            "error": null
+          },
+          {
+            "name": "get_editor_state",
+            "status": "done",
+            "ok": true,
+            "summary": "get_editor_state ok",
+            "error": null
+          },
+          {
+            "name": "list_media",
+            "status": "done",
+            "ok": true,
+            "summary": "list_media ok",
+            "error": null
+          }
+        ]
+      }
+    ]
+  },
+  "vision": {
+    "analysisModeDuringRun": "ai",
+    "extractSegmentsCalled": false,
+    "extractSegmentsSummary": null,
+    "visionWorkerRequests": 0,
+    "localVisionRequests": 0,
+    "verdict": "extract_segments was never called by the model in this turn — no AI vision executed"
+  },
+  "timeline": {
+    "beforeClipCount": 0,
+    "afterClipCount": 0,
+    "midClipCount": null,
+    "referenceOnTimeline": false,
+    "offSourceClips": [],
+    "mirrorProfile": true,
+    "directorPlanRevision": null
+  },
+  "changes": {
+    "cutsAndTiming": {
+      "clipCountBefore": 0,
+      "clipCountAfter": 0,
+      "videoClipCount": 0,
+      "cutBoundaries": [],
+      "timelineDurationBefore": 0,
+      "timelineDurationAfter": 0,
+      "settingsAfter": {
+        "width": 1920,
+        "height": 1080,
+        "frameRate": 30
+      }
+    },
+    "cameraAndKeyframes": {
+      "clipsWithKeyframes": 0,
+      "totalKeyframes": 0,
+      "cameraKeyframeClips": 0,
+      "properties": []
+    },
+    "text": {
+      "textClipCount": 0,
+      "texts": [],
+      "subtitleCount": 0
+    },
+    "transitionsAndEffects": {
+      "transitionCount": 0,
+      "transitions": [],
+      "effectTypes": [],
+      "clipsWithEffects": 0
+    },
+    "color": {
+      "clipsWithColorGrading": 0
+    },
+    "audio": {
+      "audioEffectTypes": [],
+      "clipsWithFade": 0,
+      "clipsWithNonDefaultVolume": 0,
+      "clipsWithSpeedChange": 0,
+      "clipsWithAutomation": 0
+    },
+    "structure": {
+      "mirrorProfile": true,
+      "directorPlanRevision": null,
+      "trackCount": 0
+    }
+  },
+  "approvals": [],
+  "playback": null,
+  "export": {
+    "attempted": false,
+    "ok": false,
+    "file": null,
+    "bytes": null,
+    "ffprobe": null,
+    "state": null,
+    "error": "skipped: timeline empty",
+    "fsaPickerPresent": false,
+    "fsaPickerRemoved": false,
+    "notes": [
+      "export skipped because the timeline stayed empty"
+    ]
+  },
+  "turnTimedOut": false,
+  "events": [
+    "39ms notice: Measuring the reference…",
+    "70ms state: status=running mode=ai clips=0 tokens=0/0",
+    "10679ms notice: Measuring the reference… 9/175 frames",
+    "19926ms state: status=running mode=ai clips=0 tokens=0/0",
+    "32039ms notice: Measuring the reference… 31/175 frames",
+    "41334ms state: status=running mode=ai clips=0 tokens=0/0",
+    "52948ms notice: Measuring the reference… 53/175 frames",
+    "60497ms state: status=running mode=ai clips=0 tokens=0/0",
+    "72274ms notice: Measuring the reference… 74/175 frames",
+    "80695ms state: status=running mode=ai clips=0 tokens=0/0",
+    "93022ms notice: Measuring the reference… 96/175 frames",
+    "101927ms state: status=running mode=ai clips=0 tokens=0/0",
+    "114006ms notice: Measuring the reference… 119/175 frames",
+    "123267ms state: status=running mode=ai clips=0 tokens=0/0",
+    "135723ms notice: Measuring the reference… 142/175 frames",
+    "145106ms state: status=running mode=ai clips=0 tokens=0/0",
+    "156570ms notice: Measuring the reference… 164/175 frames",
+    "165872ms state: status=running mode=ai clips=0 tokens=0/0",
+    "168940ms notice: Loading local Whisper model · 0%",
+    "171593ms tools: get_capabilities:done, get_editor_state:done, list_media:done",
+    "176766ms state: status=running mode=ai clips=0 tokens=0/0",
+    "192229ms state: status=running mode=ai clips=0 tokens=0/0",
+    "205098ms tools: get_capabilities:done, get_editor_state:done, list_media:done",
+    "205098ms assistant: st the available media to identify the file tagged with `analysisRole=source`.I need to find the source footage to perform the edit. I will list the available media to identify the file tagged with `analysisRole=source`.",
+    "207691ms state: status=idle mode=ai clips=0 tokens=47898/742",
+    "220559ms turn finished: status=idle after 221s"
+  ],
+  "failures": [
+    "timeline is still empty after the turn",
+    "export failed: skipped: timeline empty (export skipped because the timeline stayed empty)"
+  ],
+  "verdict": "FAIL"
+}

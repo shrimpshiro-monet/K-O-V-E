@@ -1,0 +1,14 @@
+{
+  "attempted": false,
+  "ok": false,
+  "file": null,
+  "bytes": null,
+  "ffprobe": null,
+  "state": null,
+  "error": "skipped: timeline empty",
+  "fsaPickerPresent": false,
+  "fsaPickerRemoved": false,
+  "notes": [
+    "export skipped because the timeline stayed empty"
+  ]
+}

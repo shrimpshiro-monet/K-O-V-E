@@ -1,0 +1,26 @@
+39ms notice: Measuring the reference…
+70ms state: status=running mode=ai clips=0 tokens=0/0
+10679ms notice: Measuring the reference… 9/175 frames
+19926ms state: status=running mode=ai clips=0 tokens=0/0
+32039ms notice: Measuring the reference… 31/175 frames
+41334ms state: status=running mode=ai clips=0 tokens=0/0
+52948ms notice: Measuring the reference… 53/175 frames
+60497ms state: status=running mode=ai clips=0 tokens=0/0
+72274ms notice: Measuring the reference… 74/175 frames
+80695ms state: status=running mode=ai clips=0 tokens=0/0
+93022ms notice: Measuring the reference… 96/175 frames
+101927ms state: status=running mode=ai clips=0 tokens=0/0
+114006ms notice: Measuring the reference… 119/175 frames
+123267ms state: status=running mode=ai clips=0 tokens=0/0
+135723ms notice: Measuring the reference… 142/175 frames
+145106ms state: status=running mode=ai clips=0 tokens=0/0
+156570ms notice: Measuring the reference… 164/175 frames
+165872ms state: status=running mode=ai clips=0 tokens=0/0
+168940ms notice: Loading local Whisper model · 0%
+171593ms tools: get_capabilities:done, get_editor_state:done, list_media:done
+176766ms state: status=running mode=ai clips=0 tokens=0/0
+192229ms state: status=running mode=ai clips=0 tokens=0/0
+205098ms tools: get_capabilities:done, get_editor_state:done, list_media:done
+205098ms assistant: st the available media to identify the file tagged with `analysisRole=source`.I need to find the source footage to perform the edit. I will list the available media to identify the file tagged with `analysisRole=source`.
+207691ms state: status=idle mode=ai clips=0 tokens=47898/742
+220559ms turn finished: status=idle after 221s

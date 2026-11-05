@@ -167,13 +167,10 @@ describe("edit density review", () => {
     expect(review.score).toBeLessThan(0.6);
     const codes = review.deficiencies.map((deficiency) => deficiency.code);
     expect(codes).toContain("effect_density");
-    expect(codes).toContain("camera_motion");
+    expect(codes).not.toContain("camera_motion");
     expect(codes).toContain("static_shots");
     expect(codes).toContain("no_evolution");
     // Directives are executable: they name the numeric gap and the fix.
-    const camera = review.deficiencies.find((deficiency) => deficiency.code === "camera_motion");
-    expect(camera!.directive).toContain("cameraMoves");
-    expect(camera!.severity).toBe("major");
   });
 
   it("passes a populated, evolving plan", () => {
@@ -189,8 +186,20 @@ describe("edit density review", () => {
     const long = planDensityBudget(fastTarget, 60);
     expect(short.shots[0]).toBeLessThan(long.shots[0]);
     expect(short.effectHits[1]).toBeLessThan(long.effectHits[1]);
-    expect(long.cameraMoves).toBeGreaterThan(short.cameraMoves);
+    expect(short.cameraMoves).toBe(0);
+    expect(long.cameraMoves).toBe(0);
     expect(long.targetDuration).toBe(60);
+  });
+
+  it("preserves an explicit camera-move target without making it the default", () => {
+    const target = {
+      ...fastTarget,
+      minimumCameraMoveRatio: 0.25,
+      minimumCameraMoveVariety: 2,
+    };
+
+    expect(planDensityBudget(target, 60).cameraMoves).toBeGreaterThan(0);
+    expect(fastTarget.minimumCameraMoveRatio).toBeUndefined();
   });
 
   it("lists the highest-severity problems first in the brief", () => {

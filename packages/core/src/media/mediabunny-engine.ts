@@ -68,6 +68,7 @@ type MediaBunnyInput = {
 };
 
 export class ExportFrameDecoder {
+  private static readonly MAX_SEQUENTIAL_DECODE_GAP_SECONDS = 1;
   private input: MediaBunnyInput | null = null;
   private sink: InstanceType<typeof import("mediabunny").CanvasSink> | null = null;
   private mediabunny: typeof import("mediabunny");
@@ -79,6 +80,7 @@ export class ExportFrameDecoder {
   private canvasIterator: AsyncIterator<WrappedCanvas> | null = null;
   private currentFrame: WrappedCanvas | null = null;
   private nextFrame: WrappedCanvas | null = null;
+  private lastRequestedTimestamp: number | null = null;
   private iteratorDone = false;
   private decodeTail: Promise<void> = Promise.resolve();
 
@@ -135,12 +137,20 @@ export class ExportFrameDecoder {
   private async getSequentialFrame(timestamp: number): Promise<OffscreenCanvas | null> {
     if (!this.sink) return null;
 
-    // Start a new sequential decode for the first request or whenever the
-    // timeline moves backwards (reverse playback, a loop, or a later clip
-    // reusing the same media from an earlier in-point).
-    if (!this.canvasIterator || (this.currentFrame && timestamp < this.currentFrame.timestamp - 1e-8)) {
+    // Keep adjacent output frames sequential, but seek across edit cuts instead
+    // of decoding all the unused source frames between selected moments.
+    const sourceTimeJump =
+      this.lastRequestedTimestamp !== null &&
+      Math.abs(timestamp - this.lastRequestedTimestamp) >
+        ExportFrameDecoder.MAX_SEQUENTIAL_DECODE_GAP_SECONDS;
+    if (
+      !this.canvasIterator ||
+      sourceTimeJump ||
+      (this.currentFrame && timestamp < this.currentFrame.timestamp - 1e-8)
+    ) {
       await this.resetCanvasIterator(timestamp);
     }
+    this.lastRequestedTimestamp = timestamp;
 
     if (!this.currentFrame) return null;
 
@@ -185,6 +195,7 @@ export class ExportFrameDecoder {
     await this.canvasIterator?.return?.();
     this.currentFrame = null;
     this.nextFrame = null;
+    this.lastRequestedTimestamp = null;
     this.iteratorDone = false;
     this.canvasIterator = this.sink!.canvases(timestamp)[Symbol.asyncIterator]();
 

@@ -110,13 +110,11 @@ export const DENSITY_PRESETS: Readonly<Record<Pacing, EditDensityTarget>> = {
     minimumShotContrast: 3,
     effectHitsPerMinute: [12, 90],
     minimumEffectTypes: 4,
-    minimumTreatedShotRatio: 0.8,
+    minimumTreatedShotRatio: 0.65,
     minimumTransitionTypes: 2,
     textsPerMinute: [8, 48],
     minimumTextAnimations: 2,
-    minimumSpeedRamps: 2,
-    minimumCameraMoveRatio: 0.6,
-    minimumCameraMoveVariety: 3,
+    minimumSpeedRamps: 1,
     minimumSfxHits: 3,
     minimumMotionMoments: 0,
     hookShots: 3,
@@ -134,8 +132,6 @@ export const DENSITY_PRESETS: Readonly<Record<Pacing, EditDensityTarget>> = {
     textsPerMinute: [4, 26],
     minimumTextAnimations: 2,
     minimumSpeedRamps: 1,
-    minimumCameraMoveRatio: 0.35,
-    minimumCameraMoveVariety: 2,
     minimumSfxHits: 1,
     hookShots: 2,
     minimumOnBeatCutRatio: 0.3,
@@ -152,8 +148,6 @@ export const DENSITY_PRESETS: Readonly<Record<Pacing, EditDensityTarget>> = {
     textsPerMinute: [1, 14],
     minimumTextAnimations: 1,
     minimumSpeedRamps: 0,
-    minimumCameraMoveRatio: 0.2,
-    minimumCameraMoveVariety: 1,
     minimumSfxHits: 0,
     hookShots: 1,
     requiresEscalation: false,
@@ -313,10 +307,13 @@ export function planDensityBudget(
   const range = (values?: readonly [number, number]): [number, number] =>
     values ? [Math.max(1, Math.round(values[0] * scale)), Math.max(1, Math.round(values[1] * scale))] : [0, 0];
   const shots = range(target.shotsPerMinute);
-  const cameraMoves = Math.max(
-    target.minimumCameraMoveVariety ?? 1,
-    Math.ceil((target.minimumCameraMoveRatio ?? 0) * Math.max(1, shots[0])),
-  );
+  const cameraMoves =
+    target.minimumCameraMoveRatio === undefined && target.minimumCameraMoveVariety === undefined
+      ? 0
+      : Math.max(
+          target.minimumCameraMoveVariety ?? 0,
+          Math.ceil((target.minimumCameraMoveRatio ?? 0) * Math.max(1, shots[0])),
+        );
   return {
     targetDuration: duration,
     shots,
@@ -517,7 +514,7 @@ export function compareEditDensity(
       directive:
         `${Math.round((1 - profile.treatedShotRatio) * 100)}% of shots carry no effect, camera move, ` +
         `speed ramp, or layout — they read as raw splices. Give every shot at least one treatment ` +
-        `(target ≥${Math.round(target.minimumTreatedShotRatio * 100)}%).`,
+        `(target ≥${Math.round(target.minimumTreatedShotRatio * 100)}%). Prefer a mix of purposeful treatments—text, transitions, effects, speed changes, and layout—rather than using camera motion as the default.`,
       weight: 2,
     });
   }
@@ -532,8 +529,8 @@ export function compareEditDensity(
       directive:
         `Only ${profile.cameraMoveCount} camera move(s) across ${profile.shotCount} shot(s) ` +
         `(${Math.round(profile.cameraMoveRatio * 100)}% of shots move; want ≥` +
-        `${Math.round(target.minimumCameraMoveRatio * 100)}%). Add \`cameraMoves\` to the remaining ` +
-        `shots — slow-push/drift on holds, punch-in on beats, handheld for energy, snap-zoom on the hook.`,
+        `${Math.round(target.minimumCameraMoveRatio * 100)}%). Add \`cameraMoves\` only when a move strengthens the shot; ` +
+        `do not use moves to fill the treatment quota. Prefer a motivated push on a payoff or a restrained drift on a hold.`,
       weight: 2,
     });
   }
@@ -546,8 +543,8 @@ export function compareEditDensity(
       actual: profile.distinctCameraMoves,
       target: target.minimumCameraMoveVariety,
       directive:
-        `Only ${profile.distinctCameraMoves} distinct camera move(s); vary them (≥` +
-        `${target.minimumCameraMoveVariety}) so the motion does not feel mechanical.`,
+        `Only ${profile.distinctCameraMoves} distinct camera move(s); if the footage calls for camera motion, vary them (≥` +
+        `${target.minimumCameraMoveVariety}) so the motion does not feel mechanical. Do not add moves just to meet this count.`,
       weight: 1.5,
     });
   }
@@ -560,8 +557,9 @@ export function compareEditDensity(
       actual: profile.speedRampCount,
       target: target.minimumSpeedRamps,
       directive:
-        `${profile.speedRampCount} speed ramp(s) (want ≥${target.minimumSpeedRamps}). Ramp down into the ` +
-        `biggest moment (1.0→0.35 over ~0.4s) and back up out of it, or add a freeze frame on the peak.`,
+        `${profile.speedRampCount} speed ramp(s) (want ≥${target.minimumSpeedRamps}). For a clear peak, use a short ` +
+        `complete shape: 1x lead-in → ease down toward ~0.4x → brief hold → ease back to 1x, then stay at 1x ` +
+        `through the rest of the segment. Do not leave the final speed below 1x; speed keyframes are not camera moves.`,
       weight: 1.2,
     });
   }

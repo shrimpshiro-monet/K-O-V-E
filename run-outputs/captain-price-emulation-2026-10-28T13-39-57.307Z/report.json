@@ -1,0 +1,55 @@
+{
+  "verdict": "EMPTY_TIMELINE",
+  "prompt": "/reference Create an energetic, punchy Steph Curry highlight edit following the attached reference's pacing and visual style. Keep Curry's scoring plays, dribbles, celebrations, and crowd reactions; cut dead air, slow setup, and repetition. Use only the source footage, and aim for roughly 20 seconds to match the reference length.",
+  "source": "/Users/hamza/Desktop/k.o.v.e/evaluation-files/Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+  "styleReference": "/Users/hamza/Desktop/k.o.v.e/captain price (2nd priority).MP4",
+  "analysisMode": "ai",
+  "vision": {
+    "summary": null,
+    "status": null,
+    "localPythonRequests": 0,
+    "workersAIRequests": 0,
+    "omniRouteResponses": 1,
+    "cloudflareAiProxyResponses": 0,
+    "workerFrameBudget": 60,
+    "visionProxy": {
+      "requests": 0,
+      "inputFrames": 0,
+      "forwardedFrames": 0,
+      "cloudflareRequests": 0,
+      "omniFallbackBatches": 0,
+      "omniFallbackFrames": 0
+    },
+    "responses": [
+      {
+        "time": 1793194851256,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      }
+    ]
+  },
+  "timeline": {
+    "clipCount": 0,
+    "duration": 0,
+    "media": [
+      {
+        "id": "bac133f0-8852-41f5-9712-c486bfc097e9",
+        "name": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "type": "video",
+        "analysisRole": null,
+        "duration": 418.2378231292517
+      },
+      {
+        "id": "ff5589d3-638c-4383-bb22-47c01a0ec128",
+        "name": "captain price (2nd priority).MP4",
+        "type": "video",
+        "analysisRole": "reference",
+        "duration": 20.730136054421767
+      }
+    ],
+    "tracks": [],
+    "clips": [],
+    "styleProfileAttached": false
+  },
+  "export": null
+}

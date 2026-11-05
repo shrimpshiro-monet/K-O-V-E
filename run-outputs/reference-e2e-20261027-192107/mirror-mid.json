@@ -1,0 +1,907 @@
+{
+  "projectId": "5651c46c-ae06-4337-bddc-8361cafe31e2",
+  "projectName": "New Project",
+  "settings": {
+    "width": 576,
+    "height": 1104,
+    "frameRate": 30
+  },
+  "duration": 46.599999999999994,
+  "media": [
+    {
+      "id": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "name": "milesmorales.mp4.mp4",
+      "type": "video",
+      "analysisRole": null,
+      "duration": 214.3201814058957,
+      "width": 640,
+      "height": 360,
+      "isPending": false
+    },
+    {
+      "id": "ce61dbad-977a-4949-9aaa-2b2bcc11f318",
+      "name": "SPIDERMAN (IMPORTANT).MP4",
+      "type": "video",
+      "analysisRole": "reference",
+      "duration": 46.6,
+      "width": 576,
+      "height": 1104,
+      "isPending": false
+    }
+  ],
+  "tracks": [
+    {
+      "id": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "name": "Video 1",
+      "type": "video",
+      "clipCount": 24,
+      "transitionCount": 0
+    }
+  ],
+  "clips": [
+    {
+      "id": "2193a825-79e7-46ef-969f-222166ae7fba",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 0,
+      "duration": 11.933333333333334,
+      "inPoint": 0,
+      "outPoint": 11.933333333333334,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 225,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "9e49e57a-bf06-47bb-a30d-3bd695b470ef",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 11.933333333333334,
+      "duration": 0.3333333333333333,
+      "inPoint": 11.933333333333334,
+      "outPoint": 12.266666666666667,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "0121e3cd-5903-4396-b821-7b431e5324e1",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 12.266666666666666,
+      "duration": 1.7333333333333334,
+      "inPoint": 12.266666666666667,
+      "outPoint": 14,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 35,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "fb86040f-20db-4fa8-b2a3-c853e20e391f",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 14,
+      "duration": 0.6666666666666666,
+      "inPoint": 14,
+      "outPoint": 14.666666666666666,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 10,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "f1b6f666-8f80-41b5-94f2-8555393ecfce",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 14.666666666666666,
+      "duration": 0.2,
+      "inPoint": 14.666666666666666,
+      "outPoint": 14.866666666666665,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "853ca0d5-2d20-4a05-bfb8-f6037a5190f4",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 14.866666666666667,
+      "duration": 2.1666666666666665,
+      "inPoint": 14.866666666666665,
+      "outPoint": 17.03333333333333,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 40,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "616a4364-e086-4ca0-8be8-4491c0553a63",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 17.03333333333333,
+      "duration": 0.06666666666666667,
+      "inPoint": 17.03333333333333,
+      "outPoint": 17.099999999999998,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "c74c1eed-4dbe-4482-82b9-68b0d3e3c0c0",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 17.1,
+      "duration": 2.3333333333333335,
+      "inPoint": 17.099999999999998,
+      "outPoint": 19.43333333333333,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 40,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "9a7573f9-7bdf-41ec-95c6-4b5946b0f46b",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 19.433333333333334,
+      "duration": 0.7666666666666666,
+      "inPoint": 19.43333333333333,
+      "outPoint": 20.199999999999996,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 15,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "9ed15784-ff54-4320-8236-edaa510f666c",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 20.2,
+      "duration": 0.16666666666666666,
+      "inPoint": 20.199999999999996,
+      "outPoint": 20.366666666666664,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "54d3e2d0-76c2-4d9a-9fb0-38f3f2a85378",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 20.366666666666667,
+      "duration": 0.36666666666666664,
+      "inPoint": 20.366666666666664,
+      "outPoint": 20.73333333333333,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "3b9e13b1-3c7f-422a-a454-65453d2281e0",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 20.733333333333334,
+      "duration": 0.36666666666666664,
+      "inPoint": 20.73333333333333,
+      "outPoint": 21.099999999999998,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 10,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "07499b27-1d2a-441c-9db2-d62c104efe7f",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 21.1,
+      "duration": 0.36666666666666664,
+      "inPoint": 21.099999999999998,
+      "outPoint": 21.466666666666665,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "94c6d927-a00e-466f-9b5b-a14cbf403fcd",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 21.466666666666665,
+      "duration": 1.8,
+      "inPoint": 21.466666666666665,
+      "outPoint": 23.266666666666666,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 35,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "8191df8e-3bc4-41e9-aa41-3cf6de03556b",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 23.266666666666666,
+      "duration": 0.36666666666666664,
+      "inPoint": 23.266666666666666,
+      "outPoint": 23.633333333333333,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "9cfe7522-ac6f-4bec-8bf8-578878cecdb0",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 23.633333333333333,
+      "duration": 0.3,
+      "inPoint": 23.633333333333333,
+      "outPoint": 23.933333333333334,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "fa429c8b-73f3-421b-8532-3b7dd6749c15",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 23.933333333333334,
+      "duration": 0.3333333333333333,
+      "inPoint": 23.933333333333334,
+      "outPoint": 24.266666666666666,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "eb909206-0fec-45e7-8135-0d86c71c5a45",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 24.266666666666666,
+      "duration": 0.2,
+      "inPoint": 24.266666666666666,
+      "outPoint": 24.466666666666665,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "e9b0d563-5de4-40a8-8449-769224511ae3",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 24.466666666666665,
+      "duration": 0.2,
+      "inPoint": 24.466666666666665,
+      "outPoint": 24.666666666666664,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "3e9f1a61-9cb9-4a1e-9a98-be4d4b667007",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 24.666666666666668,
+      "duration": 0.36666666666666664,
+      "inPoint": 24.666666666666664,
+      "outPoint": 25.03333333333333,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "2c621bac-b62f-4255-89d8-bf34fa52baf0",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 25.03333333333333,
+      "duration": 2,
+      "inPoint": 25.03333333333333,
+      "outPoint": 27.03333333333333,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 40,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "31d65335-13d5-4f01-9342-8f5f89790ae7",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 27.03333333333333,
+      "duration": 0.36666666666666664,
+      "inPoint": 27.03333333333333,
+      "outPoint": 27.4,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 0,
+      "keyframeProps": [],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "6a0d7ae9-c78c-4e66-9fd1-d35d6f7cac1a",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 27.4,
+      "duration": 9.666666666666666,
+      "inPoint": 27.4,
+      "outPoint": 37.06666666666666,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 180,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    },
+    {
+      "id": "323bae17-28b6-4db5-bc3a-bdf4e55dc1b3",
+      "trackId": "track-337011dc-e728-491a-ad4a-bd458993b24a",
+      "trackName": "Video 1",
+      "trackType": "video",
+      "mediaId": "9ef986e1-a5ac-42f2-a83b-50059a6c65b7",
+      "mediaName": "milesmorales.mp4.mp4",
+      "startTime": 37.06666666666666,
+      "duration": 9.533333333333333,
+      "inPoint": 37.06666666666666,
+      "outPoint": 46.599999999999994,
+      "effects": [],
+      "audioEffects": [],
+      "keyframeCount": 180,
+      "keyframeProps": [
+        "position.x",
+        "position.y",
+        "rotation",
+        "scale.x",
+        "scale.y"
+      ],
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "rotation": 0,
+        "opacity": 1
+      },
+      "hasColorGrading": true,
+      "volume": 1,
+      "speed": null,
+      "fade": null,
+      "automation": false
+    }
+  ],
+  "transitions": [],
+  "textClips": [],
+  "subtitles": 0,
+  "mirrorProfile": true,
+  "directorPlanRevision": null,
+  "hasOpenProject": true
+}

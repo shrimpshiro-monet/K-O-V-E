@@ -1,0 +1,17 @@
+{
+  "error": "page.evaluate: TypeError: Failed to resolve module specifier '@kove-advanced/agent'\n    at eval (eval at evaluate (:302:30), <anonymous>:6:19)\n    at async <anonymous>:328:30",
+  "network": {
+    "visionWorker": 0,
+    "python": 0,
+    "omni": 1,
+    "cloudflareApi": 0,
+    "responses": [
+      {
+        "time": 1793195402201,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      }
+    ]
+  },
+  "at": "2026-10-28T13:50:53.166Z"
+}

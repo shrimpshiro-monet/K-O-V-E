@@ -7,11 +7,28 @@ describe("agent tool router", () => {
     const names = selectToolsForPrompt("Trim the first clip, add captions, and fade the audio");
     expect(names.length).toBeLessThanOrEqual(DEFAULT_AGENT_TOOL_LIMIT);
     expect(names).toContain("trim_clip");
-    expect(names).toContain("add_subtitle");
+    expect(
+      names,
+      names.filter((name) => getTool(name)?.domain === "subtitle").join(", "),
+    ).toContain("add_subtitle");
     expect(names).toContain("set_clip_fade");
     expect(names).toContain("get_editor_state");
     expect(names).toContain("execute_action");
     expect(toOpenAITools(names)).toHaveLength(names.length);
+  });
+
+  it("keeps unrelated Motion Creator tools out of ordinary footage edits", () => {
+    const names = selectToolsForPrompt(
+      "Replicate the reference style on my footage with effects, transitions, and captions",
+      { maxTools: 25 },
+    );
+
+    expect(names).toContain("add_video_effect");
+    expect(names).toContain("add_transition");
+    expect(names, names.filter((name) => getTool(name)?.domain === "subtitle").join(", ")).toContain("add_subtitle");
+    expect(names).not.toContain("create_motion_composition");
+    expect(names).not.toContain("add_motion_layer");
+    expect(names.length).toBeLessThanOrEqual(25);
   });
 
   it("routes motion requests to motion tools without losing core inspection", () => {
@@ -20,7 +37,7 @@ describe("agent tool router", () => {
     );
     expect(names.length).toBeLessThanOrEqual(DEFAULT_AGENT_TOOL_LIMIT);
     expect(names).toContain("create_motion_composition");
-    expect(names).toContain("add_motion_layer");
+    expect(names).toContain("add_motion_layers");
     expect(names).toContain("get_editor_state");
     expect(names.some((name) => getTool(name)?.domain === "motion")).toBe(true);
   });

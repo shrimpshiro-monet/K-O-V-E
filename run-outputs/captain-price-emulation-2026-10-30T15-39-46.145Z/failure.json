@@ -1,0 +1,17 @@
+{
+  "error": "page.evaluate: Execution context was destroyed, most likely because of a navigation.",
+  "network": {
+    "visionWorker": 0,
+    "python": 0,
+    "omni": 1,
+    "cloudflareApi": 0,
+    "responses": [
+      {
+        "time": 1793374913816,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      }
+    ]
+  },
+  "at": "2026-10-30T15:47:21.388Z"
+}

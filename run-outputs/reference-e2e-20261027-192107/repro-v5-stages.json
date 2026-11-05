@@ -1,0 +1,87 @@
+{
+ "verdict": "rendering progressed to 77.5% (no hang)",
+ "playback": {
+  "timeBefore": "?",
+  "timeAfter": "?",
+  "hashChanged": true,
+  "note": true
+ },
+ "stages": [
+  {
+   "t": 394183,
+   "label": "ExportEngine.initialize:enter"
+  },
+  {
+   "t": 394183,
+   "label": "ExportEngine.initialize:exit"
+  },
+  {
+   "t": 394184,
+   "label": "ExportEngine.initializeGPUForExport:enter"
+  },
+  {
+   "t": 394184,
+   "label": "VideoEngine.initializeGPUCompositor:enter"
+  },
+  {
+   "t": 394184,
+   "label": "RendererFactory.createRenderer:enter"
+  },
+  {
+   "t": 394370,
+   "label": "WebGPURenderer.initialize:enter"
+  },
+  {
+   "t": 394370,
+   "label": "GPU.requestAdapter:enter"
+  },
+  {
+   "t": 394372,
+   "label": "GPU.requestAdapter:ret"
+  },
+  {
+   "t": 394372,
+   "label": "GPU.requestDevice:enter"
+  },
+  {
+   "t": 394389,
+   "label": "GPU.requestDevice:ret"
+  },
+  {
+   "t": 394389,
+   "label": "WebGPURenderer.initializePipelines:enter"
+  },
+  {
+   "t": 394390,
+   "label": "WebGPURenderer.initializePipelines:exit"
+  },
+  {
+   "t": 394390,
+   "label": "WebGPURenderer.initialize:exit"
+  },
+  {
+   "t": 394390,
+   "label": "RendererFactory.createRenderer:exit"
+  },
+  {
+   "t": 394390,
+   "label": "VideoEngine.initializeGPUCompositor:exit"
+  },
+  {
+   "t": 394391,
+   "label": "ExportEngine.initializeGPUForExport:exit"
+  }
+ ],
+ "wrapReport": [
+  "ExportEngine.initialize:wrapped",
+  "ExportEngine.initializeGPUForExport:wrapped",
+  "VideoEngine.initialize:wrapped",
+  "VideoEngine.initializeGPUCompositor:wrapped",
+  "RendererFactory.createRenderer:wrapped",
+  "WebGPURenderer.initialize:wrapped",
+  "WebGPURenderer.initializePipelines:wrapped",
+  "AudioEngine.initialize:wrapped",
+  "GPU.requestAdapter:intercepted",
+  "Worker:wrapped"
+ ]
+}

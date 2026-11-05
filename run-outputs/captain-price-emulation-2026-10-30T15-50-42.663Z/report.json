@@ -1,0 +1,311 @@
+{
+  "verdict": "TIMELINE_POPULATED",
+  "prompt": "/reference Create an energetic, punchy Steph Curry highlight edit following the attached reference's pacing and visual style. Keep Curry's scoring plays, dribbles, celebrations, and crowd reactions; cut dead air, slow setup, and repetition. Use only the source footage, and aim for roughly 20 seconds to match the reference length.",
+  "source": "/Users/hamza/Desktop/k.o.v.e/evaluation-files/Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+  "styleReference": "/Users/hamza/Desktop/k.o.v.e/captain price (2nd priority).MP4",
+  "analysisMode": "ai",
+  "vision": {
+    "summary": "extract_segments: analyzed 1 video(s) [\"Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4\" (608f58c4-562b-4a5a-a78e-40062da8f6c0)], 1 reference(s), 60 frame(s), 60 source segment(s) in 410399ms. 608f58c4-562b-4a5a-a78e-40062da8f6c0: Local transcription is capped at 120s per source to bound browser memory; this video is 418s.",
+    "status": "done",
+    "localPythonRequests": 0,
+    "workersAIRequests": 1,
+    "omniRouteResponses": 11,
+    "cloudflareAiProxyResponses": 2,
+    "workerFrameBudget": 60,
+    "visionProxy": {
+      "requests": 1,
+      "inputFrames": 4,
+      "forwardedFrames": 4,
+      "cloudflareRequests": 3,
+      "omniFallbackBatches": 4,
+      "omniFallbackFrames": 60,
+      "nimFallbackBatches": 0,
+      "nimFallbackFrames": 0
+    },
+    "recovery": null,
+    "responses": [
+      {
+        "time": 1793375566480,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376002761,
+        "status": 200,
+        "path": "/analyze-frames"
+      },
+      {
+        "time": 1793376003814,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376049381,
+        "status": 200,
+        "path": "/api/cf-ai/client/v4/accounts/5a1151e166f556fad816485f369bde3b/ai/v1/chat/completions"
+      },
+      {
+        "time": 1793376125156,
+        "status": 200,
+        "path": "/api/cf-ai/client/v4/accounts/5a1151e166f556fad816485f369bde3b/ai/v1/chat/completions"
+      },
+      {
+        "time": 1793376126188,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376432605,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376443860,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376590530,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376738701,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376879446,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376893137,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793376901470,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      },
+      {
+        "time": 1793377158536,
+        "status": 200,
+        "path": "/api/omni/v1/chat/completions"
+      }
+    ]
+  },
+  "timeline": {
+    "clipCount": 12,
+    "duration": 20,
+    "media": [
+      {
+        "id": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "name": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "type": "video",
+        "analysisRole": null,
+        "duration": 418.2378231292517
+      },
+      {
+        "id": "b8a111a0-91c3-464a-b95c-2b39f1b8c388",
+        "name": "captain price (2nd priority).MP4",
+        "type": "video",
+        "analysisRole": "reference",
+        "duration": 20.730136054421767
+      }
+    ],
+    "tracks": [
+      {
+        "id": "track-b71d5ede-3cbc-46de-82d0-b49c99e6eb6f",
+        "name": "Track 2",
+        "type": "video",
+        "clipCount": 0
+      },
+      {
+        "id": "track-2213bed5-a4a7-49f3-be6c-1e284f20d5ec",
+        "name": "Track 1",
+        "type": "video",
+        "clipCount": 0
+      },
+      {
+        "id": "track-4eab27ea-7ee6-45fd-a1f1-1d66948fb0fa",
+        "name": "Video 1",
+        "type": "video",
+        "clipCount": 10
+      },
+      {
+        "id": "track-0db33b59-0aa5-499c-b886-f50b97d03e8e",
+        "name": "Music",
+        "type": "audio",
+        "clipCount": 1
+      },
+      {
+        "id": "track-2cc92258-3fe9-43a4-b444-e0d8680fd001",
+        "name": "SFX",
+        "type": "audio",
+        "clipCount": 1
+      }
+    ],
+    "clips": [
+      {
+        "id": "f1d07b5a-0085-4a88-b3cd-4e48fcd34ef4",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 0,
+        "duration": 0.8000000000000007,
+        "inPoint": 27,
+        "outPoint": 27.8,
+        "effects": [
+          "vignette",
+          "grain",
+          "chromatic-aberration"
+        ]
+      },
+      {
+        "id": "095b0657-4683-4994-8467-66f4e19b91e2",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 0.8,
+        "duration": 1.2000000000000028,
+        "inPoint": 98.5,
+        "outPoint": 99.7,
+        "effects": [
+          "vignette",
+          "grain"
+        ]
+      },
+      {
+        "id": "bc06bb12-e823-4084-95c6-cb23b3c206b0",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 2.0000000000000027,
+        "duration": 2.200000000000003,
+        "inPoint": 119,
+        "outPoint": 121.2,
+        "effects": [
+          "vignette",
+          "grain"
+        ]
+      },
+      {
+        "id": "26a889ef-d528-4d02-a90f-3a538787af05",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 4.2,
+        "duration": 2.5,
+        "inPoint": 126.5,
+        "outPoint": 129,
+        "effects": [
+          "vignette",
+          "grain",
+          "motion-blur"
+        ]
+      },
+      {
+        "id": "24b0003b-4184-40dc-9c50-b80fe2eb75dd",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 6.7,
+        "duration": 1.5,
+        "inPoint": 275.5,
+        "outPoint": 277,
+        "effects": [
+          "vignette",
+          "grain"
+        ]
+      },
+      {
+        "id": "b0461e35-d4b1-43a6-919e-12e731b0c355",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 8.2,
+        "duration": 1.3000000000000114,
+        "inPoint": 289.5,
+        "outPoint": 290.8,
+        "effects": [
+          "vignette",
+          "grain"
+        ]
+      },
+      {
+        "id": "76db9dbd-e2a8-4567-a9a5-f5ac267ac914",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 9.50000000000001,
+        "duration": 1.8000000000000114,
+        "inPoint": 360,
+        "outPoint": 361.8,
+        "effects": [
+          "vignette",
+          "grain",
+          "glow"
+        ]
+      },
+      {
+        "id": "f8ffc4d3-8ea3-45a9-8f8f-93f95fc7e34c",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 11.3,
+        "duration": 2,
+        "inPoint": 381.5,
+        "outPoint": 383.5,
+        "effects": [
+          "vignette",
+          "grain",
+          "chromatic-aberration"
+        ]
+      },
+      {
+        "id": "e70f9a3d-0272-477d-b010-dc9a288824f8",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 13.3,
+        "duration": 1,
+        "inPoint": 388.5,
+        "outPoint": 389.5,
+        "effects": [
+          "vignette",
+          "grain"
+        ]
+      },
+      {
+        "id": "f2a56da0-105a-4ff1-ab77-39f881aa11d1",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 14.3,
+        "duration": 5.699999999999989,
+        "inPoint": 396.5,
+        "outPoint": 402.2,
+        "effects": [
+          "vignette",
+          "grain",
+          "brightness"
+        ]
+      },
+      {
+        "id": "efa2929a-5a9e-4d97-8015-9da46b063125",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 0,
+        "duration": 20,
+        "inPoint": 27,
+        "outPoint": 47,
+        "effects": []
+      },
+      {
+        "id": "f46b9b15-4fda-4670-88f4-5a8fd4a53e00",
+        "mediaId": "608f58c4-562b-4a5a-a78e-40062da8f6c0",
+        "mediaName": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+        "startTime": 9.5,
+        "duration": 0.5,
+        "inPoint": 360.5,
+        "outPoint": 361,
+        "effects": []
+      }
+    ],
+    "styleProfileAttached": true
+  },
+  "recovery": null,
+  "export": null
+}

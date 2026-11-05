@@ -79,8 +79,11 @@ export class WebCodecsBackend implements EncoderBackend {
     const self = this;
     const chunkWriter = new WritableStream<{ data: Uint8Array; position: number }>({
       async write(chunk) {
+        console.log(`[probe] chunk write start pos=${chunk.position} bytes=${chunk.data.byteLength}`);
         await diskWriter.seek(chunk.position);
+        console.log(`[probe] chunk seek done pos=${chunk.position}`);
         await diskWriter.write(chunk.data as unknown as FileSystemWriteChunkType);
+        console.log(`[probe] chunk write done pos=${chunk.position}`);
         self.bytesWritten += chunk.data.byteLength;
       },
     });
@@ -220,7 +223,9 @@ export class WebCodecsBackend implements EncoderBackend {
       if (!this.videoSource) throw new Error("Encoder backend not started");
       const { VideoSample } = this.mediabunny;
       videoSample = new VideoSample(frame, { timestamp: timestampSec, duration: durationSec });
+      console.log(`[probe] add start ts=${timestampSec} size=${frame.width}x${frame.height}`);
       await this.videoSource.add(videoSample);
+      console.log(`[probe] add done ts=${timestampSec}`);
     } finally {
       videoSample?.close();
       frame.close();
@@ -228,9 +233,12 @@ export class WebCodecsBackend implements EncoderBackend {
   }
 
   async finalize(): Promise<void> {
+    console.log("[probe] finalize start");
     this.videoSource?.close();
     await this.output?.finalize();
+    console.log("[probe] output finalized");
     await this.writableStream?.close();
+    console.log("[probe] writable closed");
   }
 
   async abort(): Promise<void> {

@@ -1,0 +1,49 @@
+{
+  "status": "idle",
+  "analysisMode": "ai",
+  "error": null,
+  "pendingConfirm": null,
+  "reference": {
+    "name": "captain price (2nd priority).MP4"
+  },
+  "usage": {
+    "inputTokens": 47675,
+    "outputTokens": 280
+  },
+  "messages": [
+    {
+      "role": "user",
+      "text": "/reference Create an energetic, punchy Steph Curry highlight edit following the attached reference's pacing and visual style. Keep Curry's scoring plays, dribbles, celebrations, and crowd reactions; cut dead air, slow setup, and repetition. Use only the source footage, and aim for roughly 20 seconds to match the reference length.",
+      "notice": null,
+      "toolCalls": []
+    },
+    {
+      "role": "assistant",
+      "text": "I'll create a 20-second energetic Steph Curry highlight edit following the reference's pacing and style. Let me start by identifying the source footage and then plan the cuts.<tool_call>list_media_tags{tagFilter:\"analysisRole=source\"}",
+      "notice": null,
+      "toolCalls": [
+        {
+          "name": "get_capabilities",
+          "status": "done",
+          "ok": true,
+          "summary": "get_capabilities ok",
+          "error": null
+        },
+        {
+          "name": "get_editor_state",
+          "status": "done",
+          "ok": true,
+          "summary": "get_editor_state ok",
+          "error": null
+        },
+        {
+          "name": "list_media",
+          "status": "done",
+          "ok": true,
+          "summary": "list_media ok",
+          "error": null
+        }
+      ]
+    }
+  ]
+}

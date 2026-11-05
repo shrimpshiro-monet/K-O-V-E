@@ -23,6 +23,17 @@ describe("buildSystemPrompt (Monet section is routing, not a second director pro
     expect(prompt).toContain("Only call `plan_edit` again if the user explicitly asks to redo the edit");
   });
 
+  it("preserves source orientation unless the user or source metadata requires a correction", () => {
+    expect(prompt).toContain("Preserve source orientation");
+    expect(prompt).toContain("do not copy a reference clip's rotation");
+  });
+
+  it("uses batched text overlays and treats keyframes as optional craft", () => {
+    expect(prompt).toContain("call `create_text_clips` once with all overlays");
+    expect(prompt).toContain("one overlay per readable phrase/title");
+    expect(prompt).toContain("never add keyframes to every shot");
+  });
+
   it("keeps the reference-intent directive path", () => {
     expect(prompt).toContain("### Reference Intent (attached reference video)");
     expect(prompt).toContain("`REPLICATE` (/mirror)");

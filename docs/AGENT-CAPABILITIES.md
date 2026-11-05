@@ -2,7 +2,7 @@
 
 # Kove Advanced Agent — Capability Reference
 
-The agent exposes **335 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
+The agent exposes **336 tools** spanning read/observe, project, track, clip, transform, effect, color, speed, audio, subtitle, keyframe, transition, marker, text and graphics domains — plus `execute_action` and `batch_actions` escape hatches for any capability without a dedicated tool.
 
 ## Tools
 
@@ -345,7 +345,8 @@ The agent exposes **335 tools** spanning read/observe, project, track, clip, tra
 - **update_marker** — Update a marker.
 
 ## text
-- **create_text_clip** — Create a text overlay that renders immediately. Pass { clip: { text, startTime, duration, style?, trackId? } }. A text track is created automatically if needed.
+- **create_text_clip** — Create one text overlay. For multiple separate overlays, prefer create_text_clips so they are added in one tool call. Pass { clip: { text, startTime, duration, style?, position?, animation?, trackId? } }.
+- **create_text_clips** — Create a batch of 1-24 text overlays in one tool call. Use this instead of repeated create_text_clip calls. Use one clip per readable phrase or title, not one clip per word. Each item: { text, startTime, duration, style?, position?, animation?, animationInSec?, animationOutSec?, trackId? }. A text track is created automatically if needed.
 - **update_text_clip** — Update a text overlay clip's content/style/animation/transform. Pass { clipId, updates: { text?, style?, animation?, transform? } }. Renders immediately.
 - **remove_text_clip** (destructive) — Remove a text overlay clip. Engine-aware so the preview and export stop rendering it.
 

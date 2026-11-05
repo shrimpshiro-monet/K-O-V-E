@@ -62,6 +62,11 @@ const isDirectorDiscoveryTool = (name: string): boolean =>
 
 const DIRECTOR_REQUEST = /\b(edit|video|footage|clip|cut|trim|highlight|reel|montage|reference|b-roll|vlog|podcast|timeline|sequence|splice|join)\b/i;
 
+/** True when the prompt asks for an edit (the director workflow guard applies). */
+export function isDirectorRequest(prompt: string): boolean {
+  return DIRECTOR_REQUEST.test(prompt);
+}
+
 /**
  * Transient error codes that warrant a single retry before giving up.
  * These typically indicate a temporary state issue rather than a real failure.
@@ -211,7 +216,7 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
     turnLabel = "AI edit",
     enforceDirectorWorkflow = false,
   } = input;
-  const maxSteps = input.limits?.maxSteps ?? 12;
+  const maxSteps = input.limits?.maxSteps ?? 24;
   const maxToolCalls = input.limits?.maxToolCalls ?? 64;
   const maxTokens = input.limits?.maxTokens;
 

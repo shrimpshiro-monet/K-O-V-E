@@ -11,6 +11,7 @@ import {
   type ShotProfile,
 } from "@kove-advanced/core/mirror/reference-profile";
 import {
+  abortError,
   abortable,
   analysisDimensions,
   createReferenceProgressReporter,
@@ -34,6 +35,7 @@ const CUT_DIFFERENCE_THRESHOLD = 0.23;
 const OCR_SAMPLE_BUDGET = 60;
 const OCR_TOTAL_BUDGET_MS = 10_000;
 const OCR_FRAME_TIMEOUT_MS = 1_000;
+const SOURCE_FRAME_TIMEOUT_MS = 15_000;
 
 export interface ExtractReferenceOptions {
   /** Called with coalesced progress: at most once per ~250ms, plus the total at the end. */
@@ -421,19 +423,103 @@ function estimateMotion(a: Uint8ClampedArray, b: Uint8ClampedArray, w: number, h
   return { frame, translateX: (nx - A*mx + B*my) * scale, translateY: (ny - B*mx - A*my) * scale, rotationRad: Math.atan2(B, A), scale: Math.hypot(A, B) };
 }
 
+function waitForSourceVideoEvent(
+  video: HTMLVideoElement,
+  eventName: "loadedmetadata" | "loadeddata" | "seeked",
+  timeoutMessage: string,
+  readyState = 0,
+  signal?: AbortSignal,
+  deadline = Date.now() + SOURCE_FRAME_TIMEOUT_MS,
+): Promise<void> {
+  if (video.readyState >= readyState && readyState > 0) return Promise.resolve();
+  throwIfAborted(signal);
+  return new Promise<void>((resolve, reject) => {
+    const cleanup = (): void => {
+      clearTimeout(timeout);
+      video.removeEventListener(eventName, onEvent);
+      video.removeEventListener("error", onError);
+      signal?.removeEventListener("abort", onAbort);
+    };
+    const finish = (error?: Error): void => {
+      cleanup();
+      if (error) reject(error);
+      else resolve();
+    };
+    const onEvent = (): void => finish();
+    const onError = (): void => finish(new Error("Source video could not be decoded"));
+    const onAbort = (): void => finish(abortError(signal));
+    const timeout = setTimeout(
+      () => finish(new Error(timeoutMessage)),
+      Math.max(0, deadline - Date.now()),
+    );
+    video.addEventListener(eventName, onEvent, { once: true });
+    video.addEventListener("error", onError, { once: true });
+    signal?.addEventListener("abort", onAbort, { once: true });
+    if (signal?.aborted) onAbort();
+  });
+}
+
 /** Samples the source in-point to initialize a per-shot Lab LUT. */
-export async function sampleVideoStats(file: Blob, sourceTime = 0.25): Promise<NonNullable<ShotProfile["colorStats"]>> {
-  const url = URL.createObjectURL(file), video = document.createElement("video");
-  video.muted = true; video.src = url;
+export async function sampleVideoStats(
+  file: Blob,
+  sourceTime = 0.25,
+  signal?: AbortSignal,
+): Promise<NonNullable<ShotProfile["colorStats"]>> {
+  const url = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  const deadline = Date.now() + SOURCE_FRAME_TIMEOUT_MS;
+  video.muted = true;
+  video.preload = "auto";
   try {
-    await new Promise<void>((resolve, reject) => { video.onloadedmetadata = () => resolve(); video.onerror = () => reject(new Error("Video could not be decoded")); });
-    const time = Math.min(sourceTime, video.duration / 2);
-    if (Math.abs(video.currentTime - time) > 0.005) await new Promise<void>((resolve, reject) => { video.onseeked = () => resolve(); video.onerror = () => reject(new Error("Could not seek source")); video.currentTime = time; });
-    if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) await new Promise<void>((resolve, reject) => { video.onloadeddata = () => resolve(); video.onerror = () => reject(new Error("Source frame unavailable")); });
-    const canvas = document.createElement("canvas"); canvas.width = 128; canvas.height = 72;
+    const metadataLoaded = waitForSourceVideoEvent(
+      video,
+      "loadedmetadata",
+      "Timed out loading source video metadata",
+      1,
+      signal,
+      deadline,
+    );
+    video.src = url;
+    await metadataLoaded;
+    if (!Number.isFinite(video.duration) || video.duration <= 0) {
+      throw new Error("Source video has invalid duration");
+    }
+
+    const time = Math.min(Math.max(0, sourceTime), video.duration / 2);
+    if (Math.abs(video.currentTime - time) > 0.005) {
+      const seeked = waitForSourceVideoEvent(
+        video,
+        "seeked",
+        "Timed out seeking to the source frame",
+        0,
+        signal,
+        deadline,
+      );
+      video.currentTime = time;
+      await seeked;
+    }
+    if (video.readyState < 2) {
+      await waitForSourceVideoEvent(
+        video,
+        "loadeddata",
+        "Timed out decoding the source frame",
+        2,
+        signal,
+        deadline,
+      );
+    }
+    throwIfAborted(signal);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 72;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) throw new Error("Canvas unavailable");
     ctx.drawImage(video, 0, 0, 128, 72);
     return computeLabStats(ctx.getImageData(0, 0, 128, 72).data);
-  } finally { video.removeAttribute("src"); video.load(); URL.revokeObjectURL(url); }
+  } finally {
+    video.removeAttribute("src");
+    video.load();
+    URL.revokeObjectURL(url);
+  }
 }

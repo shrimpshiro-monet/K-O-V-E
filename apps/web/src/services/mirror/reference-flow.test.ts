@@ -72,9 +72,12 @@ describe("reference flow", () => {
       data: { shotItemIds: ["clip-1", "clip-2"] },
     });
 
-    const result = await applyReferenceStructure(profile, [
-      { id: "m1", name: "source.mp4", duration: 12, blob: new Blob(["x"]) },
-    ]);
+    const progress: string[] = [];
+    const result = await applyReferenceStructure(
+      profile,
+      [{ id: "m1", name: "source.mp4", duration: 12, blob: new Blob(["x"]) }],
+      (message) => progress.push(message),
+    );
 
     expect(h.executeTool).toHaveBeenCalledTimes(1);
     const [tool, args] = h.executeTool.mock.calls[0] as [
@@ -85,6 +88,13 @@ describe("reference flow", () => {
     expect(args.userMediaIds).toEqual(["m1"]);
     expect(args.targetStats).toHaveLength(2);
     expect(result.shotItemIds).toEqual(["clip-1", "clip-2"]);
+    expect(progress).toEqual([
+      "Decoding source frame for reference shot 1/2",
+      "Matched reference shot 1/2",
+      "Decoding source frame for reference shot 2/2",
+      "Matched reference shot 2/2",
+      "Applying reference structure with mirror_reference_1to1",
+    ]);
   });
 
   it("fails loudly when the source footage is not available locally", async () => {

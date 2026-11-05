@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ToolcraftButton as Button } from "@kove-advanced/ui";
 import { ToolcraftIconButton as IconButton } from "@kove-advanced/ui";
 import { ToolcraftText as Text } from "@kove-advanced/ui";
-import { Bot, X, Undo2, Plus, History, Sparkles, ShieldCheck, FlaskConical } from "@/icons/lucide-compat";
+import { Bot, X, Undo2, Plus, History, Sparkles, ShieldCheck, FlaskConical, Eye } from "@/icons/lucide-compat";
 import { useChatStore } from "../../../stores/chat-store";
 import { useProjectStore } from "../../../stores/project-store";
 import { useSettingsStore } from "../../../stores/settings-store";
@@ -13,6 +13,7 @@ import { ChatComposer } from "./ChatComposer";
 import { InlineConfirmCard } from "./InlineConfirmCard";
 import { ChatErrorCard } from "./ChatErrorCard";
 import { ChatHistoryPanel } from "./ChatHistoryPanel";
+import { AIInputInspector } from "./AIInputInspector";
 import {
   hasSecret,
   isMasterPasswordSet,
@@ -141,6 +142,7 @@ export function ChatPanel({
   const pendingConfirm = useChatStore((s) => s.pendingConfirm);
   const lastTurnCommitted = useChatStore((s) => s.lastTurnCommitted);
   const usage = useChatStore((s) => s.usage);
+  const aiInputTrace = useChatStore((s) => s.aiInputTrace);
   const undoLastTurn = useChatStore((s) => s.undoLastTurn);
   const newChat = useChatStore((s) => s.newChat);
   const clearError = useChatStore((s) => s.clearError);
@@ -161,6 +163,7 @@ export function ChatPanel({
   const busy = status === "running" || status === "awaiting_confirm";
   const scrollRef = useRef<HTMLDivElement>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [aiInputOpen, setAIInputOpen] = useState(false);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -214,6 +217,16 @@ export function ChatPanel({
             }`}
           />
           <ProviderModelPicker disabled={busy} />
+          <IconButton
+            label="What Monet sees"
+            icon={<Eye size={14} aria-hidden />}
+            size="sm"
+            variant={aiInputOpen ? "secondary" : "ghost"}
+            onClick={() => setAIInputOpen((open) => !open)}
+            isDisabled={!aiInputTrace}
+            aria-pressed={aiInputOpen}
+            className="grid h-7 w-7 place-items-center rounded-md text-fg-2 transition-colors hover:bg-hover hover:text-fg disabled:opacity-40"
+          />
           {lastTurnCommitted && (
             <IconButton
               label="Undo last AI turn"
@@ -259,6 +272,10 @@ export function ChatPanel({
           )}
         </div>
       </header>
+
+      {aiInputOpen && (
+        <AIInputInspector trace={aiInputTrace} onClose={() => setAIInputOpen(false)} />
+      )}
 
       {historyOpen && (
         <ChatHistoryPanel

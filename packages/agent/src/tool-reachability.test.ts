@@ -40,14 +40,25 @@ describe("every tool is reachable by the model", () => {
   });
 
   it("keeps the whole safety net even under the smallest provider cap", () => {
-    // A cap smaller than the always-available set used to truncate it, stranding
-    // undo/checkpoints/discovery on smaller providers.
+    // The provider cap may be smaller than the safety net; every required entry
+    // point still survives, while unrelated domain tools stay out of the list.
     const selected = selectToolsForPrompt("make me a montage of this footage", { maxTools: 25 });
     for (const name of ALWAYS_AVAILABLE) {
       expect(selected, `always-available tool ${name} was dropped by the cap`).toContain(name);
     }
-    // The cap still governs how many *optional* tools ride along.
+    expect(selected).not.toContain("create_motion_composition");
+    expect(selected).not.toContain("add_motion_layer");
+    // The cap governs how many optional, prompt-relevant tools ride along.
     expect(selected.length).toBeLessThanOrEqual(Math.max(25, ALWAYS_AVAILABLE.size));
+  });
+
+  it("always routes plan_edit, even when the prompt is not director-shaped", () => {
+    // runTurn rejects a director turn with an empty timeline unless plan_edit
+    // ran; a provider cap must never hide the tool the guard demands.
+    for (const prompt of ["hello", "make me a montage of this footage", "animate this kinetic title card"]) {
+      const selected = selectToolsForPrompt(prompt, { maxTools: 25 });
+      expect(selected, `prompt: ${prompt}`).toContain("plan_edit");
+    }
   });
 
   it("can find and call every public tool through discovery alone", async () => {

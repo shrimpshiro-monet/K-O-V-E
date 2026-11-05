@@ -79,7 +79,7 @@ describe("edit plan review", () => {
     expect(review.density.score).toBeLessThan(0.6);
     expect(review.needsRevision).toBe(true);
     expect(review.revisionBrief).toContain("Density score");
-    expect(review.revisionBrief).toContain("cameraMoves");
+    expect(review.revisionBrief).not.toContain("cameraMoves");
   });
 
   it("accepts a populated plan whose density matches its pacing", () => {

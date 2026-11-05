@@ -10,7 +10,57 @@ import type {
   MulticamShotPolicy,
   MulticamTranscriptSegment,
 } from "@kove-advanced/core";
-import type { LLMClient, LlmProviderName } from "./llm";
+import type { LLMClient, LlmProviderName, LoopMessage } from "./llm";
+import type { SegmentMap } from "@kove-advanced/creation-schema";
+
+export interface AIInputImagePreview {
+  readonly timestamp: number;
+  readonly width: number;
+  readonly height: number;
+  readonly imageDataBase64: string;
+}
+
+export interface AIInputVisionBatch {
+  readonly batchIndex: number;
+  readonly sourceTimestamps: readonly number[];
+  readonly imageCount: number;
+  readonly images: readonly AIInputImagePreview[];
+  readonly mosaic?: { readonly rows: number; readonly cols: number };
+}
+
+export interface AIInputVisionTrace {
+  readonly worker: "vision-worker" | "local-analyzer" | "metadata-only";
+  readonly frameCount: number;
+  readonly videos: readonly {
+    readonly videoId: string;
+    readonly name: string;
+    readonly duration: number;
+    readonly frameCount: number;
+    readonly batches: readonly AIInputVisionBatch[];
+  }[];
+  readonly segmentMap: SegmentMap;
+  readonly referenceAnalysis?: unknown;
+  readonly note?: string;
+}
+
+export interface AIInputDirectorRequest {
+  readonly system: string;
+  readonly messages: LoopMessage[];
+  readonly tools: unknown[];
+  readonly maxTokens: number;
+}
+
+export interface AIInputDirectorTrace {
+  readonly provider: LlmProviderName;
+  readonly segmentMap: SegmentMap;
+  readonly requests: readonly AIInputDirectorRequest[];
+}
+
+export interface AIInputTraceUpdate {
+  readonly progress?: string;
+  readonly vision?: AIInputVisionTrace;
+  readonly director?: AIInputDirectorTrace;
+}
 
 export type JobKind =
   | "exportVideo"
@@ -621,6 +671,8 @@ export interface EditingHost {
   multicam?: MulticamHostBridge;
   /** LLM client for nested director calls (e.g. plan_edit). Set by chat-store before runTurn. */
   llm?: { client: LLMClient; provider: LlmProviderName };
+  /** Volatile, renderer-local trace for the "What Monet sees" inspector. */
+  reportAIInputTrace?(update: AIInputTraceUpdate): void;
   /** Throws when no project is open (guard for mutating tools). */
   requireOpenProject(): void;
   /** Agent-safe undo/redo and named checkpoints (see HistoryControl). */

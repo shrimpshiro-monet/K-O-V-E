@@ -12,20 +12,6 @@ export const ALWAYS_AVAILABLE = new Set([
   "list_clips",
   "get_clip",
   "get_capabilities",
-  "create_project",
-  "list_projects",
-  "open_project",
-  "save_project",
-  "list_motion_compositions",
-  "get_motion_composition",
-  "create_motion_composition",
-  "add_motion_layer",
-  "add_motion_layers",
-  "set_motion_layer_transform",
-  "animate_layer",
-  "remove_motion_layer",
-  "render_motion_frame",
-  "insert_motion_into_editor",
   "execute_action",
   "batch_actions",
   // discovery: any registered tool must stay reachable even when its own schema
@@ -33,6 +19,9 @@ export const ALWAYS_AVAILABLE = new Set([
   "search_tools",
   "run_tool",
   "list_action_types",
+  // The director's required entry point: `runTurn` rejects an edit turn whose
+  // timeline is still empty, so this schema must survive any provider cap.
+  "plan_edit",
   // safety net: must be reachable on every turn
   "create_checkpoint",
   "list_checkpoints",
@@ -66,12 +55,75 @@ const DIRECTOR_DOMAINS = new Set([
   "export",       // export tools
 ]);
 
+const DOMAIN_ENTRYPOINTS: Record<string, readonly string[]> = {
+  subtitle: ["add_subtitle", "auto_caption"],
+  text: ["create_text_clip"],
+  effect: ["add_video_effect"],
+  transition: ["add_transition"],
+  audio: ["add_audio_clip"],
+  clip: ["trim_clip", "split_clip"],
+  motion: ["create_motion_composition", "add_motion_layer", "add_motion_layers"],
+};
+
 const words = (value: string): string[] =>
   value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .split(/\s+/)
-    .filter((word) => word.length >= 3);
+    .filter((word) => word.length >= 3)
+    .map((word) => {
+      if (word.endsWith("ies") && word.length > 4) return `${word.slice(0, -3)}y`;
+      if (word.endsWith("s") && !word.endsWith("ss") && word.length > 4) {
+        return word.slice(0, -1);
+      }
+      return word;
+    });
+
+function promptWords(value: string): Set<string> {
+  const result = new Set(words(value));
+  if (result.has("caption")) result.add("subtitle");
+  if (result.has("subtitle")) result.add("caption");
+  return result;
+}
+
+function requestedDomains(tokens: Set<string>): Set<string> {
+  const domains = new Set<string>();
+  const domainHints: Record<string, readonly string[]> = {
+    caption: ["subtitle", "text"],
+    subtitle: ["subtitle", "text"],
+    text: ["text"],
+    title: ["text"],
+    transition: ["transition"],
+    effect: ["effect"],
+    filter: ["effect"],
+    audio: ["audio"],
+    music: ["audio"],
+    sound: ["audio"],
+    speed: ["speed"],
+    ramp: ["speed"],
+    color: ["color"],
+    grade: ["color"],
+    trim: ["clip"],
+    cut: ["clip"],
+    split: ["clip"],
+    clip: ["clip"],
+    crop: ["transform"],
+    rotate: ["transform"],
+    zoom: ["transform"],
+    reframe: ["transform"],
+    marker: ["marker"],
+    export: ["export"],
+    motion: ["motion"],
+    composition: ["motion"],
+    layer: ["motion"],
+    keyframe: ["motion"],
+    animate: ["motion"],
+  };
+  for (const token of tokens) {
+    for (const domain of domainHints[token] ?? []) domains.add(domain);
+  }
+  return domains;
+}
 
 function relevance(tool: RegisteredTool, promptWords: Set<string>): number {
   if (ALWAYS_AVAILABLE.has(tool.name)) return 10_000;
@@ -117,7 +169,10 @@ export function selectToolsForPrompt(
   const wantsReference = mentionsReferenceWorkflow(prompt);
   const wantsDirector = DIRECTOR_TERMS.test(prompt) || wantsReference;
   const prior = new Set(options.priorToolNames ?? []);
-  const promptWords = new Set(words(prompt));
+  const promptTokens = promptWords(prompt);
+  const promptDomains = requestedDomains(promptTokens);
+  if (wantsMotion) promptDomains.add("motion");
+  if (wantsCreation) promptDomains.add("creation");
 
   const candidates = listTools().filter((tool) => {
     if (ALWAYS_AVAILABLE.has(tool.name) || prior.has(tool.name)) return true;
@@ -139,10 +194,12 @@ export function selectToolsForPrompt(
     tool,
     index,
     score:
-      relevance(tool, promptWords) +
+      relevance(tool, promptTokens) +
       (prior.has(tool.name) ? 5_000 : 0) +
       (wantsCreation && isCreationTool(tool) ? 100 : 0) +
       (wantsMotion && tool.domain === "motion" ? 50 : 0) +
+      (promptDomains.has(tool.domain) ? 500 : 0) +
+      (DOMAIN_ENTRYPOINTS[tool.domain]?.includes(tool.name) && promptDomains.has(tool.domain) ? 800 : 0) +
       (wantsDirector && DIRECTOR_DOMAINS.has(tool.domain) ? 200 : 0),
   }));
 

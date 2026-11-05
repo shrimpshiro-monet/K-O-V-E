@@ -1,0 +1,17 @@
+66ms notice: Measuring the reference…
+101ms state: status=running mode=ai clips=0 tokens=0/0
+10087ms notice: Measuring the reference… 9/175 frames
+28033ms notice: Measuring the reference… 26/175 frames
+38303ms state: status=running mode=ai clips=0 tokens=0/0
+51089ms notice: Measuring the reference… 49/175 frames
+59117ms state: status=running mode=ai clips=0 tokens=0/0
+75398ms notice: Measuring the reference… 69/175 frames
+89729ms state: status=running mode=ai clips=0 tokens=0/0
+109936ms notice: Measuring the reference… 89/175 frames
+126921ms state: status=running mode=ai clips=0 tokens=0/0
+148522ms notice: Measuring the reference… 111/175 frames
+164423ms state: status=running mode=ai clips=0 tokens=0/0
+185387ms notice: Measuring the reference… 132/175 frames
+201783ms state: status=running mode=ai clips=0 tokens=0/0
+238467ms state: status=idle mode=eco clips=0 tokens=0/0
+240376ms turn finished: status=idle after 240s

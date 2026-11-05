@@ -1,0 +1,48 @@
+{
+  "status": "idle",
+  "analysisMode": "ai",
+  "error": null,
+  "pendingConfirm": null,
+  "reference": {
+    "name": "SPIDERMAN (IMPORTANT).MP4"
+  },
+  "notices": [],
+  "messages": [
+    {
+      "role": "user",
+      "text": "/reference make an edit in this style, keeping the source footage's story and content",
+      "toolCalls": []
+    },
+    {
+      "role": "assistant",
+      "text": "I need to find the source footage to perform the edit. I will list the available media to identify the file tagged with `analysisRole=source`.I need to find the source footage to perform the edit. I will list the available media to identify the file tagged with `analysisRole=source`.",
+      "toolCalls": [
+        {
+          "name": "get_capabilities",
+          "status": "done",
+          "ok": true,
+          "summary": "get_capabilities ok",
+          "error": null
+        },
+        {
+          "name": "get_editor_state",
+          "status": "done",
+          "ok": true,
+          "summary": "get_editor_state ok",
+          "error": null
+        },
+        {
+          "name": "list_media",
+          "status": "done",
+          "ok": true,
+          "summary": "list_media ok",
+          "error": null
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "inputTokens": 47898,
+    "outputTokens": 742
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import type { RunTurnInput, RunTurnResult } from "@kove-advanced/agent";
+import type { AIInputTraceUpdate, RunTurnInput, RunTurnResult } from "@kove-advanced/agent";
 import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 
 const h = vi.hoisted(() => ({
@@ -8,14 +8,16 @@ const h = vi.hoisted(() => ({
   isSessionUnlocked: vi.fn(() => true),
   makeBYOKClient: vi.fn(() => ({ complete: vi.fn() })),
   makeOmniRouteGatewayClient: vi.fn(() => ({ complete: vi.fn() })),
-  makeFallbackClient: vi.fn((opts: {
-    primary: unknown;
-    secondary: unknown;
-    secondaryInput?: (input: unknown) => unknown;
-    onFallback?: (error: unknown, leg?: "primary" | "secondary" | "tertiary") => void;
-    tertiary?: unknown;
+  makeFallbackLadder: vi.fn((opts: {
+    legs: Array<{
+      name: string;
+      client: { complete: (input: unknown) => Promise<unknown> };
+      input?: (input: unknown) => unknown;
+    }>;
+    acceptResponse?: (response: unknown, input: unknown) => boolean;
+    onFallback?: (error: unknown, from: string, to: string) => void;
   }) => ({
-    complete: vi.fn(async (input: unknown) => (opts.secondary as { complete: (i: unknown) => Promise<unknown> }).complete(input)),
+    complete: vi.fn(async (input: unknown) => opts.legs[0].client.complete(input)),
   })),
   selectToolsForPrompt: vi.fn((_context?: string, _options?: unknown): string[] => []),
   undo: vi.fn(async () => ({ success: true })),
@@ -29,6 +31,7 @@ const h = vi.hoisted(() => ({
     hasOpenProject: true,
     projectId: "project-a",
     mediaItems: [] as unknown[],
+    timelineClips: 0,
   },
   undoStackSize: 0,
   settings: {
@@ -50,10 +53,14 @@ vi.mock("@kove-advanced/agent", async () => {
     toOpenAITools: () => [],
     buildSystemPrompt: () => "system",
     selectToolsForPrompt: h.selectToolsForPrompt,
+    isDirectorRequest: (prompt: string) =>
+      /\b(edit|video|footage|clip|cut|trim|highlight|reel|montage|reference|b-roll|vlog|podcast|timeline|sequence|splice|join)\b/i.test(
+        prompt,
+      ),
     setAnalysisMode: () => {},
     parseReferenceIntent: intent.parseReferenceIntent,
     referenceIntentDirective: intent.referenceIntentDirective,
-    makeFallbackClient: h.makeFallbackClient,
+    makeFallbackLadder: h.makeFallbackLadder,
   };
 });
 
@@ -65,6 +72,15 @@ vi.mock("../services/secure-storage", () => ({
 vi.mock("../services/agent/live-host", () => ({
   LiveEditorHost: class {
     setMirrorReference(): void {}
+    getProject() {
+      return {
+        id: h.projectState.projectId,
+        timeline: {
+          tracks: Array.from({ length: h.projectState.timelineClips }, () => ({ clips: [{}] })),
+        },
+        mediaLibrary: { items: h.projectState.mediaItems },
+      };
+    }
   },
 }));
 
@@ -159,6 +175,11 @@ const sentUserContent = (): string => {
 describe("chat-store", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
+    vi.stubEnv("VITE_CLOUDFLARE_ACCOUNT_ID_2", "");
+    vi.stubEnv("VITE_CLOUDFLARE_API_TOKEN_2", "");
+    vi.stubEnv("VITE_CLOUDFLARE_ACCOUNT_ID_3", "");
+    vi.stubEnv("VITE_LOUDFLARE_ACCOUNT_ID_3", "");
+    vi.stubEnv("VITE_CLOUDFLARE_API_TOKEN_3", "");
     store().reset();
     useChatHistoryStore.getState().clearHistory();
     vi.clearAllMocks();
@@ -175,6 +196,7 @@ describe("chat-store", () => {
     h.settings.agentDryRun = false;
     h.undoStackSize = 0;
     h.projectState.mediaItems = [];
+    h.projectState.timelineClips = 0;
     h.importMedia.mockResolvedValue({ success: true });
     h.setMediaAnalysisRole.mockResolvedValue({ success: true });
     h.measureReferenceVideo.mockReset();
@@ -264,6 +286,40 @@ describe("chat-store", () => {
     expect(store().messages).toEqual([]);
     expect(store().currentConversationId).toBeNull();
     expect(useChatHistoryStore.getState().conversations[0].id).toBe(saved.id);
+  });
+
+  it("keeps AI input diagnostics volatile and clears them with a new chat", async () => {
+    const trace: AIInputTraceUpdate = {
+      director: {
+        provider: "openai",
+        segmentMap: { videos: [] },
+        requests: [{
+          system: "Director prompt",
+          messages: [{ role: "user", content: "Make an edit" }],
+          tools: [],
+          maxTokens: 4096,
+        }],
+      },
+    };
+    h.runTurn.mockImplementation(
+      impl(async ({ host, messages }) => {
+        host.reportAIInputTrace?.(trace);
+        return {
+          text: "Done!",
+          messages,
+          toolCalls: 0,
+          stoppedReason: "end_turn",
+          committed: true,
+        };
+      }),
+    );
+
+    await store().send("Make an edit");
+
+    expect(store().aiInputTrace).toEqual(trace);
+    store().newChat();
+    expect(store().aiInputTrace).toBeNull();
+    expect(useChatHistoryStore.getState().conversations[0]).not.toHaveProperty("aiInputTrace");
   });
 
   it("opens a saved conversation for viewing and follow-up", async () => {
@@ -383,6 +439,9 @@ describe("chat-store", () => {
       h.settings.llmModel = "";
       stubCloudflareEnv();
       stubGatewayEnv();
+      vi.stubEnv("VITE_NVIDIA_NIM_BASE_URL", "https://nim.example/v1");
+      vi.stubEnv("VITE_NVIDIA_NIM_API_KEY", "nim-key");
+      vi.stubEnv("VITE_NVIDIA_NIM_MODEL", "nim-model");
       h.runTurn.mockImplementation(okTurn);
 
       await store().send("cut this into a highlight");
@@ -397,13 +456,18 @@ describe("chat-store", () => {
       expect(h.makeBYOKClient).toHaveBeenCalledWith(
         expect.objectContaining({ provider: "cloudflare", model: "@cf/test-model" }),
       );
-      expect(h.makeFallbackClient).toHaveBeenCalledTimes(1);
-      const ladder = h.makeFallbackClient.mock.calls[0][0];
-      expect(ladder.primary).toBe(h.makeOmniRouteGatewayClient.mock.results[0].value);
-      expect(ladder.secondary).toBe(h.makeBYOKClient.mock.results[0].value);
-      expect(ladder.secondaryInput).toBeTypeOf("function");
+      expect(h.makeFallbackLadder).toHaveBeenCalledTimes(1);
+      const ladder = h.makeFallbackLadder.mock.calls[0][0];
+      expect(ladder.legs.map((leg) => leg.name)).toEqual([
+        "OmniRoute",
+        "Cloudflare Workers AI",
+        "NVIDIA NIM",
+      ]);
+      expect(ladder.legs[0].client).toBe(h.makeOmniRouteGatewayClient.mock.results[0].value);
+      expect(ladder.legs[1].client).toBe(h.makeBYOKClient.mock.results[0].value);
+      expect(ladder.legs[1].input).toBeTypeOf("function");
       expect(ladder.onFallback).toBeTypeOf("function");
-      // The gateway side gets the full routed toolset, the Workers replay the
+      // The gateway side gets the full routed toolset, the workers replay the
       // proven 25-tool cap with its matching prompt.
       expect(selectOptions(0).maxTools).toBe(120);
       expect(selectOptions(1).maxTools).toBe(25);
@@ -441,18 +505,152 @@ describe("chat-store", () => {
       );
     });
 
-    it("stays on Workers alone when the gateway env is absent", async () => {
+    it("stays on Workers alone when no other provider is configured", async () => {
       h.settings.defaultLlmProvider = "cloudflare";
       h.settings.llmModel = "";
+      h.settings.llmBaseUrl = "";
+      h.settings.configuredServices = [];
       stubCloudflareEnv();
       h.runTurn.mockImplementation(okTurn);
 
       await store().send("hello");
 
       expect(h.makeOmniRouteGatewayClient).not.toHaveBeenCalled();
-      expect(h.makeFallbackClient).not.toHaveBeenCalled();
+      expect(h.makeFallbackLadder).not.toHaveBeenCalled();
       expect(selectOptions(0).maxTools).toBe(25);
       expect(h.runTurn).toHaveBeenCalledOnce();
+    });
+
+    it("falls back to NIM when the gateway is absent", async () => {
+      h.settings.defaultLlmProvider = "cloudflare";
+      h.settings.llmModel = "";
+      stubCloudflareEnv();
+      vi.stubEnv("VITE_NVIDIA_NIM_BASE_URL", "https://nim.example/v1");
+      vi.stubEnv("VITE_NVIDIA_NIM_API_KEY", "nim-key");
+      vi.stubEnv("VITE_NVIDIA_NIM_MODEL", "nim-model");
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("make a highlight");
+
+      expect(h.makeFallbackLadder).toHaveBeenCalledTimes(1);
+      const ladder = h.makeFallbackLadder.mock.calls[0][0];
+      expect(ladder.legs.map((leg) => leg.name)).toEqual([
+        "Cloudflare Workers AI",
+        "NVIDIA NIM",
+      ]);
+      expect(ladder.legs[1].input).toBeTypeOf("function");
+      expect(h.makeBYOKClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: "openai-compatible",
+          apiKey: "nim-key",
+          model: "nim-model",
+        }),
+      );
+    });
+
+    it("tries secondary Workers AI accounts before NIM", async () => {
+      h.settings.defaultLlmProvider = "cloudflare";
+      h.settings.llmModel = "";
+      stubCloudflareEnv();
+      vi.stubEnv("VITE_CLOUDFLARE_ACCOUNT_ID_2", "cf-acct-2");
+      vi.stubEnv("VITE_CLOUDFLARE_API_TOKEN_2", "cf-token-2");
+      vi.stubEnv("VITE_LOUDFLARE_ACCOUNT_ID_3", "cf-acct-3");
+      vi.stubEnv("VITE_CLOUDFLARE_API_TOKEN_3", "cf-token-3");
+      vi.stubEnv("VITE_NVIDIA_NIM_BASE_URL", "https://nim.example/v1");
+      vi.stubEnv("VITE_NVIDIA_NIM_API_KEY", "nim-key");
+      vi.stubEnv("VITE_NVIDIA_NIM_MODEL", "nim-model");
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("make a highlight");
+
+      const ladder = h.makeFallbackLadder.mock.calls[0][0];
+      expect(ladder.legs.map((leg) => leg.name)).toEqual([
+        "Cloudflare Workers AI",
+        "Cloudflare Workers AI (account 2)",
+        "Cloudflare Workers AI (account 3)",
+        "NVIDIA NIM",
+      ]);
+      expect(h.makeBYOKClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: "cloudflare",
+          baseUrl: "cf-acct-2",
+          apiKey: "cf-token-2",
+          cloudflareProxyPrefix: "/api/cf-ai-2",
+          cloudflareRetries: 0,
+        }),
+      );
+      expect(h.makeBYOKClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: "cloudflare",
+          baseUrl: "cf-acct-3",
+          apiKey: "cf-token-3",
+          cloudflareProxyPrefix: "/api/cf-ai-3",
+          cloudflareRetries: 0,
+        }),
+      );
+    });
+
+    it("appends extra OpenAI-compatible providers after NIM", async () => {
+      h.settings.defaultLlmProvider = "cloudflare";
+      h.settings.llmModel = "";
+      stubCloudflareEnv();
+      vi.stubEnv("VITE_NVIDIA_NIM_BASE_URL", "https://nim.example/v1");
+      vi.stubEnv("VITE_NVIDIA_NIM_API_KEY", "nim-key");
+      vi.stubEnv("VITE_NVIDIA_NIM_MODEL", "nim-model");
+      vi.stubEnv(
+        "VITE_AGENT_FALLBACK_PROVIDERS",
+        JSON.stringify([
+          {
+            label: "OpenRouter",
+            baseUrl: "https://openrouter.ai/api/v1",
+            apiKey: "or-key",
+            model: "or/model",
+          },
+        ]),
+      );
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("make a highlight");
+
+      const ladder = h.makeFallbackLadder.mock.calls[0][0];
+      expect(ladder.legs.map((leg) => leg.name)).toEqual([
+        "Cloudflare Workers AI",
+        "NVIDIA NIM",
+        "OpenRouter",
+      ]);
+      expect(h.makeBYOKClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: "openai-compatible",
+          baseUrl: "https://openrouter.ai/api/v1",
+          apiKey: "or-key",
+          model: "or/model",
+        }),
+      );
+    });
+
+    it("advances providers when a director model answers without planning", async () => {
+      h.settings.defaultLlmProvider = "cloudflare";
+      h.settings.llmModel = "";
+      h.projectState.mediaItems = [mediaItem()];
+      stubCloudflareEnv();
+      stubGatewayEnv();
+      vi.stubEnv("VITE_NVIDIA_NIM_BASE_URL", "https://nim.example/v1");
+      vi.stubEnv("VITE_NVIDIA_NIM_API_KEY", "nim-key");
+      vi.stubEnv("VITE_NVIDIA_NIM_MODEL", "nim-model");
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("Create a highlight reel from this video");
+
+      const ladder = h.makeFallbackLadder.mock.calls[0][0];
+      const prose = { text: "Your edit is ready.", toolUses: [], stopReason: "end_turn" };
+      expect(ladder.acceptResponse?.(prose, {})).toBe(false);
+      expect(
+        ladder.acceptResponse?.({ ...prose, text: "Which clips should I keep?" }, {}),
+      ).toBe(true);
+
+      // Once plan_edit has placed clips, a text-only summary is a valid finish.
+      h.projectState.timelineClips = 1;
+      expect(ladder.acceptResponse?.(prose, {})).toBe(true);
     });
 
     it("ignores the gateway env for explicit BYOK providers", async () => {
@@ -463,13 +661,13 @@ describe("chat-store", () => {
       await store().send("hello");
 
       expect(h.makeOmniRouteGatewayClient).not.toHaveBeenCalled();
-      expect(h.makeFallbackClient).not.toHaveBeenCalled();
+      expect(h.makeFallbackLadder).not.toHaveBeenCalled();
       expect(h.makeBYOKClient).toHaveBeenCalledWith(
         expect.objectContaining({ provider: "openai-compatible" }),
       );
     });
 
-    it("surfaces a gateway failure as a notice while the turn continues", async () => {
+    it("surfaces a provider failure as a notice while the turn continues", async () => {
       h.settings.defaultLlmProvider = "cloudflare";
       h.settings.llmModel = "";
       stubCloudflareEnv();
@@ -478,14 +676,37 @@ describe("chat-store", () => {
 
       await store().send("hello");
 
-      const ladder = h.makeFallbackClient.mock.calls[0][0];
+      const ladder = h.makeFallbackLadder.mock.calls[0][0];
       expect(ladder.onFallback).toBeTypeOf("function");
-      ladder.onFallback?.(new Error("connect ECONNREFUSED 127.0.0.1:20128"), "primary");
+      ladder.onFallback?.(
+        new Error("connect ECONNREFUSED 127.0.0.1:20128"),
+        "OmniRoute",
+        "Cloudflare Workers AI",
+      );
 
       const last = store().messages.at(-1);
       expect(last?.notice).toMatch(/OmniRoute unreachable \(connect ECONNREFUSED/);
       expect(last?.notice).toMatch(/continuing on Cloudflare Workers AI/);
       expect(store().error ?? null).toBeNull();
+    });
+
+    it("reports an unusable completion as a provider switch", async () => {
+      h.settings.defaultLlmProvider = "cloudflare";
+      h.settings.llmModel = "";
+      stubCloudflareEnv();
+      stubGatewayEnv();
+      h.runTurn.mockImplementation(okTurn);
+
+      await store().send("hello");
+
+      const ladder = h.makeFallbackLadder.mock.calls[0][0];
+      const unusable = new Error("Cloudflare Workers AI did not produce a usable completion");
+      unusable.name = "UnusableCompletionError";
+      ladder.onFallback?.(unusable, "Cloudflare Workers AI", "NVIDIA NIM");
+
+      const last = store().messages.at(-1);
+      expect(last?.notice).toMatch(/Cloudflare Workers AI did not produce a usable completion/);
+      expect(last?.notice).toMatch(/continuing on NVIDIA NIM/);
     });
   });
 

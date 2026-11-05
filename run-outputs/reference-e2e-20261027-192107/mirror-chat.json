@@ -1,0 +1,13 @@
+{
+  "status": "idle",
+  "analysisMode": "eco",
+  "error": null,
+  "pendingConfirm": null,
+  "reference": null,
+  "notices": [],
+  "messages": [],
+  "usage": {
+    "inputTokens": 0,
+    "outputTokens": 0
+  }
+}

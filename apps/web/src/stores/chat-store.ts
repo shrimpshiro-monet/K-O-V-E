@@ -8,7 +8,9 @@ import {
   setAnalysisMode as setAgentAnalysisMode,
   parseReferenceIntent,
   referenceIntentDirective,
-  makeFallbackClient,
+  isDirectorRequest,
+  makeFallbackLadder,
+  type LadderLeg,
 } from "@kove-advanced/agent";
 import type {
   AgentEvent,
@@ -19,6 +21,7 @@ import type {
   LLMTurnInput,
   ReferenceIntent,
   ReferenceApplication,
+  AIInputTraceUpdate,
 } from "@kove-advanced/agent";
 import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import { isSessionUnlocked, getSecret } from "../services/secure-storage";
@@ -68,6 +71,7 @@ export interface ChatMessage {
   readonly role: "user" | "assistant";
   readonly text: string;
   readonly toolCalls: ToolCallView[];
+  readonly startedAt?: number;
   readonly notice?: string;
   readonly expansion?: PromptExpansionData;
   readonly pendingQuestions?: string[];
@@ -110,6 +114,7 @@ interface ChatState {
   lastTurnCommitted: boolean;
   lastTurnUndoSize: number | null;
   usage: TokenUsage;
+  aiInputTrace: AIInputTraceUpdate | null;
   analysisMode: "eco" | "ai";
   projectId: string | null;
   currentConversationId: string | null;
@@ -188,12 +193,12 @@ function resolveOmniRouteLadder(settingsModel: string): OmniRouteGatewayOptions 
 }
 
 /**
- * Rebuilds the main-loop turn for the Workers side of the ladder: its own
+ * Rebuilds the main-loop turn for smaller secondary providers: their own
  * 25-tool cap (the size Workers handles reliably) and the matching system
  * prompt. Nested director calls (plan_edit, expand_prompt) carry a single
  * tool and their own prompt — those pass through untouched.
  */
-function buildWorkersFallbackInput(
+function buildReducedToolsetInput(
   host: ReturnType<typeof getLiveEditorHost>,
   routingContext: string,
   priorToolNames: string[],
@@ -210,6 +215,103 @@ function buildWorkersFallbackInput(
         : {}),
     };
   };
+}
+
+export interface ExtraFallbackProvider {
+  readonly label: string;
+  readonly baseUrl: string;
+  readonly apiKey: string;
+  readonly model: string;
+}
+
+/**
+ * Extra OpenAI-compatible providers appended after NIM in the zero-config
+ * ladder. Configured as a JSON array in `AGENT_FALLBACK_PROVIDERS` (injected
+ * from `.dev.vars` as `VITE_AGENT_FALLBACK_PROVIDERS` for dev/desktop builds):
+ *
+ *   AGENT_FALLBACK_PROVIDERS=[{"label":"OpenRouter","baseUrl":"https://openrouter.ai/api/v1","apiKey":"…","model":"…"}]
+ *
+ * Invalid entries are skipped rather than breaking the turn.
+ */
+export function resolveExtraFallbackProviders(): ExtraFallbackProvider[] {
+  const raw = (import.meta.env.VITE_AGENT_FALLBACK_PROVIDERS ?? "") as string;
+  if (!raw.trim()) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const providers: ExtraFallbackProvider[] = [];
+  for (const [index, item] of parsed.entries()) {
+    if (!item || typeof item !== "object") continue;
+    const record = item as Record<string, unknown>;
+    const baseUrlRaw = typeof record.baseUrl === "string" ? record.baseUrl.trim() : "";
+    const model = typeof record.model === "string" ? record.model.trim() : "";
+    if (!baseUrlRaw || !model) continue;
+    let baseUrl: string;
+    try {
+      baseUrl = normalizeCompatibleBaseUrl(baseUrlRaw);
+    } catch {
+      continue;
+    }
+    const label =
+      typeof record.label === "string" && record.label.trim()
+        ? record.label.trim()
+        : `Fallback provider ${index + 1}`;
+    providers.push({
+      label,
+      baseUrl,
+      apiKey: typeof record.apiKey === "string" ? record.apiKey.trim() : "",
+      model,
+    });
+  }
+  return providers;
+}
+
+interface CloudflareFallbackAccount {
+  readonly id: string;
+  readonly token: string;
+  readonly model: string;
+  readonly proxyPrefix: string;
+  readonly label: string;
+}
+
+/** Secondary Workers AI accounts from .dev.vars, used after the primary quota. */
+function resolveCloudflareFallbackAccounts(
+  primaryAccountId: string,
+  primaryToken: string,
+  defaultModel: string,
+): CloudflareFallbackAccount[] {
+  const read = (key: string): string => {
+    const env = import.meta.env as unknown as Record<string, string | undefined>;
+    return (env[key] ?? "").trim();
+  };
+  const candidates: CloudflareFallbackAccount[] = [
+    {
+      id: read("VITE_CLOUDFLARE_ACCOUNT_ID_2"),
+      token: read("VITE_CLOUDFLARE_API_TOKEN_2"),
+      model: read("VITE_CLOUDFLARE_AI_MODEL_2") || defaultModel,
+      proxyPrefix: "/api/cf-ai-2",
+      label: "Cloudflare Workers AI (account 2)",
+    },
+    {
+      id: read("VITE_CLOUDFLARE_ACCOUNT_ID_3") || read("VITE_LOUDFLARE_ACCOUNT_ID_3"),
+      token: read("VITE_CLOUDFLARE_API_TOKEN_3"),
+      model: read("VITE_CLOUDFLARE_AI_MODEL_3") || defaultModel,
+      proxyPrefix: "/api/cf-ai-3",
+      label: "Cloudflare Workers AI (account 3)",
+    },
+  ];
+  const seen = new Set([`${primaryAccountId}:${primaryToken}`]);
+  return candidates.filter((account) => {
+    if (!account.id || !account.token) return false;
+    const key = `${account.id}:${account.token}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /** Reads the bytes of a reference that may live in the media library only. */
@@ -302,7 +404,12 @@ async function prepareReferenceTurn(
         } else {
           throwIfAborted(signal);
           notice("Rebuilding your footage to the reference structure…");
-          const result = await applyReferenceStructure(profile, sources);
+          const result = await applyReferenceStructure(
+            profile,
+            sources,
+            notice,
+            signal,
+          );
           warnings.push(...result.warnings);
           applied = "structure";
         }
@@ -393,6 +500,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   lastTurnCommitted: false,
   lastTurnUndoSize: null,
   usage: { inputTokens: 0, outputTokens: 0 },
+  aiInputTrace: null,
   analysisMode: "eco" as const,
   projectId: null,
   currentConversationId: null,
@@ -535,6 +643,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       role: "assistant",
       text: "",
       toolCalls: [],
+      startedAt: Date.now(),
     };
     const assistantId = assistantMessage.id;
     const controller = new AbortController();
@@ -547,6 +656,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       error: null,
       abortController: controller,
       pendingConfirm: null,
+      aiInputTrace: null,
       projectId: currentProjectId,
       currentConversationId: conversationId,
       conversationStartedAt,
@@ -608,6 +718,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           { role: "user", content: turnText },
         ],
       }));
+      updateAssistant((message) => ({ ...message, notice: undefined }));
     }
 
     const onEvent = (event: AgentEvent): void => {
@@ -681,6 +792,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
     };
 
     const host = getLiveEditorHost();
+    const reportAIInputTrace = (update: AIInputTraceUpdate): void => {
+      if (activeSeq !== seq) return;
+      set((state) => ({
+        aiInputTrace: { ...state.aiInputTrace, ...update },
+        messages: update.progress
+          ? state.messages.map((message) =>
+              message.id === assistantId
+                ? { ...message, notice: update.progress }
+                : message,
+            )
+          : state.messages,
+      }));
+    };
     const priorToolNames = get().conversation.flatMap((message) =>
       message.role === "assistant" ? message.toolUses.map((tool) => tool.name) : [],
     );
@@ -692,12 +816,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       .slice(-5)
       .map((message) => message.content)
       .join("\n");
-    // OmniRoute (local gateway) leads the zero-config path, Cloudflare Workers
-    // AI is its secondary: the ladder replays a failed completion on Workers
-    // instead of dying with the gateway. The gateway side is full-strength and
-    // gets the whole routed toolset; the Workers fallback keeps its proven
-    // 25-tool cap — the replay hands it that smaller set, system prompt
-    // included, rather than a prompt sized for the stronger model.
+    // The zero-config provider runs on a provider ladder: OmniRoute (when
+    // configured) leads, then Cloudflare Workers AI, NVIDIA NIM, and any extra
+    // OpenAI-compatible providers from AGENT_FALLBACK_PROVIDERS. A quota,
+    // outage, or empty completion advances to the next provider instead of
+    // failing the whole turn. The gateway side is full-strength and gets the
+    // whole routed toolset; the smaller fallbacks get a capped toolset and a
+    // matching system prompt rather than one sized for the stronger model.
     const omniRoute =
       provider === "cloudflare" ? resolveOmniRouteLadder(settings.llmModel.trim()) : null;
     const selectedToolNames = selectToolsForPrompt(routingContext, {
@@ -715,9 +840,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       apiKey,
       baseUrl,
       signal: controller.signal,
+      // The ladder owns failover, so a quota 429 should advance immediately.
+      ...(provider === "cloudflare" ? { cloudflareRetries: 0 } : {}),
     });
-    // Final fallback leg in the ladder: NVIDIA NIM (OpenAI-compatible) once the
-    // OmniRoute gateway and Cloudflare Workers AI have both failed the turn.
+    const reducedInput = buildReducedToolsetInput(host, routingContext, priorToolNames);
+    // NVIDIA NIM (OpenAI-compatible) is the first non-Cloudflare provider.
     const nimBaseUrlFromEnv = (import.meta.env.VITE_NVIDIA_NIM_BASE_URL ?? "") as string;
     const nimApiKeyFromEnv = (import.meta.env.VITE_NVIDIA_NIM_API_KEY ?? "") as string;
     const nimModelFromEnv = (import.meta.env.VITE_NVIDIA_NIM_MODEL ?? "") as string;
@@ -754,22 +881,90 @@ export const useChatStore = create<ChatState>((set, get) => ({
             signal: controller.signal,
           })
         : null;
-    const llm = omniRoute
-      ? makeFallbackClient({
-          primary: makeOmniRouteGatewayClient({ ...omniRoute, signal: controller.signal }),
-          secondary: baseClient,
-          secondaryInput: buildWorkersFallbackInput(host, routingContext, priorToolNames),
-          ...(nimClient ? { tertiary: nimClient } : {}),
-          onFallback: (error: unknown, leg: "primary" | "secondary" | "tertiary") => {
-            const message = (error instanceof Error ? error.message : String(error)).slice(0, 200);
-            const notice =
-              leg === "primary"
-                ? `OmniRoute unreachable (${message}) — continuing on Cloudflare Workers AI.`
-                : `Cloudflare Workers AI unreachable (${message}) — continuing on NVIDIA NIM.`;
-            updateAssistant((m) => ({ ...m, notice }));
-          },
-        })
-      : baseClient;
+    const extraProviders = resolveExtraFallbackProviders();
+    const cfFallbackAccounts =
+      provider === "cloudflare"
+        ? resolveCloudflareFallbackAccounts(baseUrl, apiKey, model)
+        : [];
+    const legs: LadderLeg[] = [];
+    if (provider === "cloudflare") {
+      if (omniRoute) {
+        legs.push({
+          name: "OmniRoute",
+          client: makeOmniRouteGatewayClient({ ...omniRoute, signal: controller.signal }),
+        });
+      }
+      legs.push({ name: "Cloudflare Workers AI", client: baseClient, input: reducedInput });
+      for (const account of cfFallbackAccounts) {
+        legs.push({
+          name: account.label,
+          client: makeBYOKClient({
+            provider: "cloudflare",
+            model: account.model,
+            apiKey: account.token,
+            baseUrl: account.id,
+            cloudflareProxyPrefix: account.proxyPrefix,
+            cloudflareRetries: 0,
+            signal: controller.signal,
+          }),
+          input: reducedInput,
+        });
+      }
+      if (nimClient) legs.push({ name: "NVIDIA NIM", client: nimClient, input: reducedInput });
+      for (const extra of extraProviders) {
+        legs.push({
+          name: extra.label,
+          client: makeBYOKClient({
+            provider: "openai-compatible",
+            apiKey: extra.apiKey,
+            baseUrl: extra.baseUrl,
+            model: extra.model,
+            signal: controller.signal,
+          }),
+          input: reducedInput,
+        });
+      }
+    }
+    // `runTurn` rolls the whole director turn back when a model answers prose
+    // without planning on an empty timeline. Treat that same completion as a
+    // leg failure here so the next provider gets the turn instead of burning
+    // the loop's single retry on the same model. Evaluate the timeline lazily:
+    // after plan_edit lands clips, a text-only summary is a valid finish.
+    const shouldRequirePlan = (): boolean => {
+      if (provider !== "cloudflare" || settings.agentDryRun || !isDirectorRequest(turnText)) {
+        return false;
+      }
+      let project;
+      try {
+        project = host.getProject();
+      } catch {
+        return false;
+      }
+      if (project.timeline.tracks.some((track) => track.clips.length > 0)) return false;
+      return project.mediaLibrary.items.some(
+        (item) => item.type === "video" && item.analysisRole !== "reference",
+      );
+    };
+    const llm =
+      legs.length > 1
+        ? makeFallbackLadder({
+            legs,
+            acceptResponse: (response) => {
+              if (response.toolUses.length > 0 || response.stopReason === "max_tokens") return true;
+              if (response.text.trim().length === 0) return false;
+              if (/[?？]/.test(response.text)) return true;
+              return !shouldRequirePlan();
+            },
+            onFallback: (error, from, to) => {
+              const message = (error instanceof Error ? error.message : String(error)).slice(0, 200);
+              const notice =
+                error instanceof Error && error.name === "UnusableCompletionError"
+                  ? `${from} did not produce a usable completion — continuing on ${to}.`
+                  : `${from} unreachable (${message}) — continuing on ${to}.`;
+              updateAssistant((m) => ({ ...m, notice }));
+            },
+          })
+        : (legs[0]?.client ?? baseClient);
     // Wire LLM client into host for nested director calls (plan_edit)
     // Map settings provider to agent provider name for tool selection
     const agentProvider = provider === "anthropic-compatible" ? "anthropic" : "openai";
@@ -778,6 +973,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const dryRun = useSettingsStore.getState().agentDryRun;
 
     let result;
+    host.reportAIInputTrace = reportAIInputTrace;
     try {
       result = await runExclusive(() =>
         runTurn({
@@ -813,6 +1009,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       });
       saveConversationSnapshot(get());
       return;
+    } finally {
+      if (host.reportAIInputTrace === reportAIInputTrace) {
+        host.reportAIInputTrace = undefined;
+      }
     }
 
     // A reset() (or a newer turn) during the run supersedes this completion.
@@ -914,6 +1114,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       lastTurnCommitted: false,
       lastTurnUndoSize: null,
       usage: { inputTokens: 0, outputTokens: 0 },
+      aiInputTrace: null,
       projectId,
       currentConversationId: null,
       conversationStartedAt: null,
@@ -935,6 +1136,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       lastTurnCommitted: false,
       lastTurnUndoSize: null,
       usage: { inputTokens: 0, outputTokens: 0 },
+      aiInputTrace: null,
       currentConversationId: null,
       conversationStartedAt: null,
     });
@@ -961,6 +1163,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       lastTurnCommitted: false,
       lastTurnUndoSize: null,
       usage: saved.usage,
+      aiInputTrace: null,
       projectId: saved.projectId,
       currentConversationId: saved.id,
       conversationStartedAt: saved.createdAt,
@@ -981,6 +1184,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       lastTurnCommitted: false,
       lastTurnUndoSize: null,
       usage: { inputTokens: 0, outputTokens: 0 },
+      aiInputTrace: null,
       currentConversationId: null,
       conversationStartedAt: null,
     });
@@ -1001,6 +1205,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       lastTurnCommitted: false,
       lastTurnUndoSize: null,
       usage: { inputTokens: 0, outputTokens: 0 },
+      aiInputTrace: null,
       projectId: null,
       currentConversationId: null,
       conversationStartedAt: null,

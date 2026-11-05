@@ -178,7 +178,8 @@ export function DesktopExportButton(): JSX.Element {
         style={NO_DRAG}
         onClick={resetError}
         className="mr-2 max-w-[200px] truncate"
-        aria-label="Dismiss export error"
+        title={state.error}
+        aria-label={`Dismiss export error: ${state.error}`}
       />
     );
   }

@@ -2,6 +2,7 @@ import type { SegmentMap, StyleProfile } from "@kove-advanced/creation-schema";
 import {
   type AdaptiveSampleConfig,
   type ExtractedFrame,
+  type MosaicMeta,
   type VisionDescription,
   batchFrames,
   batchFramesMosaic,
@@ -15,6 +16,7 @@ import {
 
 export type {
   ExtractedFrame,
+  MosaicMeta,
   VisionDescription,
   AdaptiveSampleConfig,
 } from "./frame-extraction";
@@ -25,6 +27,20 @@ export interface ExtractSegmentsInput {
   readonly videos: readonly VideoInput[];
   readonly workerUrl: string;
   readonly sampleConfig?: AdaptiveSampleConfig;
+  readonly onVisionInput?: (input: VisionWorkerInputSnapshot) => void;
+}
+
+export interface VisionWorkerInputSnapshot {
+  readonly videoId: string;
+  readonly duration: number;
+  readonly frameCount: number;
+  readonly batches: readonly {
+    readonly batchIndex: number;
+    readonly sourceTimestamps: readonly number[];
+    readonly imageCount: number;
+    readonly images: readonly ExtractedFrame[];
+    readonly mosaic?: MosaicMeta;
+  }[];
 }
 
 export interface VideoInput {
@@ -108,6 +124,19 @@ export async function extractSegments(
     const batches = mosaicConfig
       ? await batchFramesMosaic(selectedFrames, mosaicConfig)
       : batchFrames(selectedFrames);
+
+    input.onVisionInput?.({
+      videoId: video.videoId,
+      duration: video.duration,
+      frameCount: selectedFrames.length,
+      batches: batches.map((batch) => ({
+        batchIndex: batch.batchIndex,
+        sourceTimestamps: batch.mosaic?.timestamps ?? batch.frames.map((frame) => frame.timestamp),
+        imageCount: batch.frames.length,
+        images: batch.frames,
+        ...(batch.mosaic ? { mosaic: batch.mosaic } : {}),
+      })),
+    });
 
     // Call the vision worker
     const descriptions = await callVisionWorker(

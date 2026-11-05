@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { HeadlessHost } from "./headless-host";
 import { executeTool } from "./executor";
 import { getTool } from "./registry";
@@ -81,6 +81,79 @@ describe("project/media lifecycle tools", () => {
     expect(res.ok).toBe(true);
     expect(received).toEqual({ text: "Hello", startSec: 1, durationSec: 2, trackId: undefined, style: undefined });
     expect((res.data as { id: string }).id).toBe("tx1");
+  });
+
+  it("creates multiple text overlays in one call and preserves timing and animation", async () => {
+    const received: unknown[] = [];
+    const base = new HeadlessHost(makeEmptyProject());
+    const host: EditingHost = Object.assign(base, {
+      async createTextOverlay(opts: unknown) {
+        received.push(opts);
+        return { id: `tx${received.length}`, trackId: "tt" };
+      },
+    });
+
+    const res = await executeTool("create_text_clips", {
+      clips: [
+        { text: "Hook", startTime: 0, duration: 1.2, animation: "pop", position: { x: 0.5, y: 0.7 } },
+        { text: "Payoff", startTime: 4, duration: 1.5, animation: "fade" },
+      ],
+    }, host);
+
+    expect(res.ok).toBe(true);
+    expect(received).toEqual([
+      { text: "Hook", startSec: 0, durationSec: 1.2, trackId: undefined, style: undefined, position: { x: 0.5, y: 0.7 }, animation: "pop" },
+      { text: "Payoff", startSec: 4, durationSec: 1.5, trackId: undefined, style: undefined, animation: "fade" },
+    ]);
+    expect((res.data as { created: { id: string }[] }).created.map((item) => item.id)).toEqual(["tx1", "tx2"]);
+  });
+
+  it("rejects an invalid text batch before creating any overlays", async () => {
+    const createTextOverlay = vi.fn(async () => ({ id: "tx1", trackId: "tt" }));
+    const base = new HeadlessHost(makeEmptyProject());
+    const host: EditingHost = Object.assign(base, { createTextOverlay });
+
+    const res = await executeTool("create_text_clips", {
+      clips: [
+        { text: "Valid", startTime: 0, duration: 1 },
+        { text: "Invalid", startTime: 1, duration: 0 },
+      ],
+    }, host);
+
+    expect(res.ok).toBe(false);
+    expect(res.error?.code).toBe("INVALID_PARAMS");
+    expect(createTextOverlay).not.toHaveBeenCalled();
+  });
+
+  it("reports partial text-batch failures and any rollback failures", async () => {
+    let createCount = 0;
+    const base = new HeadlessHost(makeEmptyProject());
+    const host: EditingHost = Object.assign(base, {
+      async createTextOverlay() {
+        createCount += 1;
+        if (createCount === 2) throw new Error("renderer unavailable");
+        return { id: "tx1", trackId: "tt" };
+      },
+      async removeOverlay() {
+        throw new Error("cleanup unavailable");
+      },
+    });
+
+    const res = await executeTool("create_text_clips", {
+      clips: [
+        { text: "First", startTime: 0, duration: 1 },
+        { text: "Second", startTime: 1, duration: 1 },
+      ],
+    }, host);
+
+    expect(res.ok).toBe(false);
+    expect(res.error?.code).toBe("TEXT_BATCH_FAILED");
+    expect(res.summary).toContain("renderer unavailable");
+    expect(res.summary).toContain("cleanup unavailable");
+    expect(res.data).toEqual({
+      created: [{ id: "tx1", text: "First" }],
+      cleanupFailures: [{ id: "tx1", message: "cleanup unavailable" }],
+    });
   });
 
   it("create_text_clip falls back to the raw action on a host without the engine method", async () => {

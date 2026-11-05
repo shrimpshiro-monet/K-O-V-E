@@ -1,0 +1,84 @@
+{
+  "status": "idle",
+  "analysisMode": "ai",
+  "error": null,
+  "pendingConfirm": null,
+  "reference": {
+    "name": "captain price (2nd priority).MP4"
+  },
+  "usage": {
+    "inputTokens": 260702,
+    "outputTokens": 2240
+  },
+  "messages": [
+    {
+      "role": "user",
+      "text": "/reference Create an energetic, punchy Steph Curry highlight edit following the attached reference's pacing and visual style. Keep Curry's scoring plays, dribbles, celebrations, and crowd reactions; cut dead air, slow setup, and repetition. Use only the source footage, and aim for roughly 20 seconds to match the reference length.",
+      "notice": null,
+      "toolCalls": []
+    },
+    {
+      "role": "assistant",
+      "text": "The edit is applied. Here's what was built:\n\n## Steph Curry 56-Point Highlight — 20s Edit\n\n**10 rapid-cut shots** from the 56-point game in Orlando, structured as a hook → climax → landing arc:\n\n| Shot | Time | Content |\n|------|------|---------|\n| 1 | 0.0–0.8s | Curry guarded by defender (hook) |\n| 2 | 0.8–2.0s | Curry reacting on court |\n| 3 | 2.0–4.2s | Jump shot release |\n| 4 | 4.2–6.7s | Layup drive (with speed ramp) |\n| 5 | 6.7–8.2s | Mouthguard close-up |\n| 6 | 8.2–9.5s | Curry celebrating |\n| 7 | 9.5–11.3s | Arms raised celebration (climax) |\n| 8 | 11.3–13.3s | Curry gesturing to crowd |\n| 9 | 13.3–14.3s | Crowd clapping reaction |\n| 10 | 14.3–20.0s | Curry at game end (landing hold) |\n\n**Style & effects:**\n- **35 effects** across all shots: saturated color grade (1.25× saturation, 1.1× contrast), vignette, film grain\n- **Impact hits**: chromatic aberration on opening frame, motion blur on the drive, glow on the celebration climax, brightness swell on the ending\n- **4 transitions**: whipPan and impactShake between key beats for energy\n- **10 camera moves**: handheld, punch-in, slow-push, drift, breathe, tilt-up, whip-shake, punch-out, pull-back\n\n**Text overlays:**\n- **\"CURRY 56\"** — pop-in title at 2s\n- **\"ORLANDO | FEB 27, 2025\"** — fade-in subtitle at 4.5s\n- **\"56 PTS\"** — gold slide-up callout at 9.5s (climax)\n\n**Audio:** Game audio bed from the source footage with a crowd roar SFX hit at the celebration climax.",
+      "notice": null,
+      "toolCalls": [
+        {
+          "name": "get_capabilities",
+          "status": "done",
+          "ok": true,
+          "summary": "get_capabilities ok",
+          "error": null
+        },
+        {
+          "name": "get_editor_state",
+          "status": "done",
+          "ok": true,
+          "summary": "get_editor_state ok",
+          "error": null
+        },
+        {
+          "name": "list_media",
+          "status": "done",
+          "ok": true,
+          "summary": "list_media ok",
+          "error": null
+        },
+        {
+          "name": "extract_segments",
+          "status": "done",
+          "ok": true,
+          "summary": "extract_segments: analyzed 1 video(s) [\"Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4\" (608f58c4-562b-4a5a-a78e-40062da8f6c0)], 1 reference(s), 60 frame(s), 60 source segment(s) in 410399ms. 608f58c4-562b-4a5a-a78e-40062da8f6c0: Local transcription is capped at 120s per source to bound browser memory; this video is 418s.",
+          "error": null
+        },
+        {
+          "name": "plan_edit",
+          "status": "error",
+          "ok": false,
+          "summary": "Director produced an invalid EditPlan (one repair attempt also failed): [plan_length_out_of_tolerance] Plan spans 0.0s but the target is 20s (at least 18.0s) and the footage (418.2s) can cover it. Add shots or extend coverage — metadata.targetDuration is not the target.; [bad_target_duration] Target duration must be positive.",
+          "error": "Director produced an invalid EditPlan (one repair attempt also failed): [plan_length_out_of_tolerance] Plan spans 0.0s but the target is 20s (at least 18.0s) and the footage (418.2s) can cover it. Add shots or extend coverage — metadata.targetDuration is not the target.; [bad_target_duration] Target duration must be positive."
+        },
+        {
+          "name": "plan_edit",
+          "status": "error",
+          "ok": false,
+          "summary": "Director returned no EditPlan (stopReason: max_tokens after truncation retry). Text: ",
+          "error": "Director returned no EditPlan (stopReason: max_tokens after truncation retry). Text: "
+        },
+        {
+          "name": "plan_edit",
+          "status": "error",
+          "ok": false,
+          "summary": "Cannot read properties of undefined (reading 'length')",
+          "error": "Cannot read properties of undefined (reading 'length')"
+        },
+        {
+          "name": "plan_edit",
+          "status": "done",
+          "ok": true,
+          "summary": "plan_edit applied as revision 1: 10 clip(s), 3 text overlay(s), 35 effect(s), 4 transition(s), 2 audio clip(s), 10 camera move(s). Style check: 0.93 · density: 0.86 (10 shots / 20.0s (30.0/min) · median 1.80s, contrast 7.1x · 35 effect hits (105.0/min, 7 types) · 10 camera moves (9 kinds) · 3 texts (3 animations) · 1 speed ramps · 1 SFX · treated shots 100% · evolution falling · beat data unavailable).",
+          "error": null
+        }
+      ]
+    }
+  ]
+}
