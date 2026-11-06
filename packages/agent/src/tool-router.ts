@@ -175,6 +175,10 @@ export function selectToolsForPrompt(
   if (wantsCreation) promptDomains.add("creation");
 
   const candidates = listTools().filter((tool) => {
+    // Structured-output tools such as submit_edit_plan are only for nested
+    // provider calls made by plan_edit. Never expose them on the outer chat
+    // turn: the generic executor correctly refuses to run them directly.
+    if (tool.internal) return false;
     if (ALWAYS_AVAILABLE.has(tool.name) || prior.has(tool.name)) return true;
 
     // Director mode: include all editing-relevant domains so the AI can

@@ -96,6 +96,7 @@ import {
   PREVIEW_QUALITY_OPTIONS,
 } from "./preview/index";
 import { snapCanvasPosition } from "./preview/canvas-snapping";
+import { shouldSeekNativePlaybackSegment } from "./preview/native-playback-sync";
 import { captureNativeVideoFrame } from "./preview/video-frame";
 import { ProcessingOverlay } from "./ProcessingOverlay";
 import { editingFrameDurationMs } from "./editing-frame-rate";
@@ -847,7 +848,6 @@ export const Preview: React.FC = () => {
   const scrubVideoReleaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const lastPreviewRenderTimeRef = useRef(0);
   const offscreenCtxRef = useRef<OffscreenCanvasRenderingContext2D | null>(
     null,
   );
@@ -2495,25 +2495,11 @@ export const Preview: React.FC = () => {
               return;
             }
 
-            await new Promise<void>((res) => {
-              if (!("requestVideoFrameCallback" in video)) {
-                res();
-                return;
-              }
-
-              let settled = false;
-              let timeoutId: ReturnType<typeof setTimeout> | null = null;
-              const finish = () => {
-                if (settled) return;
-                settled = true;
-                if (timeoutId) clearTimeout(timeoutId);
-                res();
-              };
-
-              video.requestVideoFrameCallback(finish);
-              timeoutId = setTimeout(finish, 300);
-            });
-
+            // `seeked` (or an already-current frame) plus HAVE_CURRENT_DATA
+            // means the paused frame is decoded and safe to snapshot. Waiting
+            // for requestVideoFrameCallback here can add a full 300 ms on
+            // browsers that do not submit a new compositor frame while paused,
+            // leaving the preview visibly behind the playhead during scrubs.
             if (isStaleRequest()) {
               resolve(null);
               return;
@@ -3705,7 +3691,7 @@ export const Preview: React.FC = () => {
 
       let isActive = true;
       let rafId: number | null = null;
-      let currentClipId: string | null = null;
+      let currentNativeSegmentKey: string | null = null;
 
       const findClipAtTime = (time: number) => {
         for (const { clip, mediaItem } of clips) {
@@ -3848,6 +3834,15 @@ export const Preview: React.FC = () => {
           mediaClipHasVisual,
         );
         if (transitionInfo) {
+          // The HTMLVideoElements are already clocked by the browser. Seeking
+          // both of them on every animation frame waits for `seeked` repeatedly,
+          // producing visible pauses and dropped frames through every dissolve.
+          const transitionKey = `transition:${transitionInfo.clipA.id}:${transitionInfo.clipB?.id ?? "edge"}:${transitionInfo.edge}`;
+          const shouldResyncTransition = shouldSeekNativePlaybackSegment(
+            currentNativeSegmentKey,
+            transitionKey,
+          );
+          if (shouldResyncTransition) currentNativeSegmentKey = transitionKey;
           const clipARecord = findNativeClipById(transitionInfo.clipA.id);
           const clipBRecord = transitionInfo.clipB
             ? findNativeClipById(transitionInfo.clipB.id)
@@ -3891,20 +3886,22 @@ export const Preview: React.FC = () => {
               if (outgoingHeld) clipAVideo.pause();
               if (incomingHeld && clipBVideo) clipBVideo.pause();
 
-              await Promise.all([
-                syncVideoToClipTime(
-                  clipAVideo,
-                  clipARecord.clip,
-                  currentPlayhead,
-                ),
-                clipBVideo && clipBRecord
-                  ? syncVideoToClipTime(
-                      clipBVideo,
-                      clipBRecord.clip,
-                      currentPlayhead,
-                    )
-                  : Promise.resolve(),
-              ]);
+              if (shouldResyncTransition) {
+                await Promise.all([
+                  syncVideoToClipTime(
+                    clipAVideo,
+                    clipARecord.clip,
+                    currentPlayhead,
+                  ),
+                  clipBVideo && clipBRecord
+                    ? syncVideoToClipTime(
+                        clipBVideo,
+                        clipBRecord.clip,
+                        currentPlayhead,
+                      )
+                    : Promise.resolve(),
+                ]);
+              }
               if (!isActive || !nativePlaybackActiveRef.current) return;
               if (!outgoingHeld) await playVideoElement(clipAVideo);
               if (!incomingHeld && clipBVideo) {
@@ -4105,6 +4102,12 @@ export const Preview: React.FC = () => {
         }
 
         const { clip, mediaItem } = activeClip;
+        const clipSegmentKey = `clip:${clip.id}`;
+        const clipChanged = shouldSeekNativePlaybackSegment(
+          currentNativeSegmentKey,
+          clipSegmentKey,
+        );
+        if (clipChanged) currentNativeSegmentKey = clipSegmentKey;
         const vidstabPlay = getVidstabEngine();
         const clipIsStabilized = vidstabPlay.hasStabilized(clip.id);
         const playbackCacheId = clipIsStabilized ? `stabilized:${clip.id}` : clip.mediaId;
@@ -4124,10 +4127,6 @@ export const Preview: React.FC = () => {
 
         const { video } = cached;
 
-        if (currentClipId !== clip.id) {
-          currentClipId = clip.id;
-        }
-
         const latestClip = (() => {
           for (const track of timelineTracksRef.current) {
             const found = track.clips.find((c) => c.id === clip.id);
@@ -4146,7 +4145,9 @@ export const Preview: React.FC = () => {
           latestClip.inPoint,
           Math.min(latestClip.outPoint, latestClip.inPoint + adjustedLocalTime),
         );
-        await syncVideoToClipTime(video, latestClip, currentPlayhead);
+        if (clipChanged) {
+          await syncVideoToClipTime(video, latestClip, currentPlayhead);
+        }
         if (!isActive || !nativePlaybackActiveRef.current) return;
         await playVideoElement(video);
 
@@ -6074,15 +6075,11 @@ export const Preview: React.FC = () => {
     lastProjectForRenderRef.current = project;
     lastPlayheadForRenderRef.current = playheadPosition;
 
-    const previousRenderTime = lastPreviewRenderTimeRef.current;
-    const isLargeJump =
-      Math.abs(playheadPosition - previousRenderTime) > 1 ||
-      playheadPosition < previousRenderTime - 0.25;
-    if (isLargeJump) {
-      releaseScrubVideoElements();
-    }
-    lastPreviewRenderTimeRef.current = playheadPosition;
-
+    // Keep the native video element alive while the user is scrubbing, even
+    // across large jumps. decodeClipFrame seeks it to the requested frame; the
+    // idle-release timer frees it after scrubbing stops. Eagerly tearing down
+    // the decoder on every large seek forced metadata reloads and made reverse
+    // scrubs noticeably stale/choppy.
     const doRender = async (time: number) => {
       if (renderInFlightRef.current) {
         // Coalesce: remember the latest requested position and render it
@@ -6133,7 +6130,6 @@ export const Preview: React.FC = () => {
     isScrubbing,
     renderFrameDirectly,
     renderFallbackFrame,
-    releaseScrubVideoElements,
     project,
     isDark,
   ]);

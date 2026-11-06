@@ -52,6 +52,16 @@ describe("every tool is reachable by the model", () => {
     expect(selected.length).toBeLessThanOrEqual(Math.max(25, ALWAYS_AVAILABLE.size));
   });
 
+  it("never exposes internal structured-output tools to outer turns, even as prior tools", () => {
+    const internalNames = listTools().filter((tool) => tool.internal).map((tool) => tool.name);
+    const selected = selectToolsForPrompt("make me a montage of this footage", {
+      priorToolNames: internalNames,
+    });
+    for (const name of internalNames) {
+      expect(selected, `internal tool ${name} leaked into the user-facing turn`).not.toContain(name);
+    }
+  });
+
   it("always routes plan_edit, even when the prompt is not director-shaped", () => {
     // runTurn rejects a director turn with an empty timeline unless plan_edit
     // ran; a provider cap must never hide the tool the guard demands.
