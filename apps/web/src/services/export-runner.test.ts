@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import type { Project, VideoExportSettings, ExportResult } from "@kove-advanced/core";
 import {
   useExportRunner,
@@ -169,6 +169,31 @@ describe("useExportRunner", () => {
     expect(result.current.state.phase).toBe("Saved!");
     expect(result.current.state.progress).toBe(100);
     expect(onExported).toHaveBeenCalledWith(settings);
+  });
+
+  it("does not announce 100% until the export generator has finished cleanup", async () => {
+    let finishCleanup!: () => void;
+    async function* delayedCompletion(): AsyncGenerator<
+      { phase: "complete"; progress: number },
+      ExportResult
+    > {
+      yield { phase: "complete", progress: 1 };
+      await new Promise<void>((resolve) => { finishCleanup = resolve; });
+      return { success: true } as ExportResult;
+    }
+    mockEngine.exportVideo.mockImplementation(() => delayedCompletion());
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    let run!: Promise<void>;
+    act(() => { run = result.current.runExport({ format: "mp4" }, "mp4", fakeStream()); });
+    await waitFor(() => expect(result.current.state.phase).toBe("Finishing export..."));
+    expect(result.current.state).toMatchObject({ isExporting: true, complete: false });
+    expect(result.current.state.progress).toBeLessThan(100);
+    await act(async () => {
+      finishCleanup();
+      await run;
+    });
+    expect(result.current.state).toMatchObject({ isExporting: false, complete: true, progress: 100, phase: "Saved!" });
   });
 
   it("keeps a successful export successful if its notification fails", async () => {

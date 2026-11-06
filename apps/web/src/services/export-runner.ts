@@ -631,10 +631,15 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
             now - lastProgressUpdateAt >= 250 ||
             value.phase === "complete"
           ) {
+            // `complete` is a generator yield, not the generator's final result:
+            // its `finally` cleanup still has to run on the next `.next()` call.
+            // Keep the UI below 100% until that result has been received so we
+            // never tell the user an export is done while finalization is pending.
+            const isFinalizing = value.phase === "complete";
             setState((prev) => sequence === runSequence.current ? {
               ...prev,
-              progress: value.progress * 100,
-              phase: progressPhaseLabel(value.phase),
+              progress: Math.min(99, value.progress * 100),
+              phase: isFinalizing ? "Finishing export..." : progressPhaseLabel(value.phase),
             } : prev);
             lastProgressUpdateAt = now;
             lastProgressPhase = value.phase;
