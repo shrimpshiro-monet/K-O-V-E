@@ -149,6 +149,64 @@ async function exportAndCheck(page: Page, testInfo: TestInfo, expectAudio: boole
   return output;
 }
 
+test("native preview advances video without repeatedly seeking and dropping frames", async ({ page }, testInfo) => {
+  test.skip(!hasBinary(ffmpeg), "ffmpeg is required to create a moving video fixture");
+  await page.addInitScript(() => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "currentTime");
+    if (!descriptor?.get || !descriptor.set) return;
+    (window as Window & { __nativePreviewSeekWrites?: number }).__nativePreviewSeekWrites = 0;
+    Object.defineProperty(HTMLMediaElement.prototype, "currentTime", {
+      configurable: descriptor.configurable,
+      enumerable: descriptor.enumerable,
+      get: descriptor.get,
+      set(value: number) {
+        const holder = window as Window & { __nativePreviewSeekWrites?: number };
+        holder.__nativePreviewSeekWrites = (holder.__nativePreviewSeekWrites ?? 0) + 1;
+        descriptor.set!.call(this, value);
+      },
+    });
+  });
+  await openEditor(page);
+  const source = testInfo.outputPath("moving-preview-source.mp4");
+  execFileSync(ffmpeg, ["-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=30",
+    "-t", "3", "-c:v", "libx264", "-threads", "1", "-preset", "ultrafast", "-pix_fmt", "yuv420p", source]);
+  await putOnTimeline(page, source, 2);
+  await page.evaluate(async () => {
+    const holder = window as Window & { __nativePreviewSeekWrites?: number };
+    holder.__nativePreviewSeekWrites = 0;
+    const path = "/src/stores/timeline-store.ts";
+    const url = performance.getEntriesByType("resource").find((entry) => new URL(entry.name).pathname === path)?.name ?? path;
+    const { useTimelineStore } = await import(/* @vite-ignore */ url);
+    useTimelineStore.getState().play();
+  });
+  await expect.poll(() => page.evaluate(async () => {
+    const path = "/src/stores/timeline-store.ts";
+    const url = performance.getEntriesByType("resource").find((entry) => new URL(entry.name).pathname === path)?.name ?? path;
+    const { useTimelineStore } = await import(/* @vite-ignore */ url);
+    return useTimelineStore.getState().playheadPosition;
+  }), { timeout: 10_000 }).toBeGreaterThan(0.2);
+  const firstFrame = await page.locator("canvas[data-preview-canvas]").evaluate((canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext("2d")!;
+    const image = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    return [image[0], image[Math.floor(image.length / 3)], image[Math.floor(image.length * 2 / 3)], image[image.length - 4]].join(",");
+  });
+  await page.waitForTimeout(250);
+  const secondFrame = await page.locator("canvas[data-preview-canvas]").evaluate((canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext("2d")!;
+    const image = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    return [image[0], image[Math.floor(image.length / 3)], image[Math.floor(image.length * 2 / 3)], image[image.length - 4]].join(",");
+  });
+  expect(secondFrame).not.toBe(firstFrame);
+  const seekWrites = await page.evaluate(() => (window as Window & { __nativePreviewSeekWrites?: number }).__nativePreviewSeekWrites ?? 0);
+  expect(seekWrites).toBeLessThanOrEqual(3);
+  await page.evaluate(async () => {
+    const path = "/src/stores/timeline-store.ts";
+    const url = performance.getEntriesByType("resource").find((entry) => new URL(entry.name).pathname === path)?.name ?? path;
+    const { useTimelineStore } = await import(/* @vite-ignore */ url);
+    useTimelineStore.getState().pause();
+  });
+});
+
 test("exports an actual image timeline MP4 with the expected pixels", async ({ page }, testInfo) => {
   test.skip(!hasBinary(ffmpeg) || !hasBinary(ffprobe), "ffmpeg and ffprobe are required to verify output");
   await openEditor(page);

@@ -223,14 +223,17 @@ test.describe("vision pipeline in the real editor", () => {
   ): Promise<{ contentPixels: number; leftEdge: number; width: number; height: number }> {
     return page.evaluate(async (time) => {
       const { useTimelineStore } = await import("/src/stores/timeline-store.ts");
-      const settle = () =>
+      const nextPaint = () =>
         new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      // Nudge off the time first so the preview always sees a playhead change:
-      // reading the same instant twice must not hand back a stale composite.
+      // Nudge off the time first so the preview always sees a playhead change.
+      // Direct video decode is asynchronous; two RAFs alone can read the prior
+      // frame while a seek is still resolving, so allow the preview queue to
+      // paint the latest coalesced request before sampling pixels.
       useTimelineStore.getState().setPlayheadPosition(time + 0.05);
-      await settle();
+      await nextPaint();
       useTimelineStore.getState().setPlayheadPosition(time);
-      await settle();
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await nextPaint();
 
       const canvas = document.querySelector<HTMLCanvasElement>("canvas[data-preview-canvas]");
       if (!canvas) throw new Error("no preview canvas found");
