@@ -6,8 +6,68 @@ import { MockLLMClient } from "./llm";
 import type { LLMClient, LLMResponse, LoopMessage, LoopToolResultBlock } from "./llm";
 import { toAnthropicTools } from "./registry";
 import { makeEmptyProject, makeProjectWithClip } from "./test-fixtures";
-import type { EditingHost } from "./host";
+import type { EditingHost, JobKind, JobResult } from "./host";
 import type { AgentEvent, ToolCall } from "./types";
+
+// Fresh-footage edits plan from frame-backed extraction. The frame worker
+// (browser sampler + vision call) is faked; frame payloads arrive via the
+// host job runner, so plan_edit's gate accepts these as trusted evidence.
+vi.mock("@kove-advanced/frame-worker", () => ({
+  extractSegments: vi.fn(async () => ({
+    segmentMap: {
+      videos: [
+        {
+          videoId: "video-1",
+          duration: 8,
+          fps: 30,
+          totalFrames: 240,
+          resolution: { width: 1920, height: 1080 },
+          sourceFile: "test.mp4",
+          segments: [
+            {
+              id: "video-1-seg-0",
+              startTime: 0,
+              endTime: 6,
+              sceneType: "b-roll" as const,
+              motionLevel: "medium" as const,
+              description: "Sampled footage: interview setup",
+              hasDialogue: false,
+              visualContent: "talking head",
+              confidence: 0.9,
+            },
+          ],
+        },
+      ],
+    },
+    processingTimeMs: 5,
+    frameCount: 12,
+    segmentCount: 1,
+    referenceAnalysis: { analysisVersion: "1.1.0", videos: [] },
+  })),
+}));
+
+function frameJobRunner(): (kind: JobKind, params: Record<string, unknown>) => Promise<JobResult> {
+  return async (kind, params) => {
+    if (kind !== "extractVideoFrames" && kind !== "extractVideoFrame") {
+      return { ok: false, error: `unexpected job ${kind}` };
+    }
+    const timestamps =
+      kind === "extractVideoFrames" && Array.isArray(params.timestamps)
+        ? (params.timestamps as number[])
+        : [typeof params.timestamp === "number" ? params.timestamp : 0];
+    return {
+      ok: true,
+      data: {
+        frames: timestamps.map((timestamp) => ({
+          timestamp,
+          imageDataBase64: "RkFLRQ==",
+          width: 64,
+          height: 64,
+        })),
+      },
+    };
+  };
+}
 
 const tools = toAnthropicTools();
 const userMsg = (content: string): LoopMessage[] => [{ role: "user", content }];
@@ -397,7 +457,7 @@ describe("runTurn", () => {
         items: [{ id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } }],
       },
     } as ReturnType<typeof makeEmptyProject>;
-    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    const host = new HeadlessHost(project, { jobRunner: frameJobRunner() }) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
 
     const invalidPlan = {
       segments: [{
@@ -427,8 +487,14 @@ describe("runTurn", () => {
       }],
     };
 
-    // Outer loop responses (returned by llm.complete in the runTurn loop)
+    // Outer loop responses (returned by llm.complete in the runTurn loop).
+    // A fresh footage edit plans from extract_segments first — the gate.
     const outerResponses: LLMResponse[] = [
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "extract-1", name: "extract_segments", input: { videoMediaIds: ["video-1"] } }],
+      },
       {
         text: "",
         stopReason: "tool_use",
@@ -522,7 +588,7 @@ describe("runTurn", () => {
         items: [{ id: "video-1", name: "test.mp4", type: "video", metadata: { duration: 8 } }],
       },
     } as ReturnType<typeof makeEmptyProject>;
-    const host = new HeadlessHost(project) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
+    const host = new HeadlessHost(project, { jobRunner: frameJobRunner() }) as HeadlessHost & { llm: NonNullable<EditingHost["llm"]> };
 
     const validPlan = {
       segments: [{
@@ -542,8 +608,13 @@ describe("runTurn", () => {
       metadata: { targetDuration: 4, targetPlatform: "social", genre: "highlight-reel", pacing: "fast", rationale: "test" },
     };
 
-    // Outer loop: two plan_edit calls
+    // Outer loop: extract, then two plan_edit calls (the fresh-edit contract)
     const outerResponses: LLMResponse[] = [
+      {
+        text: "",
+        stopReason: "tool_use",
+        toolUses: [{ id: "extract-1", name: "extract_segments", input: { videoMediaIds: ["video-1"] } }],
+      },
       {
         text: "",
         stopReason: "tool_use",

@@ -21,10 +21,13 @@ import {
 } from "./multicam-units";
 import { extractSegments as runFrameWorkerPipeline } from "@kove-advanced/frame-worker";
 import type { ExtractedFrame, VisionWorkerInputSnapshot } from "@kove-advanced/frame-worker";
+import type { TurnToolContext, DirectorFrameImage, TrustedFootageAnalysis } from "./turn-context";
+import { trustedAnalysis } from "./turn-context";
+import { sampleRenderedDraft, type RenderedDraftSampling } from "./director/render-observation";
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId, buildDensityContract, EFFECT_PARAM_BLOCK } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
-import { reviewEditPlan, type EditPlanReview } from "./director/plan-review";
-import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES, relayPlanSegmentsSequentially, type PlacementRepair } from "@kove-advanced/creation-schema";
+import { reviewEditPlan, reviewMaterializedDraft, type EditPlanReview } from "./director/plan-review";
+import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES, relayPlanSegmentsSequentially, reviewRenderedDraft, type PlacementRepair } from "@kove-advanced/creation-schema";
 import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
@@ -370,7 +373,7 @@ import type {
   MotionRenderQueueAddInput,
 } from "./host";
 import type { JSONSchema, ToolDef, ToolDomain, ToolResult } from "./types";
-import type { LoopMessage } from "./llm";
+import type { LoopMessage, LoopUserBlock } from "./llm";
 import {
   serializeEditorState,
   listMedia,
@@ -442,6 +445,10 @@ import {
 export type ToolHandler = (
   args: Record<string, unknown>,
   host: EditingHost,
+  // Turn-scoped context (created by runTurn, only passed to handlers that
+  // consume it). Optional so every existing handler and test call keeps its
+  // shape. The director tools use it for frame-backed analysis evidence.
+  turnContext?: TurnToolContext,
 ) => Promise<ToolResult> | ToolResult;
 
 export interface RegisteredTool extends ToolDef {
@@ -511,6 +518,8 @@ function optionalNumber(value: unknown): number | undefined {
 
 const MAX_TEXT_CLIPS_PER_BATCH = 24;
 const MAX_AI_INPUT_PREVIEW_IMAGES = 24;
+/** Frames sent to the director alongside plan_edit (vision-call budget). */
+const MAX_DIRECTOR_PREVIEW_FRAMES = 8;
 
 function selectVisionInputPreviews(
   snapshots: readonly VisionWorkerInputSnapshot[],
@@ -544,6 +553,107 @@ function selectVisionInputPreviews(
       ),
     })),
   }));
+}
+
+/** `data:image/jpeg;base64,XXX` → `XXX` (provider adapters want raw base64). */
+function dataUrlToBase64(dataUrl: string): string {
+  const marker = "base64,";
+  const index = dataUrl.indexOf(marker);
+  return index >= 0 ? dataUrl.slice(index + marker.length) : dataUrl;
+}
+
+/**
+ * Pick the frames the director actually SEES when planning: `runTurn` builds
+ * `montage` from the tool-call transcript, so images on the transcript are
+ * what matter. We cap the count (vision-call budget) but always spread across
+ * every sampled video, guaranteeing each at least one representation.
+ */
+function selectDirectorPreviewFrames(
+  snapshots: readonly VisionWorkerInputSnapshot[],
+): DirectorFrameImage[] {
+  type FrameRef = {
+    videoId: string;
+    timestamp: number;
+    dataUrl: string;
+    width: number;
+    height: number;
+  };
+  const toDataUrl = (imageData: string): string =>
+    imageData.startsWith("data:") ? imageData : `data:image/jpeg;base64,${imageData}`;
+
+  const perVideo: FrameRef[][] = snapshots.map((snapshot) => {
+    const frames: FrameRef[] = [];
+    for (const batch of snapshot.batches) {
+      for (const image of batch.images) {
+        const timestamp = Number.isFinite(image.timestamp) ? image.timestamp : 0;
+        frames.push({
+          videoId: snapshot.videoId,
+          timestamp,
+          dataUrl: toDataUrl(image.imageData),
+          width: image.width,
+          height: image.height,
+        });
+      }
+    }
+    frames.sort((a, b) => a.timestamp - b.timestamp);
+    return frames;
+  });
+
+  const nonEmptyVideos = perVideo.filter((frames) => frames.length > 0);
+  const totalFrames = nonEmptyVideos.reduce((sum, frames) => sum + frames.length, 0);
+  if (totalFrames === 0) return [];
+
+  const selected: DirectorFrameImage[] = [];
+  if (totalFrames <= MAX_DIRECTOR_PREVIEW_FRAMES) {
+    for (const frames of nonEmptyVideos) {
+      for (const frame of frames) {
+        selected.push({
+          videoId: frame.videoId,
+          timestamp: frame.timestamp,
+          dataUrl: frame.dataUrl,
+          width: frame.width,
+          height: frame.height,
+        });
+      }
+    }
+    return selected;
+  }
+
+  // Even spread over the flat sequence, then top up any video that got none.
+  const flat = nonEmptyVideos.flatMap((frames) => frames);
+  for (let index = 0; index < MAX_DIRECTOR_PREVIEW_FRAMES; index += 1) {
+    const frame = flat[Math.round((index * (flat.length - 1)) / (MAX_DIRECTOR_PREVIEW_FRAMES - 1))];
+    if (!frame) continue;
+    selected.push({
+      videoId: frame.videoId,
+      timestamp: frame.timestamp,
+      dataUrl: frame.dataUrl,
+      width: frame.width,
+      height: frame.height,
+    });
+  }
+  // Guarantee per-video coverage: swap duplicates for a missing video's share.
+  const covered = new Set(selected.map((frame) => frame.videoId));
+  for (const frames of nonEmptyVideos) {
+    if (covered.has(frames[0].videoId) || selected.length === 0) continue;
+    // Replace the last frame belonging to the most-covered video.
+    const donorIndex = selected
+      .map((frame, index) => ({ index, videoId: frame.videoId }))
+      .filter((entry) => selected.filter((f) => f.videoId === entry.videoId).length > 1)
+      .pop();
+    const pick = frames[Math.floor(frames.length / 2)];
+    if (donorIndex && pick) {
+      selected[donorIndex.index] = {
+        videoId: pick.videoId,
+        timestamp: pick.timestamp,
+        dataUrl: pick.dataUrl,
+        width: pick.width,
+        height: pick.height,
+      };
+      covered.add(pick.videoId);
+    }
+  }
+  return selected;
 }
 
 function textOverlayOptions(clip: Record<string, unknown>): TextOverlayOptions {
@@ -33653,7 +33763,7 @@ const TOOLS: RegisteredTool[] = [
     domain: "ai",
     title: "Extract video segments",
     description:
-      "Analyze uploaded video(s) via real frame sampling, scene-cut detection, and vision analysis to build a SegmentMap describing what's actually happening in the footage. Where supported, short source videos also receive local Whisper transcript evidence (fast model, about 100 MB downloaded on first use and cached; capped at 120 seconds per video and 2,000 words per extraction). Longer clips or unsupported hosts report why transcription was skipped. Use this first when the user wants to create an edit from their footage. Pass videoMediaIds to analyze specific videos, or omit/empty to auto-analyze ALL video media in the project. Expensive — requires confirmation.",
+      "Analyze uploaded video(s) via real frame sampling, scene-cut detection, and vision analysis to build a SegmentMap describing what's actually happening in the footage. Where supported, short source videos also receive local Whisper transcript evidence (fast model, about 100 MB downloaded on first use and cached; capped at 120 seconds per video and 2,000 words per extraction). Longer clips or unsupported hosts report why transcription was skipped. REQUIRED before plan_edit on a fresh footage edit: the frame-backed analysis it produces is what plan_edit plans from (it is passed to plan_edit automatically — you do NOT need to repeat the segmentMap in the plan_edit call). Pass videoMediaIds to analyze specific videos, or omit/empty to auto-analyze ALL video media in the project. Expensive — requires confirmation.",
     inputSchema: obj({ videoMediaIds: { type: "array", items: str } }),
     readOnly: false,
     destructive: false,
@@ -33893,10 +34003,18 @@ const TOOLS: RegisteredTool[] = [
         return m ? `"${m.name}" (${id})` : id;
       }).join(", ");
 
-      return ok(
-        `extract_segments: analyzed ${videoMediaIds.length} video(s) [${videoList}], ${referenceMediaIds.size} reference(s), ${result.frameCount} frame(s), ${transcriptResult.segmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0)} source segment(s) in ${result.processingTimeMs}ms. ${analysisNote ? `${analysisNote} ` : ""}${transcriptResult.warnings.length ? transcriptResult.warnings.join(" ") : "Local transcript evidence added where available."}`,
-        { segmentMap: transcriptResult.segmentMap, referenceAnalysis, videoCount: videoMediaIds.length, referenceVideoIds: [...referenceMediaIds], totalSegments: transcriptResult.segmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0), frameCount: result.frameCount, videoMediaIds, transcriptWarnings: transcriptResult.warnings },
-      );
+      // Side channel: real sampled frames the executor folds into the turn
+      // context (plan_edit sees this as trusted evidence; base64 is NOT
+      // serialized into the transcript).
+      const directorPreviewFrames = selectDirectorPreviewFrames(visionInputSnapshots);
+
+      return {
+        ...ok(
+          `extract_segments: analyzed ${videoMediaIds.length} video(s) [${videoList}], ${referenceMediaIds.size} reference(s), ${result.frameCount} frame(s), ${transcriptResult.segmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0)} source segment(s) in ${result.processingTimeMs}ms. ${analysisNote ? `${analysisNote} ` : ""}${transcriptResult.warnings.length ? transcriptResult.warnings.join(" ") : "Local transcript evidence added where available."}`,
+          { segmentMap: transcriptResult.segmentMap, referenceAnalysis, videoCount: videoMediaIds.length, referenceVideoIds: [...referenceMediaIds], totalSegments: transcriptResult.segmentMap.videos.reduce((sum, video) => sum + video.segments.length, 0), frameCount: result.frameCount, videoMediaIds, transcriptWarnings: transcriptResult.warnings },
+        ),
+        analysisImages: directorPreviewFrames,
+      };
     },
   },
   // ---- Internal structured-output tool for director sub-call ----
@@ -34127,7 +34245,7 @@ const TOOLS: RegisteredTool[] = [
     readOnly: false,
     destructive: false,
     expensive: true,
-    handler: async (args, host) => {
+    handler: async (args, host, turnContext) => {
       host.requireOpenProject();
       const prompt = (args.prompt as string | undefined)?.trim();
       const genreId = args.genreId as string | undefined;
@@ -34160,13 +34278,68 @@ const TOOLS: RegisteredTool[] = [
         return fail("No video media in the project. Import at least one video first.", "NO_VIDEO_MEDIA");
       }
 
+      // ---- Frame-evidence gate (turn-scoped) ----
+      // A fresh footage edit may only plan from real frame analysis: runTurn
+      // sets `footagePlanGate` on turns that start from an empty timeline
+      // without a pre-applied reference/mirror plan or an existing committed
+      // director plan. Those turns, plus context-less callers (tests, eval
+      // harnesses), keep the legacy paths below untouched.
+      const sourceVideoMedia = videoMedia.filter((m) => m.analysisRole !== "reference");
+      let trusted: TrustedFootageAnalysis | undefined;
+      if (turnContext?.footagePlanGate && sourceVideoMedia.length > 0) {
+        trusted = trustedAnalysis(turnContext);
+        if (!trusted) {
+          const status = turnContext.extractionStatus ?? "not-run";
+          const recoverHint =
+            "Call extract_segments with no arguments (auto-analyzes every source video with real frame sampling), then call plan_edit again — the analysis is passed in automatically.";
+          if (status === "no-frames") {
+            return fail(
+              "plan_edit cannot plan from this footage yet: extract_segments returned a metadata-only result (0 sampled frames), so there is no frame-backed analysis to work from. Filename/duration fallback planning is not allowed for new edits.",
+              "ANALYSIS_NO_FRAMES",
+              { extractionStatus: status, suggestedFix: recoverHint },
+            );
+          }
+          if (status === "empty-map") {
+            return fail(
+              "plan_edit cannot plan from this footage yet: extract_segments completed but produced an empty segment map (no videos carry segments). Analyze the right media and retry.",
+              "ANALYSIS_EMPTY_SEGMENTS",
+              { extractionStatus: status, suggestedFix: recoverHint },
+            );
+          }
+          const failureDetail = status === "failed" ? " — the extract_segments call earlier in this turn failed" : "";
+          return fail(
+            `plan_edit cannot run yet: no frame-backed footage analysis exists for this turn${failureDetail}. Filename/duration fallback planning is not allowed for new edits.`,
+            "ANALYSIS_REQUIRED",
+            { extractionStatus: status, suggestedFix: recoverHint },
+          );
+        }
+        // Coverage: the turn's analysis must describe EVERY source video, not
+        // just the subset an earlier extract_segments call happened to cover.
+        const analyzedVideoIds = new Set(
+          trusted.segmentMap.videos.map((video) => video.videoId),
+        );
+        const missingCoverage = sourceVideoMedia.filter((m) => !analyzedVideoIds.has(m.id));
+        if (missingCoverage.length > 0) {
+          const missingList = missingCoverage
+            .map((m) => `"${m.name ?? m.id}" (${m.id})`)
+            .join(", ");
+          return fail(
+            `The frame analysis cached this turn does not cover every source video. Missing: ${missingList}. Re-run extract_segments without arguments so all sources are analyzed, then re-plan.`,
+            "ANALYSIS_INCOMPLETE",
+            { missingVideoIds: missingCoverage.map((m) => m.id), suggestedFix: "Call extract_segments with no arguments, then plan_edit again." },
+          );
+        }
+      }
+
       const state = getDirectorPlanState(project);
 
-      // Use provided segmentMap or build a fallback from project media
-      const providedMap = args.segmentMap as SegmentMap | undefined;
-      // Keep the measured profile locked on the project; send the LLM only a compact
-      // structural summary (not hundreds of per-frame transforms or Lab samples).
-      const providedReferenceAnalysis = args.referenceAnalysis ?? (project.mirrorProfile ? {
+      // ---- Trusted analysis injection (turn-scoped) ----
+      // When the executor captured frame-backed analysis this turn, it wins:
+      // the model no longer has to copy SegmentMaps through tool args, and a
+      // stale/garbled model copy cannot drift from what was actually
+      // sampled. Context-less callers keep the legacy precedence below.
+      const providedMap = (trusted?.segmentMap ?? args.segmentMap) as SegmentMap | undefined;
+      const providedReferenceAnalysis = trusted?.referenceAnalysis ?? (args.referenceAnalysis ?? (project.mirrorProfile ? {
         version: project.mirrorProfile.version,
         shots: [],
         shotCount: project.mirrorProfile.shots.length,
@@ -34174,7 +34347,7 @@ const TOOLS: RegisteredTool[] = [
         styleEvidence: project.mirrorProfile.styleEvidence,
         aspectRatio: project.mirrorProfile.aspectRatio,
         dominantMoves: project.mirrorProfile.shots.map((shot) => shot.cameraMotion?.dominantMove ?? "unknown"),
-      } : undefined);
+      } : undefined));
       let resolvedMap: SegmentMap;
 
       if (providedMap && Array.isArray(providedMap.videos) && providedMap.videos.length > 0) {
@@ -34302,14 +34475,36 @@ const TOOLS: RegisteredTool[] = [
       const initialRequest =
         "Analyze the footage and call submit_edit_plan with your complete EditPlan. You must call submit_edit_plan — do not respond with plain text.";
 
+      // Director-Sees-Footage: when the turn's analysis carries real sampled
+      // frames, they ride along on the planning user message as image blocks,
+      // so the montage references actual pixels instead of filenames
+      // (wildcat's summary is built from the tool-call transcript).
+      const directorFrameImages: readonly DirectorFrameImage[] = trusted?.images ?? [];
+      const initialUserContent: string | LoopUserBlock[] =
+        directorFrameImages.length > 0
+          ? [
+              {
+                type: "text" as const,
+                text: `${initialRequest}\n\nBelow: ${directorFrameImages.length} frames actually sampled from the source footage (Frame 1..${directorFrameImages.length}, in order, timestamps listed in the segment map above). Plan from what you SEE — composition, subject continuity, lighting and legibility beat segment descriptions when they disagree.`,
+              },
+              ...directorFrameImages.map(
+                (frame): LoopUserBlock => ({
+                  type: "image",
+                  mediaType: "image/jpeg",
+                  base64: dataUrlToBase64(frame.dataUrl),
+                }),
+              ),
+            ]
+          : initialRequest;
+
       // ---- Turn 1: plan (with one bounded truncation retry) ----
-      let response = await requestPlan(directorPrompt, [{ role: "user", content: initialRequest }]);
+      let response = await requestPlan(directorPrompt, [{ role: "user", content: initialUserContent }]);
       let planCall = response.toolUses.find((t) => t.name === "submit_edit_plan");
       let truncatedRetries = 0;
       while (!planCall && response.stopReason === "max_tokens" && truncatedRetries < 2) {
         truncatedRetries += 1;
         response = await requestPlan(directorPrompt, [
-          { role: "user", content: initialRequest },
+          { role: "user", content: initialUserContent },
           { role: "assistant", content: response.text, toolUses: [] },
           {
             role: "user",
@@ -34509,8 +34704,9 @@ const TOOLS: RegisteredTool[] = [
       // ---- Commit: materialize the new plan first, then remove the previous
       // plan's output. Materialize failures compensate back to the exact
       // pre-call state; previous-revision removal only runs after the new
-      // plan is fully applied.
-      const owned = newPlanOwned();
+      // plan is fully applied. Reassignable: a rendered-repair pass may swap
+      // in a revised plan's artifacts wholesale.
+      let owned = newPlanOwned();
 
       // ---- Fingerprint no-op: an identical plan is already on the timeline ----
       // Do NOT tear down and rebuild when the incoming plan hashes equal to the
@@ -34582,7 +34778,8 @@ const TOOLS: RegisteredTool[] = [
               density: densityPayload(planReview),
               quality: {
                 status: "unavailable" as const,
-                reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
+                reason:
+                  "Plan unchanged — this is a fingerprint no-op (the identical plan is already on the timeline), so no fresh render review was performed.",
               },
             },
           );
@@ -34622,6 +34819,152 @@ const TOOLS: RegisteredTool[] = [
         cleanup = await removeOwnedEntities(host, previousCommit);
       }
 
+      // ---- Rendered-quality pass: LOOK at the committed draft instead of ----
+      // asserting about it. Renders sample instants of the LIVE timeline (the
+      // new plan is committed here), measures them, and runs the shared
+      // rendered review. One bounded automated repair: when the rendered
+      // score is below target, the director sees the broken frames and fixes
+      // the plan; the revised plan rematerializes and its artifacts REPLACE
+      // the first commit's. If any step of the repair fails, the partial
+      // repair artifacts are compensated away and the first commit stands —
+      // it is never left half-removed.
+      const materializedSummary = {
+        clipIds: materialized.clipIds,
+        textIds: materialized.textIds,
+        effectCount: materialized.effectCount,
+        transitionCount: materialized.transitionCount,
+        audioCount: materialized.audioCount,
+      };
+      let renderedEvidence: RenderedDraftSampling | undefined;
+      let renderedReview: ReturnType<typeof reviewRenderedDraft> | undefined;
+      try {
+        renderedEvidence = await sampleRenderedDraft(host, finalPlan);
+        renderedReview = renderedEvidence
+          ? reviewRenderedDraft(renderedEvidence.observations)
+          : undefined;
+      } catch {
+        renderedEvidence = undefined;
+        renderedReview = undefined;
+      }
+      let renderedRepairApplied = false;
+      let renderedRepairNote: string | undefined;
+      let selfReview = reviewMaterializedDraft(
+        finalPlan,
+        resolvedMap,
+        materializedSummary,
+        planReview,
+        renderedEvidence?.observations,
+      );
+      if (
+        renderedEvidence &&
+        renderedReview &&
+        renderedReview.score < 0.6 &&
+        selfReview.needsRevision
+      ) {
+        const repairIssues = renderedReview.issues.join("; ");
+        let repairedOwned: ReturnType<typeof newPlanOwned> | undefined;
+        try {
+          const repairedOwned = newPlanOwned();
+          const repairResponse = await requestPlan(
+            `${directorPrompt}\n\n## Rendered draft below target — one automated repair\nThe committed plan rendered and the sampled timeline frames failed visual review (score ${renderedReview.score.toFixed(2)}, target >= 0.6). Issues: ${repairIssues}. Fix the plan and resubmit it COMPLETE via submit_edit_plan.`,
+            [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text" as const,
+                    text: `The rendered draft scored ${renderedReview.score.toFixed(2)} (target >= 0.6). Issues: ${repairIssues}\nSample instants: ${renderedEvidence.sampleTimes.map((t) => `${t.toFixed(2)}s`).join(", ")}\nThe frames of the CURRENT committed draft are attached below, in order. Resubmit the complete corrected EditPlan via submit_edit_plan — adjust effects/overlays/placement rather than rewriting the whole edit, unless the frames are actually broken.`,
+                  },
+                  ...renderedEvidence.frames.map(
+                    (frame): LoopUserBlock => ({
+                      type: "image",
+                      mediaType: "image/jpeg",
+                      base64: dataUrlToBase64(frame.dataUrl),
+                    }),
+                  ),
+                ],
+              },
+            ],
+          );
+          const repairedCall = repairResponse.toolUses.find((t) => t.name === "submit_edit_plan");
+          if (!repairedCall) {
+            throw new Error("director returned no EditPlan for the rendered repair");
+          }
+          const preparedRepaired = preparePlan(repairedCall.input);
+          const repairedBlocking = preparedRepaired.issues.filter((issue) => issue.severity === "error");
+          if (repairedBlocking.length > 0) {
+            throw new Error(
+              `repaired plan failed validation: ${repairedBlocking.map((issue) => `[${issue.code}] ${issue.message}`).join("; ")}`,
+            );
+          }
+          const repairedMaterialized = await materializeEditPlan(
+            preparedRepaired.plan,
+            resolvedMap,
+            host,
+            repairedOwned,
+          );
+          // Swap: the first commit's artifacts come OFF only after the
+          // repaired plan is fully on the timeline.
+          const swap = await removeOwnedEntities(host, {
+            revision: -1,
+            ownedClipIds: [...owned.clipIds, ...owned.audioClipIds],
+            ownedTextClipIds: owned.textIds,
+            ownedTransitionIds: owned.transitionIds,
+            ownedMotionInstanceIds: owned.motionInstanceIds,
+            ownedMotionCompositionIds: owned.motionCompositionIds,
+          });
+          owned = repairedOwned;
+          materialized = repairedMaterialized;
+          materializedSummary.clipIds = repairedMaterialized.clipIds;
+          materializedSummary.textIds = repairedMaterialized.textIds;
+          materializedSummary.effectCount = repairedMaterialized.effectCount;
+          materializedSummary.transitionCount = repairedMaterialized.transitionCount;
+          materializedSummary.audioCount = repairedMaterialized.audioCount;
+          finalPlan = preparedRepaired.plan;
+          finalPlanIssues = preparedRepaired.issues;
+          planReview = reviewEditPlan(finalPlan, genre, providedReferenceAnalysis, resolvedMap);
+          renderedRepairApplied = true;
+          renderedRepairNote = `automated rendered repair applied (replaced ${swap.removed} first-pass artifact(s))`;
+          // One final look for the report (bounded: no further repair loop).
+          try {
+            const finalSampling = await sampleRenderedDraft(host, finalPlan);
+            if (finalSampling) {
+              renderedEvidence = finalSampling;
+              renderedReview = reviewRenderedDraft(finalSampling.observations);
+            }
+          } catch {
+            // Keep the pre-repair evidence for the report.
+          }
+          selfReview = reviewMaterializedDraft(
+            finalPlan,
+            resolvedMap,
+            materializedSummary,
+            planReview,
+            renderedEvidence?.observations,
+          );
+        } catch (repairError) {
+          // Compensate any partial repair materialization so the first
+          // commit stands alone.
+          if (repairedOwned) {
+            try {
+              await removeOwnedEntities(host, {
+                revision: -1,
+                ownedClipIds: [...repairedOwned.clipIds, ...repairedOwned.audioClipIds],
+                ownedTextClipIds: repairedOwned.textIds,
+                ownedTransitionIds: repairedOwned.transitionIds,
+                ownedMotionInstanceIds: repairedOwned.motionInstanceIds,
+                ownedMotionCompositionIds: repairedOwned.motionCompositionIds,
+              });
+            } catch {
+              // Best effort — reported below.
+            }
+          }
+          renderedRepairNote = `automated rendered repair not applied: ${
+            repairError instanceof Error ? repairError.message : String(repairError)
+          }`;
+        }
+      }
+
       const nextRevision = state.revision + 1;
       const commit: DirectorPlanCommit = {
         revision: nextRevision,
@@ -34640,7 +34983,15 @@ const TOOLS: RegisteredTool[] = [
         (placementRepairs.length > 0
           ? ` · placement relayed: ${placementRepairs.length} stacked shot(s) re-laid`
           : "") +
-        `. Style check: ${planReview.score.toFixed(2)} · density: ${planReview.density.score.toFixed(2)} (${planReview.density.summary}).`;
+        `. Style check: ${planReview.score.toFixed(2)} · density: ${planReview.density.score.toFixed(2)} (${planReview.density.summary}).` +
+        (renderedEvidence && renderedReview
+          ? ` Rendered check: ${renderedReview.score.toFixed(2)} across ${renderedEvidence.frames.length} sampled timeline frame(s).`
+          : ` Rendered check: unavailable (this host cannot render timeline frames for review).`) +
+        (renderedRepairApplied && renderedRepairNote
+          ? ` ${renderedRepairNote}.`
+          : renderedRepairNote
+            ? ` ${renderedRepairNote}.`
+            : "");
 
       const data = {
         editPlan: finalPlan,
@@ -34663,12 +35014,32 @@ const TOOLS: RegisteredTool[] = [
           effectCost: effectCostPayload(planReview),
         },
         density: densityPayload(planReview, revisionApplied),
-        // Honest reporting: there is no working timeline frame sampler yet, so
-        // no visual quality review was performed. NEVER report a synthetic score.
-        quality: {
-          status: "unavailable" as const,
-          reason: "Timeline frame sampling is not implemented — no visual quality review was performed.",
+        // Honest dual reporting. `quality` is the machine-rendered look of the
+        // committed timeline when the host can actually render frames for it;
+        // `selfReview` adds execution counts (expected vs applied effects,
+        // transitions, text) against the plan.
+        selfReview: {
+          score: selfReview.score,
+          issues: selfReview.issues,
+          lowConfidenceSegments: selfReview.lowConfidenceSegments,
+          needsRevision: selfReview.needsRevision,
+          execution: selfReview.execution,
         },
+        quality: renderedEvidence && renderedReview
+          ? {
+              status: "reviewed" as const,
+              score: renderedReview.score,
+              issues: renderedReview.issues,
+              sampledFrames: renderedEvidence.frames.length,
+              sampleTimes: renderedEvidence.sampleTimes,
+              repairApplied: renderedRepairApplied,
+            }
+          : {
+              status: "unavailable" as const,
+              reason:
+                "This host cannot render timeline frames — no visual quality review was performed.",
+            },
+        ...(renderedRepairNote ? { renderedRepairNote } : {}),
       };
 
       setDirectorPlanState(project, {

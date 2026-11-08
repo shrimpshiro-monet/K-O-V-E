@@ -5,6 +5,8 @@ import { resolveClipId } from "./serialize";
 import { gateToolArgs } from "./schema-validate";
 import { withWarnings } from "./multicam-units";
 import { RUN_TOOL_NAME } from "./tools-discovery";
+import { recordExtractionOutcome } from "./turn-context";
+import type { TurnToolContext } from "./turn-context";
 
 /**
  * Resolve agent-friendly clip references (clipIndex / atSec [+ trackIndex]) to a
@@ -36,6 +38,7 @@ export async function executeTool(
   name: string,
   args: Record<string, unknown> | undefined,
   host: EditingHost,
+  context?: TurnToolContext,
 ): Promise<ToolResult> {
   const tool = getTool(name);
   if (!tool) {
@@ -51,10 +54,25 @@ export async function executeTool(
   const gate = gateToolArgs(tool, resolved);
   if (gate.rejection) return gate.rejection;
   try {
-    const result = await tool.handler(gate.args, host);
-    return gate.warnings.length > 0 ? withWarnings(result, [...(result.warnings ?? []), ...gate.warnings]) : result;
+    let result = await tool.handler(gate.args, host, context);
+    // Fold frame-backed extraction evidence into the turn context. Done at the
+    // seam the executor owns so every path (direct call, run_tool, retry)
+    // records "what happened" exactly once.
+    if (name === "extract_segments" && context) {
+      recordExtractionOutcome(context, {
+        ok: result.ok,
+        data: result.data,
+        error: result.error?.message,
+        ...(Array.isArray(result.analysisImages) ? { images: result.analysisImages as never } : {}),
+      });
+    }
+    result = gate.warnings.length > 0 ? withWarnings(result, [...(result.warnings ?? []), ...gate.warnings]) : result;
+    return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tool execution failed";
+    if (name === "extract_segments" && context) {
+      recordExtractionOutcome(context, { ok: false, error: message });
+    }
     return { ok: false, summary: message, error: { code: "TOOL_ERROR", message } };
   }
 }

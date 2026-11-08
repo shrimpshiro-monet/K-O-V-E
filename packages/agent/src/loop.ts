@@ -6,9 +6,11 @@ import type {
   LLMUsage,
   LoopToolResult,
   LoopToolResultBlock,
+  LoopUserBlock,
 } from "./llm";
 import { executeTool, isDestructive, isExpensive, resolveCallTarget } from "./executor";
 import { getTool, hasExistingDirectorPlan } from "./registry";
+import { createTurnContext, type TurnToolContext } from "./turn-context";
 
 export interface RunTurnInput {
   readonly host: EditingHost;
@@ -87,15 +89,16 @@ async function executeToolWithRetry(
   name: string,
   args: Record<string, unknown> | undefined,
   host: EditingHost,
+  turnContext?: TurnToolContext,
 ): Promise<ToolResult> {
-  const result = await executeTool(name, args, host);
+  const result = await executeTool(name, args, host, turnContext);
   if (result.ok || !result.error) return result;
 
   // Only retry on the first attempt for retryable codes
   if (RETRYABLE_CODES.has(result.error.code)) {
     // Brief pause to let state settle (e.g., clip IDs updating after a split)
     await new Promise((resolve) => setTimeout(resolve, 50));
-    const retry = await executeTool(name, args, host);
+    const retry = await executeTool(name, args, host, turnContext);
     if (retry.ok) return retry;
     // Return the retry result (which may have a better error message)
     return enhanceToolError(name, retry);
@@ -156,11 +159,18 @@ function enhanceToolError(name: string, result: ToolResult): ToolResult {
   return result;
 }
 
+function userContentText(content: string | LoopUserBlock[]): string {
+  if (typeof content === "string") return content;
+  return content
+    .map((block) => (block.type === "text" ? block.text : "(image)"))
+    .join("\n");
+}
+
 function latestUserPrompt(messages: LoopMessage[]): string {
-  return [...messages]
+  const latest = [...messages]
     .reverse()
-    .find((message): message is Extract<LoopMessage, { role: "user" }> => message.role === "user")
-    ?.content ?? "";
+    .find((message): message is Extract<LoopMessage, { role: "user" }> => message.role === "user");
+  return userContentText(latest?.content ?? "");
 }
 
 const DATA_URL_PREFIX = /^data:([^;,]+)?(?:;[^,]*)?,/;
@@ -246,6 +256,20 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
   const hasSourceFootage = initialProject.mediaLibrary.items.some(
     (item) => item.type === "video" && item.analysisRole !== "reference",
   );
+  // Frame-evidence gate for `plan_edit`: a NEW footage edit (empty timeline
+  // without a pre-applied plan or committed director plan) must plan from
+  // real frame analysis, never from filename/duration fallbacks. The turn
+  // context carries this flag plus whatever `extract_segments` produces;
+  // registry's plan_edit handler consults it and re-checks live project
+  // state (footage may be imported mid-turn). Already-applied
+  // reference/mirror workflows and edits of existing timelines keep the
+  // preserved legacy paths.
+  const turnContext: TurnToolContext = createTurnContext(
+    !appliedReferencePlan &&
+      !startedWithClips &&
+      (hasSourceFootage || DIRECTOR_REQUEST.test(latestUserPrompt(messages))) &&
+      !hasExistingPlan,
+  );
   let directorPlanCompleted = !requiresDirectorPlan;
   let planEditApplied = false;
   let retriedEmptyTimeline = false;
@@ -294,7 +318,8 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
       }
       const retryInstruction = retriedEmptyTimeline
         ? "Your previous response did not create an edit. The timeline is still empty. " +
-          "If essential information is missing, ask a specific question; otherwise call plan_edit " +
+          "If essential information is missing, ask a specific question; otherwise run " +
+          "extract_segments for real frame analysis first and then call plan_edit " +
           "for the supplied footage instead of claiming that an edit is finished."
         : "";
       const response = await llm.complete({
@@ -470,7 +495,7 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
             summary: `[dry-run] would call ${call.name}`,
           };
         } else {
-          result = await executeToolWithRetry(call.name, call.args, host);
+          result = await executeToolWithRetry(call.name, call.args, host, turnContext);
         }
 
         // plan_edit materialization is best-effort inside the tool (teardown +

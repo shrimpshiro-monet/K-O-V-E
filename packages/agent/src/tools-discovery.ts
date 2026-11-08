@@ -164,7 +164,7 @@ export const DISCOVERY_TOOLS: RegisteredTool[] = [
     destructive: false,
     expensive: false,
     strict: true,
-    handler: async (args, host): Promise<ToolResult> => {
+    handler: async (args, host, turnContext): Promise<ToolResult> => {
       const targetName = args.name;
       if (typeof targetName !== "string" || targetName.length === 0) {
         return fail("INVALID_PARAMS", "name is required.", "Pass the exact tool name from search_tools.");
@@ -192,7 +192,7 @@ export const DISCOVERY_TOOLS: RegisteredTool[] = [
           ? (args.args as Record<string, unknown>)
           : undefined;
 
-      const result = await executeTool(targetName, targetArgs, host as EditingHost);
+      const result = await executeTool(targetName, targetArgs, host as EditingHost, turnContext);
       const warnings = [...(result.warnings ?? [])];
       return {
         ...result,

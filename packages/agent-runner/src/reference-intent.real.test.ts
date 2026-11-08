@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { FnLLMClient } from "@kove-advanced/agent";
+import type { LoopUserBlock } from "@kove-advanced/agent";
 import { buildBaselineProject } from "@kove-advanced/agent/eval/baseline";
 import { loadCorpus } from "@kove-advanced/agent/eval/corpus";
 import { parseReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
@@ -59,6 +60,14 @@ function realGameProject(): Project {
   const bundle = JSON.parse(readFileSync(PROFILE_PATH, "utf8")) as MeasuredBundle;
   const profile = parseReferenceProfile(bundle.profile);
   return { ...project, mirrorProfile: profile };
+}
+
+function messageText(content: string | LoopUserBlock[]): string {
+  return typeof content === "string"
+    ? content
+    : content
+        .map((block) => (block.type === "text" ? block.text : ""))
+        .join("\n");
 }
 
 function referenceDirective(userContent: string): string {
@@ -112,7 +121,7 @@ describe("real-profile headless reference intent (game-01 + measured reference)"
       // The directive carries the real measured facts, including the profile
       // warnings and duration the web app also forwards.
       const firstUser = result.messages.find((message) => message.role === "user")!;
-      const directive = referenceDirective(firstUser.content);
+      const directive = referenceDirective(messageText(firstUser.content));
       const fps = project.mirrorProfile!.fps;
       const durationSeconds = (project.mirrorProfile!.durationFrames * fps.den) / fps.num;
       expect(directive).toContain(`Measured: ${shotCount} shots, ${durationSeconds.toFixed(2)}s`);
@@ -157,7 +166,7 @@ describe("real-profile headless reference intent (game-01 + measured reference)"
       expect(after.timeline.tracks.flatMap((track) => track.clips)).toHaveLength(0);
 
       const firstUser = result.messages.find((message) => message.role === "user")!;
-      const directive = referenceDirective(firstUser.content);
+      const directive = referenceDirective(messageText(firstUser.content));
       expect(directive).toContain("REFERENCE (style guidance only)");
       expect(directive).toContain("NOT applied to the timeline");
       expect(directive).toContain("plan_edit");
@@ -190,7 +199,7 @@ describe("real-profile headless reference intent (game-01 + measured reference)"
       expect(after.timeline.tracks.flatMap((track) => track.clips)).toHaveLength(shotCount);
 
       const firstUser = result.messages.find((message) => message.role === "user")!;
-      const directive = referenceDirective(firstUser.content);
+      const directive = referenceDirective(messageText(firstUser.content));
       expect(directive).toContain("RECREATE (similar edit, own creative layer)");
       expect(directive).toContain("re-author the creative layer yourself");
       expect(directive).toContain("Do NOT call plan_edit");

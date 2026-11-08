@@ -68,6 +68,15 @@ export type LoopToolResultBlock =
       };
     };
 
+/**
+ * Provider-neutral content block that can ride along on a USER message.
+ * Adapters translate it to the provider's own shape (Anthropic source-block
+ * images, OpenAI image_url parts). Text-only turns keep passing strings.
+ */
+export type LoopUserBlock =
+  | { readonly type: "text"; readonly text: string }
+  | { readonly type: "image"; readonly mediaType: string; readonly base64: string };
+
 export interface LoopToolResult {
   readonly toolUseId: string;
   readonly content: string | LoopToolResultBlock[];
@@ -75,7 +84,7 @@ export interface LoopToolResult {
 }
 
 export type LoopMessage =
-  | { role: "user"; content: string }
+  | { role: "user"; content: string | LoopUserBlock[] }
   | { role: "assistant"; content: string; toolUses: LLMToolUse[] }
   | { role: "tool"; results: LoopToolResult[] };
 
@@ -213,6 +222,41 @@ export function withRetry(send: LLMSend, opts: RetryOptions = {}): LLMSend {
 }
 
 // ---- Anthropic --------------------------------------------------------------
+const isUserBlocks = (content: string | LoopUserBlock[]): content is LoopUserBlock[] =>
+  Array.isArray(content);
+
+/** Anthropic user content: one text block per text part, one image block per frame. */
+function anthropicUserContent(content: string | LoopUserBlock[]): unknown {
+  if (!isUserBlocks(content)) {
+    return [{ type: "text", text: content }];
+  }
+  return content.map((block) =>
+    block.type === "text"
+      ? { type: "text", text: block.text }
+      : {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: block.mediaType,
+            data: block.base64,
+          },
+        },
+  );
+}
+
+/** OpenAI-compatible user content: text parts and data-URL image parts. */
+function openAiUserContent(content: string | LoopUserBlock[]): unknown {
+  if (!isUserBlocks(content)) return content;
+  return content.map((block) =>
+    block.type === "text"
+      ? { type: "text", text: block.text }
+      : {
+          type: "image_url",
+          image_url: { url: `data:${block.mediaType};base64,${block.base64}` },
+        },
+  );
+}
+
 export function buildAnthropicBody(
   input: LLMTurnInput,
   model: string,
@@ -220,7 +264,7 @@ export function buildAnthropicBody(
 ): unknown {
   const messages = input.messages.map((m) => {
     if (m.role === "user") {
-      return { role: "user", content: [{ type: "text", text: m.content }] };
+      return { role: "user", content: anthropicUserContent(m.content) };
     }
     if (m.role === "assistant") {
       const content: unknown[] = [];
@@ -312,7 +356,7 @@ export function buildOpenAIBody(
   if (input.system) messages.push({ role: "system", content: input.system });
   for (const m of input.messages) {
     if (m.role === "user") {
-      messages.push({ role: "user", content: m.content });
+      messages.push({ role: "user", content: openAiUserContent(m.content) });
     } else if (m.role === "assistant") {
       messages.push({
         role: "assistant",

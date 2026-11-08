@@ -75,6 +75,13 @@ export interface ToolResult {
   readonly error?: ToolError;
   /** Rendered image the model can SEE (e.g. render_motion_frame). */
   readonly image?: ToolResultImage;
+  /**
+   * In-memory side channel for per-turn analysis evidence (real sampled
+   * frames). NOT serialized into the model transcript — the executor folds
+   * it into the turn context so plan_edit sees the trusted evidence without
+   * a base64 blob landing in the conversation.
+   */
+  readonly analysisImages?: unknown;
   /** Non-fatal notices, e.g. use of a deprecated parameter alias. */
   readonly warnings?: readonly string[];
 }
