@@ -27,10 +27,7 @@ import type { EncoderBackend, EncoderBackendFactory } from "./encoder-backend";
 import { WebCodecsBackend } from "./webcodecs-backend";
 import { resolveWebCodecsExportLimits } from "./webcodecs-limits";
 import { waitForExportStage } from "./export-watchdog";
-import {
-  getMediaItemCapabilities,
-  trackHasAudioItems,
-} from "../timeline/timeline-items";
+import { trackHasAudioItems } from "../timeline/timeline-items";
 
 export class ExportEngine {
   private static readonly AUDIO_EXPORT_CHUNK_DURATION_SECONDS = 15;
@@ -213,6 +210,7 @@ export class ExportEngine {
       (track) => !track.muted && trackHasAudioItems(project, track.id),
     );
     const shouldUpscale = this.shouldApplyUpscaling(project, fullSettings);
+    const mediaEngine = getMediaEngine();
     let failurePhase: ExportProgress["phase"] = "preparing";
     let finished = false;
 
@@ -254,32 +252,6 @@ export class ExportEngine {
           this.audioEngine?.clearCache();
         }
         await waitForExportStage(Promise.resolve(backend.closeAudio()), "closing the audio encoder", controller.signal);
-      }
-
-      failurePhase = "preparing";
-      const mediaEngine = getMediaEngine();
-      const videoMediaIds: string[] = [];
-      for (const track of project.timeline.tracks) {
-        for (const clip of track.clips) {
-          const mediaItem = project.mediaLibrary.items.find((m) => m.id === clip.mediaId);
-          if (
-            mediaItem?.blob && getMediaItemCapabilities(mediaItem).visual &&
-            mediaItem.type === "video" && !videoMediaIds.includes(mediaItem.id)
-          ) {
-            videoMediaIds.push(mediaItem.id);
-            try {
-              await waitForExportStage(
-                mediaEngine.createExportDecoder(mediaItem.id, mediaItem.blob, fullSettings.width),
-                `opening video ${mediaItem.name}`,
-                controller.signal,
-              );
-            } catch (error) {
-              if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) throw error;
-              // The video engine can still use its normal decoder/seek fallback.
-              console.warn(`[ExportEngine] Could not create export decoder for ${mediaItem.name}:`, error);
-            }
-          }
-        }
       }
 
       failurePhase = "rendering";

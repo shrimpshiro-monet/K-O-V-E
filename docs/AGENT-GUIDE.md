@@ -35,6 +35,14 @@ transform, color-grade, add text/shapes, keyframe, manage transitions, and more.
 - **Stop** — aborts the in-flight turn and rolls back any partial edits.
 - **Token meter** — shows cumulative input/output tokens for the conversation.
 
+### Browser console diagnostics
+
+The web editor writes the model request and response, tool calls/results, provider
+fallbacks, and errors to DevTools with the `[KOVE AI]` prefix. Export setup,
+progress, stalls, completion, and errors use `[KOVE Export]`. API credentials
+and embedded binary frame data are redacted; prompts and tool details are not.
+Treat these logs as project data when sharing console output.
+
 ## Connecting external agents (desktop MCP)
 
 The desktop app runs a local Model Context Protocol server so external clients

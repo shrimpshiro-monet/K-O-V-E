@@ -7,6 +7,20 @@ import type { EditDensityTarget } from "./density";
 import type { CaptionStyleTemplate } from "./edit-plan";
 import type { StyleProfileTarget } from "./style-profile";
 
+/**
+ * A concrete look a genre says the edit should adopt: one signature caption
+ * style, at most one accent transition, and one coherent grade recipe — all
+ * expressed in renderer-scale values, so a look chosen here still renders
+ * exactly as written (caption fields mirror CaptionStyleTemplate; grade
+ * params use the clipEffectParams scale).
+ */
+export interface GenreLook {
+  readonly name: string;
+  readonly caption?: CaptionStyleTemplate;
+  readonly accentTransition?: { readonly type: string; readonly useWhen: string };
+  readonly grade?: ReadonlyArray<{ readonly type: string; readonly params: Record<string, number> }>;
+}
+
 export interface GenreRules {
   readonly pacing: "fast" | "medium" | "slow";
   readonly transitionPreference: readonly string[];
@@ -44,6 +58,9 @@ export interface Genre {
    * that names one gets it placed on a moment instead of on every shot.
    */
   readonly signatureEffects?: readonly string[];
+  /** Concrete genre looks (above). The director picks ONE as the edit's
+   * baseline look rather than inventing its own caption/grade values. */
+  readonly looks?: readonly GenreLook[];
 }
 
 export type EditGenre = Genre;

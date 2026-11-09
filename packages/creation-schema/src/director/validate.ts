@@ -650,9 +650,9 @@ function validateCameraMoves(
   issues: DirectorValidationIssue[],
 ): void {
   if (!moves) return;
-  if (moves.length > 6) {
+  if (moves.length > 3) {
     issues.push(issue(
-      "warning",
+      "error",
       "too_many_camera_moves",
       `Segment ${segmentIndex} has ${moves.length} camera moves; 1-3 composed moves per shot is the readable maximum.`,
       `segments.${segmentIndex}.cameraMoves`,

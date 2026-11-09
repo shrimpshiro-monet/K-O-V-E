@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } fr
 import { renderHook, act, waitFor } from "@testing-library/react";
 import type { Project, VideoExportSettings, ExportResult } from "@kove-advanced/core";
 import {
+  EXPORT_STAGE_TIMEOUT_MS,
+  waitForExportStage,
+} from "@kove-advanced/core/export/export-watchdog";
+import {
   useExportRunner,
   mimeForExt,
   extForFormat,
@@ -25,9 +29,17 @@ const { mockEngine, getExportEngineMock } = vi.hoisted(() => {
   };
 });
 
-vi.mock("@kove-advanced/core", () => ({
-  getExportEngine: getExportEngineMock,
-}));
+vi.mock("@kove-advanced/core", () => {
+  return {
+    getExportEngine: getExportEngineMock,
+    WebCodecsBackend: class {
+      readonly options: Record<string, unknown> | undefined;
+      constructor(_mediabunny: unknown, options?: Record<string, unknown>) {
+        this.options = options;
+      }
+    },
+  };
+});
 
 function fakeProject(): Project {
   return {
@@ -141,6 +153,14 @@ describe("useExportRunner", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockEngine.initialize.mockResolvedValue(undefined);
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it("advances progress and completes on success", async () => {
@@ -267,6 +287,82 @@ describe("useExportRunner", () => {
     expect(result.current.state).toMatchObject({ isExporting: false, error: null, complete: false });
   });
 
+  it("times out and cancels an export engine that stops yielding progress", async () => {
+    vi.useFakeTimers();
+    let rejectStalledRender!: (error: Error) => void;
+    mockEngine.exportVideo.mockImplementation(async function* () {
+      yield { phase: "preparing", progress: 0 };
+      await new Promise<void>((_resolve, reject) => {
+        rejectStalledRender = reject;
+      });
+    });
+    mockEngine.cancel.mockImplementationOnce(() => {
+      rejectStalledRender(new Error("render cancelled after timeout"));
+    });
+
+    try {
+      const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+      act(() => result.current.beginExport());
+      let pending!: Promise<void>;
+      act(() => {
+        pending = result.current.runExport({ format: "mp4" }, "mp4", fakeStream());
+      });
+      const failure = pending.catch((error: unknown) => error);
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+        await vi.advanceTimersByTimeAsync(EXPORT_STAGE_TIMEOUT_MS + 5_000);
+      });
+
+      const error = await failure;
+      act(() => result.current.failExport(error));
+
+      expect(error).toMatchObject({ name: "TimeoutError" });
+      expect((error as Error).message).toContain("waiting for video export progress");
+      expect(mockEngine.cancel).toHaveBeenCalledTimes(1);
+      expect(result.current.state.error).toContain("waiting for video export progress");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("preserves the renderer's specific timeout instead of masking it as missing progress", async () => {
+    vi.useFakeTimers();
+    mockEngine.exportVideo.mockImplementation(async function* () {
+      yield { phase: "preparing", progress: 0 };
+      await waitForExportStage(
+        new Promise(() => {}),
+        "rendering frame 2 of 574",
+      );
+    });
+
+    try {
+      const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+      act(() => result.current.beginExport());
+      let pending!: Promise<void>;
+      act(() => {
+        pending = result.current.runExport({ format: "mp4" }, "mp4", fakeStream());
+      });
+      const failure = pending.catch((error: unknown) => error);
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+        await vi.advanceTimersByTimeAsync(EXPORT_STAGE_TIMEOUT_MS);
+      });
+      const error = await failure;
+      act(() => result.current.failExport(error));
+
+      expect(error).toMatchObject({ name: "TimeoutError" });
+      expect((error as Error).message).toContain("rendering frame 2 of 574");
+      expect((error as Error).message).not.toContain("waiting for video export progress");
+      expect(mockEngine.cancel).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("does not let an old cancelled run reset a newer export", async () => {
     mockEngine.initialize.mockReturnValueOnce(new Promise(() => {}));
     const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
@@ -367,6 +463,173 @@ describe("useExportRunner", () => {
     expect(result.current.state.progress).toBe(0);
   });
 });
+
+describe("useExportRunner encoder-stall retry", () => {
+  const win = window as unknown as Record<string, unknown>;
+  let originalPicker: unknown;
+
+  async function* stalledGenerator(): AsyncGenerator<
+    { phase: "rendering"; progress: number },
+    ExportResult
+  > {
+    yield { phase: "rendering", progress: 0.8 };
+    const error = new Error("Export stalled while encoding frame 380 of 450 for 120 seconds.");
+    error.name = "TimeoutError";
+    throw error;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Discard any sticky stalled/success generator implementations from earlier tests
+    // so they cannot leak into other describe blocks.
+    mockEngine.exportVideo.mockReset();
+    mockEngine.initialize.mockResolvedValue(undefined);
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    originalPicker = win.showSaveFilePicker;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalPicker !== undefined) {
+      win.showSaveFilePicker = originalPicker;
+    } else {
+      delete win.showSaveFilePicker;
+    }
+  });
+
+  function savePicker(handle: { createWritable: (opts?: unknown) => Promise<FileSystemWritableFileStream> }): void {
+    win.showSaveFilePicker = vi.fn(async () => handle as unknown as FileSystemFileHandle);
+  }
+
+  it("retries a stalled hardware encoder once in software mode through the same picked file", async () => {
+    mockEngine.exportVideo
+      .mockImplementationOnce(() => stalledGenerator())
+      .mockImplementationOnce(() => successGenerator());
+
+    const retryStream = fakeStream();
+    const pickedHandle = { createWritable: vi.fn(async () => retryStream) };
+    savePicker(pickedHandle);
+
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    // The UI flow acquires (and retains) the picked file handle first.
+    await act(async () => {
+      await result.current.showSavePicker("movie.mp4", "mp4");
+    });
+    expect(pickedHandle.createWritable).toHaveBeenCalledTimes(1);
+
+    const firstAttemptStream = fakeStream();
+    await act(async () => {
+      await result.current.runExport({ format: "mp4" }, "mp4", firstAttemptStream);
+    });
+
+    expect(mockEngine.exportVideo).toHaveBeenCalledTimes(2);
+    const retryFactory = mockEngine.exportVideo.mock.calls[1]?.[3] as (mb: unknown) => { options?: { hardwareAcceleration?: string } };
+    const backend = retryFactory({});
+    expect(backend.options?.hardwareAcceleration).toBe("prefer-software");
+    expect(result.current.state).toMatchObject({ complete: true, isExporting: false, error: null, progress: 100 });
+  });
+
+  it("surfaces a combined failure when software mode fails too", async () => {
+    mockEngine.exportVideo.mockImplementation(() => stalledGenerator());
+
+    const retryStream = fakeStream();
+    const pickedHandle = { createWritable: vi.fn(async () => retryStream) };
+    savePicker(pickedHandle);
+
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    await act(async () => {
+      await result.current.showSavePicker("movie.mp4", "mp4");
+    });
+
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await result.current.runExport({ format: "mp4" }, "mp4", fakeStream());
+      } catch (error) {
+        caught = error;
+      }
+    });
+    expect(mockEngine.exportVideo).toHaveBeenCalledTimes(2);
+    expect((caught as Error).message).toContain("failed twice");
+    expect((caught as Error).message).toContain("TimeoutError");
+  });
+
+  it("retries once in software mode even when the hardware failure is not a timeout", async () => {
+    async function* hardwareThrew(): AsyncGenerator<
+      { phase: "rendering"; progress: number },
+      ExportResult
+    > {
+      yield { phase: "rendering", progress: 0.4 };
+      const error = new Error("Encoding failed: GPU process is gone");
+      error.name = "EncodingError";
+      throw error;
+    }
+    mockEngine.exportVideo
+      .mockImplementationOnce(() => hardwareThrew())
+      .mockImplementationOnce(() => successGenerator());
+
+    const retryStream = fakeStream();
+    const pickedHandle = { createWritable: vi.fn(async () => retryStream) };
+    savePicker(pickedHandle);
+
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    await act(async () => {
+      await result.current.showSavePicker("movie.mp4", "mp4");
+    });
+    await act(async () => {
+      await result.current.runExport({ format: "mp4" }, "mp4", fakeStream());
+    });
+
+    expect(mockEngine.exportVideo).toHaveBeenCalledTimes(2);
+    const retryFactory = mockEngine.exportVideo.mock.calls[1]?.[3] as (mb: unknown) => { options?: { hardwareAcceleration?: string } };
+    expect(retryFactory({}).options?.hardwareAcceleration).toBe("prefer-software");
+    expect(result.current.state).toMatchObject({ complete: true, isExporting: false, error: null });
+  });
+
+  it("does not retry when the destination cannot be reopened", async () => {
+    mockEngine.exportVideo.mockImplementation(() => stalledGenerator());
+
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await result.current.runExport({ format: "mp4" }, "mp4", fakeStream());
+      } catch (error) {
+        caught = error;
+      }
+    });
+    expect(mockEngine.exportVideo).toHaveBeenCalledTimes(1);
+    expect(isTimeoutName(caught)).toBe(true);
+  });
+
+  it("does not double-retry when the caller supplies its own backend factory", async () => {
+    mockEngine.exportVideo.mockImplementation(() => stalledGenerator());
+    const factory = vi.fn();
+
+    const { result } = renderHook(() => useExportRunner({ project: fakeProject() }));
+    act(() => result.current.beginExport());
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await result.current.runExport({ format: "mp4" }, "mp4", fakeStream(), factory);
+      } catch (error) {
+        caught = error;
+      }
+    });
+    expect(mockEngine.exportVideo).toHaveBeenCalledTimes(1);
+    expect(isTimeoutName(caught)).toBe(true);
+  });
+});
+
+function isTimeoutName(error: unknown): boolean {
+  return !!(error && typeof error === "object" && "name" in error && (error as { name?: unknown }).name === "TimeoutError");
+}
 
 describe("writeBlobToWritable", () => {
   it("streams blob bytes into a plain-object writable and closes it", async () => {

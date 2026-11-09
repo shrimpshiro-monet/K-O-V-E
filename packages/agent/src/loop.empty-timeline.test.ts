@@ -1,11 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HeadlessHost } from "./headless-host";
 import { runTurn } from "./loop";
-import { toAnthropicTools } from "./registry";
+import { setPlanEditRankingEnabled, toAnthropicTools } from "./registry";
 import { makeEmptyProject, makeProjectWithClip } from "./test-fixtures";
 import type { EditingHost, JobKind, JobResult } from "./host";
 import type { LLMResponse, LLMTurnInput } from "./llm";
 import type { AgentEvent } from "./types";
+
+beforeEach(() => {
+  setPlanEditRankingEnabled(false);
+});
 
 // Frame-backed extraction is what plan_edit plans from on fresh footage
 // edits. These tests fake the frame worker (real sampling needs a browser

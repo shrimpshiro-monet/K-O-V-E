@@ -21,10 +21,10 @@ import {
 } from "./multicam-units";
 import { extractSegments as runFrameWorkerPipeline } from "@kove-advanced/frame-worker";
 import type { ExtractedFrame, VisionWorkerInputSnapshot } from "@kove-advanced/frame-worker";
-import type { TurnToolContext, DirectorFrameImage, TrustedFootageAnalysis } from "./turn-context";
+import type { TurnToolContext, DirectorFrameImage, DirectorFrameRole, TrustedFootageAnalysis } from "./turn-context";
 import { trustedAnalysis } from "./turn-context";
-import { sampleRenderedDraft, type RenderedDraftSampling } from "./director/render-observation";
-import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId, buildDensityContract, EFFECT_PARAM_BLOCK } from "./director/director-prompt";
+import { sampleRenderedDraft, MAX_RENDER_SAMPLE_TIMES, type RenderedDraftSampling } from "./director/render-observation";
+import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId, buildDensityContract, EFFECT_PARAM_BLOCK, DIRECTOR_RANKING_SYSTEM_PROMPT, buildMomentRankingPrompt, parseMomentShortlist, formatMomentShortlist, type MomentShortlist } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, reviewMaterializedDraft, type EditPlanReview } from "./director/plan-review";
 import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES, relayPlanSegmentsSequentially, reviewRenderedDraft, type PlacementRepair } from "@kove-advanced/creation-schema";
@@ -518,8 +518,354 @@ function optionalNumber(value: unknown): number | undefined {
 
 const MAX_TEXT_CLIPS_PER_BATCH = 24;
 const MAX_AI_INPUT_PREVIEW_IMAGES = 24;
-/** Frames sent to the director alongside plan_edit (vision-call budget). */
-const MAX_DIRECTOR_PREVIEW_FRAMES = 8;
+/**
+ * Rough spacing between the frames the director plans from: ~10Seconds means a
+ * 2-minute VOD still gets a storyboard instead of 8 lucky pixels. Blind plan
+ * is the #1 documented craft ceiling (text-only planning).
+ */
+const DIRECTOR_PREVIEW_FRAME_SPACING_S = 10;
+/** Floor so short clips still get a real montage; ceiling caps token cost. */
+export const MIN_DIRECTOR_PREVIEW_FRAMES = 12;
+export const MAX_DIRECTOR_PREVIEW_FRAMES = 32;
+export const MAX_DIRECTOR_REFERENCE_PREVIEW_FRAMES = 8;
+
+/** Preview-frame budgets for a turn's analyzed footage. The source budget
+ * scales with total source span (about one frame per spacing interval,
+ * clamped to [min, max]); references keep their separate, smaller budget so
+ * style examples never cannibalize editable-footage coverage. */
+export function previewBudgetsForSpans(
+  sourceSpanSeconds: number,
+  referenceSpanSeconds: number,
+): { sources: number; references: number } {
+  const safe = (value: number) => (Number.isFinite(value) && value > 0 ? value : 0);
+  return {
+    sources: Math.min(
+      MAX_DIRECTOR_PREVIEW_FRAMES,
+      Math.max(MIN_DIRECTOR_PREVIEW_FRAMES, Math.ceil(safe(sourceSpanSeconds) / DIRECTOR_PREVIEW_FRAME_SPACING_S)),
+    ),
+    references: Math.min(
+      MAX_DIRECTOR_REFERENCE_PREVIEW_FRAMES,
+      Math.max(4, Math.ceil(safe(referenceSpanSeconds) / (DIRECTOR_PREVIEW_FRAME_SPACING_S * 2))),
+    ),
+  };
+}
+
+/**
+ * Fair per-video share under a fixed frame budget: every video gets
+ * floor(budget/n) frames and the remainder is spread over evenly spaced
+ * positions in the video list (never front-loaded), so the selection stays
+ * deterministic and unbiased.
+ */
+function distributeEvenly(count: number, total: number): Set<number> {
+  if (count <= 0 || total <= 0) return new Set();
+  const indexes = new Set<number>();
+  for (let index = 0; index < count; index += 1) {
+    indexes.add(count === 1 ? Math.floor(total / 2) : Math.round((index * (total - 1)) / (count - 1)));
+  }
+  return indexes;
+}
+
+interface DirectorPreviewFrame {
+  readonly videoId: string;
+  readonly mediaName?: string;
+  readonly timestamp: number;
+  readonly dataUrl: string;
+  readonly width: number;
+  readonly height: number;
+  readonly role: DirectorFrameRole;
+}
+
+interface DirectorPreviewVideo {
+  readonly videoId: string;
+  readonly role: DirectorFrameRole;
+  readonly name?: string;
+  readonly duration: number;
+  readonly frames: readonly DirectorPreviewFrame[];
+}
+
+/** Spread `total` over `count` buckets: a base floor plus a match-up of bonus
+ * buckets whose positions are spread across the list (never front-loaded). */
+function spreadTotals(total: number, count: number): number[] {
+  if (count <= 0) return [];
+  const base = Math.floor(total / count);
+  const totals = new Array<number>(count).fill(base);
+  for (const index of distributeEvenly(total - base * count, count)) totals[index]! += 1;
+  return totals;
+}
+
+/**
+ * Share `budget` frames across `videos`. Quotas spread across the list, and a
+ * video that has fewer frames than its quota DONATES the unused quota to
+ * videos that still have frames — the fixed budget is spent, never stranded.
+ * Each video's own frames are picked as an even spread across ITS timeline
+ * (one representative middle frame when its share is 1).
+ */
+function sharePreviewBudget(videos: readonly DirectorPreviewVideo[], budget: number): DirectorFrameImage[] {
+  if (videos.length === 0 || budget <= 0) return [];
+  const quotas = spreadTotals(budget, videos.length);
+  const taken = quotas.map((quota, index) => Math.min(quota, videos[index]!.frames.length));
+  let pool = quotas.reduce((sum, quota, index) => sum + quota - taken[index]!, 0);
+  while (pool > 0) {
+    const slack = videos
+      .map((video, index) => ({ index, room: video.frames.length - taken[index]! }))
+      .filter((entry) => entry.room > 0);
+    if (slack.length === 0) break;
+    const shares = spreadTotals(pool, slack.length);
+    let spent = 0;
+    slack.forEach((entry, slot) => {
+      const take = Math.min(shares[slot]!, entry.room, pool - spent);
+      taken[entry.index]! += take;
+      spent += take;
+    });
+    pool -= spent;
+  }
+  const picked: DirectorFrameImage[] = [];
+  videos.forEach((video, videoIndex) => {
+    const count = taken[videoIndex]!;
+    for (let index = 0; index < count; index += 1) {
+      const frame =
+        count === 1
+          ? video.frames[Math.floor(video.frames.length / 2)] // one representative: middle frame
+          : video.frames[Math.round((index * (video.frames.length - 1)) / (count - 1))];
+      picked.push({
+        videoId: frame.videoId,
+        ...(frame.mediaName !== undefined ? { mediaName: frame.mediaName } : {}),
+        timestamp: frame.timestamp,
+        dataUrl: frame.dataUrl,
+        width: frame.width,
+        height: frame.height,
+        role: frame.role,
+      });
+    }
+  });
+  return picked;
+}
+/**
+ * Pick the frames the director actually SEES when planning: `runTurn` builds
+ * `montage` from the tool-call transcript, so images on the transcript are
+ * what matter.
+ *
+ * Budgets are SPAN-AWARE: the source footage earns about one frame per
+ * spacing interval (clamped [min, max]), reference videos split a separate,
+ * smaller budget — style examples never consume editable-footage coverage,
+ * and every one of their frames keeps `role: "reference"` so the planning
+ * text can label them as style examples.
+ */
+export function selectDirectorPreviewFrames(
+  snapshots: readonly VisionWorkerInputSnapshot[],
+  mediaRoles: ReadonlyMap<string, { readonly role: DirectorFrameRole; readonly name?: string }> = new Map(),
+): DirectorFrameImage[] {
+  const toDataUrl = (imageData: string): string =>
+    imageData.startsWith("data:") ? imageData : `data:image/jpeg;base64,${imageData}`;
+
+  const videos: DirectorPreviewVideo[] = [];
+  for (const snapshot of snapshots) {
+    const media = mediaRoles.get(snapshot.videoId);
+    const frames: DirectorPreviewFrame[] = [];
+    for (const batch of snapshot.batches) {
+      for (const image of batch.images) {
+        const timestamp = Number.isFinite(image.timestamp) ? image.timestamp : 0;
+
+        frames.push({
+          videoId: snapshot.videoId,
+          ...(media?.name !== undefined ? { mediaName: media.name } : {}),
+          timestamp,
+          dataUrl: toDataUrl(image.imageData),
+          width: image.width,
+          height: image.height,
+          role: media?.role ?? "source",
+        });
+      }
+    }
+    if (frames.length === 0) continue;
+    frames.sort((a, b) => a.timestamp - b.timestamp);
+    videos.push({
+      videoId: snapshot.videoId,
+      role: media?.role ?? "source",
+      ...(media?.name !== undefined ? { name: media.name } : {}),
+      duration: snapshot.duration,
+      frames,
+    });
+  }
+
+  // Span per role: analyzed durations when present, else the widest sampled
+  // timestamp — a blind 0 fallback would silently pin the floor budget.
+  const spanOf = (role: DirectorFrameRole): number =>
+    videos
+      .filter((video) => video.role === role)
+      .reduce((sum, video) => {
+        const last = video.frames[video.frames.length - 1]!.timestamp;
+        return sum + (Number.isFinite(video.duration) && video.duration > last ? video.duration : last + 1);
+      }, 0);
+  const budgets = previewBudgetsForSpans(spanOf("source"), spanOf("reference"));
+  const sources = videos.filter((video) => video.role === "source");
+  const references = videos.filter((video) => video.role === "reference");
+  return [
+    ...sharePreviewBudget(sources, budgets.sources),
+    ...sharePreviewBudget(references, budgets.references),
+  ];
+}
+
+const MOMENT_ZOOM_FRAMES_PER_RANGE = 6;
+const MOMENT_ZOOM_MAX_RANGES = 4;
+
+/** Even sampling INSIDE a ranked moment window (edges inset ~4%), so zoom
+ * frames land on usable material instead of on the half-frame boundary. */
+export function momentZoomTimestamps(startTime: number, endTime: number, count = MOMENT_ZOOM_FRAMES_PER_RANGE): number[] {
+  const span = Math.max(0, endTime - startTime);
+  if (count <= 0 || span <= 0.5) return span <= 0 ? [] : [(startTime + endTime) / 2];
+  const inset = Math.min(0.8, span * 0.06);
+  const from = startTime + inset;
+  const to = endTime - inset;
+  return Array.from({ length: count }, (_, index) =>
+    count === 1 ? (from + to) / 2 : from + ((to - from) * index) / (count - 1),
+  );
+}
+
+/**
+ * On-demand dense re-sampling of the ranking pass's accepted ranges — the
+ * coarse-to-fine second stage. Instead of more uniform frames, the planning
+ * call receives tight chronological views of exactly the hook/payoff/landing
+ * windows it will cut inside: cheap (≤24 frames), targeted, and grounded in
+ * the ranked shortlist rather than scattered across the timeline.
+ */
+async function captureMomentZoomFrames(
+  host: EditingHost,
+  shortlist: MomentShortlist,
+  mediaDurations: ReadonlyMap<string, number>,
+  mediaRoles: ReadonlyMap<string, { role: DirectorFrameRole; name?: string }>,
+): Promise<DirectorFrameImage[]> {
+  const toDataUrl = (imageData: string): string =>
+    imageData.startsWith("data:") ? imageData : `data:image/jpeg;base64,${imageData}`;
+
+  const seen = new Set<string>();
+  const ranges = [shortlist.hook, shortlist.payoff, shortlist.landing, ...shortlist.moments]
+    .filter((moment): moment is NonNullable<MomentShortlist["hook"]> => Boolean(moment))
+    .filter((moment) => {
+      const key = `${moment.sourceVideoId}|${moment.startTime.toFixed(2)}|${moment.endTime.toFixed(2)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return moment.endTime - moment.startTime >= 0.4;
+    })
+    .slice(0, MOMENT_ZOOM_MAX_RANGES);
+
+  const frames: DirectorFrameImage[] = [];
+  for (const moment of ranges) {
+    const mediaId = moment.sourceVideoId;
+    const duration = mediaDurations.get(mediaId);
+    if (duration === undefined) continue;
+    const timestamps = momentZoomTimestamps(moment.startTime, moment.endTime);
+    if (timestamps.length === 0) continue;
+    const job = await host.runJob("extractVideoFrames", {
+      mediaId,
+      timestamps,
+      maxWidth: DIRECTOR_ANALYSIS_FRAME_WIDTH,
+    });
+    if (!job.ok || !isExtractedFrameBatch(job.data)) continue;
+    const media = mediaRoles.get(mediaId);
+    for (const image of job.data.frames) {
+      frames.push({
+        videoId: mediaId,
+        ...(media?.name !== undefined ? { mediaName: media.name } : {}),
+        timestamp: image.timestamp,
+        dataUrl: toDataUrl(image.imageDataBase64),
+        width: image.width,
+        height: image.height,
+        role: zoomRoleOf(media),
+      });
+    }
+  }
+  return frames;
+}
+
+function zoomRoleOf(
+  media?: { role: DirectorFrameRole; name?: string },
+): DirectorFrameRole {
+  return media?.role === "reference" ? "reference" : "source";
+}
+
+function isExtractedFrameBatch(data: unknown): data is { frames: Array<{ timestamp: number; imageDataBase64: string; width: number; height: number }> } {
+  if (!data || typeof data !== "object") return false;
+  const frames = (data as { frames?: unknown }).frames;
+  return (
+    Array.isArray(frames) &&
+    frames.length > 0 &&
+    frames.every(
+      (frame) =>
+        !!frame && typeof frame === "object" &&
+        typeof (frame as Record<string, unknown>).timestamp === "number" &&
+        typeof (frame as Record<string, unknown>).imageDataBase64 === "string",
+    )
+  );
+}
+
+/** Caption text for the moment-zoom frame group appended to plan_edit's
+ * planning message. States the tie to the ranking ranges so pass-2 treats the
+ * tiles as cut-point evidence, not extra moments. */
+export function describeMomentZoomFrames(
+  frames: readonly DirectorFrameImage[],
+  shortlist: MomentShortlist,
+): string {
+  if (frames.length === 0) return "";
+  const ranges = [shortlist.hook, shortlist.payoff, shortlist.landing, ...shortlist.moments]
+    .filter((moment): moment is NonNullable<MomentShortlist["hook"]> => Boolean(moment))
+    .slice(0, MOMENT_ZOOM_MAX_RANGES)
+    .map((moment) => `${moment.sourceVideoId} ${moment.startTime.toFixed(2)}s-${moment.endTime.toFixed(2)}s`)
+    .join("; ");
+  return [
+    `Moment-zoom: ${frames.length} dense frame(s) re-sampled INSIDE your ranked ranges (${ranges}). Chronological within each range; tiles view the same window ~0.5s apart.`,
+    "Use them to set exact cut in/out points inside these windows (action start, blink, breath) — they are cut-point evidence for the moments you already ranked, NOT additional moments, and reference-labeled tiles stay style-only.",
+  ].join("\n");
+}
+
+/**
+ * The text that accompanies the preview images in plan_edit's planning
+ * message. States, per frame: media name (when known), media ID, timestamp,
+ * and role — so neither the director nor a log reader can mistake a
+ * style-reference frame for editable footage. Also states the preview cap
+ * honestly: with more analyzed source videos than the frame budget, the
+ * uncovered videos are listed BY NAME instead of silently missing.
+ */
+export function describeDirectorPreviewFrames(
+  frames: readonly DirectorFrameImage[],
+  analyzedSources: ReadonlyArray<{ readonly videoId: string; readonly sourceFile?: string }> = [],
+): string {
+  const sourceFrames = frames.filter((frame) => frame.role !== "reference");
+  const referenceFrames = frames.filter((frame) => frame.role === "reference");
+  const labels = frames
+    .map((frame, index) => {
+      const role =
+        frame.role === "reference"
+          ? "STYLE REFERENCE (style cues only — not footage to edit)"
+          : "source footage (material to cut and arrange)";
+      return `Frame ${index + 1}: ${frame.mediaName ?? frame.videoId} (id: ${frame.videoId}), t=${frame.timestamp.toFixed(2)}s — ${role}`;
+    })
+    .join("; ");
+  const lines = [
+    `Below: ${frames.length} frame(s) actually sampled from the project's videos — ${sourceFrames.length} source-footage frame(s) and ${referenceFrames.length} style-reference frame(s). ${labels}.`,
+  ];
+  if (referenceFrames.length > 0) {
+    const referenceNames = [...new Set(referenceFrames.map((frame) => `${frame.mediaName ?? frame.videoId} (${frame.videoId})`))].join(", ");
+    lines.push(
+      `Frames labeled STYLE REFERENCE above come from ${referenceNames}: they show a look to EMULATE (palette, rhythm, motion). They are not part of the user's material — never cut, place, trim, or rearrange anything from a reference video. Edit only the source footage. Their treatment belongs on the SOURCE clips.`,
+    );
+  }
+  const shownSourceIds = new Set(sourceFrames.map((frame) => frame.videoId));
+  const unshown = (analyzedSources ?? []).filter((video) => !shownSourceIds.has(video.videoId));
+  if (unshown.length > 0) {
+    lines.push(
+      `Preview cap: only ${sourceFrames.length} source frame(s) ride along on this message. These analyzed source video(s) have NO frame shown: ${unshown
+        .map((video) => `${video.sourceFile ?? video.videoId} (${video.videoId})`)
+        .join(", ")}. They are still fully analyzed in the segment map in your director brief — plan their shots from the map and from the other frames' intuition, not from pixels that are not here.`,
+    );
+  }
+  lines.push(
+    sourceFrames.length > 0
+      ? "Plan from what you SEE on the source frames — composition, subject continuity, lighting and legibility beat segment descriptions when they disagree."
+      : "No source-footage frames are attached — plan from the segment map in your director brief.",
+  );
+  return lines.join("\n\n");
+}
 
 function selectVisionInputPreviews(
   snapshots: readonly VisionWorkerInputSnapshot[],
@@ -560,100 +906,6 @@ function dataUrlToBase64(dataUrl: string): string {
   const marker = "base64,";
   const index = dataUrl.indexOf(marker);
   return index >= 0 ? dataUrl.slice(index + marker.length) : dataUrl;
-}
-
-/**
- * Pick the frames the director actually SEES when planning: `runTurn` builds
- * `montage` from the tool-call transcript, so images on the transcript are
- * what matter. We cap the count (vision-call budget) but always spread across
- * every sampled video, guaranteeing each at least one representation.
- */
-function selectDirectorPreviewFrames(
-  snapshots: readonly VisionWorkerInputSnapshot[],
-): DirectorFrameImage[] {
-  type FrameRef = {
-    videoId: string;
-    timestamp: number;
-    dataUrl: string;
-    width: number;
-    height: number;
-  };
-  const toDataUrl = (imageData: string): string =>
-    imageData.startsWith("data:") ? imageData : `data:image/jpeg;base64,${imageData}`;
-
-  const perVideo: FrameRef[][] = snapshots.map((snapshot) => {
-    const frames: FrameRef[] = [];
-    for (const batch of snapshot.batches) {
-      for (const image of batch.images) {
-        const timestamp = Number.isFinite(image.timestamp) ? image.timestamp : 0;
-        frames.push({
-          videoId: snapshot.videoId,
-          timestamp,
-          dataUrl: toDataUrl(image.imageData),
-          width: image.width,
-          height: image.height,
-        });
-      }
-    }
-    frames.sort((a, b) => a.timestamp - b.timestamp);
-    return frames;
-  });
-
-  const nonEmptyVideos = perVideo.filter((frames) => frames.length > 0);
-  const totalFrames = nonEmptyVideos.reduce((sum, frames) => sum + frames.length, 0);
-  if (totalFrames === 0) return [];
-
-  const selected: DirectorFrameImage[] = [];
-  if (totalFrames <= MAX_DIRECTOR_PREVIEW_FRAMES) {
-    for (const frames of nonEmptyVideos) {
-      for (const frame of frames) {
-        selected.push({
-          videoId: frame.videoId,
-          timestamp: frame.timestamp,
-          dataUrl: frame.dataUrl,
-          width: frame.width,
-          height: frame.height,
-        });
-      }
-    }
-    return selected;
-  }
-
-  // Even spread over the flat sequence, then top up any video that got none.
-  const flat = nonEmptyVideos.flatMap((frames) => frames);
-  for (let index = 0; index < MAX_DIRECTOR_PREVIEW_FRAMES; index += 1) {
-    const frame = flat[Math.round((index * (flat.length - 1)) / (MAX_DIRECTOR_PREVIEW_FRAMES - 1))];
-    if (!frame) continue;
-    selected.push({
-      videoId: frame.videoId,
-      timestamp: frame.timestamp,
-      dataUrl: frame.dataUrl,
-      width: frame.width,
-      height: frame.height,
-    });
-  }
-  // Guarantee per-video coverage: swap duplicates for a missing video's share.
-  const covered = new Set(selected.map((frame) => frame.videoId));
-  for (const frames of nonEmptyVideos) {
-    if (covered.has(frames[0].videoId) || selected.length === 0) continue;
-    // Replace the last frame belonging to the most-covered video.
-    const donorIndex = selected
-      .map((frame, index) => ({ index, videoId: frame.videoId }))
-      .filter((entry) => selected.filter((f) => f.videoId === entry.videoId).length > 1)
-      .pop();
-    const pick = frames[Math.floor(frames.length / 2)];
-    if (donorIndex && pick) {
-      selected[donorIndex.index] = {
-        videoId: pick.videoId,
-        timestamp: pick.timestamp,
-        dataUrl: pick.dataUrl,
-        width: pick.width,
-        height: pick.height,
-      };
-      covered.add(pick.videoId);
-    }
-  }
-  return selected;
 }
 
 function textOverlayOptions(clip: Record<string, unknown>): TextOverlayOptions {
@@ -2298,6 +2550,15 @@ const DIRECTOR_PLAN_MAX_TOKENS = 16384;
 // truncated retry is recoverable — the outer loop re-asks with a compactness
 // instruction at the full cap — while a second 408 is not.
 const DIRECTOR_PLAN_RETRY_TOKENS = [7168, 5120] as const;
+/** The scouting pass outputs a small shortlist, not an EditPlan — a much
+ * smaller ceiling keeps it cheap and fast. */
+const DIRECTOR_RANKING_MAX_TOKENS = 2400;
+/** Runtime toggle for the two-stage ranking pass (tests disable it to keep
+ * scripted plan_edit LLM call counts stable). */
+let _planEditRankingEnabled = true;
+export function setPlanEditRankingEnabled(enabled: boolean): void {
+  _planEditRankingEnabled = enabled;
+}
 
 /**
  * Every timeline entity a single plan_edit commit creates. Filled as
@@ -11876,6 +12137,14 @@ export function getAnalysisMode() { return _analysisMode; }
 
 const BASELINE_INTERVAL_SEC = 1 / 1.5; // matches DEFAULT_SAMPLE_CONFIG.baselineFps
 const MAX_BASELINE_FRAMES_PER_VIDEO = 60;
+/**
+ * Capture resolution for the frames the director plans from. The vision
+ * worker re-compresses annotations into ~320px mosaic tiles, so raising this
+ * costs vision-calls nothing in tokens — but the frames the PLANNER sees as
+ * inline images are carried at capture resolution, and 320px is too coarse to
+ * judge composition, legibility, and light. 480px keeps montage detail honest.
+ */
+const DIRECTOR_ANALYSIS_FRAME_WIDTH = 480;
 
 export function baselineFrameTimestamps(duration: number): readonly number[] {
   const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
@@ -11928,7 +12197,7 @@ async function captureBaselineFrames(
   const batch = await host.runJob("extractVideoFrames", {
     mediaId,
     timestamps,
-    maxWidth: 320,
+    maxWidth: DIRECTOR_ANALYSIS_FRAME_WIDTH,
     ...(onProgress ? { onProgress } : {}),
   });
   if (batch.ok) {
@@ -11960,7 +12229,7 @@ async function captureBaselineFrames(
       const job = await host.runJob("extractVideoFrame", {
         mediaId,
         timeSeconds: timestamp,
-        maxWidth: 320,
+        maxWidth: DIRECTOR_ANALYSIS_FRAME_WIDTH,
       });
       if (!job.ok) {
         if (!firstError && job.error) firstError = job.error;
@@ -34005,8 +34274,17 @@ const TOOLS: RegisteredTool[] = [
 
       // Side channel: real sampled frames the executor folds into the turn
       // context (plan_edit sees this as trusted evidence; base64 is NOT
-      // serialized into the transcript).
-      const directorPreviewFrames = selectDirectorPreviewFrames(visionInputSnapshots);
+      // serialized into the transcript). Frames carry their video's
+      // source/reference classification so plan_edit labels them — a
+      // reference video's frames are style examples, never footage to edit.
+      const directorMediaRoles = new Map<string, { role: DirectorFrameRole; name?: string }>();
+      for (const media of videoMediaItems) {
+        directorMediaRoles.set(media.id, {
+          role: media.analysisRole === "reference" ? "reference" : "source",
+          ...(media.name !== undefined ? { name: media.name } : {}),
+        });
+      }
+      const directorPreviewFrames = selectDirectorPreviewFrames(visionInputSnapshots, directorMediaRoles);
 
       return {
         ...ok(
@@ -34417,7 +34695,7 @@ const TOOLS: RegisteredTool[] = [
         );
       }
 
-      const directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, providedReferenceAnalysis);
+      let directorPrompt = buildDirectorPrompt(resolvedMap, prompt, genre, providedReferenceAnalysis);
 
       const planTools =
         host.llm.provider === "anthropic"
@@ -34425,23 +34703,29 @@ const TOOLS: RegisteredTool[] = [
           : toOpenAITools(["submit_edit_plan"]);
 
       const directorRequests: AIInputDirectorRequest[] = [];
-      const requestPlan = async (system: string, messages: LoopMessage[]) => {
+      const requestPlan = async (
+        system: string,
+        messages: LoopMessage[],
+        options?: { tools?: unknown[]; maxTokens?: number; steer?: string },
+      ) => {
         // Workers AI intermittently 408s/fetch-drops on long generations;
         // retries with a compactness steer and shrinking token caps turn a
         // dead run into a pass. Quota (429/daily-allocation) never retries —
         // it would just burn the clock until the report excludes it.
+        const tools = options?.tools ?? planTools;
         let attemptMessages = messages;
         for (let attempt = 0; ; attempt++) {
+          const retryTokens = DIRECTOR_PLAN_RETRY_TOKENS[
+            Math.min(attempt - 1, DIRECTOR_PLAN_RETRY_TOKENS.length - 1)
+          ];
           const maxTokens =
             attempt === 0
-              ? DIRECTOR_PLAN_MAX_TOKENS
-              : DIRECTOR_PLAN_RETRY_TOKENS[
-                  Math.min(attempt - 1, DIRECTOR_PLAN_RETRY_TOKENS.length - 1)
-                ];
+              ? (options?.maxTokens ?? DIRECTOR_PLAN_MAX_TOKENS)
+              : Math.min(options?.maxTokens ?? Number.POSITIVE_INFINITY, retryTokens);
           const request: AIInputDirectorRequest = {
             system,
             messages: attemptMessages,
-            tools: planTools,
+            tools: tools as never,
             maxTokens,
           };
           directorRequests.push(request);
@@ -34465,6 +34749,7 @@ const TOOLS: RegisteredTool[] = [
               {
                 role: "user" as const,
                 content:
+                  options?.steer ??
                   "Respond compactly: call submit_edit_plan immediately with no preamble, rationales of 12 words or fewer.",
               },
             ];
@@ -34478,14 +34763,22 @@ const TOOLS: RegisteredTool[] = [
       // Director-Sees-Footage: when the turn's analysis carries real sampled
       // frames, they ride along on the planning user message as image blocks,
       // so the montage references actual pixels instead of filenames
-      // (wildcat's summary is built from the tool-call transcript).
+      // (wildcat's summary is built from the tool-call transcript). Each
+      // frame is captioned with its media ID/name, timestamp and role, so
+      // style-reference frames are never mistaken for editable footage.
       const directorFrameImages: readonly DirectorFrameImage[] = trusted?.images ?? [];
+      // Human-friendly names for the analyzed SOURCES (cap note), resolved
+      // from the media library — the segment map itself carries no names.
+      const analyzedSourceNames = sourceVideoMedia.map((m) => ({ videoId: m.id, sourceFile: m.name }));
       const initialUserContent: string | LoopUserBlock[] =
         directorFrameImages.length > 0
           ? [
               {
                 type: "text" as const,
-                text: `${initialRequest}\n\nBelow: ${directorFrameImages.length} frames actually sampled from the source footage (Frame 1..${directorFrameImages.length}, in order, timestamps listed in the segment map above). Plan from what you SEE — composition, subject continuity, lighting and legibility beat segment descriptions when they disagree.`,
+                text: `${initialRequest}\n\n${describeDirectorPreviewFrames(
+                  directorFrameImages,
+                  analyzedSourceNames,
+                )}`,
               },
               ...directorFrameImages.map(
                 (frame): LoopUserBlock => ({
@@ -34497,8 +34790,107 @@ const TOOLS: RegisteredTool[] = [
             ]
           : initialRequest;
 
+      // ---- Pass 1: moment ranking (two-stage planning) ----
+      // A cheap, focused scouting call runs FIRST, with the same frame eyes,
+      // and its ranked shortlist is injected into the planning brief so the
+      // director pass starts from the strongest evidence instead of scanning
+      // blind. An unusable ranking (hallucinated ids, too few moments, LLM
+      // text instead of a tool call) is skipped silently — the single-stage
+      // path remains the floor, never blocked by pass 1.
+      let rankingFallbackNote = "";
+      let momentZoomFrames: readonly DirectorFrameImage[] = [];
+      let momentZoomCaption = "";
+      if (_planEditRankingEnabled) {
+        try {
+          const rankingUserContent: string | LoopUserBlock[] =
+            directorFrameImages.length > 0
+              ? [
+                  {
+                    type: "text" as const,
+                    text: `${buildMomentRankingPrompt(resolvedMap, prompt, genre)}\n\n${describeDirectorPreviewFrames(
+                      directorFrameImages,
+                      analyzedSourceNames,
+                    )}`,
+                  },
+                  ...directorFrameImages.map(
+                    (frame): LoopUserBlock => ({
+                      type: "image",
+                      mediaType: "image/jpeg",
+                      base64: dataUrlToBase64(frame.dataUrl),
+                    }),
+                  ),
+                ]
+              : buildMomentRankingPrompt(resolvedMap, prompt, genre);
+          const rankingResponse = await requestPlan(
+            DIRECTOR_RANKING_SYSTEM_PROMPT,
+            [{ role: "user", content: rankingUserContent }],
+            {
+              tools:
+                host.llm.provider === "anthropic"
+                  ? toAnthropicTools(["submit_moment_shortlist"])
+                  : toOpenAITools(["submit_moment_shortlist"]),
+              maxTokens: DIRECTOR_RANKING_MAX_TOKENS,
+              steer:
+                "Respond compactly: call submit_moment_shortlist immediately with no preamble, one line of why per moment.",
+            },
+          );
+          const rankingCall = rankingResponse.toolUses.find((toolUse) => toolUse.name === "submit_moment_shortlist");
+          const shortlist = rankingCall ? parseMomentShortlist(rankingCall.input, resolvedMap) : null;
+          if (shortlist) {
+            directorPrompt = `${directorPrompt}\n\n## Moment ranking (from a scouting pass — use it, don't obey it)\n${formatMomentShortlist(shortlist)}\nThe above ranked MOMENTS were selected for story value by a first pass over the same footage. Build the cut list from these ranges — you may refine in/out points, replace or extend them when what you SEE in the frames disagrees. The ranking serves story choice only; treatment (effects, transitions, text, sound) is still yours to author under the density contract.`;
+
+            // Coarse-to-fine second stage: dense re-sampling of the accepted
+            // ranges so the planning pass places cut points ON the action
+            // instead of guessing inside a 6-8s window. Best-effort — failures
+            // leave the planning call exactly as the single-stage build.
+            try {
+              momentZoomFrames = await captureMomentZoomFrames(
+                host,
+                shortlist,
+                new Map(resolvedMap.videos.map((video) => [video.videoId, video.duration])),
+                new Map(sourceVideoMedia.map((m) => [m.id, { role: "source" as const, name: m.name }])),
+              );
+              if (momentZoomFrames.length > 0) {
+                directorPrompt = `${directorPrompt}
+
+## Moment zoom (dense views of your top-ranked ranges)
+The planning message also carries moment-zoom frames beneath the regular preview frames (captions below the images). They show ONLY the windows you ranked above, sampled densely; place cut in/out points using them when they disagree with the coarse frames.`;
+                momentZoomCaption = describeMomentZoomFrames(momentZoomFrames, shortlist);
+              }
+            } catch {
+              momentZoomFrames = [];
+            }
+          } else {
+            rankingFallbackNote =
+              "Moment-ranking pass returned nothing usable; planning proceeded in one pass.";
+          }
+        } catch (error) {
+          rankingFallbackNote = `Moment-ranking pass failed (${
+            error instanceof Error ? error.message : String(error)
+          }); planning proceeded in one pass.`;
+        }
+      }
+      if (rankingFallbackNote) {
+        directorPrompt = `${directorPrompt}\n\n(${rankingFallbackNote})`;
+      }
+
       // ---- Turn 1: plan (with one bounded truncation retry) ----
-      let response = await requestPlan(directorPrompt, [{ role: "user", content: initialUserContent }]);
+      const planningUserContent: string | LoopUserBlock[] =
+        momentZoomCaption && directorFrameImages.length > 0
+          ? [
+              ...(initialUserContent as LoopUserBlock[]),
+              {
+                type: "text" as const,
+                text: momentZoomCaption,
+              },
+              ...momentZoomFrames.map((frame): LoopUserBlock => ({
+                type: "image" as const,
+                mediaType: "image/jpeg",
+                base64: dataUrlToBase64(frame.dataUrl),
+              })),
+            ]
+          : initialUserContent;
+      let response = await requestPlan(directorPrompt, [{ role: "user", content: planningUserContent }]);
       let planCall = response.toolUses.find((t) => t.name === "submit_edit_plan");
       let truncatedRetries = 0;
       while (!planCall && response.stopReason === "max_tokens" && truncatedRetries < 2) {
@@ -34864,16 +35256,25 @@ const TOOLS: RegisteredTool[] = [
         const repairIssues = renderedReview.issues.join("; ");
         let repairedOwned: ReturnType<typeof newPlanOwned> | undefined;
         try {
-          const repairedOwned = newPlanOwned();
+          // Assign to the OUTER variable: the catch below compensates the
+          // partial repair artifacts, which only works when it can see what
+          // materialization created so far. (Reintroducing `const
+          // repairedOwned = ...` here shadows it and silently skips cleanup.)
+          // Assign to the OUTER variable: the catch below compensates the
+          // partial repair artifacts, which only works when it can see what
+          // materialization created so far. (Reintroducing `const
+          // repairedOwned = ...` here shadowed it and silently skipped the
+          // cleanup — see registry.rendered-repair.test.ts.)
+          repairedOwned = newPlanOwned();
           const repairResponse = await requestPlan(
-            `${directorPrompt}\n\n## Rendered draft below target — one automated repair\nThe committed plan rendered and the sampled timeline frames failed visual review (score ${renderedReview.score.toFixed(2)}, target >= 0.6). Issues: ${repairIssues}. Fix the plan and resubmit it COMPLETE via submit_edit_plan.`,
+            `${directorPrompt}\n\n## Rendered draft below target — one automated repair\nThe committed plan rendered and the sampled timeline frames failed the heuristic pixel review (score ${renderedReview.score.toFixed(2)}, target >= 0.6). These checks are pixel-level proxies (texture coverage for subject visibility, gradient contrast for text legibility), not semantic QA — treat flagged issues as hypotheses about real visual problems. Issues: ${repairIssues}. Fix the plan and resubmit it COMPLETE via submit_edit_plan.`,
             [
               {
                 role: "user",
                 content: [
                   {
                     type: "text" as const,
-                    text: `The rendered draft scored ${renderedReview.score.toFixed(2)} (target >= 0.6). Issues: ${repairIssues}\nSample instants: ${renderedEvidence.sampleTimes.map((t) => `${t.toFixed(2)}s`).join(", ")}\nThe frames of the CURRENT committed draft are attached below, in order. Resubmit the complete corrected EditPlan via submit_edit_plan — adjust effects/overlays/placement rather than rewriting the whole edit, unless the frames are actually broken.`,
+                    text: `The rendered draft scored ${renderedReview.score.toFixed(2)} (target >= 0.6) under a heuristic pixel review (texture/gradient proxies, ≤8 sampled instants — not semantic QA). Issues: ${repairIssues}\nSample instants: ${renderedEvidence.sampleTimes.map((t) => `${t.toFixed(2)}s`).join(", ")}\nThe frames of the CURRENT committed draft are attached below, in order. Resubmit the complete corrected EditPlan via submit_edit_plan — adjust effects/overlays/placement rather than rewriting the whole edit, unless the frames are actually broken.`,
                   },
                   ...renderedEvidence.frames.map(
                     (frame): LoopUserBlock => ({
@@ -34985,7 +35386,7 @@ const TOOLS: RegisteredTool[] = [
           : "") +
         `. Style check: ${planReview.score.toFixed(2)} · density: ${planReview.density.score.toFixed(2)} (${planReview.density.summary}).` +
         (renderedEvidence && renderedReview
-          ? ` Rendered check: ${renderedReview.score.toFixed(2)} across ${renderedEvidence.frames.length} sampled timeline frame(s).`
+          ? ` Rendered check: ${renderedReview.score.toFixed(2)} over ${renderedEvidence.sampleTimes.length} sampled instant(s) — heuristic pixel proxies (texture ≈ subject visibility, gradients ≈ text legibility, ≤${MAX_RENDER_SAMPLE_TIMES} instants), not semantic subject/OCR QA.`
           : ` Rendered check: unavailable (this host cannot render timeline frames for review).`) +
         (renderedRepairApplied && renderedRepairNote
           ? ` ${renderedRepairNote}.`
@@ -35030,8 +35431,12 @@ const TOOLS: RegisteredTool[] = [
               status: "reviewed" as const,
               score: renderedReview.score,
               issues: renderedReview.issues,
+              method: renderedReview.method,
+              methodNote:
+                "Heuristic pixel review: texture coverage proxies subject visibility and gradient contrast proxies text legibility over at most 8 sampled instants. Not semantic subject detection or OCR — not comprehensive visual QA.",
               sampledFrames: renderedEvidence.frames.length,
               sampleTimes: renderedEvidence.sampleTimes,
+              sampleCap: MAX_RENDER_SAMPLE_TIMES,
               repairApplied: renderedRepairApplied,
             }
           : {

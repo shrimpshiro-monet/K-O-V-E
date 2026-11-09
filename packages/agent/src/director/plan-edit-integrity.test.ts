@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { Project } from "@kove-advanced/core/types/project";
 import { TRANSITION_TYPES } from "@kove-advanced/core/types/effects";
 import {
@@ -8,9 +8,14 @@ import {
 import type { EditingHost, TextOverlayOptions, OverlayRef } from "../host";
 import { HeadlessHost } from "../headless-host";
 import { executeTool } from "../executor";
+import { setPlanEditRankingEnabled } from "../registry";
 import { MockLLMClient, type LLMClient, type LLMResponse, type LLMTurnInput } from "../llm";
 import { getDirectorPlanState } from "./plan-state";
 import { fixture as referenceFixture } from "./mirror/mirror-fixture";
+
+beforeEach(() => {
+  setPlanEditRankingEnabled(false);
+});
 
 // ---------------------------------------------------------------------------
 // Harness

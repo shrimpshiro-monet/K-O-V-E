@@ -151,6 +151,8 @@ export interface CaptionStyleTemplate {
   readonly fontSize?: number;
   readonly fontWeight?: number;
   readonly color?: string;
+  /** Outlined text; renderer draws outline (over = outline above the fill). */
+  readonly stroke?: { readonly color: string; readonly width: number; readonly over?: boolean };
   readonly backgroundColor?: string;
   readonly backgroundPadding?: number;
   readonly backgroundRadius?: number;

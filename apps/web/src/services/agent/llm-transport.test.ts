@@ -186,4 +186,45 @@ describe("Cloudflare Workers AI transport", () => {
     expect(url).toBe("/api/cf-ai-3/client/v4/accounts/acct-3/ai/v1/chat/completions");
     expect((init?.headers as Record<string, string>).Authorization).toBeUndefined();
   });
+
+  it("logs Cloudflare rate-limit responses without logging the configured token", async () => {
+    const fetchMock = vi.fn(
+      async (..._args: Parameters<typeof fetch>): Promise<Response> => {
+        void _args;
+        return Response.json(
+          { errors: [{ message: "rate limit exceeded" }] },
+          { status: 429 },
+        );
+      },
+    );
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      const client = makeCloudflareAIClient({
+        accountId: "acct-1",
+        apiToken: "private-token",
+        model: "@cf/test-model",
+        retries: 0,
+      });
+
+      await expect(
+        client.complete({ messages: [{ role: "user", content: "hello" }], tools: [] }),
+      ).rejects.toMatchObject({ name: "LLMHttpError", status: 429 });
+
+      expect(error).toHaveBeenCalledWith(
+        "[KOVE AI] request failed",
+        expect.objectContaining({
+          provider: "cloudflare",
+          status: 429,
+          response: expect.stringContaining("rate limit exceeded"),
+        }),
+      );
+      expect(JSON.stringify([...info.mock.calls, ...error.mock.calls])).not.toContain("private-token");
+    } finally {
+      info.mockRestore();
+      error.mockRestore();
+    }
+  });
 });

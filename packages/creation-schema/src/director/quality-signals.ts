@@ -18,7 +18,18 @@ export interface RenderedFrameObservation {
 export interface RenderedDraftReview {
   readonly score: number;
   readonly issues: readonly string[];
+  /**
+   * What these checks actually measure: heuristic PIXEL PROXIES (texture
+   * coverage standing in for subject visibility, gradient contrast standing
+   * in for text legibility), sampled over a handful of instants. Not semantic
+   * subject detection and not OCR — the score must never be presented as
+   * comprehensive visual QA.
+   */
+  readonly method: "heuristic-pixel-proxies";
 }
+
+/** Method label attached to every review, so consumers can quote it verbatim. */
+export const RENDERED_REVIEW_METHOD = "heuristic-pixel-proxies";
 
 export function scoreSportsMoment(input: {
   readonly motionPeak?: number;
@@ -70,18 +81,18 @@ export function snapTimeToBeat(
 export function reviewRenderedDraft(
   observations: readonly RenderedFrameObservation[],
 ): RenderedDraftReview {
-  if (observations.length === 0) return { score: 0, issues: ["No rendered frame observations were provided."] };
+  if (observations.length === 0) return { score: 0, issues: ["No rendered frame observations were provided."], method: RENDERED_REVIEW_METHOD };
   const issues: string[] = [];
   const blackFrames = observations.filter((observation) => observation.hasBlackFrame).length;
   const lowSharpness = observations.filter((observation) => observation.sharpness < 0.25).length;
   const lowVisibility = observations.filter((observation) => observation.subjectVisibility < 0.35).length;
   const unreadableText = observations.filter((observation) => observation.textLegibility < 0.4).length;
   if (blackFrames > 0) issues.push(`${blackFrames} rendered frame(s) are black or empty.`);
-  if (lowSharpness > 0) issues.push(`${lowSharpness} rendered frame(s) are too soft.`);
-  if (lowVisibility > 0) issues.push(`${lowVisibility} rendered frame(s) lose the primary subject.`);
-  if (unreadableText > 0) issues.push(`${unreadableText} rendered frame(s) have low text legibility.`);
+  if (lowSharpness > 0) issues.push(`${lowSharpness} rendered frame(s) are too soft (gradient-energy proxy).`);
+  if (lowVisibility > 0) issues.push(`${lowVisibility} rendered frame(s) may lose the primary subject (texture-coverage proxy, not semantic subject detection).`);
+  if (unreadableText > 0) issues.push(`${unreadableText} rendered frame(s) have low text legibility (gradient-contrast proxy, not OCR).`);
   const penalty = (blackFrames * 0.3 + lowSharpness * 0.15 + lowVisibility * 0.2 + unreadableText * 0.1) / observations.length;
-  return { score: Math.max(0, Math.min(1, 1 - penalty)), issues };
+  return { score: Math.max(0, Math.min(1, 1 - penalty)), issues, method: RENDERED_REVIEW_METHOD };
 }
 
 function clamp(value: number): number {

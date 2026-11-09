@@ -73,6 +73,7 @@ export type {
   TextStyleDensity,
   GenreRules,
   Genre,
+  GenreLook,
 } from "./genre";
 
 export type {

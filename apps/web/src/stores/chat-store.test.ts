@@ -653,15 +653,22 @@ describe("chat-store", () => {
       expect(ladder.acceptResponse?.(prose, {})).toBe(true);
     });
 
-    it("ignores the gateway env for explicit BYOK providers", async () => {
+    it("leads with the configured gateway even for explicit BYOK providers", async () => {
       stubCloudflareEnv();
       stubGatewayEnv();
       h.runTurn.mockImplementation(okTurn);
 
       await store().send("hello");
 
-      expect(h.makeOmniRouteGatewayClient).not.toHaveBeenCalled();
-      expect(h.makeFallbackLadder).not.toHaveBeenCalled();
+      // The user's own, observable gateway is leg one for ANY configured API
+      // format (pinned to the gateway's model), and the explicit BYOK endpoint
+      // demotes to the secondary leg.
+      expect(h.makeOmniRouteGatewayClient).toHaveBeenCalledWith(
+        expect.objectContaining({ model: "vendor/pinned-model" }),
+      );
+      expect(h.makeFallbackLadder).toHaveBeenCalled();
+      const legs = h.makeFallbackLadder.mock.calls[0][0].legs as Array<{ name: string }>;
+      expect(legs.map((leg) => leg.name)).toEqual(["OmniRoute", "OpenAI-compatible"]);
       expect(h.makeBYOKClient).toHaveBeenCalledWith(
         expect.objectContaining({ provider: "openai-compatible" }),
       );

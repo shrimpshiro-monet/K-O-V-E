@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ExportFrameDecoder } from "./mediabunny-engine";
+import { ExportFrameDecoder, MediaBunnyEngine } from "./mediabunny-engine";
 
 function findFrameAtOrBefore(
   frames: Array<{ timestamp: number }>,
@@ -200,5 +200,47 @@ describe("ExportFrameDecoder", () => {
     expect(decodedTimestamps).not.toContain(5);
     expect(decodedTimestamps).not.toContain(6);
     expect(decodedTimestamps).not.toContain(7);
+  });
+
+  it("keeps the export decoder cache bounded and evicts the least recently used decoder", async () => {
+    const inputs: Array<{ [Symbol.dispose]: ReturnType<typeof vi.fn> }> = [];
+    class MockInput {
+      [Symbol.dispose] = vi.fn();
+
+      constructor() {
+        inputs.push(this);
+      }
+
+      async getPrimaryVideoTrack() {
+        return {
+          displayWidth: 320,
+          displayHeight: 180,
+          canDecode: vi.fn().mockResolvedValue(true),
+        };
+      }
+    }
+
+    const engine = new MediaBunnyEngine();
+    Object.assign(engine, {
+      initialized: true,
+      mediabunny: {
+        Input: MockInput,
+        ALL_FORMATS: [],
+        BlobSource: class {},
+        CanvasSink: class {},
+      } as unknown as typeof import("mediabunny"),
+    });
+
+    await engine.createExportDecoder("source-0", new Blob(["video"]));
+    await engine.createExportDecoder("source-1", new Blob(["video"]));
+    await engine.createExportDecoder("source-2", new Blob(["video"]));
+    expect(engine.getExportDecoder("source-0")).not.toBeNull();
+    await engine.createExportDecoder("source-3", new Blob(["video"]));
+    await engine.createExportDecoder("source-4", new Blob(["video"]));
+
+    expect(engine.getExportDecoder("source-0")).not.toBeNull();
+    expect(engine.getExportDecoder("source-1")).toBeNull();
+    expect(inputs[1]![Symbol.dispose]).toHaveBeenCalledOnce();
+    engine.disposeAllExportDecoders();
   });
 });

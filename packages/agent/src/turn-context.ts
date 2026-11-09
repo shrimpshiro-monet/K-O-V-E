@@ -9,16 +9,31 @@ import type { SegmentMap } from "@kove-advanced/creation-schema";
  * stale analysis can never be silently reused for a different request.
  */
 
+/**
+ * How the media library classifies a frame's source video: "source" is the
+ * footage the director DELETES from and rearranges; "reference" is a style
+ * example the director EMULATES but never edits or places.
+ */
+export type DirectorFrameRole = "source" | "reference";
+
 /** One real sampled frame from the footage, for planning and rendered review. */
 export interface DirectorFrameImage {
   /** Source video (media item) the frame belongs to. */
   readonly videoId: string;
+  /** Human-friendly media item name, when the sampler knows it. */
+  readonly mediaName?: string;
   /** Source seconds on that video. */
   readonly timestamp: number;
   /** `data:image/jpeg;base64,...` */
   readonly dataUrl: string;
   readonly width: number;
   readonly height: number;
+  /**
+   * Source vs style-reference classification. Absent on frames that predate
+   * the role metadata (older tool-result payloads) — call sites that matter
+   * (preview selection, segment-map joins) always set it.
+   */
+  readonly role?: DirectorFrameRole;
 }
 
 /** What happened the last time `extract_segments` ran this turn. */

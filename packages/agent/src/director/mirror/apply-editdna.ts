@@ -5,6 +5,7 @@ import { createReinhardLut } from "@kove-advanced/core/color/reinhard-transfer";
 import { allocateSourceRanges } from "@kove-advanced/core/mirror/allocate-shots";
 import { parseReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import { frameToSeconds, shotDurationFrames } from "@kove-advanced/core/mirror/timebase";
+import { integrateMotionSeries, simplifyMotionKeyframes } from "./simplify-motion";
 
 /** Compiles measured shot boundaries and frame-relative motion into editable clips and keyframes.
  * Never inserts the reference media itself. Existing timeline content is preserved. */
@@ -44,24 +45,14 @@ export async function applyEditDNA(host: EditingHost, inputProfile: ReferencePro
       ids.push(id);
       const samples = shot.cameraMotion?.samples ?? [];
       if (samples.length) {
-        let x = 0, y = 0, angle = 0, zoom = 1;
-        const tracks: Array<{ time: number; property: string; value: number }> = [
-          { time: 0, property: "position.x", value: 0 }, { time: 0, property: "position.y", value: 0 },
-          { time: 0, property: "rotation", value: 0 }, { time: 0, property: "scale.x", value: 1 }, { time: 0, property: "scale.y", value: 1 },
-        ];
-        for (const sample of samples) {
-          // Invert reference frame motion to reproduce the camera's virtual move on new footage.
-          x -= sample.translateX / profile.aspectRatio.width;
-          y -= sample.translateY / profile.aspectRatio.height;
-          angle -= sample.rotationRad * 180 / Math.PI;
-          zoom /= sample.scale || 1;
-          const time = frameToSeconds(sample.frame - shot.startFrame, profile.fps);
-          if (time <= 0 || time > frameToSeconds(shotDurationFrames(shot), profile.fps) || ![x, y, angle, zoom].every(Number.isFinite)) continue;
-          tracks.push(...([
-            ["position.x", x], ["position.y", y], ["rotation", angle], ["scale.x", zoom], ["scale.y", zoom],
-          ] as const).map(([property, value]) => ({ time, property, value })));
+        // Integrates the measured inverses, then reduces per-frame samples to a
+        // bounded, peak-preserving keyframe set (static shots write none) so
+        // mirrored clips carry an editable curve instead of a keyframe wall.
+        const series = integrateMotionSeries(samples, shot, profile.fps, profile.aspectRatio);
+        const tracks = simplifyMotionKeyframes(series);
+        if (tracks.length) {
+          await apply("keyframe/setAll", { clipId: id, keyframes: tracks.map((k, n) => ({ ...k, id: `${id}-mirror-${n}`, easing: "linear" })) });
         }
-        await apply("keyframe/setAll", { clipId: id, keyframes: tracks.map((k, n) => ({ ...k, id: `${id}-mirror-${n}`, easing: "linear" })) });
       }
       const target = targetStats?.[i];
       if (shot.colorStats && target) await apply("clip/setColorGrading", { clipId: id, colorGrading: { lut: createReinhardLut(shot.colorStats, target) } });

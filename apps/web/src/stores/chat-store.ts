@@ -31,6 +31,7 @@ import {
   makeOmniRouteGatewayClient,
   type OmniRouteGatewayOptions,
 } from "../services/agent/llm-transport";
+import { logAIDiagnostic } from "../services/agent/console-diagnostics";
 import { normalizeCompatibleBaseUrl } from "../services/api-proxy";
 import {
   measureReferenceVideo,
@@ -43,7 +44,7 @@ import {
   conversationTitle,
   useChatHistoryStore,
 } from "./chat-history-store";
-import { useSettingsStore } from "./settings-store";
+import { useSettingsStore, type LlmProvider } from "./settings-store";
 import { useProjectStore } from "./project-store";
 
 export type ChatStatus = "idle" | "running" | "awaiting_confirm" | "error";
@@ -179,15 +180,18 @@ function resolveReferenceAttachment(explicit: ReferenceAttachment | null): Refer
  * browser could not reach a localhost gateway even if the key were present.
  * Dev goes through the same-origin Vite proxy, desktop through native fetch.
  */
-function resolveOmniRouteLadder(settingsModel: string): OmniRouteGatewayOptions | null {
+function resolveOmniRouteLadder(provider: LlmProvider, settingsModel: string): OmniRouteGatewayOptions | null {
   if (!import.meta.env.DEV && !isDesktop()) return null;
   const baseUrl = (import.meta.env.VITE_OMNIROUTE_BASE_URL ?? "") as string;
   const apiKey = (import.meta.env.VITE_OMNIROUTE_KEY ?? "") as string;
   const envModel = (import.meta.env.VITE_OMNIROUTE_MODEL ?? "") as string;
-  // A settings model that is plainly a Workers slug belongs to the secondary
-  // side of the ladder; any other model ID the user typed overrides the
-  // gateway's pinned model.
-  const model = !settingsModel || settingsModel.startsWith("@cf/") ? envModel : settingsModel;
+  // The gateway's pinned model leads on EVERY turn so debugging is consistent:
+  // all traffic visible in the diagnostics goes through the user's own,
+  // observable OmniRoute transport. A model typed in settings is only honored
+  // while the Cloudflare default is active (that typed ID is a Workers slug for
+  // the secondary leg); any other provider's model ID means nothing to the
+  // gateway, so those turns keep the gateway's pinned model on leg one.
+  const model = provider === "cloudflare" && settingsModel && !settingsModel.startsWith("@cf/") ? settingsModel : envModel;
   if (!baseUrl || !apiKey || !model) return null;
   return { baseUrl, apiKey, model };
 }
@@ -649,6 +653,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const controller = new AbortController();
     const seq = ++activeSeq;
 
+    logAIDiagnostic("turn started", {
+      conversationId,
+      projectId: currentProjectId,
+      provider: useSettingsStore.getState().defaultLlmProvider ?? "cloudflare",
+      userMessage: trimmed,
+    });
+
     set((state) => ({
       messages: [...state.messages, userMessage, assistantMessage],
       conversation: [...state.conversation, { role: "user", content: trimmed }],
@@ -686,6 +697,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
       } catch (error) {
         if (activeSeq !== seq) return;
+        logAIDiagnostic("reference preparation failed", error, "error");
         // Stopped while measuring the reference: no model call, no stuck panel.
         if (controller.signal.aborted || isAbortError(error)) {
           updateAssistant((m) => ({
@@ -725,9 +737,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
       switch (event.type) {
         case "text_delta":
         case "turn_complete":
+          if (event.type === "turn_complete") {
+            logAIDiagnostic("turn completed", { text: event.text });
+          }
           updateAssistant((m) => ({ ...m, text: event.text || m.text }));
           break;
         case "tool_call":
+          logAIDiagnostic("tool call", {
+            id: event.call.id,
+            name: event.call.name,
+            args: event.call.args,
+          });
           updateAssistant((m) => ({
             ...m,
             toolCalls: [
@@ -742,6 +762,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }));
           break;
         case "tool_result":
+          logAIDiagnostic(
+            event.result.ok ? "tool result" : "tool failed",
+            {
+              id: event.call.id,
+              name: event.call.name,
+              result: event.result,
+            },
+            event.result.ok ? "info" : "error",
+          );
           // Return-type annotation keeps `status` a literal union — without it
           // the intermediate `map` widens to `string` and fails ChatMessage.
           updateAssistant((m): ChatMessage => {
@@ -784,6 +813,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           });
           break;
         case "error":
+          logAIDiagnostic("agent error", event.error, "error");
           if (activeSeq === seq) set({ error: event.error.message });
           break;
         case "awaiting_confirmation":
@@ -816,23 +846,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
       .slice(-5)
       .map((message) => message.content)
       .join("\n");
-    // The zero-config provider runs on a provider ladder: OmniRoute (when
-    // configured) leads, then Cloudflare Workers AI, NVIDIA NIM, and any extra
-    // OpenAI-compatible providers from AGENT_FALLBACK_PROVIDERS. A quota,
-    // outage, or empty completion advances to the next provider instead of
-    // failing the whole turn. The gateway side is full-strength and gets the
-    // whole routed toolset; the smaller fallbacks get a capped toolset and a
-    // matching system prompt rather than one sized for the stronger model.
-    const omniRoute =
-      provider === "cloudflare" ? resolveOmniRouteLadder(settings.llmModel.trim()) : null;
+    // Runs on a provider ladder. OmniRoute (when configured) always leads —
+    // for ANY configured API format, not just the Cloudflare default — so the
+    // user's observable gateway handles the turn and the diagnostics always
+    // show what actually ran. A quota, outage, or empty completion advances to
+    // the next provider instead of failing the whole turn: the configured
+    // BYOK endpoint, then (zero-config Cloudflare default only) Workers AI
+    // fallback accounts, NVIDIA NIM, and extra OpenAI-compatible providers
+    // from AGENT_FALLBACK_PROVIDERS. The gateway side is full-strength and
+    // gets the whole routed toolset; the smaller fallbacks get a capped toolset
+    // and a matching system prompt rather than one sized for the stronger model.
+    const omniRoute = resolveOmniRouteLadder(provider, settings.llmModel.trim());
     const selectedToolNames = selectToolsForPrompt(routingContext, {
       maxTools: provider === "cloudflare" && !omniRoute ? 25 : 120,
       priorToolNames,
     });
+    // The FIRST leg owns the tool wire format. OmniRoute and every other leg
+    // except a BYOK Anthropic-compatible endpoint speak OpenAI format; when an
+    // Anthropic-compatible endpoint is configured behind the gateway it gets
+    // its own tool-format swap as a leg input.
     const tools =
-      provider === "anthropic-compatible"
+      provider === "anthropic-compatible" && !omniRoute
         ? toAnthropicTools(selectedToolNames)
-        : toOpenAITools(selectedToolNames); // openai-compatible and cloudflare both use OpenAI format
+        : toOpenAITools(selectedToolNames);
+    const anthropicToolsSwap = omniRoute && provider === "anthropic-compatible"
+      ? (input: LLMTurnInput): LLMTurnInput => ({ ...input, tools: toAnthropicTools(selectedToolNames) })
+      : undefined;
 
     const baseClient = makeBYOKClient({
       provider,
@@ -887,13 +926,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         ? resolveCloudflareFallbackAccounts(baseUrl, apiKey, model)
         : [];
     const legs: LadderLeg[] = [];
+    if (omniRoute) {
+      legs.push({
+        name: "OmniRoute",
+        client: makeOmniRouteGatewayClient({ ...omniRoute, signal: controller.signal }),
+      });
+    }
     if (provider === "cloudflare") {
-      if (omniRoute) {
-        legs.push({
-          name: "OmniRoute",
-          client: makeOmniRouteGatewayClient({ ...omniRoute, signal: controller.signal }),
-        });
-      }
       legs.push({ name: "Cloudflare Workers AI", client: baseClient, input: reducedInput });
       for (const account of cfFallbackAccounts) {
         legs.push({
@@ -924,6 +963,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
           input: reducedInput,
         });
       }
+    } else {
+      // A deliberately configured BYOK endpoint is the secondary leg behind
+      // the gateway (and the only leg when the gateway is unconfigured).
+      legs.push({
+        name: provider === "anthropic-compatible" ? "Anthropic-compatible" : "OpenAI-compatible",
+        client: baseClient,
+        ...(anthropicToolsSwap ? { input: anthropicToolsSwap } : {}),
+      });
     }
     // `runTurn` rolls the whole director turn back when a model answers prose
     // without planning on an empty timeline. Treat that same completion as a
@@ -957,6 +1004,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
             },
             onFallback: (error, from, to) => {
               const message = (error instanceof Error ? error.message : String(error)).slice(0, 200);
+              logAIDiagnostic("provider fallback", {
+                from,
+                to,
+                error,
+              }, "warn");
               const notice =
                 error instanceof Error && error.name === "UnusableCompletionError"
                   ? `${from} did not produce a usable completion — continuing on ${to}.`
@@ -965,9 +1017,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
             },
           })
         : (legs[0]?.client ?? baseClient);
-    // Wire LLM client into host for nested director calls (plan_edit)
-    // Map settings provider to agent provider name for tool selection
-    const agentProvider = provider === "anthropic-compatible" ? "anthropic" : "openai";
+    // Wire LLM client into host for nested director calls (plan_edit).
+    // Nested calls format their own tool lists by this name, and they flow
+    // through the same ladder whose first leg is the OpenAI-format gateway —
+    // so when OmniRoute leads, nested calls format for OpenAI even if the
+    // configured BYOK endpoint is Anthropic-compatible.
+    const agentProvider = provider === "anthropic-compatible" && !omniRoute ? "anthropic" : "openai";
     host.llm = { client: llm, provider: agentProvider };
     const autoConfirm = useSettingsStore.getState().agentAutoConfirm;
     const dryRun = useSettingsStore.getState().agentDryRun;
@@ -996,6 +1051,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }),
       );
     } catch (error) {
+      logAIDiagnostic("turn failed", error, "error");
       if (activeSeq !== seq) return;
       set({
         status: controller.signal.aborted ? "idle" : "error",

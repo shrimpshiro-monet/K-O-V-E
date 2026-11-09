@@ -89,6 +89,35 @@ describe("director validation helpers", () => {
     expect(issues).toEqual([]);
   });
 
+  it("rejects more than three composed camera moves on a single shot", () => {
+    const map: SegmentMap = {
+      videos: [{ videoId: "video-1", duration: 12, segments: [] }],
+    };
+    const cameraMoves = [
+      { move: "slow-push" },
+      { move: "drift-left" },
+      { move: "tilt-up" },
+      { move: "handheld" },
+    ] as const;
+    const issues = validateEditPlan({
+      ...plan,
+      metadata: { ...plan.metadata, targetDuration: 4 },
+      segments: [{
+        ...plan.segments[0]!,
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        cameraMoves,
+      }],
+    }, map).filter((issue) => issue.code === "too_many_camera_moves");
+
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({
+      severity: "error",
+      path: "segments.0.cameraMoves",
+    });
+    expect(issues[0]?.message).toContain("1-3 composed moves");
+  });
+
   it("contracts effect intensity to 0..1 instead of rejecting cosmetic overdrive", () => {
     const map: SegmentMap = {
       videos: [{ videoId: "video-1", duration: 12, segments: [] }],

@@ -35,6 +35,7 @@ import { TransitionEngine } from "./transition-engine";
 import { MaskEngine, type Mask } from "./mask-engine";
 import type { Transition } from "../types/timeline";
 import { getMediaEngine } from "../media/mediabunny-engine";
+import { waitForExportStage } from "../export/export-watchdog";
 import type {
   RenderedFrame,
   CompositeLayer,
@@ -108,6 +109,8 @@ export interface FrameRenderOptions {
   shapeClips?: ShapeClip[];
   realtime?: boolean;
 }
+
+const EXPORT_FRAME_DECODE_TIMEOUT_MS = 30_000;
 
 type RenderableClipColorGrading = Omit<ClipColorGrading, "lut"> & {
   lut?: LUTData;
@@ -336,13 +339,35 @@ export class VideoEngine {
       }
 
       if (mediaId) {
-        const exportDecoder = mediaEngine.getExportDecoder(mediaId);
+        let exportDecoder = mediaEngine.getExportDecoder(mediaId);
+        if (!exportDecoder && this.exportMode) {
+          exportDecoder = await mediaEngine.createExportDecoder(mediaId, blob, width);
+        }
         if (exportDecoder) {
-          const canvas = await exportDecoder.getFrame(time);
+          let canvas: OffscreenCanvas | null;
+          try {
+            canvas = await waitForExportStage(
+              exportDecoder.getFrame(time),
+              `decoding a frame from ${mediaId}`,
+              undefined,
+              EXPORT_FRAME_DECODE_TIMEOUT_MS,
+            );
+          } catch (error) {
+            if (error instanceof Error && error.name === "TimeoutError") {
+              mediaEngine.disposeExportDecoder(mediaId);
+              console.warn(
+                `[VideoEngine] Export decoder stalled for ${mediaId}; falling back to video-element decoding.`,
+                error,
+              );
+              return null;
+            }
+            throw error;
+          }
           if (canvas) {
             return createImageBitmap(canvas);
           }
         }
+        if (this.exportMode) return null;
       }
 
       const result = await mediaEngine.getFrameAtTime(blob, time, width);

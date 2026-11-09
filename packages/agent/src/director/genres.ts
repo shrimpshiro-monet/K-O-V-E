@@ -6,6 +6,20 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Highlight Reel",
     description:
       "Fast-paced compilation of the best moments. High energy, quick cuts, rhythm-driven editing.",
+    looks: [
+      {
+        name: "Stadium Punch",
+        caption: { fontFamily: "Arial Black", fontSize: 64, fontWeight: 900, color: "#ffffff", position: { x: 0.5, y: 0.18 }, align: "center", animation: "pop" },
+        accentTransition: { type: "impactShake", useWhen: "the biggest collision or dunk on the payoff only" },
+        grade: [{ type: "contrast", params: { value: 1.12 } }, { type: "saturation", params: { value: 1.15 } }],
+      },
+      {
+        name: "Neon Cut-Down",
+        caption: { fontFamily: "Montserrat", fontSize: 52, fontWeight: 800, color: "#f8fd50", backgroundColor: "#101014", backgroundPadding: 10, position: { x: 0.5, y: 0.84 }, align: "center", animation: "zoom-blur" },
+        accentTransition: { type: "whipPan", useWhen: "two same-direction actions join" },
+        grade: [{ type: "contrast", params: { value: 1.08 } }, { type: "temperature", params: { value: 8 } }],
+      },
+    ],
     rules: {
       pacing: "fast",
       transitionPreference: ["crossfade", "whipPan", "flash"],
@@ -41,6 +55,20 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Documentary",
     description:
       "Slow, deliberate pacing with context-rich text overlays. Lets the footage breathe.",
+    looks: [
+      {
+        name: "Observational Slate",
+        caption: { fontFamily: "Georgia", fontSize: 38, fontWeight: 400, color: "#f4f1e8", position: { x: 0.06, y: 0.86 }, align: "left", animation: "fade" },
+        accentTransition: { type: "crossfade", useWhen: "a chapter of the story changes" },
+        grade: [{ type: "contrast", params: { value: 1.05 } }, { type: "saturation", params: { value: 0.94 } }, { type: "vignette", params: { amount: 18, midpoint: 0.55 } }],
+      },
+      {
+        name: "Archive Warm",
+        caption: { fontFamily: "Courier New", fontSize: 32, fontWeight: 500, color: "#fffbe8", backgroundColor: "#1a1408", backgroundPadding: 10, position: { x: 0.06, y: 0.16 }, align: "left", animation: "typewriter" },
+        accentTransition: { type: "filmBurn", useWhen: "archival or time-jump footage begins" },
+        grade: [{ type: "temperature", params: { value: 14 } }, { type: "grain", params: { amount: 12 } }, { type: "sepia", params: { amount: 0.12 } }],
+      },
+    ],
     rules: {
       pacing: "slow",
       transitionPreference: ["crossfade", "dipToBlack"],
@@ -61,6 +89,20 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Vlog",
     description:
       "Conversational, personal feel. Mixed pacing with natural transitions.",
+    looks: [
+      {
+        name: "Goldenday Casual",
+        caption: { fontFamily: "Poppins", fontSize: 44, fontWeight: 600, color: "#ffffff", backgroundColor: "#00000080", backgroundPadding: 12, position: { x: 0.5, y: 0.16 }, align: "center", animation: "rise" },
+        accentTransition: { type: "wipe", useWhen: "the location or day-parts change" },
+        grade: [{ type: "temperature", params: { value: 10 } }, { type: "saturation", params: { value: 1.08 } }, { type: "sharpen", params: { amount: 15 } }],
+      },
+      {
+        name: "Sunny Cam",
+        caption: { fontFamily: "Comic Sans MS", fontSize: 40, fontWeight: 700, color: "#fff4d6", position: { x: 0.5, y: 0.8 }, align: "center", animation: "bounce" },
+        accentTransition: { type: "crossfade", useWhen: "a scene settles after a run of motion" },
+        grade: [{ type: "brightness", params: { value: 5 } }, { type: "saturation", params: { value: 1.12 } }, { type: "tonal", params: { shadows: 0.04, midtones: 0.02, highlights: -0.03 } }],
+      },
+    ],
     rules: {
       pacing: "medium",
       transitionPreference: ["crossfade", "wipe", "slide"],
@@ -81,6 +123,20 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Tutorial",
     description:
       "Step-by-step clarity. Text-heavy with deliberate pacing on key moments.",
+    looks: [
+      {
+        name: "Clean Steps",
+        caption: { fontFamily: "Inter", fontSize: 40, fontWeight: 600, color: "#ffffff", backgroundColor: "#111111", backgroundPadding: 12, backgroundRadius: 6, position: { x: 0.06, y: 0.86 }, align: "left", animation: "slide-up" },
+        accentTransition: { type: "crossfade", useWhen: "moving to a different setup or camera" },
+        grade: [{ type: "brightness", params: { value: 4 } }, { type: "contrast", params: { value: 1.05 } }, { type: "sharpen", params: { amount: 20 } }],
+      },
+      {
+        name: "High Contrast Board",
+        caption: { fontFamily: "Roboto", fontSize: 46, fontWeight: 700, color: "#0e1116", backgroundColor: "#ffe867", backgroundPadding: 12, backgroundRadius: 4, position: { x: 0.5, y: 0.12 }, align: "center", animation: "pop" },
+        accentTransition: { type: "circleReveal", useWhen: "revealing the final result of a step" },
+        grade: [{ type: "contrast", params: { value: 1.08 } }, { type: "saturation", params: { value: 1.05 } }],
+      },
+    ],
     rules: {
       pacing: "medium",
       transitionPreference: ["crossfade", "dipToBlack"],
@@ -101,7 +157,20 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Music Video",
     description:
       "Rhythm-synced cuts with heavy visual effects. The music drives the edit.",
-    signatureEffects: ["prism", "wave-warp", "edge-glow", "swirl", "echo"],
+    looks: [
+      {
+        name: "Prism Colorwash",
+        caption: { fontFamily: "Arial Black", fontSize: 58, fontWeight: 900, color: "#ffffff", position: { x: 0.5, y: 0.15 }, align: "center", animation: "glitch" },
+        accentTransition: { type: "colorSplit", useWhen: "a chorus hits that has not had its accent yet" },
+        grade: [{ type: "contrast", params: { value: 1.1 } }, { type: "saturation", params: { value: 1.25 } }, { type: "hue", params: { rotation: -6 } }],
+      },
+      {
+        name: "Tape Beat",
+        caption: { fontFamily: "VT323", fontSize: 52, fontWeight: 400, color: "#f2f2f2", position: { x: 0.5, y: 0.84 }, align: "center", animation: "word-by-word" },
+        accentTransition: { type: "vhsScan", useWhen: "returning to the hook after a verse" },
+        grade: [{ type: "saturation", params: { value: 1.1 } }, { type: "grain", params: { amount: 10 } }, { type: "chromatic-aberration", params: { intensity: 0.35 } }],
+      },
+    ],    signatureEffects: ["prism", "wave-warp", "edge-glow", "swirl", "echo"],
     rules: {
       pacing: "fast",
       transitionPreference: ["crossfade", "glitch", "flash", "whipPan"],
@@ -143,6 +212,20 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Corporate",
     description:
       "Clean, professional. Minimal effects, clear messaging, polished feel.",
+    looks: [
+      {
+        name: "Boardroom Blue",
+        caption: { fontFamily: "Helvetica", fontSize: 40, fontWeight: 500, color: "#ffffff", backgroundColor: "#0b2545", backgroundPadding: 12, backgroundRadius: 4, position: { x: 0.06, y: 0.12 }, align: "left", animation: "fade" },
+        accentTransition: { type: "wipe", useWhen: "moving between product/solution/proof chapters" },
+        grade: [{ type: "contrast", params: { value: 1.04 } }, { type: "temperature", params: { value: -6 } }, { type: "sharpen", params: { amount: 12 } }],
+      },
+      {
+        name: "Airy White",
+        caption: { fontFamily: "Helvetica", fontSize: 38, fontWeight: 400, color: "#101418", backgroundColor: "#f7f9fc", backgroundPadding: 12, backgroundRadius: 8, position: { x: 0.08, y: 0.86 }, align: "left", animation: "slide-up" },
+        accentTransition: { type: "crossfade", useWhen: "the speaker or scene changes" },
+        grade: [{ type: "brightness", params: { value: 5 } }, { type: "saturation", params: { value: 0.96 } }],
+      },
+    ],
     rules: {
       pacing: "slow",
       transitionPreference: ["crossfade", "dipToWhite"],
@@ -163,6 +246,20 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Social Reel",
     description:
       "Short-form, punchy, caption-heavy. Optimized for vertical mobile viewing.",
+    looks: [
+      {
+        name: "Loop Hook",
+        caption: { fontFamily: "Montserrat", fontSize: 62, fontWeight: 900, color: "#ffffff", stroke: { color: "#000000", width: 4, over: true }, position: { x: 0.5, y: 0.2 }, align: "center", animation: "pop" },
+        accentTransition: { type: "crossZoom", useWhen: "the visual literally expands (dolly, jump, punch-in)" },
+        grade: [{ type: "saturation", params: { value: 1.2 } }, { type: "contrast", params: { value: 1.08 } }],
+      },
+      {
+        name: "Retro Strobe",
+        caption: { fontFamily: "Arial Black", fontSize: 54, fontWeight: 900, color: "#ffdd55", backgroundColor: "#000000", backgroundPadding: 10, position: { x: 0.5, y: 0.8 }, align: "center", animation: "bounce" },
+        accentTransition: { type: "lightLeak", useWhen: "one reveal beat late in the reel" },
+        grade: [{ type: "contrast", params: { value: 1.12 } }, { type: "hue", params: { rotation: 4 } }, { type: "grain", params: { amount: 8 } }],
+      },
+    ],
     signatureEffects: ["vhs", "prism"],
     rules: {
       pacing: "fast",
@@ -199,6 +296,14 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Same Person / Comparison",
     description: "A fast split-screen comparison format with consistent captions and two sources visible at once.",
     layoutHint: "split-compare",
+    looks: [
+      {
+        name: "Versus Split",
+        caption: { fontFamily: "Arial", fontSize: 48, fontWeight: 700, color: "#ffffff", position: { x: 0.5, y: 0.86 }, align: "center", animation: "slide-up" },
+        accentTransition: { type: "wipe", useWhen: "swapping which side of the split leads" },
+        grade: [{ type: "contrast", params: { value: 1.06 } }, { type: "saturation", params: { value: 1.1 } }],
+      },
+    ],
     pacing: "fast",
     cutsPerMinuteTarget: [18, 36],
     captionTemplate: { fontFamily: "Arial", fontSize: 48, fontWeight: 700, color: "#ffffff", position: { x: 0.5, y: 0.86 }, align: "center", animation: "slide-up" },
@@ -226,6 +331,14 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     id: "kill-montage",
     name: "Gaming Kill Montage",
     description: "Very fast gameplay montage with impact effects and short hit-marker SFX cues.",
+    looks: [
+      {
+        name: "Stryker Frame",
+        caption: { fontFamily: "Impact", fontSize: 56, fontWeight: 700, color: "#ff2d2d", stroke: { color: "#ffffff", width: 3, over: true }, position: { x: 0.5, y: 0.2 }, align: "center", animation: "shake" },
+        accentTransition: { type: "vhsScan", useWhen: "the montage resets after a massive kill" },
+        grade: [{ type: "contrast", params: { value: 1.14 } }, { type: "saturation", params: { value: 1.18 } }, { type: "chromatic-aberration", params: { intensity: 0.4 } }],
+      },
+    ],
     pacing: "fast",
     cutsPerMinuteTarget: [30, 60],
     effectPalette: ["chromatic-aberration", "motion-blur"],
@@ -253,6 +366,20 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     id: "cinematic-trailer",
     name: "Cinematic Trailer",
     description: "A restrained opening that accelerates into a dramatic climax with title cards and audio swells.",
+    looks: [
+      {
+        name: "Teal Noir",
+        caption: { fontFamily: "Georgia", fontSize: 56, fontWeight: 400, color: "#e8e2d2", position: { x: 0.5, y: 0.14 }, align: "center", animation: "fade" },
+        accentTransition: { type: "dipToBlack", useWhen: "the pre-climax beat fades out into the swells" },
+        grade: [{ type: "temperature", params: { value: -14 } }, { type: "contrast", params: { value: 1.1 } }, { type: "vignette", params: { amount: 22, midpoint: 0.5, feather: 0.4 } }, { type: "saturation", params: { value: 0.9 } }],
+      },
+      {
+        name: "Ember Rise",
+        caption: { fontFamily: "Montserrat", fontSize: 54, fontWeight: 800, color: "#ffe9c4", backgroundColor: "#00000066", backgroundPadding: 14, position: { x: 0.5, y: 0.82 }, align: "center", animation: "rise" },
+        accentTransition: { type: "filmBurn", useWhen: "the climax ignites" },
+        grade: [{ type: "temperature", params: { value: 12 } }, { type: "tonal", params: { shadows: -0.06, midtones: 0, highlights: 0.04 } }, { type: "contrast", params: { value: 1.06 } }],
+      },
+    ],
     pacing: "slow",
     cutsPerMinuteTarget: [8, 24],
     effectPalette: ["vignette", "temperature", "motion-blur"],
@@ -281,6 +408,14 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Tutorial / How-To",
     description: "Clear instructional pacing with lower-thirds, step callouts, and consistent explanatory captions.",
     layoutHint: "sequential",
+    looks: [
+      {
+        name: "Step Slate",
+        caption: { fontSize: 36, color: "#ffffff", backgroundColor: "#111111", backgroundPadding: 12, backgroundRadius: 6, position: { x: 0.08, y: 0.86 }, align: "left", animation: "slide-up" },
+        accentTransition: { type: "circleReveal", useWhen: "unveiling the finished result at the end" },
+        grade: [{ type: "contrast", params: { value: 1.04 } }, { type: "sharpen", params: { amount: 18 } }],
+      },
+    ],
     pacing: "medium",
     cutsPerMinuteTarget: [10, 24],
     captionTemplate: { fontSize: 36, color: "#ffffff", backgroundColor: "#111111", backgroundPadding: 12, backgroundRadius: 6, position: { x: 0.08, y: 0.86 }, align: "left" },
@@ -294,6 +429,14 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Before / After Transformation",
     description: "A measured transformation reveal using held frames and a clean split comparison.",
     layoutHint: "split-compare",
+    looks: [
+      {
+        name: "Split Reveal",
+        caption: { fontFamily: "Poppins", fontSize: 52, fontWeight: 700, color: "#ffffff", backgroundColor: "#00000080", backgroundPadding: 12, position: { x: 0.5, y: 0.1 }, align: "center", animation: "scale" },
+        accentTransition: { type: "flash", useWhen: "the transformation lands exactly once" },
+        grade: [{ type: "contrast", params: { value: 1.06 } }, { type: "saturation", params: { value: 1.12 } }, { type: "sharpen", params: { amount: 14 } }],
+      },
+    ],
     pacing: "slow",
     cutsPerMinuteTarget: [4, 14],
     effectPalette: ["brightness", "contrast", "saturation"],
@@ -305,6 +448,14 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     id: "day-in-the-life",
     name: "Day in the Life / Vlog",
     description: "Personal, natural pacing with timestamp captions and an ambient music bed.",
+    looks: [
+      {
+        name: "Timestamp Semibold",
+        caption: { fontFamily: "Poppins", fontSize: 38, fontWeight: 600, color: "#ffffff", backgroundColor: "#00000066", backgroundPadding: 10, backgroundRadius: 8, position: { x: 0.5, y: 0.08 }, align: "center", animation: "fade" },
+        accentTransition: { type: "slide", useWhen: "the clock jumps to a new place" },
+        grade: [{ type: "temperature", params: { value: 8 } }, { type: "saturation", params: { value: 1.06 } }],
+      },
+    ],
     pacing: "medium",
     cutsPerMinuteTarget: [8, 20],
     effectPalette: ["brightness", "temperature"],
@@ -317,6 +468,14 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Product Demo",
     description: "Feature-led product presentation with callouts, clean cuts, and optional reaction PIP.",
     layoutHint: "pip-reaction",
+    looks: [
+      {
+        name: "Feature Callout",
+        caption: { fontFamily: "Helvetica", fontSize: 40, fontWeight: 600, color: "#ffffff", position: { x: 0.08, y: 0.14 }, align: "left", animation: "slide-up" },
+        accentTransition: { type: "wipe", useWhen: "each feature gets its one reveal" },
+        grade: [{ type: "contrast", params: { value: 1.05 } }, { type: "sharpen", params: { amount: 16 } }, { type: "temperature", params: { value: -4 } }],
+      },
+    ],
     pacing: "medium",
     cutsPerMinuteTarget: [8, 20],
     captionTemplate: { fontSize: 40, fontWeight: 600, color: "#ffffff", position: { x: 0.08, y: 0.14 }, align: "left" },
@@ -344,6 +503,13 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     id: "podcast-clip",
     name: "Podcast Clip",
     description: "Dialogue-forward edit with readable captions, speaker identification, and restrained visual motion.",
+    looks: [
+      {
+        name: "Speak Up",
+        caption: { fontFamily: "Montserrat", fontSize: 42, fontWeight: 700, color: "#ffffff", position: { x: 0.5, y: 0.78 }, align: "center", animation: "slide-up" },
+        grade: [{ type: "contrast", params: { value: 1.05 } }, { type: "temperature", params: { value: -4 } }],
+      },
+    ],
     pacing: "slow",
     cutsPerMinuteTarget: [4, 12],
     captionTemplate: { fontSize: 42, fontWeight: 700, color: "#ffffff", position: { x: 0.5, y: 0.78 }, align: "center", animation: "slide-up" },
@@ -356,6 +522,14 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     id: "listicle-countdown",
     name: "Countdown / Listicle",
     description: "Fast numbered beats with one clear title card or caption treatment per item.",
+    looks: [
+      {
+        name: "Numbered Stage",
+        caption: { fontFamily: "Arial Black", fontSize: 60, fontWeight: 900, color: "#fff94a", stroke: { color: "#000000", width: 4, over: true }, position: { x: 0.5, y: 0.16 }, align: "center", animation: "pop" },
+        accentTransition: { type: "slide", useWhen: "the numbers advance, once per item" },
+        grade: [{ type: "saturation", params: { value: 1.12 } }, { type: "contrast", params: { value: 1.06 } }],
+      },
+    ],
     pacing: "fast",
     cutsPerMinuteTarget: [18, 36],
     effectPalette: ["chromatic-aberration", "brightness", "saturation"],
@@ -380,6 +554,14 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     id: "meme-compilation",
     name: "Meme Compilation",
     description: "Very fast comedic compilation using hard cuts and minimal transition decoration.",
+    looks: [
+      {
+        name: "Impact Caption",
+        caption: { fontFamily: "Impact", fontSize: 56, fontWeight: 400, color: "#ffffff", stroke: { color: "#000000", width: 4, over: true }, position: { x: 0.5, y: 0.12 }, align: "center", animation: "shake" },
+        accentTransition: { type: "strobeCut", useWhen: "the one loudest laugh beat only" },
+        grade: [{ type: "contrast", params: { value: 1.1 } }, { type: "saturation", params: { value: 1.15 } }],
+      },
+    ],
     pacing: "fast",
     cutsPerMinuteTarget: [30, 75],
     effectPalette: ["chromatic-aberration", "brightness"],
@@ -405,6 +587,14 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     id: "sports-highlight",
     name: "Sports Highlight Reel",
     description: "Energetic sports edit with slow motion on key moments, score overlays, and impact sound cues.",
+    looks: [
+      {
+        name: "Stadium Anthemic",
+        caption: { fontFamily: "Arial Black", fontSize: 60, fontWeight: 900, color: "#ffffff", stroke: { color: "#10254a", width: 4, over: true }, position: { x: 0.5, y: 0.18 }, align: "center", animation: "drop" },
+        accentTransition: { type: "crossZoom", useWhen: "a replay or diving save expands the frame" },
+        grade: [{ type: "contrast", params: { value: 1.12 } }, { type: "saturation", params: { value: 1.15 } }, { type: "sharpen", params: { amount: 12 } }],
+      },
+    ],
     pacing: "fast",
     cutsPerMinuteTarget: [20, 45],
     effectPalette: ["chromatic-aberration", "motion-blur", "contrast", "saturation"],
@@ -432,6 +622,14 @@ export const PRE_BAKED_GENRES: readonly Genre[] = [
     name: "Glow-Up / Prank Reveal",
     description: "A suspenseful setup that resolves into a visual reveal, often using a split comparison or reveal transition.",
     layoutHint: "split-compare",
+    looks: [
+      {
+        name: "Reveal Beam",
+        caption: { fontFamily: "Poppins", fontSize: 54, fontWeight: 800, color: "#ffffff", backgroundColor: "#12002ecc", backgroundPadding: 14, backgroundRadius: 10, position: { x: 0.5, y: 0.82 }, align: "center", animation: "elastic" },
+        accentTransition: { type: "lightLeak", useWhen: "the reveal moment itself" },
+        grade: [{ type: "saturation", params: { value: 1.18 } }, { type: "glow", params: { radius: 12, intensity: 0.8 } }, { type: "hue", params: { rotation: 3 } }],
+      },
+    ],
     pacing: "medium",
     cutsPerMinuteTarget: [10, 24],
     effectPalette: ["brightness", "saturation", "chromatic-aberration"],

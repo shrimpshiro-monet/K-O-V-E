@@ -1,10 +1,14 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HeadlessHost } from "./headless-host";
 import { runTurn } from "./loop";
 import { executeTool } from "./executor";
 import { MockLLMClient } from "./llm";
 import type { LLMClient, LLMResponse, LoopMessage, LoopToolResultBlock } from "./llm";
-import { toAnthropicTools } from "./registry";
+import { setPlanEditRankingEnabled, toAnthropicTools } from "./registry";
+
+beforeEach(() => {
+  setPlanEditRankingEnabled(false);
+});
 import { makeEmptyProject, makeProjectWithClip } from "./test-fixtures";
 import type { EditingHost, JobKind, JobResult } from "./host";
 import type { AgentEvent, ToolCall } from "./types";

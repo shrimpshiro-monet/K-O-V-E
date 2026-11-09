@@ -1,7 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import { waitForExportStage } from "@kove-advanced/core/export/export-watchdog";
+import {
+  EXPORT_STAGE_TIMEOUT_MS,
+  waitForExportStage,
+} from "@kove-advanced/core/export/export-watchdog";
 import {
   getExportEngine,
+  WebCodecsBackend,
   type VideoExportSettings,
   type AudioExportSettings,
   type ExportResult,
@@ -99,9 +103,30 @@ function isAbortError(error: unknown): boolean {
   return !!error && typeof error === "object" && "name" in error && error.name === "AbortError";
 }
 
+function isTimeoutError(error: unknown): boolean {
+  return !!error && typeof error === "object" && "name" in error && error.name === "TimeoutError";
+}
+
 // Allow the browser plenty of time to start reading the Blob before releasing
 // its URL and any OPFS backing file. Existing downloads retain their own handle.
 const DOWNLOAD_RELEASE_DELAY_MS = 10 * 60 * 1000;
+const EXPORT_PROGRESS_TIMEOUT_MS = EXPORT_STAGE_TIMEOUT_MS + 5_000;
+
+function logExportDiagnostic(
+  event: string,
+  details: Record<string, unknown>,
+  level: "info" | "warn" | "error" = "info",
+): void {
+  const entry = { timestamp: new Date().toISOString(), ...details };
+  const message = `[KOVE Export] ${event}`;
+  if (level === "error") console.error(message, entry);
+  else if (level === "warn") console.warn(message, entry);
+  else {
+    // Keep progress visible in the browser console without mislabeling it as a warning.
+    // eslint-disable-next-line no-console
+    console.info(message, entry);
+  }
+}
 
 function triggerAnchorDownload(data: Blob, filename: string, onRelease?: () => void): void {
   const url = URL.createObjectURL(data);
@@ -528,6 +553,10 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
   const { project, onExported } = options;
   const [state, setState] = useState<ExportRunnerState>(INITIAL_STATE);
   const activeRun = useRef<AbortController | null>(null);
+  // Some destinations can be reopened without another user gesture — the key
+  // to the software-encoder retry below. A showSaveFilePicker handle (or a
+  // fallback download destination) is mintable again after a failed attempt.
+  const reopenDestinationRef = useRef<(() => Promise<FileSystemWritableFileStream>) | null>(null);
   const runSequence = useRef(0);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -536,6 +565,7 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
     activeRun.current?.abort();
     activeRun.current = new AbortController();
     runSequence.current += 1;
+    logExportDiagnostic("started", {});
     setState({
       isExporting: true,
       progress: 0,
@@ -567,7 +597,18 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
   }, []);
 
   const failExport = useCallback((error: unknown) => {
-    if (error && typeof error === "object" && "name" in error && error.name === "AbortError") {
+    const aborted = isAbortError(error);
+    logExportDiagnostic(
+      aborted ? "export cancelled" : "export failed",
+      {
+        phase: state.phase || "destination selection",
+        errorName: error instanceof Error ? error.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        error,
+      },
+      aborted ? "warn" : "error",
+    );
+    if (aborted) {
       const sequence = (error as { exportSequence?: number }).exportSequence;
       if (sequence === undefined || sequence === runSequence.current) setState(INITIAL_STATE);
       return;
@@ -577,13 +618,13 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
       isExporting: false,
       error: error instanceof Error ? error.message : "Export failed",
     }));
-  }, []);
+  }, [state.phase]);
 
   const resetError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
-  const runExport = useCallback(
+  const runVideoExportAttempt = useCallback(
     async (
       videoSettings: Partial<VideoExportSettings>,
       _ext: string,
@@ -604,28 +645,61 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
       const ensureCurrent = () => {
         if (controller.signal.aborted || sequence !== runSequence.current) throw cancelled();
       };
+      let currentPhase = "initializing";
+      logExportDiagnostic("video export requested", {
+        sequence,
+        projectId: project.id,
+        clipCount: project.timeline.tracks?.reduce((count, track) => count + track.clips.length, 0) ?? 0,
+        settings: videoSettings,
+        extension: _ext,
+      });
 
       try {
         setState((prev) => sequence === runSequence.current ? { ...prev, phase: "Loading export engine..." } : prev);
+        logExportDiagnostic("loading export engine", { sequence });
         await waitForExportStage(engine.initialize(), "loading the export engine", controller.signal);
         ensureCurrent();
+        currentPhase = "preparing renderer";
+        logExportDiagnostic("export engine ready", { sequence });
         setState((prev) => sequence === runSequence.current ? { ...prev, phase: "Preparing renderer..." } : prev);
 
         generator = engine.exportVideo(project, videoSettings, writableStream, backendFactory);
+        logExportDiagnostic("rendering started", { sequence });
         let finalResult: ExportResult | undefined;
         let lastProgressUpdateAt = 0;
         let lastProgressPhase: string | null = null;
+        let lastLoggedProgressBucket = -1;
         while (true) {
           ensureCurrent();
           generatorStarted = true;
-          const { value, done } = await generator.next();
+          const { value, done } = await waitForExportStage(
+            generator.next(),
+            "waiting for video export progress",
+            controller.signal,
+            EXPORT_PROGRESS_TIMEOUT_MS,
+          );
           ensureCurrent();
           if (done) {
             finalResult = value;
+            currentPhase = "finalizing output";
             break;
           }
 
           const now = performance.now();
+          const progressBucket = Math.floor(value.progress * 20);
+          if (
+            value.phase !== lastProgressPhase ||
+            progressBucket > lastLoggedProgressBucket ||
+            value.phase === "complete"
+          ) {
+            currentPhase = value.phase;
+            logExportDiagnostic("progress", {
+              sequence,
+              ...value,
+              progressPercent: Math.round(value.progress * 100),
+            });
+            lastLoggedProgressBucket = progressBucket;
+          }
           if (
             value.phase !== lastProgressPhase ||
             now - lastProgressUpdateAt >= 250 ||
@@ -651,6 +725,10 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
           throw new Error(finalResult?.error?.message || "Export failed");
         }
         ensureCurrent();
+        logExportDiagnostic("video export saved", {
+          sequence,
+          stats: finalResult.stats,
+        });
         setState((prev) => sequence === runSequence.current ? {
           ...prev, isExporting: false, progress: 100, complete: true, phase: "Saved!",
         } : prev);
@@ -659,10 +737,23 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
         } catch (error) {
           // Analytics or another notification must not turn a saved file into
           // an apparent export failure.
+          logExportDiagnostic("completion callback failed", { sequence, error }, "warn");
           console.warn("[export-runner] Export completed, but the completion callback failed", error);
         }
       } catch (error) {
+        logExportDiagnostic(
+          "video export failed",
+          {
+            sequence,
+            phase: currentPhase,
+            errorName: error instanceof Error ? error.name : typeof error,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            error,
+          },
+          isAbortError(error) ? "warn" : "error",
+        );
         if (generatorStarted && generator) {
+          if (isTimeoutError(error)) engine.cancel();
           // If cancellation happened between progress yields, close the paused
           // generator so its backend and file cleanup actually run.
           await waitForExportStage(
@@ -689,6 +780,80 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
     [project, onExported],
   );
 
+  /**
+   * Browser video encoders on unhealthy GPUs fail in two shapes: the
+   * "stalled while encoding frame N" hang (watchdog TimeoutError) or a hard
+   * early throw (`EncodingError`, device-lost, GPU process crash). In both
+   * cases the software encoder usually still works. This wrapper therefore
+   * retries ONCE in software mode — through the same reopened destination,
+   * with no re-prompt and no lost hand position — whenever the browser's
+   * default hardware-leaning backend fails.
+   */
+  const runExport = useCallback(
+    async (
+      videoSettings: Partial<VideoExportSettings>,
+      ext: string,
+      writableStream: FileSystemWritableFileStream,
+      backendFactory?: EncoderBackendFactory,
+    ): Promise<void> => {
+      try {
+        await runVideoExportAttempt(videoSettings, ext, writableStream, backendFactory);
+        return;
+      } catch (error) {
+        const reopen = reopenDestinationRef.current;
+        const sourceErrorName = error instanceof Error ? error.name : typeof error;
+        const sourceErrorMessage = error instanceof Error ? error.message : String(error);
+        if (backendFactory || !reopen || isAbortError(error)) {
+          throw error;
+        }
+        logExportDiagnostic(
+          "browser video encoder failed; retrying once in software mode",
+          { sourceErrorName, sourceErrorMessage },
+          "warn",
+        );
+        // Start clean: the first attempt discarded its incomplete file above.
+        setState((prev) => ({
+          ...prev,
+          isExporting: true,
+          progress: 0,
+          phase: "Hardware encoder failed — retrying once in software mode...",
+          error: null,
+          complete: false,
+        }));
+        let retryWritable: FileSystemWritableFileStream;
+        try {
+          retryWritable = await reopen();
+        } catch (reopenError) {
+          logExportDiagnostic("software retry could not reopen the destination", { error: reopenError }, "warn");
+          throw error;
+        }
+        try {
+          await runVideoExportAttempt(
+            videoSettings,
+            ext,
+            retryWritable,
+            (mediabunny) => {
+              if (!mediabunny) throw new Error("MediaBunny is unavailable for the software-mode retry");
+              return new WebCodecsBackend(mediabunny, { hardwareAcceleration: "prefer-software" });
+            },
+          );
+        } catch (retryFailure) {
+          const retryErrorName = retryFailure instanceof Error ? retryFailure.name : typeof retryFailure;
+          const retryErrorMessage = retryFailure instanceof Error ? retryFailure.message : String(retryFailure);
+          if (isAbortError(retryFailure)) {
+            throw retryFailure;
+          }
+          throw new Error(
+            `Video encoding failed twice (hardware and software). Last error: ${retryErrorName}: ${retryErrorMessage}. ` +
+              "Save progress and try a lower export resolution.",
+            { cause: retryFailure },
+          );
+        }
+      }
+    },
+    [runVideoExportAttempt],
+  );
+
   const runAudioExport = useCallback(
     async (
       settings: Partial<AudioExportSettings>,
@@ -708,22 +873,42 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
       const ensureCurrent = () => {
         if (controller.signal.aborted || sequence !== runSequence.current) throw cancelled();
       };
+      let currentPhase = "initializing";
+      logExportDiagnostic("audio export requested", {
+        sequence,
+        projectId: project.id,
+        settings,
+      });
 
       try {
         setState((prev) => sequence === runSequence.current ? { ...prev, phase: "Loading export engine..." } : prev);
+        logExportDiagnostic("loading export engine", { sequence });
         await waitForExportStage(engine.initialize(), "loading the export engine", controller.signal);
         ensureCurrent();
+        currentPhase = "preparing audio renderer";
         generator = engine.exportAudio(project, settings);
         let finalResult: ExportResult | undefined;
         for (;;) {
           ensureCurrent();
           generatorStarted = true;
-          const { value, done } = await generator.next();
+          const { value, done } = await waitForExportStage(
+            generator.next(),
+            "waiting for audio export progress",
+            controller.signal,
+            EXPORT_PROGRESS_TIMEOUT_MS,
+          );
           ensureCurrent();
           if (done) {
             finalResult = value;
+            currentPhase = "writing output";
             break;
           }
+          currentPhase = value.phase;
+          logExportDiagnostic("audio export progress", {
+            sequence,
+            ...value,
+            progressPercent: Math.round(value.progress * 100),
+          });
           setState((prev) => sequence === runSequence.current ? {
             ...prev, progress: value.progress * 100, phase: progressPhaseLabel(value.phase),
           } : prev);
@@ -735,11 +920,22 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
         ensureCurrent();
         await writeBlobToWritable(finalResult.blob, writableStream, controller.signal);
         ensureCurrent();
+        logExportDiagnostic("audio export saved", {
+          sequence,
+          size: finalResult.blob.size,
+          type: finalResult.blob.type,
+        });
         setState((prev) => sequence === runSequence.current ? {
           ...prev, isExporting: false, progress: 100, complete: true, phase: "Saved!",
         } : prev);
       } catch (error) {
+        logExportDiagnostic(
+          "audio export failed",
+          { sequence, phase: currentPhase, error },
+          isAbortError(error) ? "warn" : "error",
+        );
         if (generatorStarted && generator) {
+          if (isTimeoutError(error)) engine.cancel();
           await waitForExportStage(generator.return({ success: false }), "stopping the audio export", undefined, 6_000).catch(() => undefined);
         }
         await waitForExportStage(
@@ -764,6 +960,10 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
       opts?: { streamToFile?: boolean },
     ): Promise<FileSystemWritableFileStream> => {
       const mime = mimeForExt(ext);
+      logExportDiagnostic("choosing output destination", {
+        extension: ext,
+        streamToFile: opts?.streamToFile ?? false,
+      });
 
       if (typeof window["kove-advanced"]?.fs?.showSaveDialog === "function") {
         const chosen = await window["kove-advanced"].fs.showSaveDialog({
@@ -806,6 +1006,7 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
               },
             ],
           });
+          reopenDestinationRef.current = () => handle.createWritable({ keepExistingData: false });
           return handle.createWritable();
         } catch (error) {
           if (isAbortError(error)) {
@@ -815,10 +1016,12 @@ export function useExportRunner(options: ExportRunnerOptions): UseExportRunner {
             "[export-runner] showSaveFilePicker unavailable; streaming to a downloaded file instead",
             error,
           );
+          reopenDestinationRef.current = () => createFallbackWritable(filename, mime);
           return createFallbackWritable(filename, mime);
         }
       }
 
+      reopenDestinationRef.current = () => createFallbackWritable(filename, mime);
       return createFallbackWritable(filename, mime);
     },
     [],

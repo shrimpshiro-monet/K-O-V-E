@@ -36,6 +36,15 @@ export class WebCodecsBackend implements EncoderBackend {
   private writableStream: FileSystemWritableFileStream | null = null;
   private bytesWritten = 0;
   private aborted = false;
+  private diagnostics = {
+    videoAdds: 0,
+    audioAdds: 0,
+    writerOps: 0,
+    pendingWriterOps: 0,
+    lastWriterOpMs: 0,
+    codec: null as string | null,
+    hardwareAcceleration: null as string | null,
+  };
 
   private throwIfAborted(): void {
     if (this.aborted) throw new DOMException("Export cancelled", "AbortError");
@@ -50,6 +59,30 @@ export class WebCodecsBackend implements EncoderBackend {
 
   getBytesWritten(): number {
     return this.bytesWritten;
+  }
+
+  getDiagnostics(): Record<string, unknown> {
+    return { ...this.diagnostics, bytesWritten: this.bytesWritten };
+  }
+
+  /**
+   * Report (non-fatally) when a pipeline step has been pending for too long.
+   * The 120s watchdog still governs the failure; this log exists so a stalled
+   * export tells us whether the encoder or the file writer is the choke point
+   * (deterministic hangs have reproduced identically on hardware and
+   * software encoders).
+   */
+  private instrumentStall(label: string, run: () => Promise<void>, thresholdMs = 20_000): Promise<void> {
+    const startedAt = performance.now();
+    const pending = run();
+    const timer = setTimeout(() => {
+      console.error(
+        `[KOVE Export] ${label} has been pending for ${Math.round((performance.now() - startedAt) / 1000)}s — ` +
+        `pipeline diagnostics: ${JSON.stringify(this.getDiagnostics())}`,
+      );
+    }, thresholdMs);
+    void pending.catch(() => undefined).finally(() => clearTimeout(timer));
+    return pending;
   }
 
   async start(
@@ -79,9 +112,25 @@ export class WebCodecsBackend implements EncoderBackend {
     const self = this;
     const chunkWriter = new WritableStream<{ data: Uint8Array; position: number }>({
       async write(chunk) {
-        await diskWriter.seek(chunk.position);
-        await diskWriter.write(chunk.data as unknown as FileSystemWriteChunkType);
-        self.bytesWritten += chunk.data.byteLength;
+        self.diagnostics.pendingWriterOps += 1;
+        const startedAt = performance.now();
+        let stallTimer: ReturnType<typeof setTimeout> | null = null;
+        try {
+          stallTimer = setTimeout(() => {
+            console.error(
+              `[KOVE Export] file writer stalled — a write has been pending for ${Math.round((performance.now() - startedAt) / 1000)}s ` +
+              `at position ${chunk.position}. Pipeline diagnostics: ${JSON.stringify(self.getDiagnostics())}`,
+            );
+          }, 10_000);
+          await diskWriter.seek(chunk.position);
+          await diskWriter.write(chunk.data as unknown as FileSystemWriteChunkType);
+          self.bytesWritten += chunk.data.byteLength;
+        } finally {
+          self.diagnostics.pendingWriterOps -= 1;
+          self.diagnostics.writerOps += 1;
+          self.diagnostics.lastWriterOpMs = Math.round(performance.now() - startedAt);
+          if (stallTimer) clearTimeout(stallTimer);
+        }
       },
     });
 
@@ -169,6 +218,8 @@ export class WebCodecsBackend implements EncoderBackend {
       hardwareAcceleration: selectedHardwareAcceleration,
     });
     output.addVideoTrack(videoSource);
+    this.diagnostics.codec = videoCodec;
+    this.diagnostics.hardwareAcceleration = selectedHardwareAcceleration;
 
     // A still-image or fully muted timeline needs no audio encoder or empty
     // muxer track. Some browsers cannot encode AAC at all; that must not prevent
@@ -203,7 +254,8 @@ export class WebCodecsBackend implements EncoderBackend {
     if (!this.audioSource) {
       throw new Error("Encoder backend not started");
     }
-    await this.audioSource.add(buffer);
+    this.diagnostics.audioAdds += 1;
+    await this.instrumentStall(`audio buffer add #${this.diagnostics.audioAdds}`, () => this.audioSource!.add(buffer));
   }
 
   async closeAudio(): Promise<void> {
@@ -220,7 +272,11 @@ export class WebCodecsBackend implements EncoderBackend {
       if (!this.videoSource) throw new Error("Encoder backend not started");
       const { VideoSample } = this.mediabunny;
       videoSample = new VideoSample(frame, { timestamp: timestampSec, duration: durationSec });
-      await this.videoSource.add(videoSample);
+      this.diagnostics.videoAdds += 1;
+      await this.instrumentStall(
+        `video sample add #${this.diagnostics.videoAdds}`,
+        () => this.videoSource!.add(videoSample!),
+      );
     } finally {
       videoSample?.close();
       frame.close();
@@ -229,8 +285,10 @@ export class WebCodecsBackend implements EncoderBackend {
 
   async finalize(): Promise<void> {
     this.videoSource?.close();
-    await this.output?.finalize();
-    await this.writableStream?.close();
+    await this.instrumentStall("muxer finalize", async () => {
+      await this.output?.finalize();
+      await this.writableStream?.close();
+    });
   }
 
   async abort(): Promise<void> {

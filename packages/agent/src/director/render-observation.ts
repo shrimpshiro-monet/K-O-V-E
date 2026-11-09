@@ -256,6 +256,44 @@ async function decodeFramebuffer(dataUrl: string): Promise<{ pixels: Uint8Clampe
 }
 
 /**
+ * Pixel-space measurement of ONE rendered frame. Pure and synchronous so
+ * tests can exercise the real math over synthetic pixel buffers; the async
+ * wrapper (`measureRenderedFrame`) only adds image decoding on top.
+ */
+export interface RenderedFrameMeasurement {
+  readonly sharpness: number;
+  readonly subjectVisibility: number;
+  readonly textLegibility: number;
+  readonly hasBlackFrame: boolean;
+}
+
+export function measureFramePixels(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  overlayPosition: { x: number; y: number } | undefined,
+): RenderedFrameMeasurement {
+  const luma = lumaPlane(pixels, width * height);
+  const channels = channelsFromLuma(luma, width, height);
+  const textLegibility = overlayPosition
+    ? clamp01(
+        meanLaplacian(luma, width, height, 1, {
+          x0: Math.max(1, Math.floor(overlayPosition.x * width) - Math.floor(width * 0.18)),
+          x1: Math.max(2, Math.floor(overlayPosition.x * width) + Math.floor(width * 0.18)),
+          y0: Math.max(1, Math.floor(overlayPosition.y * height) - Math.floor(height * 0.06)),
+          y1: Math.max(2, Math.floor(overlayPosition.y * height) + Math.floor(height * 0.06)),
+        }) / 0.06,
+      )
+    : 1;
+  return {
+    sharpness: channels.sharpness,
+    subjectVisibility: channels.textureCoverage,
+    textLegibility,
+    hasBlackFrame: channels.meanLuma < 0.06 && channels.stddevLuma < 0.035,
+  };
+}
+
+/**
  * Decode ONE rendered jpeg/png and measure it. Returns undefined when the
  * environment cannot decode images (Node) — the caller then simply reports
  * fewer/no observations instead of inventing metrics.
@@ -266,25 +304,7 @@ async function measureRenderedFrame(
 ): Promise<Omit<RenderedFrameObservation, "timestamp"> | undefined> {
   const framebuffer = await decodeFramebuffer(dataUrl);
   if (!framebuffer) return undefined;
-  const luma = lumaPlane(framebuffer.pixels, framebuffer.width * framebuffer.height);
-  const channels = channelsFromLuma(luma, framebuffer.width, framebuffer.height);
-  const textLegibility =
-    overlayPosition
-      ? clamp01(
-          meanLaplacian(luma, framebuffer.width, framebuffer.height, 1, {
-            x0: Math.max(1, Math.floor(overlayPosition.x * framebuffer.width) - Math.floor(framebuffer.width * 0.18)),
-            x1: Math.max(2, Math.floor(overlayPosition.x * framebuffer.width) + Math.floor(framebuffer.width * 0.18)),
-            y0: Math.max(1, Math.floor(overlayPosition.y * framebuffer.height) - Math.floor(framebuffer.height * 0.06)),
-            y1: Math.max(2, Math.floor(overlayPosition.y * framebuffer.height) + Math.floor(framebuffer.height * 0.06)),
-          }) / 0.06,
-        )
-      : 1;
-  return {
-    sharpness: channels.sharpness,
-    subjectVisibility: channels.textureCoverage,
-    textLegibility,
-    hasBlackFrame: channels.meanLuma < 0.06 && channels.stddevLuma < 0.035,
-  };
+  return measureFramePixels(framebuffer.pixels, framebuffer.width, framebuffer.height, overlayPosition);
 }
 
 /**

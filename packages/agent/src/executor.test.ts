@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { inflateSync } from "node:zlib";
 import { HeadlessHost } from "./headless-host";
 import { executeTool, isDestructive } from "./executor";
+import { setPlanEditRankingEnabled } from "./registry";
 import { _resetPlanState, _setPlanStateForTest, _getPlanStateForTest } from "./registry";
 import { makeEmptyProject, makeProjectWithClip } from "./test-fixtures";
 import type { EditorStateView, ClipView } from "./serialize";
@@ -44,6 +45,7 @@ function decodePngDataUri(dataUri: string): { width: number; height: number; rgb
 
 describe("executeTool", () => {
   beforeEach(() => {
+    setPlanEditRankingEnabled(false);
     // Clear any leftover plan state from prior tests to prevent
     // _previousPlanState collisions between tests using the same project ID.
     _resetPlanState("p1");

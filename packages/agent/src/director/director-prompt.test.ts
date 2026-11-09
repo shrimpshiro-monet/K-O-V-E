@@ -5,8 +5,11 @@ import {
   buildDensityContract,
   buildDirectorPrompt,
   buildExpansionPrompt,
+  buildMomentRankingPrompt,
   formatDensityContract,
+  formatMomentShortlist,
   inferTargetDuration,
+  parseMomentShortlist,
   resolveDirectorVideoId,
 } from "./director-prompt";
 import { PRE_BAKED_GENRES } from "./genres";
@@ -98,6 +101,8 @@ describe("director prompt", () => {
     expect(prompt).toContain("camera motion is optional");
     expect(prompt).toContain("never add them as a quota");
     expect(prompt).toContain("Do not add cameraMoves to every shot");
+    expect(prompt).toContain("never exceed three composed moves on one shot");
+    expect(prompt).toContain("prefer one deliberate move over stacked movement");
     expect(prompt).toContain("A speed ramp is not a camera move");
     expect(prompt).toContain("brief reduced-speed hold");
     expect(prompt).toContain("stay at 1x through the rest of the shot");
@@ -289,5 +294,155 @@ describe("director prompt", () => {
       "unless the request explicitly asks for hard cuts only or no transitions",
     );
     expect(DIRECTOR_SYSTEM_PROMPT).toContain("the request wins");
+  });
+});
+
+describe("moment ranking", () => {
+  const rankingMap: SegmentMap = {
+    videos: [
+      {
+        videoId: "vid-a",
+        duration: 20,
+        segments: [
+          {
+            id: "seg-1",
+            description: "action in progress",
+            startTime: 0,
+            endTime: 6,
+            importanceScore: 0.9,
+          },
+          {
+            id: "seg-2",
+            description: "quiet aftermath",
+            startTime: 12,
+            endTime: 18,
+            importanceScore: 0.3,
+          },
+        ],
+      } as unknown as SegmentMap["videos"][number],
+    ],
+  };
+
+  it("parses a valid shortlist with aliases, clamps ranges and defaults roles", () => {
+    const shortlist = parseMomentShortlist(
+      {
+        hook: { videoId: "video_0", startTime: 0, endTime: 2, why: "readable in 3s" },
+        payoff: { sourceVideoId: "vid-a", sourceStartTime: 4, sourceEndTime: 9, role: "payoff", why: "climax" },
+        moments: [
+          { sourceVideoId: "vid-a", startTime: 18, endTime: 40, why: "rolls past the end — clamps" },
+          { sourceVideoId: "vid-a", startTime: "garbage", endTime: 5 },
+          { sourceVideoId: "vid-a", startTime: 14, endTime: 16, role: "reaction", why: "x".repeat(400) },
+        ],
+      },
+      rankingMap,
+    );
+    expect(shortlist).not.toBeNull();
+    expect(shortlist?.hook?.sourceVideoId).toBe("vid-a");
+    expect(shortlist?.hook?.role).toBe("hook");
+    expect(shortlist?.payoff?.startTime).toBe(4);
+    expect(shortlist?.payoff?.endTime).toBe(9);
+    const clamped = shortlist?.moments[0];
+    expect(clamped?.startTime).toBe(18);
+    expect(clamped?.endTime).toBe(20);
+    expect(clamped?.role).toBe("development");
+    expect(shortlist?.moments[1]?.role).toBe("reaction");
+    expect(shortlist?.moments[1]?.why?.length).toBeLessThanOrEqual(240);
+  });
+
+  it("rejects unusable rankings instead of planning over them", () => {
+    expect(parseMomentShortlist({ hook: "not an object", moments: [] }, rankingMap)).toBeNull();
+    expect(parseMomentShortlist(null, rankingMap)).toBeNull();
+    expect(
+      parseMomentShortlist(
+        {
+          hook: { sourceVideoId: "vid-a", startTime: 0, endTime: 1 },
+          moments: [{ sourceVideoId: "vid-a", startTime: 2, endTime: 3 }],
+        },
+        rankingMap,
+      ),
+    ).toBeNull();
+  });
+
+  it("renders hook/payoff/landing and numbered moments with their roles", () => {
+    const shortlist = parseMomentShortlist(
+      {
+        hook: { sourceVideoId: "vid-a", startTime: 0, endTime: 2, role: "hook", why: "reads fast" },
+        payoff: { sourceVideoId: "vid-a", startTime: 4, endTime: 8, role: "payoff", why: "climax" },
+        landing: { sourceVideoId: "vid-a", startTime: 16, endTime: 19, role: "landing", why: "resolves" },
+        moments: [{ sourceVideoId: "vid-a", startTime: 13, endTime: 15, why: "detail beat" }],
+      },
+      rankingMap,
+    );
+    const rendered = formatMomentShortlist(shortlist!);
+    expect(rendered).toContain("hook: vid-a 0.00s-2.00s — hook — reads fast");
+    expect(rendered).toContain("payoff: vid-a 4.00s-8.00s — payoff — climax");
+    expect(rendered).toContain("landing: vid-a 16.00s-19.00s — landing — resolves");
+    expect(rendered).toContain("moment 1: vid-a 13.00s-15.00s — development — detail beat");
+  });
+
+  it("buildMomentRankingPrompt mirrors canonical ids and the footage graph", () => {
+    const prompt = buildMomentRankingPrompt(rankingMap, "make it punchy");
+    expect(prompt).toContain("User request: \"make it punchy\"");
+    expect(prompt).toContain("- video_0: vid-a");
+    expect(prompt).toContain("Canonical sourceVideoId values");
+    expect(prompt).toContain("## Footage graph (your evidence)");
+    expect(prompt).toContain("seg-1");
+  });
+
+  it("buildMomentRankingPrompt carries the speech map when transcripts exist", () => {
+    const brief = buildMomentRankingPrompt(
+      {
+        videos: [
+          {
+            videoId: "vid-a",
+            duration: 40,
+            segments: [
+              {
+                id: "seg-talk",
+                description: "talking",
+                sceneType: "talking",
+                motionLevel: "low",
+                hasDialogue: true,
+                visualContent: "n/a",
+                confidence: 0.9,
+                startTime: 0,
+                endTime: 30,
+                transcript: [
+                  { startTime: 3, endTime: 4.4, text: "wait until you're gonna see this" },
+                  { startTime: 8, endTime: 9.2, text: "the best trick of the year!" },
+                ],
+              } as unknown as SegmentMap["videos"][number]["segments"][number],
+            ],
+          },
+        ],
+      },
+      "tight podcast cut",
+    );
+    expect(brief).toContain("## Speech map (transcript-first evidence");
+    expect(brief).toContain('"wait until you\'re gonna see this"');
+    expect(brief).toContain('"the best trick of the year!"');
+    expect(brief).toContain("hook");
+    expect(brief).toContain("payoff");
+    expect(brief).toContain("NOT copy for text elements");
+  });
+});
+
+describe("genre look presets", () => {
+  it("render the genre's looks as a pick-ONE block with caption, accent and grade values", () => {
+    const genre = PRE_BAKED_GENRES.find((entry) => entry.id === "documentary");
+    expect(genre?.looks && genre.looks.length > 0).toBe(true);
+    const prompt = buildDirectorPrompt(segmentMap, "make a 20s edit", genre);
+    expect(prompt).toContain("## Genre look — pick ONE as the look baseline");
+    expect(prompt).toContain("Look 1 (Observational Slate)");
+    expect(prompt).toContain("animation fade");
+    expect(prompt).toContain("contrast [value=1.05]");
+    expect(prompt).toContain("accent crossfade");
+    expect(prompt).toContain("Copy this look's caption values into captionTemplate");
+  });
+
+  it("leave no look block for genres without looks", () => {
+    const bareGenre = { ...(PRE_BAKED_GENRES[0]), looks: undefined } as unknown as (typeof PRE_BAKED_GENRES)[number];
+    const prompt = buildDirectorPrompt(segmentMap, "make a 20s edit", bareGenre);
+    expect(prompt).not.toContain("## Genre look");
   });
 });

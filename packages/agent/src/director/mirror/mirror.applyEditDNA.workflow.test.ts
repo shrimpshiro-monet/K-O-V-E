@@ -28,6 +28,42 @@ describe("mirror compiler on headless host", () => {
     expect(clips[0].keyframes.some((kf) => kf.property === "scale.x" && kf.time > 0)).toBe(true);
   });
 
+  it("compiles a per-frame measured shot into a bounded keyframe set", async () => {
+    const host = hostWithMedia(20);
+    const frameSamples = Array.from({ length: 300 }, (_, i) => ({
+      frame: i + 1, translateX: i % 2 === 0 ? 3 : -3, translateY: 0,
+      rotationRad: i % 3 === 0 ? 0.05 : 0, scale: 1.001,
+    }));
+    const profile = {
+      ...fixture,
+      durationFrames: 330,
+      rhythmCurve: [330],
+      shots: [{ ...(fixture.shots[0]), startFrame: 0, endFrame: 330, cameraMotion: { samples: frameSamples, dominantMove: "handheld" as const } }],
+    };
+    const ids = await applyEditDNA(host, profile, ["m1"]);
+    const clip = host.getProject().timeline.tracks.flatMap((t) => t.clips).find((c) => c.id === ids[0]);
+    const keyframeTimes = new Set((clip?.keyframes ?? []).map((kf) => kf.time));
+    expect(keyframeTimes.size).toBeGreaterThanOrEqual(2);
+    expect(keyframeTimes.size).toBeLessThanOrEqual(48);
+    // Simplification is apply-time only: the stored profile keeps every measured sample.
+    expect(host.getProject().mirrorProfile?.shots[0].cameraMotion?.samples).toHaveLength(300);
+  });
+
+  it("writes no keyframes for a near-static shot", async () => {
+    const host = hostWithMedia(20);
+    // 20 × 0.05px on a 1080-wide frame: total excursion below the invisible threshold.
+    const frameSamples = Array.from({ length: 20 }, (_, i) => ({ frame: i + 1, translateX: 0.05, translateY: 0, rotationRad: 0, scale: 1 }));
+    const profile = {
+      ...fixture,
+      durationFrames: 330,
+      rhythmCurve: [330],
+      shots: [{ ...(fixture.shots[0]), startFrame: 0, endFrame: 330, cameraMotion: { samples: frameSamples, dominantMove: "static" as const } }],
+    };
+    const ids = await applyEditDNA(host, profile, ["m1"]);
+    const clip = host.getProject().timeline.tracks.flatMap((t) => t.clips).find((c) => c.id === ids[0]);
+    expect(clip?.keyframes ?? []).toEqual([]);
+  });
+
   it("keeps measured text treatment but omits reference wording from the agent result", async () => {
     const host = hostWithMedia();
     const profile = {

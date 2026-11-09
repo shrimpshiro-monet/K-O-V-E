@@ -8,12 +8,22 @@ import {
 import type { LLMClient, OmniRouteConfig } from "@kove-advanced/agent";
 import { apiFetch } from "../api-proxy";
 import type { LlmProvider } from "../../stores/settings-store";
+import { logAIDiagnostic } from "./console-diagnostics";
 
 const PATHS: Record<LlmProvider, string> = {
   "openai-compatible": "/chat/completions",
   "anthropic-compatible": "/messages",
   "cloudflare": "/chat/completions",
 };
+
+function requestBodyForDiagnostics(body: string | undefined): unknown {
+  if (body === undefined) return undefined;
+  try {
+    return JSON.parse(body) as unknown;
+  } catch {
+    return body;
+  }
+}
 
 /** Cloudflare Workers AI uses OpenAI-compatible /v1/chat/completions. */
 export interface CloudflareAIOptions {
@@ -62,28 +72,63 @@ function makeCloudflareSend(
     const url = isDev
       ? `${proxyPrefix}/client/v4/accounts/${accountId}/ai/v1/chat/completions`
       : `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
+    const startedAt = performance.now();
+    logAIDiagnostic("request", {
+      provider: "cloudflare",
+      model: typeof normalized === "object" && normalized && "model" in normalized
+        ? normalized.model
+        : undefined,
+      body: normalized,
+    });
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
     if (!isDev) {
       headers.Authorization = `Bearer ${apiToken}`;
     }
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(normalized),
-      signal,
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw llmHttpError(
-        "cloudflare-ai",
-        res.status,
-        text,
-        parseRetryAfterMs(res.headers.get("retry-after")),
+    let responseStatus: number | undefined;
+    let responseBody: unknown;
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(normalized),
+        signal,
+      });
+      responseStatus = res.status;
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        responseBody = text;
+        throw llmHttpError(
+          "cloudflare-ai",
+          res.status,
+          text,
+          parseRetryAfterMs(res.headers.get("retry-after")),
+        );
+      }
+      const response = await res.json();
+      responseBody = response;
+      logAIDiagnostic("response", {
+        provider: "cloudflare",
+        status: res.status,
+        durationMs: Math.round(performance.now() - startedAt),
+        body: response,
+      });
+      return response;
+    } catch (error) {
+      logAIDiagnostic(
+        "request failed",
+        {
+          provider: "cloudflare",
+          status: responseStatus,
+          durationMs: Math.round(performance.now() - startedAt),
+          response: responseBody,
+          error,
+        },
+        "error",
       );
+      throw error;
     }
-    return res.json();
   };
 }
 
@@ -149,13 +194,46 @@ export function makeOmniRouteGatewayClient(opts: OmniRouteGatewayOptions): LLMCl
   ): Promise<Response> => {
     const url = String(input);
     const path = url.startsWith(cfg.baseUrl) ? url.slice(cfg.baseUrl.length) : "/chat/completions";
-    return apiFetch("omniroute", path, cfg.apiKey, {
-      method: init?.method ?? "POST",
-      headers: (init?.headers ?? {}) as Record<string, string>,
-      body: typeof init?.body === "string" ? init.body : undefined,
-      baseUrl: cfg.baseUrl,
-      signal: init?.signal ?? undefined,
+    const startedAt = performance.now();
+    const body = typeof init?.body === "string" ? init.body : undefined;
+    logAIDiagnostic("request", {
+      provider: "omniroute",
+      model: cfg.model,
+      body: requestBodyForDiagnostics(body),
     });
+    try {
+      const response = await apiFetch("omniroute", path, cfg.apiKey, {
+        method: init?.method ?? "POST",
+        headers: (init?.headers ?? {}) as Record<string, string>,
+        body,
+        baseUrl: cfg.baseUrl,
+        signal: init?.signal ?? undefined,
+      });
+      void response.clone().text().then((responseBody) => {
+        logAIDiagnostic(response.ok ? "response" : "response failed", {
+          provider: "omniroute",
+          model: cfg.model,
+          status: response.status,
+          durationMs: Math.round(performance.now() - startedAt),
+          body: responseBody,
+        }, response.ok ? "info" : "error");
+      }).catch((error: unknown) => {
+        logAIDiagnostic("response body unavailable", { provider: "omniroute", error }, "warn");
+      });
+      return response;
+    } catch (error) {
+      logAIDiagnostic(
+        "request failed",
+        {
+          provider: "omniroute",
+          model: cfg.model,
+          durationMs: Math.round(performance.now() - startedAt),
+          error,
+        },
+        "error",
+      );
+      throw error;
+    }
   }) as typeof fetch;
   return makeOmniRouteClient(cfg, {
     fetchFn: routedFetch,
@@ -176,6 +254,11 @@ function makeSend(
       throw new DOMException("Aborted", "AbortError");
     }
     let res: Response;
+    const startedAt = performance.now();
+    logAIDiagnostic("request", {
+      provider,
+      body: requestBodyForDiagnostics(JSON.stringify(body)),
+    });
     try {
       res = await apiFetch(provider, PATHS[provider], apiKey, {
         method: "POST",
@@ -185,23 +268,68 @@ function makeSend(
         signal,
       });
     } catch (error) {
+      const reportedError = error instanceof TypeError
+        ? new Error(
+            "Could not reach the compatible endpoint. Check its URL, availability, and browser CORS settings.",
+          )
+        : error;
+      logAIDiagnostic(
+        "request failed",
+        {
+          provider,
+          durationMs: Math.round(performance.now() - startedAt),
+          error: reportedError,
+        },
+        "error",
+      );
       if (error instanceof TypeError) {
-        throw new Error(
-          "Could not reach the compatible endpoint. Check its URL, availability, and browser CORS settings.",
-        );
+        throw reportedError;
       }
       throw error;
     }
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw llmHttpError(
+      const error = llmHttpError(
         provider,
         res.status,
         text,
         parseRetryAfterMs(res.headers.get("retry-after")),
       );
+      logAIDiagnostic(
+        "response failed",
+        {
+          provider,
+          status: res.status,
+          durationMs: Math.round(performance.now() - startedAt),
+          body: text,
+          error,
+        },
+        "error",
+      );
+      throw error;
     }
-    return res.json();
+    try {
+      const response = await res.json();
+      logAIDiagnostic("response", {
+        provider,
+        status: res.status,
+        durationMs: Math.round(performance.now() - startedAt),
+        body: response,
+      });
+      return response;
+    } catch (error) {
+      logAIDiagnostic(
+        "invalid response",
+        {
+          provider,
+          status: res.status,
+          durationMs: Math.round(performance.now() - startedAt),
+          error,
+        },
+        "error",
+      );
+      throw error;
+    }
   };
 }
 

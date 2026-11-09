@@ -14,6 +14,10 @@ import type {
   ConversionOptions,
   WrappedCanvas,
 } from "mediabunny";
+import { waitForExportStage } from "../export/export-watchdog";
+
+const MAX_EXPORT_DECODERS = 4;
+const EXPORT_DECODER_INITIALIZATION_TIMEOUT_MS = 30_000;
 
 export const SUPPORTED_VIDEO_FORMATS = [
   "video/mp4",
@@ -266,15 +270,33 @@ export class MediaBunnyEngine {
   async createExportDecoder(mediaId: string, file: File | Blob, width?: number): Promise<ExportFrameDecoder | null> {
     this.ensureInitialized();
 
-    const existing = this.exportDecoders.get(mediaId);
+    const existing = this.getExportDecoder(mediaId);
     if (existing) {
       return existing;
     }
 
     const decoder = new ExportFrameDecoder(this.mediabunny!, file, width);
-    const success = await decoder.initialize();
+    let success: boolean;
+    try {
+      success = await waitForExportStage(
+        decoder.initialize(),
+        `opening video decoder ${mediaId}`,
+        undefined,
+        EXPORT_DECODER_INITIALIZATION_TIMEOUT_MS,
+      );
+    } catch (error) {
+      decoder.dispose();
+      throw error;
+    }
     if (!success) {
+      decoder.dispose();
       return null;
+    }
+
+    while (this.exportDecoders.size >= MAX_EXPORT_DECODERS) {
+      const leastRecentlyUsed = this.exportDecoders.keys().next().value;
+      if (leastRecentlyUsed === undefined) break;
+      this.disposeExportDecoder(leastRecentlyUsed);
     }
 
     this.exportDecoders.set(mediaId, decoder);
@@ -282,7 +304,11 @@ export class MediaBunnyEngine {
   }
 
   getExportDecoder(mediaId: string): ExportFrameDecoder | null {
-    return this.exportDecoders.get(mediaId) || null;
+    const decoder = this.exportDecoders.get(mediaId);
+    if (!decoder) return null;
+    this.exportDecoders.delete(mediaId);
+    this.exportDecoders.set(mediaId, decoder);
+    return decoder;
   }
 
   disposeExportDecoder(mediaId: string): void {
