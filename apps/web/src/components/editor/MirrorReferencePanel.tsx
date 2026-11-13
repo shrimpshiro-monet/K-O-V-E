@@ -29,6 +29,7 @@ export function MirrorReferencePanel() {
   const [profile, setProfile] = useState<ReferenceProfile | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
+  const [includeCreatorCaptions, setIncludeCreatorCaptions] = useState(false);
   // Measuring a long 4K reference is boundable but not instant: the user gets a
   // real Cancel that aborts the in-flight decode instead of a dead panel.
   const measurement = useRef<AbortController | null>(null);
@@ -43,6 +44,7 @@ export function MirrorReferencePanel() {
       const measured = await extractReference(file, clock, {
         onProgress: (done, total) => setStatus(`Measuring shots… ${done}/${total} frames`),
         signal: controller.signal,
+        includeReferenceText: includeCreatorCaptions,
       });
       throwIfAborted(controller.signal);
       getLiveEditorHost().setMirrorReference(file);
@@ -75,12 +77,18 @@ export function MirrorReferencePanel() {
     setFpsNum(""); setFpsDen("");
     setReferenceFile(null); setProfile(null); setPendingFile(null); setShotIds([]);
     setBusy(true);
+    setStatus("Checking the reference video clock…");
     try {
       const result = await probeReferenceClock(file);
       if (result.status === "known") { setBusy(false); await extract(file, result.clock); return; }
       // No desktop probe: read the clock out of the container itself so the
       // user is only asked for a frame rate when the file really is opaque.
-      const container = await probeContainerClock(file).catch(() => null);
+      setStatus("Scanning the video container for its frame rate (up to 20 seconds)…");
+      let probeError: string | null = null;
+      const container = await probeContainerClock(file).catch((error: unknown) => {
+        probeError = error instanceof Error ? error.message : String(error);
+        return null;
+      });
       if (container) {
         setBusy(false);
         await extract(file, {
@@ -92,7 +100,12 @@ export function MirrorReferencePanel() {
         });
         return;
       }
-      setPendingFile(file); setStatus(`FPS unknown: ${result.reason}`);
+      setPendingFile(file);
+      setStatus(
+        probeError
+          ? `FPS scan failed: ${probeError} Enter the reference FPS to continue.`
+          : `FPS unknown: ${result.reason}`,
+      );
     } catch (error) { toast.error("Reference probe failed", error instanceof Error ? error.message : "Unknown error"); }
     finally { setBusy(false); }
   };
@@ -150,6 +163,15 @@ export function MirrorReferencePanel() {
   };
   return <div className="space-y-3 text-xs">
     <p>Choose a reference video to measure locally. Select imported source videos for the editable mirror. The original reference is never inserted.</p>
+    <label className="flex items-start gap-2">
+      <input
+        type="checkbox"
+        checked={includeCreatorCaptions}
+        disabled={busy}
+        onChange={(event) => setIncludeCreatorCaptions(event.target.checked)}
+      />
+      <span>Analyze creator-added captions and on-screen text for this reference</span>
+    </label>
     <label className="block">Reference video <input aria-label="Reference video" type="file" accept="video/*" disabled={busy} onChange={(e) => { void chooseFile(e.target.files?.[0]); }} /></label>
     {pendingFile && <div role="group" aria-label="Select reference FPS" className="space-y-2">
       <p>FPS unknown. Choose the reference frame clock explicitly (e.g. 30000 / 1001 or 24 / 1). This is a user-selected conform, not measured source FPS.</p>

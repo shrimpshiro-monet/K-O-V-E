@@ -131,6 +131,7 @@ contextBridge.exposeInMainWorld("kove-advanced", {
     extractAudioWav: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaExtractAudioWav, args),
     getPathForFile: (file: File) => webUtils.getPathForFile(file),
     probeVideoStream: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaProbeVideoStream, args),
+    detectSceneChanges: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaDetectSceneChanges, args),
     probeAudioStreams: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaProbeAudioStreams, args),
     fetchUrl: (args: unknown) => ipcRenderer.invoke(CHANNELS.mediaFetchUrl, args),
   },

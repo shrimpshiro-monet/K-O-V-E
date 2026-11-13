@@ -15,6 +15,7 @@ import {
   summarizeSegmentMap,
 } from "@kove-advanced/creation-schema";
 import { CAPABILITY_MANIFEST } from "@kove-advanced/core/capabilities/manifest";
+import { parseReferenceProfile, type ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import { buildSpeechSpotlights, formatSpeechMap } from "./speech-map";
 
 /**
@@ -275,6 +276,36 @@ export interface DirectorDensityContract {
   readonly speedRamps: number;
   readonly sfxHits: number;
   readonly hookShots: number;
+  /** "reference" when measured reference structure overrides genre defaults. */
+  readonly source: "genre" | "reference";
+}
+
+/** Measured density extracted from a reference profile, when one was supplied. */
+interface ReferenceDensity {
+  readonly cutsPerSec: number;
+  /** Accent events (flash/dip/blur/shake and similar) per second. */
+  readonly accentsPerSec: number;
+  readonly medianShotSeconds: number;
+}
+
+function extractReferenceDensity(reference?: unknown): ReferenceDensity | undefined {
+  if (!reference || typeof reference !== "object") return undefined;
+  let profile: ReferenceProfile;
+  try {
+    profile = parseReferenceProfile(reference as ReferenceProfile);
+  } catch {
+    return undefined;
+  }
+  const density = profile.structure?.density;
+  const shotLengths = profile.structure?.shotLengths;
+  if (!density || !Number.isFinite(density.cutsPerSec) || !Number.isFinite(density.eventsPerSec)) return undefined;
+  const accents = Math.max(0, density.eventsPerSec - density.cutsPerSec);
+  const fps = profile.fps.num / profile.fps.den;
+  return {
+    cutsPerSec: density.cutsPerSec,
+    accentsPerSec: accents,
+    medianShotSeconds: shotLengths && shotLengths.median > 0 ? shotLengths.median / fps : 0,
+  };
 }
 
 /**
@@ -282,31 +313,56 @@ export interface DirectorDensityContract {
  * hit for this specific request ("for a 30s social edit: 12-24 shots, 6-15
  * effect hits, …"). Per-minute ranges alone are easy for a model to under-
  * deliver; counts are checkable.
+ *
+ * When measured reference structure exists, it overrides the genre defaults:
+ * pacing, shot count, and accent-effect counts are derived from the reference's
+ * measured cut/event rates scaled to this edit's target length.
  */
-export function buildDensityContract(prompt: string, genre?: Genre): DirectorDensityContract {
-  const pacing: Pacing = genre?.pacing ?? genre?.rules.pacing ?? "medium";
+export function buildDensityContract(prompt: string, genre?: Genre, reference?: unknown): DirectorDensityContract {
+  const referenceDensity = extractReferenceDensity(reference);
+  const pacing: Pacing = referenceDensity
+    ? referenceDensity.cutsPerSec >= 1.5 ? "fast" : referenceDensity.cutsPerSec >= 0.8 ? "medium" : "slow"
+    : genre?.pacing ?? genre?.rules.pacing ?? "medium";
   const targetDuration = inferTargetDuration(prompt, pacing);
   const budget = planDensityBudget(resolveDensityTarget(pacing, genre?.densityTarget), targetDuration);
+  let shots = budget.shots;
+  let effectHits = budget.effectHits;
+  let treatedShots = budget.treatedShots;
+  if (referenceDensity) {
+    const cuts = referenceDensity.cutsPerSec * targetDuration;
+    const accents = referenceDensity.accentsPerSec * targetDuration;
+    shots = [
+      Math.max(2, Math.round(cuts * 0.8)),
+      Math.max(shots[1], Math.round(cuts * 1.25)),
+    ];
+    effectHits = accents > 0
+      ? [Math.max(1, Math.round(accents * 0.8)), Math.max(effectHits[1], Math.round(accents * 1.25))]
+      : effectHits;
+    treatedShots = Math.max(treatedShots, Math.max(2, Math.round(shots[0] * 0.5)));
+  }
   return {
     pacing,
     targetDuration,
-    shots: budget.shots,
-    effectHits: budget.effectHits,
+    shots,
+    effectHits,
     cameraMoves: budget.cameraMoves,
-    treatedShots: budget.treatedShots,
+    treatedShots,
     texts: budget.texts,
     textAnimations: budget.textAnimations,
     effectTypes: budget.effectTypes,
     speedRamps: budget.speedRamps,
     sfxHits: budget.sfxHits,
     hookShots: budget.hookShots,
+    source: referenceDensity ? "reference" : "genre",
   };
 }
 
 /** Render the contract as the markdown block injected into the task prompt. */
 export function formatDensityContract(contract: DirectorDensityContract): string {
   const lines = [
-    `For this request (${contract.targetDuration.toFixed(0)}s, ${contract.pacing} pacing), the floor is:`,
+    contract.source === "reference"
+      ? `For this request (${contract.targetDuration.toFixed(0)}s, ${contract.pacing} pacing derived from the measured reference), the floor is:`
+      : `For this request (${contract.targetDuration.toFixed(0)}s, ${contract.pacing} pacing), the floor is:`,
     `- **Shots**: ${contract.shots[0]}-${contract.shots[1]} segments (currently nothing is on the timeline; build it up)`,
     contract.cameraMoves > 0
       ? `- **Camera moves**: optional; use on ≥${contract.cameraMoves} shots only when motivated by the footage; never add them as a quota`
@@ -521,7 +577,11 @@ export function buildDirectorPrompt(
       }, null, 2)}`
     : "";
   const referenceInfo = referenceAnalysis
-    ? `\nStyle profile target from reference footage (apply this style to source footage only; do not place reference footage on the timeline):\n${JSON.stringify(withoutReferenceText(referenceAnalysis), null, 2)}`
+    ? `\nStyle profile target from reference footage (apply this style to source footage only; do not place reference footage on the timeline):\n${JSON.stringify(
+        withoutReferenceText(referenceAnalysis, explicitlyRequestsReferenceText(prompt)),
+        null,
+        2,
+      )}`
     : "";
   const referenceTransferGuidance = referenceAnalysis
     ? [
@@ -529,9 +589,15 @@ export function buildDirectorPrompt(
         "- Match the reference shot-duration distribution and pacing relative to this edit's target length; do not copy source-specific cut timestamps.",
         "- Use measured dominant camera moves as style cues, then choose renderer-backed cameraMoves that fit the new footage. Do not copy raw reference transforms blindly.",
         "- Reproduce only transition/effect candidates whose evidence confidence is at least 0.75 and whose type is listed in the supported vocabularies. A hard cut is adjacent clips with no transition entry.",
-        "- Reuse measured text geometry and placement as a treatment cue only. Write new, source-grounded copy; never copy reference captions or titles.",
+        "- Exclude creator-added captions, watermarks, and platform end cards from the edit by default. Reuse measured text geometry only as a treatment cue; never copy reference wording unless the user explicitly asks to include creator-added text and is authorized to use it.",
         "- An unsupported or low-confidence reference property is not a requirement: omit it rather than inventing an exact match.",
         "- The reference's numbers describe the reference itself. Do not let them overrule the user's requested energy, the genre, or this edit's density contract; weigh them against the source footage's own signals.",
+        "- For an explicit replicate/match-reference request, measured reference structure is the density target; genre defaults are fallback guidance, not a substitute. Translate reference shot-length distribution, event density, and transition/effect rates to the requested runtime.",
+        "- Before submitting, compare the planned shot-length distribution and treatments with the supplied reference profile. If its style evidence is absent or empty, do not claim a measured match; use available rhythm evidence and preserve that limitation in the plan rationale.",
+        "- Reference-sensitivity acceptance check: planning the same footage against a fast/effect-heavy reference and a slow/calm reference must move cut density, shot-length distribution, and supported treatment density in the expected directions. Near-identical plans mean the reference was not applied; revise instead of declaring success.",
+        "- Never claim visual parity from a plan or timeline snapshot. Verify a rendered output against the reference before reporting a match.",
+        "- Every non-grade hit effect must use effectSpecs with both startOffset and duration, tied to a beat or measured event. Only color-grade effects may span an entire clip.",
+        "- QA gates for a rendered result: use cover-fit and verify black-pixel fraction in frame edges/corners is near zero; keep at most 15 camera keyframe records per clip and write none for handheld/static motion; report declared and actually rendered effect/transition counts and fail on mismatch; measure luma across a flash transition boundary through the export path.",
       ].join("\n")
     : "";
 
@@ -573,7 +639,7 @@ export function buildDirectorPrompt(
     }
   }
 
-  const densityContract = buildDensityContract(prompt, genre);
+  const densityContract = buildDensityContract(prompt, genre, referenceAnalysis);
 
   return [
     DIRECTOR_SYSTEM_PROMPT,
@@ -601,16 +667,36 @@ export function buildDirectorPrompt(
     referenceTransferGuidance,
     "",
     "Analyze the segments using perception-driven editing principles and create an EditPlan that fulfills this request.",
+    referenceAnalysis ? "The reference-aware QA gates above are required acceptance criteria, not optional suggestions. If rendering/measurement tools are unavailable in this run, report those gates as unverified rather than passed." : "",
   ].join("\n");
 }
 
-function withoutReferenceText(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(withoutReferenceText);
+function explicitlyRequestsReferenceText(prompt: string): boolean {
+  const optOut = /\b(?:do not|don't|never|avoid)\b.{0,32}\b(?:copy|include|reproduce|retain|keep)\b.{0,32}\b(?:reference\s+)?(?:captions?|on[- ]screen text|burned[- ]in text)\b/i;
+  if (optOut.test(prompt)) return false;
+  return /\b(?:copy|include|reproduce|retain|keep)\b.{0,48}\b(?:reference\s+)?(?:captions?|on[- ]screen text|burned[- ]in text)\b/i.test(prompt);
+}
+
+function withoutReferenceText(
+  value: unknown,
+  allowTextOverlays = false,
+  inTextOverlay = false,
+): unknown {
+  if (Array.isArray(value)) {
+    return value.map((child) => withoutReferenceText(child, allowTextOverlays, inTextOverlay));
+  }
   if (typeof value !== "object" || value === null) return value;
   return Object.fromEntries(
     Object.entries(value)
-      .filter(([key]) => key !== "text")
-      .map(([key, child]) => [key, withoutReferenceText(child)]),
+      .filter(([key]) => key !== "text" || inTextOverlay)
+      .map(([key, child]) => [
+        key,
+        withoutReferenceText(
+          child,
+          allowTextOverlays,
+          allowTextOverlays && (inTextOverlay || key === "textOverlays"),
+        ),
+      ]),
   );
 }
 

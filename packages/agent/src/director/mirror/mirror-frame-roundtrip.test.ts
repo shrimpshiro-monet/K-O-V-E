@@ -11,7 +11,7 @@ it("compiles 30000/1001 frame boundaries and preserves them through project expo
   const fps = frameRate(30000, 1001);
   const profile = createReferenceProfile({ fps, fpsSource: "ffprobe", durationFrames: 3603,
     aspectRatio: { width: 1920, height: 1080 }, beatGridMs: [], shots: [
-      { startFrame: 0, endFrame: 1001, captionWindows: [], cameraMotion: { dominantMove: "pan", samples: [{ frame: 500, translateX: 3, translateY: 0, rotationRad: 0, scale: 1 }] } },
+      { startFrame: 0, endFrame: 1001, captionWindows: [], cameraMotion: { dominantMove: "push", samples: [{ frame: 500, translateX: 0, translateY: 0, rotationRad: 0, scale: 0.98 }] } },
       { startFrame: 1001, endFrame: 3603, captionWindows: [] },
     ] });
   const project = makeEmptyProject();
@@ -27,7 +27,7 @@ it("compiles 30000/1001 frame boundaries and preserves them through project expo
   expect(clips.map((clip) => secondsToFrame(clip.startTime, fps))).toEqual([0, 1001]);
   expect(clips.map((clip) => secondsToFrame(clip.duration, fps))).toEqual([1001, 2602]);
   expect(clips.map((clip) => secondsToFrame(clip.startTime + clip.duration, fps))).toEqual([1001, 3603]);
-  const pan = clips[0]!.keyframes.find((kf) => kf.property === "position.x" && kf.time > 0)!;
-  expect(secondsToFrame(pan.time, fps)).toBe(500);
-  expect(pan.time).toBe(frameToSeconds(500, fps));
+  const push = clips[0]!.keyframes.find((kf) => kf.property === "scale.x" && kf.time > 0)!;
+  expect(secondsToFrame(push.time, fps)).toBe(500);
+  expect(push.time).toBe(frameToSeconds(500, fps));
 });

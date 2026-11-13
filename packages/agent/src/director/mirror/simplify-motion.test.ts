@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { CameraMotionSample } from "@kove-advanced/core/vision/camera-motion-extractor";
-import { integrateMotionSeries, MAX_KEYFRAME_TIMES_PER_SHOT, simplifyMotionKeyframes } from "./simplify-motion";
+import {
+  coverSafeMotionKeyframes,
+  integrateMotionSeries,
+  MAX_KEYFRAME_TIMES_PER_SHOT,
+  simplifyMotionKeyframes,
+} from "./simplify-motion";
 
 const fps = { num: 30, den: 1 } as const;
 const aspect = { width: 1080, height: 1920 };
@@ -60,7 +65,8 @@ describe("simplifyMotionKeyframes", () => {
     const keptTimes = times(keyframes);
     expect(keptTimes[0]).toBe(0);
     expect(keptTimes.at(-1)).toBeCloseTo(lastTime(121), 10);
-    expect(keyframes.length).toBeGreaterThan(10);
+    expect(keyframes.length).toBeGreaterThan(0);
+    expect(keyframes.length).toBeLessThanOrEqual(MAX_KEYFRAME_TIMES_PER_SHOT * 5);
     const spike = keyframes.find((k) => k.property === "position.x" && k.time > 59 / 30 && k.time < 61 / 30);
     expect(spike).toBeDefined();
     expect(spike!.value).toBeLessThan(-0.25);
@@ -80,5 +86,28 @@ describe("simplifyMotionKeyframes", () => {
     });
     const series = integrateMotionSeries(samples, bounds(0, 301), fps, aspect);
     expect(times(simplifyMotionKeyframes(series)).length).toBeLessThanOrEqual(MAX_KEYFRAME_TIMES_PER_SHOT);
+  });
+
+  it("adds cover overscan for measured translation and converts normalized positions to pixels", () => {
+    const series = [
+      { time: 0, x: 0, y: 0, angle: 0, zoom: 1 },
+      { time: 1, x: 0.02, y: -0.01, angle: 0, zoom: 1 },
+    ];
+    const result = coverSafeMotionKeyframes(
+      [
+        { time: 0, property: "position.x", value: 0 },
+        { time: 1, property: "position.y", value: -0.01 },
+        { time: 0, property: "scale.x", value: 1 },
+        { time: 0, property: "scale.y", value: 1 },
+      ],
+      series,
+      { width: 16, height: 9 },
+      { width: 16, height: 9 },
+    );
+
+    expect(result[0].value).toBe(0);
+    expect(result[1].value).toBeCloseTo(-0.09);
+    expect(result[2].value).toBeGreaterThan(1.04);
+    expect(result[3].value).toEqual(result[2].value);
   });
 });

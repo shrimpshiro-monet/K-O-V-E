@@ -459,7 +459,7 @@ describe("executeTool", () => {
                   effects: [],
                   // No `params` field at all — synthesizeEffectParams must
                   // survive the undefined, then fill defaults from intensity.
-                  effectSpecs: [{ type: "chromatic-aberration", intensity: 0.7, rationale: "accent" }],
+                  effectSpecs: [{ type: "chromatic-aberration", intensity: 0.7, startOffset: 0, duration: 0.5, rationale: "accent" }],
                   layout: { region: "split-left", fit: "contain" },
                   rationale: "opening",
                 },
@@ -484,7 +484,7 @@ describe("executeTool", () => {
     expect(result.ok, result.error?.message ?? "plan_edit succeeded").toBe(true);
     const params = host.getProject().timeline.tracks[0].clips[0]?.effects?.[0]?.params;
     expect(Object.keys(params ?? {})).not.toHaveLength(0);
-    expect(params).toEqual({ amount: 35, intensity: 0.7 });
+    expect(params).toEqual({ amount: 35, intensity: 0.7, startOffset: 0, duration: 0.5 });
   });
 
   it("prefers standalone audio media for music when the plan points at a video", async () => {

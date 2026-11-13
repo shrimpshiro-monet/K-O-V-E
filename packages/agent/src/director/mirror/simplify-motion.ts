@@ -23,13 +23,12 @@ export interface KeyframeDraft {
  * frame's width/height, angle is degrees, zoom is a ratio. A trajectory whose
  * total excursion stays within these is invisible; keyframing it only adds
  * inspector noise and render cost, so it is dropped entirely. */
-const TOLERANCE = { x: 0.0015, y: 0.0015, angle: 0.2, zoom: 0.0015 } as const;
+const TOLERANCE = { x: 0.015, y: 0.015, angle: 2, zoom: 0.015 } as const;
 
-/** Hard ceiling on keyframe TIMES written per mirrored shot. A per-frame
- * measured 20s/30fps reference would otherwise emit 3000 keyframes that the
- * compositor walks on every render — this keeps the curve faithful where it
- * visibly moves and collapses it everywhere else. */
-export const MAX_KEYFRAME_TIMES_PER_SHOT = 48;
+/** Five transform properties are written per time; three times caps a shot at 15 keyframes. */
+export const MAX_KEYFRAME_TIMES_PER_SHOT = 3;
+
+export const MIN_MOTION_MAGNITUDE = 0.015;
 
 /** Compiles a shot's measured camera-motion samples into the same integrated
  * transform series `applyEditDNA` writes, preserving the original integration
@@ -98,6 +97,23 @@ export function simplifyMotionKeyframes(
     return worst;
   };
   const kept = new Set<number>([0, series.length - 1]);
+  let strongestInteriorIndex = -1;
+  let strongestInteriorStep = 0;
+  for (let index = 1; index < series.length - 1; index++) {
+    let step = 0;
+    for (let component = 0; component < components.length; component++) {
+      step = Math.max(
+        step,
+        Math.abs(components[component][index] - components[component][index - 1]) /
+          tolerances[component],
+      );
+    }
+    if (step > strongestInteriorStep) {
+      strongestInteriorStep = step;
+      strongestInteriorIndex = index;
+    }
+  }
+  if (strongestInteriorStep > 1 && strongestInteriorIndex >= 0) kept.add(strongestInteriorIndex);
   if (series.length > 2) {
     const split = (lo: number, hi: number): void => {
       let worstIndex = -1, worstDeviation = 0;
@@ -122,6 +138,7 @@ export function simplifyMotionKeyframes(
       kept.clear();
       kept.add(0);
       kept.add(series.length - 1);
+      if (strongestInteriorStep > 1 && strongestInteriorIndex >= 0) kept.add(strongestInteriorIndex);
       split(0, series.length - 1);
     }
   }
@@ -132,6 +149,66 @@ export function simplifyMotionKeyframes(
       ["scale.x", point.zoom], ["scale.y", point.zoom],
     ] as const).map(([property, value]) => ({ time: point.time, property, value }));
   });
+}
+
+/** Convert normalized motion to canvas pixels and retain enough overscan to
+ * cover every canvas corner throughout the measured transform curve. */
+export function coverSafeMotionKeyframes(
+  keyframes: readonly KeyframeDraft[],
+  series: readonly IntegratedSample[],
+  source: { readonly width: number; readonly height: number },
+  canvas: { readonly width: number; readonly height: number },
+): KeyframeDraft[] {
+  if (!keyframes.length) return [];
+  if (
+    ![source.width, source.height, canvas.width, canvas.height].every(Number.isFinite) ||
+    source.width <= 0 ||
+    source.height <= 0 ||
+    canvas.width <= 0 ||
+    canvas.height <= 0
+  ) {
+    throw new Error("Cannot calculate motion overscan without valid source and canvas dimensions");
+  }
+
+  const coverScale = Math.max(canvas.width / source.width, canvas.height / source.height);
+  const drawWidth = source.width * coverScale;
+  const drawHeight = source.height * coverScale;
+  let overscan = 1;
+  for (const point of series) {
+    if (![point.x, point.y, point.angle, point.zoom].every(Number.isFinite) || point.zoom <= 0) {
+      throw new Error("Cannot calculate motion overscan from an invalid transform sample");
+    }
+    const positionX = point.x * canvas.width;
+    const positionY = point.y * canvas.height;
+    const cos = Math.cos((point.angle * Math.PI) / 180);
+    const sin = Math.sin((point.angle * Math.PI) / 180);
+    for (const cornerX of [-canvas.width / 2, canvas.width / 2]) {
+      for (const cornerY of [-canvas.height / 2, canvas.height / 2]) {
+        const x = cornerX - positionX;
+        const y = cornerY - positionY;
+        const sourceX = cos * x + sin * y;
+        const sourceY = -sin * x + cos * y;
+        overscan = Math.max(
+          overscan,
+          Math.abs(sourceX) / (drawWidth * point.zoom / 2),
+          Math.abs(sourceY) / (drawHeight * point.zoom / 2),
+        );
+      }
+    }
+  }
+  overscan *= 1.005;
+
+  return keyframes.map((keyframe) => ({
+    ...keyframe,
+    value:
+      keyframe.property === "position.x"
+        ? keyframe.value * canvas.width
+        : keyframe.property === "position.y"
+          ? keyframe.value * canvas.height
+          : keyframe.property === "scale.x" || keyframe.property === "scale.y"
+            ? keyframe.value * overscan
+            : keyframe.value,
+  }));
 }
 
 const COMPONENT_KEYS = ["x", "y", "angle", "zoom"] as const;

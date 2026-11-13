@@ -7,6 +7,8 @@ type MediaBunnyModule = typeof import("mediabunny");
 type AudioBufferSourceInstance = InstanceType<MediaBunnyModule["AudioBufferSource"]>;
 type VideoSampleSourceInstance = InstanceType<MediaBunnyModule["VideoSampleSource"]>;
 type OutputInstance = InstanceType<MediaBunnyModule["Output"]>;
+type VideoEncodingConfigType = ConstructorParameters<MediaBunnyModule["VideoSampleSource"]>[0];
+type Quality = MediaBunnyModule["Quality"];
 type HardwarePreference = "prefer-hardware" | "prefer-software" | "no-preference";
 type VideoCodecName = Parameters<
   MediaBunnyModule["getFirstEncodableVideoCodec"]
@@ -20,6 +22,9 @@ export interface WebCodecsBackendOptions {
   // handles high resolutions, so callers can opt out to export at full size.
   clampResolution?: boolean;
 }
+
+const AVC_CONSTRAINED_BASELINE_LEVELS = [0x1f, 0x20, 0x28, 0x29, 0x2a, 0x32, 0x33, 0x34];
+const ENCODER_OUTPUT_STALL_WINDOW_MS = 10_000;
 
 export class WebCodecsBackend implements EncoderBackend {
   readonly requiresWebCodecsClamping: boolean;
@@ -36,6 +41,8 @@ export class WebCodecsBackend implements EncoderBackend {
   private writableStream: FileSystemWritableFileStream | null = null;
   private bytesWritten = 0;
   private aborted = false;
+  private videoPacketCount = 0;
+  private lastVideoPacketAtMs: number | null = null;
   private diagnostics = {
     videoAdds: 0,
     audioAdds: 0,
@@ -44,7 +51,13 @@ export class WebCodecsBackend implements EncoderBackend {
     lastWriterOpMs: 0,
     codec: null as string | null,
     hardwareAcceleration: null as string | null,
+    encoderCodecString: null as string | null,
+    videoPackets: 0,
   };
+
+  static makeConstrainedBaselineCodecString(levelIndication: number): string {
+    return `avc1.42c0${levelIndication.toString(16).padStart(2, "0")}`;
+  }
 
   private throwIfAborted(): void {
     if (this.aborted) throw new DOMException("Export cancelled", "AbortError");
@@ -71,8 +84,19 @@ export class WebCodecsBackend implements EncoderBackend {
    * export tells us whether the encoder or the file writer is the choke point
    * (deterministic hangs have reproduced identically on hardware and
    * software encoders).
+   *
+   * When `escalateOnNoPacketAfterMs` is set, a pending video sample add is
+   * additionally raced against a packet-progress guard: if the encoder emits
+   * no packets at all within the window while this add is still running, the
+   * race rejects with a TimeoutError so the export fails into the software
+   * retry immediately instead of waiting out the engine watchdog.
    */
-  private instrumentStall(label: string, run: () => Promise<void>, thresholdMs = 20_000): Promise<void> {
+  private async instrumentStall(
+    label: string,
+    run: () => Promise<void>,
+    thresholdMs = 20_000,
+    escalateOnNoPacketAfterMs?: number,
+  ): Promise<void> {
     const startedAt = performance.now();
     const pending = run();
     const timer = setTimeout(() => {
@@ -81,8 +105,52 @@ export class WebCodecsBackend implements EncoderBackend {
         `pipeline diagnostics: ${JSON.stringify(this.getDiagnostics())}`,
       );
     }, thresholdMs);
-    void pending.catch(() => undefined).finally(() => clearTimeout(timer));
-    return pending;
+
+    let guard: { promise: Promise<never>; dispose: () => void } | null = null;
+    if (escalateOnNoPacketAfterMs !== undefined) {
+      guard = this.createPacketStallGuard(escalateOnNoPacketAfterMs);
+    }
+
+    try {
+      if (!guard) {
+        await pending;
+      } else {
+        await Promise.race([pending, guard.promise]);
+      }
+    } finally {
+      clearTimeout(timer);
+      guard?.dispose();
+      void pending.catch(() => undefined);
+    }
+  }
+
+  private createPacketStallGuard(windowMs: number): {
+    promise: Promise<never>;
+    dispose: () => void;
+  } {
+    let disposed = false;
+    let reject: ((reason: Error) => void) | null = null;
+    const baseline = this.lastVideoPacketAtMs ?? performance.now();
+    const interval = setInterval(() => {
+      if (disposed || !reject) return;
+      if (performance.now() - (this.lastVideoPacketAtMs ?? baseline) < windowMs) return;
+      const error = new Error(
+        "WebCodecs video encoder produced no output for " +
+          `${Math.round(windowMs / 1000)}s (pipeline diagnostics: ${JSON.stringify(this.getDiagnostics())}).`,
+      );
+      error.name = "TimeoutError";
+      reject(error);
+    }, 250);
+    const promise = new Promise<never>((_, rejectError) => {
+      reject = rejectError;
+    });
+    return {
+      promise,
+      dispose: () => {
+        disposed = true;
+        clearInterval(interval);
+      },
+    };
   }
 
   async start(
@@ -211,12 +279,33 @@ export class WebCodecsBackend implements EncoderBackend {
       throw error;
     }
 
-    const videoSource = new VideoSampleSource({
+    const encodingConfig: VideoEncodingConfigType = {
       codec: videoCodec,
       bitrate: targetVideoBitrate,
       keyFrameInterval: settings.keyframeInterval / settings.frameRate,
       hardwareAcceleration: selectedHardwareAcceleration,
-    });
+      onEncoderConfig: (config: VideoEncoderConfig) => {
+        this.diagnostics.encoderCodecString = config.codec;
+      },
+      onEncodedPacket: () => {
+        this.videoPacketCount += 1;
+        this.lastVideoPacketAtMs = performance.now();
+        this.diagnostics.videoPackets = this.videoPacketCount;
+      },
+    };
+    if (encodingConfig.codec === "avc") {
+      const constrainedString = await this.resolveConstrainedBaselineCodecString(
+        settings.width,
+        settings.height,
+        encodingConfig.bitrate as number | Quality,
+        selectedHardwareAcceleration,
+      );
+      if (constrainedString) {
+        encodingConfig.fullCodecString = constrainedString;
+      }
+    }
+
+    const videoSource = new VideoSampleSource(encodingConfig);
     output.addVideoTrack(videoSource);
     this.diagnostics.codec = videoCodec;
     this.diagnostics.hardwareAcceleration = selectedHardwareAcceleration;
@@ -276,6 +365,8 @@ export class WebCodecsBackend implements EncoderBackend {
       await this.instrumentStall(
         `video sample add #${this.diagnostics.videoAdds}`,
         () => this.videoSource!.add(videoSample!),
+        20_000,
+        ENCODER_OUTPUT_STALL_WINDOW_MS,
       );
     } finally {
       videoSample?.close();
@@ -299,6 +390,55 @@ export class WebCodecsBackend implements EncoderBackend {
       Promise.resolve().then(() => this.output?.cancel()),
       Promise.resolve().then(() => this.writableStream?.abort()),
     ]);
+  }
+
+  /**
+   * mediabunny generates AVC codec strings with the High profile (avc1.64…).
+   * On macOS-class engines the High/Main-profile H.264 VideoEncoder can swallow
+   * frames indefinitely — zero outputs, zero `dequeue` events, and a
+   * `encodeQueueSize` parked at 4 — which parks mediabunny's backpressure gate
+   * and hangs the export at video sample add #4 with no bytes written,
+   * identically for hardware and software encoders (mediabunny issues #541 and
+   * #587). Constrained Baseline avoids B-frames entirely, so the encoder's
+   * reorder buffer cannot wedge; probe the lowest supported level and hand it
+   * to the encoder via `fullCodecString`. `isConfigSupported` also lies on the
+   * affected engines, which is why the guard below still fails fast on poison
+   * configurations that slip through.
+   */
+  private async resolveConstrainedBaselineCodecString(
+    width: number,
+    height: number,
+    bitrate: number | Quality,
+    hardwareAcceleration: HardwarePreference,
+  ): Promise<string | null> {
+    if (typeof VideoEncoder === "undefined") return null;
+    let resolvedBitrate = bitrate as number;
+    if (typeof bitrate !== "number") {
+      resolvedBitrate =
+        (bitrate as unknown as { _toVideoBitrate?: (
+          codec: string,
+          width: number,
+          height: number,
+        ) => number })._toVideoBitrate?.("avc", width, height) ?? 2_000_000;
+    }
+    for (const level of AVC_CONSTRAINED_BASELINE_LEVELS) {
+      const codecString = WebCodecsBackend.makeConstrainedBaselineCodecString(level);
+      try {
+        const support = await VideoEncoder.isConfigSupported({
+          codec: codecString,
+          width,
+          height,
+          bitrate: resolvedBitrate,
+          alpha: "discard",
+          hardwareAcceleration,
+          avc: { format: "avc" },
+        } as VideoEncoderConfig);
+        if (support.supported) return codecString;
+      } catch {
+        return null;
+      }
+    }
+    return null;
   }
 
   private async findSupportedAudioCodec(

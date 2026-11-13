@@ -363,6 +363,12 @@ interface PrepareReferenceTurnInput {
  * the user's footage so the model adds craft on top of a real cut instead of
  * planning a fresh timeline. Returns the message the model receives.
  */
+function explicitlyRequestsReferenceText(prompt: string): boolean {
+  const optOut = /\b(?:do not|don't|never|avoid)\b.{0,32}\b(?:copy|include|reproduce|retain|keep)\b.{0,32}\b(?:reference\s+)?(?:captions?|on[- ]screen text|burned[- ]in text)\b/i;
+  if (optOut.test(prompt)) return false;
+  return /\b(?:copy|include|reproduce|retain|keep)\b.{0,48}\b(?:reference\s+)?(?:captions?|on[- ]screen text|burned[- ]in text)\b/i.test(prompt);
+}
+
 async function prepareReferenceTurn(
   input: PrepareReferenceTurnInput,
 ): Promise<{ text: string; applied: ReferenceApplication }> {
@@ -390,9 +396,11 @@ async function prepareReferenceTurn(
       // Measurement is bounded work that yields between slices, and it is
       // cancelled by the same Stop that cancels the turn.
       const measured = await measureReferenceVideo(bytes, {
+        onStatus: notice,
         onProgress: (done, total) =>
           notice(`Measuring the reference… ${done}/${total} frames`),
         signal,
+        includeReferenceText: explicitlyRequestsReferenceText(parsedPrompt),
       });
       throwIfAborted(signal);
       notice("Detecting beats and captions in the reference…");
@@ -417,6 +425,7 @@ async function prepareReferenceTurn(
           warnings.push(...result.warnings);
           applied = "structure";
         }
+
       }
     } catch (error) {
       // A cancelled measurement is not a measurement failure: let the turn stop.

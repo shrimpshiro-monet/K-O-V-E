@@ -1,4 +1,5 @@
 import { probeVideoStream } from "./sidecar/probe-video";
+import { detectSceneChanges } from "./sidecar/detect-scenes";
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import path from "node:path";
 import { z } from "zod";
@@ -65,6 +66,7 @@ import {
   transcodeArgsSchema,
   extractAudioArgsSchema,
   probeAudioArgsSchema,
+  detectSceneChangesArgsSchema,
   fetchUrlArgsSchema,
   auroraPreviewSessionCancelArgsSchema,
   auroraPreviewSessionStartArgsSchema,
@@ -174,6 +176,19 @@ app.whenReady().then(() => {
   handle(CHANNELS.mediaTranscode, transcodeArgsSchema, transcode);
   handle(CHANNELS.mediaExtractAudioWav, extractAudioArgsSchema, extractAudioWav);
   handle(CHANNELS.mediaProbeVideoStream, probeAudioArgsSchema, ({ srcPath }) => probeVideoStream(srcPath));
+  handle(CHANNELS.mediaDetectSceneChanges, detectSceneChangesArgsSchema, ({
+    srcPath,
+    threshold,
+    startTimeSeconds,
+    durationSeconds,
+  }) => detectSceneChanges(
+    srcPath,
+    threshold,
+    startTimeSeconds === undefined || durationSeconds === undefined
+      ? undefined
+      : { startTimeSeconds, durationSeconds },
+  ),
+  );
   handle(CHANNELS.mediaProbeAudioStreams, probeAudioArgsSchema, probeAudioStreams);
   handle(CHANNELS.mediaFetchUrl, fetchUrlArgsSchema, fetchUrl);
   handle(CHANNELS.auroraRenderPreview, auroraRenderPreviewArgsSchema, async (args) =>

@@ -50,6 +50,49 @@ evidence. It does not mock the decoder or pixel analysis. The known-cut test
 passed in local Chrome; this validates the synthetic path only, not accuracy
 on edited footage.
 
+The coarse analyzer pass now rescans shots longer than four times the
+coarse-pass median at frame resolution, up to 1,800 frames total. In the
+desktop app, FFmpeg scene-score candidates are checked within each outlier
+shot's time window and supplement the pixel rescan; they are stored with
+`ffmpeg-scene-score` provenance. Browser-only runs use the local pixel rescan
+and warn that HTML seeking may be inexact. The rescan also records transient
+luma flash/dip evidence that returns to baseline within three frames. One-frame
+flashes are excluded from pixel-derived cut boundaries. If the pixel-rescan
+budget is exceeded, FFmpeg candidates may still split the shot, but the profile
+warns that cuts or effects may remain unmeasured. These are detection
+candidates, not human-verified scene labels.
+
+## Captain Price machine-derived regression fixture
+
+`captain-price-ground-truth.json` records the supplied FFmpeg scene-score
+candidate events, approximate end-card boundary, and expected regression
+counts. The source video is available locally as `captain price (2nd
+priority).MP4`; its SHA-256 matches the Captain Price candidate entry in
+`known-cut-corpus.json`. Its video stream starts at 0.161003 seconds, so
+container timestamps must be shifted to the video-relative 30 fps clock before
+comparing frames.
+
+The analyzer tests exercise production timestamp conversion and event merging,
+then run a mocked frame-analysis integration case that checks at least 20
+events before frame 515, 12 events in frames 270–460, each supplied event
+within one frame, and end-card trimming within five frames of the approximate
+frame-515 endpoint. The fixture labels are generated from FFmpeg scene scores;
+they can include cuts, flashes, and dips and are not human-verified. Passing
+these tests verifies the detector data path and the supplied candidate
+expectations, not perceptual accuracy on the reference video.
+
+An independent local FFmpeg scan of the hash-matched source with
+`select='gt(scene,0.08)'`, adjacent-frame merging, and the 0.161003-second
+stream offset produced 24 candidate groups: 22 before frame 515 and 12 in
+frames 270–460. This reproduces the fixture's coarse count gates but does not
+make the scene-score candidates human-verified cuts.
+
+Reference corner regions are masked in pixel measurements. OCR and use of
+creator-added text are disabled by default; analysis requires explicit user
+opt-in. Recognized wording remains redacted from director prompts unless the
+user explicitly asks to copy, include, or reproduce reference text. Platform
+watermarks and end cards should not be reproduced as edit content by default.
+
 ## Promote real references to ground truth
 
 The candidate source paths and hashes are already listed in the corpus. Before
@@ -74,7 +117,7 @@ scoring either candidate:
    output against those labels with the fidelity metrics; report each feature
    separately and include the corpus size.
 
-Semantic effects remain unmeasured by the local analyzer. An empty effect list
-means “not measured,” not “effect-free.” Browser latency, peak memory, and
-device coverage are also separate measurements and are not established by the
-synthetic cut test.
+Effects other than the targeted transient luma flash/dip remain unmeasured by
+the local analyzer. An empty effect list means “not measured,” not
+“effect-free.” Browser latency, peak memory, and device coverage are also
+separate measurements and are not established by the synthetic cut test.

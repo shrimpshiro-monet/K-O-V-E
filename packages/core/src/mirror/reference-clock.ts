@@ -12,6 +12,60 @@ export interface ReferenceClockProbe {
   readonly averagePacketRate: number;
 }
 
+export interface ReferenceClockProbeOptions {
+  /** Bounds container scans that need to inspect every media packet. */
+  readonly timeoutMs?: number;
+  readonly signal?: AbortSignal;
+}
+
+export const REFERENCE_CLOCK_PROBE_TIMEOUT_MS = 20_000;
+
+export function withReferenceProbeBounds<T>(
+  work: Promise<T>,
+  timeoutMs: number,
+  onStop: () => void,
+  signal?: AbortSignal,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const finish = (value?: T, error?: Error): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+      if (error) reject(error);
+      else resolve(value!);
+    };
+    const stop = (error: Error): void => {
+      try {
+        onStop();
+        finish(undefined, error);
+      } catch (cleanupError) {
+        const detail = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+        finish(undefined, new Error(`${error.message}; probe cleanup failed: ${detail}`));
+      }
+    };
+    const onAbort = (): void => {
+      const error = new Error("Reference clock probe was cancelled");
+      error.name = "AbortError";
+      stop(error);
+    };
+    const timer = setTimeout(
+      () => stop(new Error(`Reference frame-rate scan exceeded ${timeoutMs / 1000} seconds. Use a smaller/standard-rate reference or select its FPS manually.`)),
+      timeoutMs,
+    );
+    signal?.addEventListener("abort", onAbort, { once: true });
+    if (signal?.aborted) {
+      onAbort();
+      return;
+    }
+    work.then(
+      (value) => finish(value),
+      (error: unknown) => finish(undefined, error instanceof Error ? error : new Error(String(error))),
+    );
+  });
+}
+
 /**
  * Rates that actually occur in camera and platform footage. A measured
  * packet rate is snapped onto one of these so the EditDNA clock stays a
@@ -60,15 +114,32 @@ export function snapFrameRate(rate: number): FrameRate | null {
  * Reads the reference's frame clock, duration and dimensions straight out of
  * the container. The browser cannot probe a frame rate from an HTMLVideoElement
  * and the desktop ffprobe bridge does not exist in the web build, so this is
- * what lets the user attach a reference without typing 30/1 by hand.
+ * what lets the user attach a reference without typing 30/1 by hand. Packet
+ * statistics may scan the whole file, so the probe has a strict timeout and
+ * disposes its input if the scan stalls.
  */
-export async function probeReferenceClock(file: Blob): Promise<ReferenceClockProbe> {
-  const { ALL_FORMATS, BlobSource, Input } = await import("mediabunny");
-  const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
-  try {
+export async function probeReferenceClock(
+  file: Blob,
+  options: ReferenceClockProbeOptions = {},
+): Promise<ReferenceClockProbe> {
+  const timeoutMs = options.timeoutMs ?? REFERENCE_CLOCK_PROBE_TIMEOUT_MS;
+  let input: import("mediabunny").Input | null = null;
+  let stopped = false;
+  const dispose = (): void => {
+    if (input) {
+      input.dispose();
+      input = null;
+    }
+  };
+  const work = (async (): Promise<ReferenceClockProbe> => {
+    const { ALL_FORMATS, BlobSource, Input } = await import("mediabunny");
+    if (stopped) throw new Error("Reference clock probe stopped before decoder initialization");
+    input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
     const track = await input.getPrimaryVideoTrack();
+    if (stopped) throw new Error("Reference clock probe stopped");
     if (!track) throw new Error("The reference has no video track");
     const stats = await track.computePacketStats();
+    if (stopped) throw new Error("Reference clock probe stopped");
     const fps = snapFrameRate(stats.averagePacketRate);
     if (!fps) throw new Error("The reference's frame rate could not be measured");
     return {
@@ -79,7 +150,13 @@ export async function probeReferenceClock(file: Blob): Promise<ReferenceClockPro
       rotationDegrees: track.rotation,
       averagePacketRate: stats.averagePacketRate,
     };
+  })();
+  try {
+    return await withReferenceProbeBounds(work, timeoutMs, () => {
+      stopped = true;
+      dispose();
+    }, options.signal);
   } finally {
-    input.dispose();
+    dispose();
   }
 }

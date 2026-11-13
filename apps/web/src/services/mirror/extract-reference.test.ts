@@ -13,10 +13,14 @@ vi.mock("@kove-advanced/core/vision/opencv-camera-motion", () => ({
 }));
 
 import {
+  detectTrailingEndCardCut,
   extractReference,
+  maskPersistentCornerOverlays,
+  sceneTimesToFrames,
   sampleVideoStats,
   type ExtractReferenceOptions,
 } from "./extract-reference";
+import captainPriceGroundTruth from "../../../../../evaluation-files/reference/captain-price-ground-truth.json";
 import {
   REFERENCE_ANALYSIS_MAX_DIMENSION,
   REFERENCE_FRAME_BUDGET_MS,
@@ -28,6 +32,7 @@ const originals = { createObjectURL: URL.createObjectURL, revokeObjectURL: URL.r
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  Reflect.deleteProperty(window, "kove-advanced");
   if (originals.createObjectURL) URL.createObjectURL = originals.createObjectURL;
   else delete (URL as { createObjectURL?: typeof URL.createObjectURL }).createObjectURL;
   if (originals.revokeObjectURL) URL.revokeObjectURL = originals.revokeObjectURL;
@@ -54,6 +59,14 @@ interface FixtureOptions {
   sourceHeight?: number;
   /** Length of the synthetic clip; the default is the 32-frame cut fixture. */
   durationFrames?: number;
+  /** Synthetic image ranges used to verify that frame-by-frame rescans recover undersampled cuts. */
+  sceneOverrides?: readonly { startFrame: number; endFrame: number; value: number }[];
+  /** Use exact frame-indexed reads instead of the HTML-seek fallback. */
+  indexedFrames?: boolean;
+  /** Scene timestamps returned by the desktop FFmpeg bridge. */
+  sceneTimes?: readonly number[];
+  videoStartTimeSeconds?: number;
+  changingCornerOverlay?: boolean;
 }
 
 interface FixtureRecord {
@@ -70,6 +83,41 @@ async function extractFixture(
 ) {
   URL.createObjectURL = vi.fn(() => "blob:synthetic");
   URL.revokeObjectURL = vi.fn();
+  const intensityAt = (frame: number): number =>
+    fixture.sceneOverrides?.find(
+      (override) => frame >= override.startFrame && frame < override.endFrame,
+    )?.value ?? valueAt(frame);
+  const pixelsAt = (frame: number, width: number, height: number): Uint8ClampedArray => {
+    const intensity = intensityAt(frame);
+    const data = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = intensity; data[i + 1] = intensity; data[i + 2] = intensity; data[i + 3] = 255;
+    }
+    if (fixture.changingCornerOverlay) {
+      for (let y = 0; y < Math.ceil(height * 0.12); y++) {
+        for (let x = 0; x < Math.ceil(width * 0.16); x++) {
+          for (const [maskX, maskY] of [
+            [x, y],
+            [width - 1 - x, y],
+            [x, height - 1 - y],
+            [width - 1 - x, height - 1 - y],
+          ]) {
+            const index = (maskY * width + maskX) * 4;
+            data[index] = frame % 2 ? 255 : 0;
+            data[index + 1] = frame % 2 ? 0 : 255;
+            data[index + 2] = frame % 2 ? 255 : 0;
+          }
+        }
+      }
+    }
+    return data;
+  };
+  if (fixture.indexedFrames) {
+    h.openIndexedVideoFrames.mockResolvedValue({
+      read: vi.fn(async (frame: number) => ({ data: pixelsAt(frame, 160, 160) })),
+      close: vi.fn(),
+    });
+  }
   let currentTime = 0;
   const video = {
     duration: (fixture.durationFrames ?? 32) / 30, videoWidth: fixture.sourceWidth ?? 160, videoHeight: fixture.sourceHeight ?? 160, readyState: 2,
@@ -93,12 +141,7 @@ async function extractFixture(
       if (frame === fixture.decoderFailsAt) throw new Error("Decoder failed");
       // An empty pixel buffer makes the existing sampled-RGB difference NaN.
       if (frame === fixture.invalidAt) return { data: new Uint8ClampedArray(0) };
-      const intensity = valueAt(frame);
-      const data = new Uint8ClampedArray(width * height * 4);
-      for (let i = 0; i < data.length; i += 4) {
-        data[i] = intensity; data[i + 1] = intensity; data[i + 2] = intensity; data[i + 3] = 255;
-      }
-      return { data };
+      return { data: pixelsAt(frame, width, height) };
     },
   };
   const canvas = {
@@ -112,7 +155,32 @@ async function extractFixture(
   const createElement = document.createElement.bind(document);
   vi.spyOn(document, "createElement").mockImplementation(((tag: string) =>
     tag === "video" ? video : tag === "canvas" ? canvas : createElement(tag)) as typeof document.createElement);
-  return extractReference(new Blob(["synthetic"]), { fps: { num: 30, den: 1 }, fpsSource: "user" }, extractOptions);
+  let source: Blob = new Blob(["synthetic"]);
+  if (fixture.sceneTimes) {
+    class SyntheticFile extends Blob {
+      readonly name = "synthetic.mp4";
+      readonly lastModified = 0;
+      readonly webkitRelativePath = "";
+    }
+    vi.stubGlobal("File", SyntheticFile);
+    Object.defineProperty(window, "kove-advanced", {
+      configurable: true,
+      value: {
+        media: {
+          getPathForFile: () => "/synthetic.mp4",
+          detectSceneChanges: vi.fn(async () => fixture.sceneTimes ?? []),
+        },
+      },
+    });
+    source = new SyntheticFile(["synthetic"]);
+  }
+  return extractReference(source, {
+    fps: { num: 30, den: 1 },
+    fpsSource: "user",
+    ...(fixture.videoStartTimeSeconds !== undefined && {
+      videoStartTimeSeconds: fixture.videoStartTimeSeconds,
+    }),
+  }, extractOptions);
 }
 
 const intervals = (profile: Awaited<ReturnType<typeof extractReference>>) =>
@@ -126,6 +194,243 @@ function steppingClock(stepMs: number): () => number {
 }
 
 describe("extractReference peak boundary wiring", () => {
+  it("rescans unusually long shots at frame resolution and ignores a transient flash", async () => {
+    const profile = await extractFixture({
+      durationFrames: 1_800,
+      indexedFrames: true,
+      sceneOverrides: [
+        { startFrame: 1_001, endFrame: 1_006, value: 220 },
+        { startFrame: 1_601, endFrame: 1_602, value: 255 },
+      ],
+    });
+
+    expect(intervals(profile)).toEqual([
+      [0, 4],
+      [4, 17],
+      [17, 25],
+      [25, 1_001],
+      [1_001, 1_006],
+      [1_006, 1_800],
+    ]);
+    expect(profile.styleEvidence?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ startFrame: 1_000, endFrame: 1_002, type: "hard-cut" }),
+        expect.objectContaining({ startFrame: 1_005, endFrame: 1_007, type: "hard-cut" }),
+      ]),
+    );
+    expect(profile.styleEvidence?.transitions).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ startFrame: 1_600, endFrame: 1_602 }),
+      ]),
+    );
+    expect(profile.styleEvidence?.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "flash",
+          startFrame: 1_601,
+          endFrame: 1_602,
+          confidence: 0.8,
+          parameterEstimates: { brightness: 100 },
+        }),
+      ]),
+    );
+    expect(profile.warnings).toContain(
+      "Long-shot recovery added 2 cut(s) from 1 unusually long shot(s).",
+    );
+    expect(profile.shots.length - 1).toBeGreaterThan(3);
+    expect(Math.max(...profile.shots.map((shot) => shot.endFrame - shot.startFrame))).toBeLessThan(1_775);
+  });
+
+  it("uses desktop FFmpeg event candidates to split long shots", async () => {
+    const profile = await extractFixture({
+      durationFrames: 1_800,
+      indexedFrames: true,
+      sceneOverrides: [{ startFrame: 25, endFrame: 1_800, value: 100 }],
+      sceneTimes: [1_001 / 30],
+    });
+
+    expect(profile.shots).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ startFrame: 17, endFrame: 1_001 }),
+        expect.objectContaining({ startFrame: 1_001, endFrame: 1_800 }),
+      ]),
+    );
+    expect(profile.styleEvidence?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          startFrame: 1_000,
+          endFrame: 1_002,
+          source: "ffmpeg-scene-score",
+          type: "unknown",
+          confidence: 0.55,
+          note: "FFmpeg scene-score event candidate; it may be a cut, flash, or dip.",
+        }),
+      ]),
+    );
+    expect(window["kove-advanced"]?.media?.detectSceneChanges).toHaveBeenCalledWith(
+      expect.objectContaining({
+        srcPath: "/synthetic.mp4",
+        threshold: 0.08,
+        startTimeSeconds: expect.any(Number),
+        durationSeconds: expect.any(Number),
+      }),
+    );
+  });
+
+  it("uses FFmpeg candidates when a long-shot pixel rescan exceeds its budget", async () => {
+    const profile = await extractFixture({
+      durationFrames: 2_400,
+      indexedFrames: true,
+      sceneOverrides: [{ startFrame: 25, endFrame: 2_400, value: 100 }],
+      sceneTimes: [1_001 / 30],
+    });
+
+    expect(profile.shots).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ startFrame: 17, endFrame: 1_001 }),
+        expect.objectContaining({ startFrame: 1_001, endFrame: 2_400 }),
+      ]),
+    );
+    expect(profile.styleEvidence?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          startFrame: 1_000,
+          endFrame: 1_002,
+          source: "ffmpeg-scene-score",
+          type: "unknown",
+          confidence: 0.55,
+          note: expect.stringContaining("pixel verification was skipped"),
+        }),
+      ]),
+    );
+    expect(profile.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("exceeded the 1800-frame pixel-rescan budget"),
+      ]),
+    );
+  });
+
+  it("subtracts the probed video start time before mapping scene candidates to frames", async () => {
+    const videoStartTimeSeconds = 0.161003;
+    const profile = await extractFixture({
+      durationFrames: 1_800,
+      indexedFrames: true,
+      sceneOverrides: [{ startFrame: 25, endFrame: 1_800, value: 100 }],
+      videoStartTimeSeconds,
+      sceneTimes: [videoStartTimeSeconds + 1_001 / 30],
+    });
+
+    expect(profile.styleEvidence?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          startFrame: 1_000,
+          endFrame: 1_002,
+          source: "ffmpeg-scene-score",
+        }),
+      ]),
+    );
+    expect(window["kove-advanced"]?.media?.detectSceneChanges).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startTimeSeconds: videoStartTimeSeconds + 17 / 30,
+      }),
+    );
+  });
+
+  it("meets the attached Captain Price event-count and frame-tolerance gates", () => {
+    const eventFrames = sceneTimesToFrames(
+      captainPriceGroundTruth.events.flatMap(({ timeSec }) => [
+        captainPriceGroundTruth.videoStartTimeSec + timeSec,
+        captainPriceGroundTruth.videoStartTimeSec + timeSec + 1 / 30,
+      ]),
+      { num: 30, den: 1 },
+      captainPriceGroundTruth.videoStartTimeSec,
+    );
+    const beforeEndCard = eventFrames.filter((frame) => frame < 515);
+    const middleEvents = eventFrames.filter((frame) => frame >= 270 && frame <= 460);
+    const expectedMiddleEvents = captainPriceGroundTruth.events.filter(
+      ({ frame }) => frame >= 270 && frame <= 460,
+    );
+
+    expect(beforeEndCard.length).toBeGreaterThanOrEqual(
+      captainPriceGroundTruth.tests.minRecoveredEventsBefore_frame_515,
+    );
+    expect(middleEvents).toHaveLength(
+      captainPriceGroundTruth.tests.eventsInFrames_270_460_expected,
+    );
+    expect(expectedMiddleEvents.every(({ frame }) =>
+      middleEvents.some((candidate) => Math.abs(candidate - frame) <= 1),
+    )).toBe(true);
+    expect(expectedMiddleEvents.filter(({ score }) => score >= 0.3)).toHaveLength(
+      captainPriceGroundTruth.tests["fixedThreshold_0.3_finds_only"],
+    );
+  });
+
+  it("trims a sustained trailing end card at its preceding scene event", () => {
+    const durationFrames = 700;
+    const lumaSamples = Array.from({ length: durationFrames - 100 }, () => 0.42);
+    for (let frame = 530; frame < durationFrames; frame++) lumaSamples[frame - 100] = 0.01;
+
+    expect(detectTrailingEndCardCut(100, lumaSamples, durationFrames, [519, 555])).toBe(519);
+    expect(detectTrailingEndCardCut(100, lumaSamples, durationFrames, [])).toBeNull();
+  });
+
+  it("masks changing corner watermarks from measured cuts and color statistics", async () => {
+    const plain = await extractFixture({ indexedFrames: true });
+    const watermarked = await extractFixture({
+      indexedFrames: true,
+      changingCornerOverlay: true,
+    });
+    const pixels = new Uint8ClampedArray(100 * 100 * 4).fill(255);
+    const masked = maskPersistentCornerOverlays(pixels, 100, 100);
+
+    expect(intervals(watermarked)).toEqual(intervals(plain));
+    expect(watermarked.shots.map(({ colorStats }) => colorStats)).toEqual(
+      plain.shots.map(({ colorStats }) => colorStats),
+    );
+    expect(masked[3]).toBe(0);
+    expect(masked[(50 * 100 + 50) * 4 + 3]).toBe(255);
+  });
+
+  it("applies the ground-truth event density to a long-shot analysis and trims the end card", async () => {
+    const streamStart = captainPriceGroundTruth.videoStartTimeSec;
+    const sceneTimes = captainPriceGroundTruth.events.map(
+      ({ timeSec }) => streamStart + timeSec,
+    );
+    const profile = await extractFixture({
+      durationFrames: 620,
+      indexedFrames: true,
+      sceneOverrides: [
+        { startFrame: 0, endFrame: 25, value: 100 },
+        { startFrame: 25, endFrame: 529, value: 100 },
+        { startFrame: 529, endFrame: 560, value: 0 },
+        { startFrame: 560, endFrame: 620, value: 60 },
+      ],
+      videoStartTimeSeconds: streamStart,
+      sceneTimes,
+    });
+    const recovered = profile.styleEvidence?.transitions.map(({ startFrame }) => startFrame + 1) ?? [];
+    const beforeEndCard = recovered.filter((frame) => frame < 515);
+    const inMiddle = recovered.filter((frame) => frame >= 270 && frame <= 460);
+
+    expect(Math.abs(profile.durationFrames - captainPriceGroundTruth.editEndFrameApprox))
+      .toBeLessThanOrEqual(5);
+    expect(beforeEndCard.length).toBeGreaterThanOrEqual(20);
+    expect(inMiddle).toHaveLength(12);
+    for (const { frame } of captainPriceGroundTruth.events.filter(
+      ({ frame }) => frame < 515,
+    )) {
+      expect(
+        beforeEndCard.some((candidate) => Math.abs(candidate - frame) <= 1),
+        `Missing fixture event at ${frame}; recovered ${beforeEndCard.join(", ")}`,
+      ).toBe(true);
+    }
+    expect(profile.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("trailing non-edit frame(s)"),
+      ]),
+    );
+  });
+
   it("fails instead of waiting forever when source video metadata never loads", async () => {
     vi.useFakeTimers();
     URL.createObjectURL = vi.fn(() => "blob:source");
@@ -168,7 +473,7 @@ describe("extractReference peak boundary wiring", () => {
     });
     vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ close }) as unknown as ImageBitmap));
 
-    const profile = await extractFixture();
+    const profile = await extractFixture({}, { includeReferenceText: true });
 
     expect(detect).toHaveBeenCalled();
     expect(close).toHaveBeenCalledTimes(detect.mock.calls.length);
@@ -181,6 +486,23 @@ describe("extractReference peak boundary wiring", () => {
       style: { fontSizeRatio: 0.1 },
     });
     expect(profile.styleEvidence?.textOverlays[0]?.note).toContain("sparsely");
+  });
+
+  it("does not analyze creator-added text unless explicitly enabled", async () => {
+    const detect = vi.fn(async () => [{
+      rawValue: "Same person btw",
+      boundingBox: { x: 16, y: 112, width: 80, height: 16 },
+    }]);
+    vi.stubGlobal("TextDetector", class {
+      detect = detect;
+    });
+    const profile = await extractFixture();
+
+    expect(detect).not.toHaveBeenCalled();
+    expect(profile.styleEvidence?.textOverlays).toEqual([]);
+    expect(profile.warnings).toContain(
+      "Creator-added reference text was excluded; opt in to analyze and reuse its timing and placement.",
+    );
   });
 
   it("selects the exact stronger cut, tiles half-open shots, and warns about a gradual transition", async () => {
@@ -310,7 +632,12 @@ describe("extractReference cancellation", () => {
     const controller = new AbortController();
     const indexedRead = vi.fn(async (frame: number) => {
       const data = new Uint8ClampedArray(160 * 160 * 4);
-      data.fill(valueAt(frame));
+      for (let index = 0; index < data.length; index += 4) {
+        data[index] = valueAt(frame);
+        data[index + 1] = valueAt(frame);
+        data[index + 2] = valueAt(frame);
+        data[index + 3] = 255;
+      }
       return { data } as ImageData;
     });
     h.openIndexedVideoFrames.mockResolvedValue({ read: indexedRead, close });

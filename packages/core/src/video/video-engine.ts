@@ -17,7 +17,7 @@ import type { TextClip } from "../text/types";
 import type { ShapeClip, EmphasisAnimation } from "../graphics/types";
 import { titleEngine } from "../text/title-engine";
 import { graphicsEngine } from "../graphics/graphics-engine";
-import { VideoEffectsEngine } from "./video-effects-engine";
+import { VideoEffectsEngine, isEffectActiveAtTime } from "./video-effects-engine";
 import {
   ColorGradingEngine,
   type ClipColorGrading,
@@ -181,6 +181,20 @@ export class VideoEngine {
    * dropped out for those frames.
    */
   private behindSubjectFallbackFrames = 0;
+
+  /**
+   * Declared-vs-rendered verification for the current export. Declared sets
+   * are collected from the project when the export starts; rendered sets
+   * accumulate every effect/transition that actually ran during export.
+   * A declared-but-never-rendered item means the output silently differs
+   * from the timeline and the export must fail instead of shipping it.
+   */
+  private exportVerification: {
+    declaredEffectIds: Set<string>;
+    declaredTransitionIds: Set<string>;
+    renderedEffectIds: Set<string>;
+    renderedTransitionIds: Set<string>;
+  } | null = null;
 
   /**
    * Creates a new VideoEngine instance.
@@ -1196,6 +1210,9 @@ export class VideoEngine {
     if (!engine) {
       engine = new VideoEngine(this.cacheConfig);
       engine.exportMode = this.exportMode;
+      // Nested rendering must roll up into the parent's declared-vs-rendered
+      // verification so compound-clip effects cannot silently vanish.
+      engine.exportVerification = this.exportVerification;
       await engine.initialize();
       this.compoundEngines.set(compoundId, engine);
     }
@@ -1255,6 +1272,9 @@ export class VideoEngine {
         source = await createImageBitmap(ctx.canvas, 0, 0, width, height);
         const effectsEngine = await this.ensureEffectsEngine(width, height);
         const result = await effectsEngine.applyEffects(source, effects);
+        // The adjustment-layer call renders every enabled effect of the active
+        // layer (no per-effect timing passed), so record with no window filter.
+        this.recordRenderedEffects(effects, undefined);
         processed = result.image;
         if (!processed || processed.width <= 0 || processed.height <= 0) continue;
         ctx.save();
@@ -2148,6 +2168,90 @@ export class VideoEngine {
   }
 
   /**
+   * Begin declared-vs-rendered verification for an export: snapshot every
+   * enabled effect and transition declared on the project (including nested
+   * compound-clip tracks and adjustment layers, skipping hidden tracks) and
+   * clear the rendered sets.
+   */
+  startExportVerification(project: Project): void {
+    const declaredEffectIds = new Set<string>();
+    const declaredTransitionIds = new Set<string>();
+
+    const visitTrack = (track: Track): void => {
+      if (track.hidden) return;
+      for (const clip of track.clips) {
+        for (const effect of clip.effects) {
+          if (effect.enabled) declaredEffectIds.add(effect.id);
+        }
+      }
+      for (const transition of track.transitions) {
+        declaredTransitionIds.add(transition.id);
+      }
+    };
+
+    for (const track of project.timeline.tracks) visitTrack(track);
+    for (const compound of project.compoundClips ?? []) {
+      for (const track of compound.content.tracks) visitTrack(track);
+    }
+    for (const layer of project.adjustmentLayers ?? []) {
+      for (const effect of layer.effects) {
+        if (effect.enabled) declaredEffectIds.add(effect.id);
+      }
+    }
+
+    this.exportVerification = {
+      declaredEffectIds,
+      declaredTransitionIds,
+      renderedEffectIds: new Set(),
+      renderedTransitionIds: new Set(),
+    };
+  }
+
+  private recordRenderedEffects(effects: Effect[], timeSec: number | undefined): void {
+    const verification = this.exportVerification;
+    if (!verification) return;
+    for (const effect of effects) {
+      if (!effect.enabled) continue;
+      if (!isEffectActiveAtTime(effect, timeSec)) continue;
+      verification.renderedEffectIds.add(effect.id);
+    }
+  }
+
+  private recordRenderedTransition(id: string): void {
+    this.exportVerification?.renderedTransitionIds.add(id);
+  }
+
+  /**
+   * Summarize the declared-vs-rendered comparison for the running export.
+   * Null when verification was not started (preview rendering).
+   */
+  getExportVerificationCounts(): {
+    declaredEffects: number;
+    renderedEffects: number;
+    declaredTransitions: number;
+    renderedTransitions: number;
+    missingEffectIds: string[];
+    missingTransitionIds: string[];
+  } | null {
+    const verification = this.exportVerification;
+    if (!verification) return null;
+    const missingEffectIds = [...verification.declaredEffectIds].filter(
+      (id) => !verification.renderedEffectIds.has(id),
+    );
+    const missingTransitionIds = [...verification.declaredTransitionIds].filter(
+      (id) => !verification.renderedTransitionIds.has(id),
+    );
+    return {
+      declaredEffects: verification.declaredEffectIds.size,
+      renderedEffects: verification.declaredEffectIds.size - missingEffectIds.length,
+      declaredTransitions: verification.declaredTransitionIds.size,
+      renderedTransitions: verification.declaredTransitionIds.size - missingTransitionIds.length,
+      missingEffectIds,
+      missingTransitionIds,
+    };
+  }
+
+  /**
    * Number of frames in the current export where behind-subject text fell
    * back to rendering in front of the subject because the matte was
    * unavailable. Zero before the first export or after resetExportState().
@@ -2443,6 +2547,7 @@ export class VideoEngine {
         result.frame.close();
       }
 
+      this.recordRenderedTransition(transition.id);
       rendered.add(clipA.id);
       if (clipB) rendered.add(clipB.id);
     } catch (error) {
@@ -2533,6 +2638,7 @@ export class VideoEngine {
         enabledEffects,
         timeSec,
       );
+      this.recordRenderedEffects(enabledEffects, timeSec);
       return this.adoptProcessedBitmap(image, sourceImage, result.image);
     } catch (error) {
       console.warn(
@@ -2556,6 +2662,7 @@ export class VideoEngine {
             enabledEffects,
             timeSec,
           );
+          this.recordRenderedEffects(enabledEffects, timeSec);
           return this.adoptProcessedBitmap(image, sourceImage, result.image);
         } catch (retryError) {
           retryEngine?.dispose();

@@ -220,6 +220,45 @@ describe("ActionExecutor transform/update", () => {
   });
 });
 
+describe("ActionExecutor transition/add", () => {
+  it("adds a transition between adjacent clips on their shared track", async () => {
+    const executor = new ActionExecutor();
+    const project = makeProjectWithClip();
+    const track = project.timeline.tracks[0];
+    track.clips.push({
+      ...track.clips[0],
+      id: "c2",
+      startTime: 5,
+      inPoint: 5,
+      outPoint: 10,
+    });
+
+    const result = await executor.execute(
+      {
+        id: "tr-1",
+        type: "transition/add",
+        params: {
+          clipAId: "c1",
+          clipBId: "c2",
+          transitionType: "flash",
+          duration: 1,
+        },
+        timestamp: Date.now(),
+      } as Action,
+      project,
+    );
+
+    expect(result.success).toBe(true);
+    expect(track.transitions).toHaveLength(1);
+    expect(track.transitions[0]).toMatchObject({
+      clipAId: "c1",
+      clipBId: "c2",
+      type: "flash",
+      duration: 1,
+    });
+  });
+});
+
 describe("ActionExecutor compound instance synchronization", () => {
   it("keeps persisted nested timing aligned with timeline move and trim edits", async () => {
     const executor = new ActionExecutor();

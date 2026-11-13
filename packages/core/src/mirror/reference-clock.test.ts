@@ -1,5 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { probeReferenceClock, snapFrameRate } from "./reference-clock";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  probeReferenceClock,
+  snapFrameRate,
+  withReferenceProbeBounds,
+} from "./reference-clock";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("snapFrameRate", () => {
   it("snaps whole rates to a reduced rational", () => {
@@ -33,5 +41,31 @@ describe("probeReferenceClock", () => {
   it("fails loudly when the file carries no video track", async () => {
     const file = new Blob([new Uint8Array([1, 2, 3, 4])], { type: "video/mp4" });
     await expect(probeReferenceClock(file)).rejects.toThrow();
+  });
+
+  it("fails fast and stops the scan when packet-rate measurement stalls", async () => {
+    vi.useFakeTimers();
+    const onStop = vi.fn();
+    const pending = expect(
+      withReferenceProbeBounds(new Promise<never>(() => {}), 1_000, onStop),
+    ).rejects.toThrow("Reference frame-rate scan exceeded 1 seconds");
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await pending;
+
+    expect(onStop).toHaveBeenCalledOnce();
+  });
+
+  it("stops a packet-rate scan immediately when the caller cancels", async () => {
+    const controller = new AbortController();
+    const onStop = vi.fn();
+    const pending = expect(
+      withReferenceProbeBounds(new Promise<never>(() => {}), 10_000, onStop, controller.signal),
+    ).rejects.toMatchObject({ name: "AbortError" });
+
+    controller.abort();
+    await pending;
+
+    expect(onStop).toHaveBeenCalledOnce();
   });
 });

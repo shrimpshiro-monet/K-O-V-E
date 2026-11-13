@@ -9,6 +9,7 @@ const { mockVideoSourceAdd, captured } = vi.hoisted(() => {
     mockVideoSourceAdd: vi.fn(),
     captured: {
       chunkWriterStream: null as WritableStream<{ data: Uint8Array; position: number }> | null,
+      encodingConfig: null as Record<string, unknown> | null,
     },
   };
 });
@@ -46,7 +47,9 @@ vi.mock("mediabunny", () => {
   class MockVideoSampleSource {
     add = mockVideoSourceAdd;
 
-    constructor(_config: Record<string, unknown>) {}
+    constructor(_config: Record<string, unknown>) {
+      captured.encodingConfig = _config;
+    }
   }
 
   class MockVideoSample {
@@ -181,5 +184,121 @@ describe("WebCodecsBackend pipeline diagnostics", () => {
     writer.releaseLock();
     await Promise.resolve().catch(() => undefined);
     void flush;
+  });
+});
+
+describe("WebCodecsBackend AVC codec string", () => {
+  const originalVideoEncoder = (globalThis as { VideoEncoder?: unknown }).VideoEncoder;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date", "performance"] });
+    mockVideoSourceAdd.mockReset();
+    mockVideoSourceAdd.mockResolvedValue(undefined);
+    captured.encodingConfig = null;
+  });
+
+  afterEach(() => {
+    (globalThis as { VideoEncoder?: unknown }).VideoEncoder = originalVideoEncoder;
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  function stubEncoderSupport(supportedLevel: number): { codec: string }[] {
+    const probed: { codec: string }[] = [];
+    (globalThis as { VideoEncoder: unknown }).VideoEncoder = {
+      isConfigSupported: async (config: { codec: string }) => {
+        probed.push(config);
+        const hex = /avc1\.42c0([0-9a-fA-F]{2})/.exec(config.codec)?.[1] ?? "";
+        return { supported: /^avc1\.42c0/.test(config.codec) && parseInt(hex, 16) === supportedLevel };
+      },
+    };
+    return probed;
+  }
+
+  it("hands a Constrained Baseline fullCodecString to the sample source for h264", async () => {
+    stubEncoderSupport(0x1f);
+    const backend = new WebCodecsBackend(mediabunny);
+    await backend.start(videoSettings as VideoExportSettings, project, fakeWritable());
+
+    expect(captured.encodingConfig?.fullCodecString).toBe("avc1.42c01f");
+  });
+
+  it("walks levels upward until one is supported", async () => {
+    stubEncoderSupport(0x28);
+    const backend = new WebCodecsBackend(mediabunny);
+    await backend.start(videoSettings as VideoExportSettings, project, fakeWritable());
+
+    expect(captured.encodingConfig?.fullCodecString).toBe("avc1.42c028");
+  });
+
+  it("falls back to mediabunny's default string when no level is supported", async () => {
+    stubEncoderSupport(-1);
+    const backend = new WebCodecsBackend(mediabunny);
+    await backend.start(videoSettings as VideoExportSettings, project, fakeWritable());
+
+    expect(captured.encodingConfig?.fullCodecString).toBeUndefined();
+  });
+});
+
+describe("WebCodecsBackend encoder output stall guard", () => {
+  let consoleError: MockInstance;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date", "performance"] });
+    mockVideoSourceAdd.mockReset();
+    captured.encodingConfig = null;
+    consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    (globalThis as { VideoEncoder: unknown }).VideoEncoder = {
+      isConfigSupported: async () => ({ supported: true }),
+    };
+  });
+
+  afterEach(() => {
+    delete (globalThis as { VideoEncoder?: unknown }).VideoEncoder;
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  async function startBackend(): Promise<WebCodecsBackend> {
+    const backend = new WebCodecsBackend(mediabunny);
+    await backend.start(videoSettings as VideoExportSettings, project, fakeWritable());
+    return backend;
+  }
+
+  function emitVideoPacket(): void {
+    const onEncodedPacket = captured.encodingConfig?.onEncodedPacket as
+      | ((packet: unknown, meta: unknown) => void)
+      | undefined;
+    onEncodedPacket?.({ timestamp: 0 }, undefined);
+  }
+
+  it("rejects a queued video add with TimeoutError once no packets have been emitted", async () => {
+    mockVideoSourceAdd.mockImplementation(() => new Promise<void>(() => {}));
+    const backend = await startBackend();
+
+    const rejection: unknown[] = [];
+    void backend.addVideoFrame(fakeBitmap(), 0, 1 / 30).catch((error) => rejection.push(error));
+
+    await vi.advanceTimersByTimeAsync(12_000);
+    await Promise.resolve();
+
+    expect(rejection.length).toBe(1);
+    const error = rejection[0] as Error;
+    expect(error.name).toBe("TimeoutError");
+    expect(error.message).toContain("produced no output for 10s");
+    expect(error.message).toContain('"videoAdds":1');
+  });
+
+  it("stays quiet while the encoder keeps emitting packets", async () => {
+    mockVideoSourceAdd.mockImplementation(() => new Promise<void>(() => {}));
+    const backend = await startBackend();
+
+    void backend.addVideoFrame(fakeBitmap(), 0, 1 / 30).catch(() => undefined);
+    for (let second = 0; second < 12; second++) {
+      emitVideoPacket();
+      await vi.advanceTimersByTimeAsync(1_000);
+    }
+
+    expect(consoleError).not.toHaveBeenCalled();
   });
 });

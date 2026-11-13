@@ -6,10 +6,11 @@ import type {
   ExportResult,
 } from "@kove-advanced/core/export/types";
 import type { Project } from "@kove-advanced/core/types/project";
-import { getExportEngine, WebCodecsBackend } from "@kove-advanced/core";
+import { getExportEngine, WebCodecsBackend, type EncoderBackendFactory } from "@kove-advanced/core";
 import { waitForExportStage } from "@kove-advanced/core/export/export-watchdog";
 import { useProjectStore } from "../../stores/project-store";
 import { createDesktopStreamWritable, createDownloadWritable, writeBlobToWritable } from "../export-runner";
+import { NativeFFmpegBackend } from "../native-ffmpeg-backend";
 import { renderMotionCompositionFrameToDataUrl } from "../../motion/export-motion-frame";
 import { getMediaBridge, initializeMediaBridge } from "../../bridges/media-bridge";
 import { loadMediaBlob } from "../media-storage";
@@ -197,27 +198,73 @@ export function createExportJobRunner(): JobRunner {
         const filename = `${sanitizeName(project.name)}-${Date.now()}.${ext}`;
         await waitForExportStage(engine.initialize(), "loading the export engine");
         const path = bridge ? await bridge.tempFilePath(ext) : undefined;
-        const writable = path
-          ? await createDesktopStreamWritable(path)
-          : await createDownloadWritable(filename, contentType);
-        let result: ExportResult;
-        try {
-          result = await drainExport(engine.exportVideo(project, settings, writable, (mediabunny) => {
-            if (!mediabunny) throw new Error("MediaBunny is unavailable for video export");
-            return new WebCodecsBackend(mediabunny, {
-              hardwareAcceleration: "prefer-hardware",
-              videoCodecs: [videoCodec],
-              clampResolution: !bridge,
-            });
-          }));
-        } catch (error) {
-          await writable.abort().catch(() => undefined);
-          throw error;
+
+        const webCodecsFactory = (hardwareAcceleration: "prefer-hardware" | "prefer-software"): EncoderBackendFactory =>
+        (mediabunny) => {
+          if (!mediabunny) {
+            throw new Error(`MediaBunny is unavailable for the ${hardwareAcceleration} video attempt`);
+          }
+          return new WebCodecsBackend(mediabunny, {
+            hardwareAcceleration,
+            videoCodecs: [videoCodec],
+            clampResolution: !bridge,
+          });
+        };
+
+        // A wedged browser encoder must not burn the whole export budget
+        // retrying the same route: fall through hardware → software WebCodecs,
+        // then (desktop only) to the native FFmpeg export job.
+        const attempts: { label: string; factory: EncoderBackendFactory }[] = [
+          { label: "hardware WebCodecs", factory: webCodecsFactory("prefer-hardware") },
+          { label: "software WebCodecs", factory: webCodecsFactory("prefer-software") },
+        ];
+        if (bridge) {
+          attempts.push({
+            label: "native FFmpeg",
+            factory: () => new NativeFFmpegBackend(() => path ?? ""),
+          });
         }
-        if (!result.success) {
-          return { ok: false, error: result.error?.message ?? "Video export failed" };
+
+        const isAbort = (error: unknown): boolean =>
+          error instanceof Error && error.name === "AbortError";
+        // Codec/settings problems fail identically on every attempt, and a
+        // user cancellation must not relaunch the export.
+        const retryable = (code: string | undefined): boolean =>
+          code === "TIMEOUT" || code === "FRAME_ENCODE_FAILED" || code === "ENCODER_INIT_FAILED";
+
+        let success: ExportResult | null = null;
+        let failure: ExportResult["error"] | null = null;
+
+        for (let index = 0; index < attempts.length; index++) {
+          const { label, factory } = attempts[index];
+          const writable = path
+            ? await createDesktopStreamWritable(path)
+            : await createDownloadWritable(filename, contentType);
+          try {
+            const attemptResult = await drainExport(engine.exportVideo(project, settings, writable, factory));
+            if (attemptResult.success) {
+              success = attemptResult;
+              break;
+            }
+            failure = attemptResult.error ?? null;
+            if (failure?.code === "CANCELLED" || !retryable(failure?.code)) break;
+            console.warn(
+              `[export-runner] ${label} video attempt failed (${failure?.code ?? "unknown"}: ${failure?.message ?? "no message"}); ` +
+                `retrying with ${attempts[index + 1]?.label ?? "nothing left"}`,
+            );
+          } catch (error) {
+            if (isAbort(error)) break;
+            failure = { code: "FRAME_ENCODE_FAILED", message: error instanceof Error ? error.message : String(error), phase: "rendering", recoverable: true };
+            console.warn(`[export-runner] ${label} video attempt threw; retrying with ${attempts[index + 1]?.label ?? "nothing left"}`, error);
+          } finally {
+            if (!success) await writable.abort().catch(() => undefined);
+          }
         }
-        const bytes = result.stats?.fileSize ?? 0;
+
+        if (!success) {
+          return { ok: false, error: failure?.message ?? "Video export failed" };
+        }
+        const bytes = success.stats?.fileSize ?? 0;
         if (bytes <= 0) return { ok: false, error: "Video export produced no data" };
         return {
           ok: true,

@@ -1,6 +1,7 @@
 export interface VideoStreamMetadata {
   fps: { num: number; den: number } | null;
   durationSeconds: number | null;
+  startTimeSeconds: number;
   width: number;
   height: number;
   sampleAspectRatio: { num: number; den: number } | null;
@@ -30,6 +31,7 @@ export function parseVideoProbe(json: string): VideoStreamMetadata {
   const variableFrameRate = Boolean(avg && nominal && avg.num * nominal.den !== nominal.num * avg.den);
   const fps = avg && !variableFrameRate && avg.num / avg.den >= 1 && avg.num / avg.den <= 240 ? avg : null;
   const streamDuration = Number(stream.duration);
+  const streamStartTime = Number(stream.start_time);
   const containerDuration = Number(data.format?.duration);
   const durationSeconds = Number.isFinite(streamDuration) && streamDuration > 0 ? streamDuration : containerDuration;
   const rotation = (stream.side_data_list as Array<Record<string, unknown>> | undefined)?.find((item) => item.rotation !== undefined)?.rotation ?? (stream.tags as Record<string, unknown> | undefined)?.rotate;
@@ -37,6 +39,7 @@ export function parseVideoProbe(json: string): VideoStreamMetadata {
   return {
     fps,
     durationSeconds: Number.isFinite(durationSeconds) && durationSeconds > 0 ? durationSeconds : null,
+    startTimeSeconds: Number.isFinite(streamStartTime) ? streamStartTime : 0,
     width: Number(stream.width), height: Number(stream.height),
     sampleAspectRatio: rational(stream.sample_aspect_ratio, ":"),
     rotationDegrees: rotationDegrees !== null && Number.isFinite(rotationDegrees) ? rotationDegrees : null,

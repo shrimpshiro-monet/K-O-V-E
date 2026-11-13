@@ -92,7 +92,8 @@ export type ExportErrorCode =
   | "TIMEOUT"
   | "MEMORY_EXCEEDED"
   | "UNSUPPORTED_CODEC"
-  | "INVALID_SETTINGS";
+  | "INVALID_SETTINGS"
+  | "RENDER_DECLARED_MISMATCH";
 
 export interface ExportResult {
   success: boolean;

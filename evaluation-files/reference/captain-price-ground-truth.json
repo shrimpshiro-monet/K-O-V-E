@@ -1,0 +1,44 @@
+{
+  "source": "captain-price__2nd_priority_.MP4",
+  "notes": [
+    "Frames are video-relative (container pts minus video start_time 0.161s), 30fps.",
+    "Events are cut/flash/dip candidates from ffmpeg scene score >0.08, adjacent frames merged. Not human-verified; flashes and dips appear here as events too.",
+    "Edit proper ends ~frame 515 (flash). Frames ~520-615 are black + HOBO logo stinger + TikTok end card: non-edit content.",
+    "Persistent overlays: TikTok watermark (corners) and burned-in caption 'Same person btw' in the first part."
+  ],
+  "videoStartTimeSec": 0.161003,
+  "editEndFrameApprox": 515,
+  "events": [
+    { "frame": 41, "timeSec": 1.37, "score": 0.433 },
+    { "frame": 57, "timeSec": 1.9, "score": 0.584 },
+    { "frame": 98, "timeSec": 3.27, "score": 0.198 },
+    { "frame": 111, "timeSec": 3.7, "score": 0.635 },
+    { "frame": 153, "timeSec": 5.1, "score": 0.543 },
+    { "frame": 167, "timeSec": 5.57, "score": 0.464 },
+    { "frame": 274, "timeSec": 9.13, "score": 0.356 },
+    { "frame": 290, "timeSec": 9.67, "score": 0.302 },
+    { "frame": 303, "timeSec": 10.1, "score": 0.138 },
+    { "frame": 317, "timeSec": 10.57, "score": 0.178 },
+    { "frame": 331, "timeSec": 11.0, "score": 0.122 },
+    { "frame": 358, "timeSec": 11.93, "score": 0.142 },
+    { "frame": 372, "timeSec": 12.37, "score": 0.145 },
+    { "frame": 386, "timeSec": 12.83, "score": 0.106 },
+    { "frame": 409, "timeSec": 13.63, "score": 0.146 },
+    { "frame": 422, "timeSec": 14.07, "score": 0.297 },
+    { "frame": 437, "timeSec": 14.57, "score": 0.197 },
+    { "frame": 449, "timeSec": 14.97, "score": 0.246 },
+    { "frame": 464, "timeSec": 15.47, "score": 0.397 },
+    { "frame": 477, "timeSec": 15.9, "score": 0.417 },
+    { "frame": 491, "timeSec": 16.37, "score": 0.752 },
+    { "frame": 503, "timeSec": 16.77, "score": 1.0 },
+    { "frame": 519, "timeSec": 17.27, "score": 1.0 },
+    { "frame": 555, "timeSec": 18.5, "score": 0.185 }
+  ],
+  "flashFrames": [487, 488, 513],
+  "dipFrames": [419, 421, 498, 499, 500, 501],
+  "tests": {
+    "minRecoveredEventsBefore_frame_515": 20,
+    "eventsInFrames_270_460_expected": 12,
+    "fixedThreshold_0.3_finds_only": 2
+  }
+}

@@ -471,7 +471,7 @@ describe("runTurn", () => {
         trackIndex: 0,
         targetPosition: 0,
         effects: [],
-        effectSpecs: [{ type: "speed-ramp", params: {}, rationale: "energy" }],
+        effectSpecs: [{ type: "speed-ramp", params: {}, startOffset: 0, duration: 0.3, rationale: "energy" }],
         rationale: "invalid",
       }],
       textElements: [],

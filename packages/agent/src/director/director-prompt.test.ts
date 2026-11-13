@@ -13,6 +13,7 @@ import {
   resolveDirectorVideoId,
 } from "./director-prompt";
 import { PRE_BAKED_GENRES } from "./genres";
+import { fixture as mirrorFixture } from "./mirror/mirror-fixture";
 
 const segmentMap: SegmentMap = {
   videos: [
@@ -89,6 +90,40 @@ describe("director prompt", () => {
     expect(rendered).toContain("Shots");
     expect(rendered).toContain("Camera moves");
     expect(rendered).toContain("Evolution");
+  });
+
+  it("derives pacing and shot floors from measured reference structure when present", () => {
+    const reference = {
+      ...mirrorFixture,
+      structure: {
+        editRange: { startFrame: 0, endFrame: 90 },
+        events: [],
+        energyCurve: [0.2, 0.6],
+        density: { cutsPerSec: 2, eventsPerSec: 2.6, byType: {} },
+        shotLengths: { median: 15, p25: 10, p75: 30, min: 5, max: 60 },
+      },
+    };
+    const contract = buildDensityContract("make a 15 second edit", undefined, reference);
+    expect(contract.source).toBe("reference");
+    // 2 cuts/sec ≥ 1.5 → fast pacing, derived from the reference.
+    expect(contract.pacing).toBe("fast");
+    expect(contract.targetDuration).toBe(15);
+    // 2 cuts/s × 15s = 30 cuts → floor 0.8× = 24, ceiling 1.25× ≥ 38.
+    expect(contract.shots[0]).toBe(24);
+    expect(contract.shots[1]).toBeGreaterThanOrEqual(38);
+    // 0.6 accent events/s × 15s = 9 → floor 7.
+    expect(contract.effectHits[0]).toBe(7);
+    expect(contract.treatedShots).toBeGreaterThanOrEqual(12);
+    const rendered = formatDensityContract(contract);
+    expect(rendered).toContain("pacing derived from the measured reference");
+  });
+
+  it("keeps the genre contract when the reference carries no measured structure", () => {
+    const withGenre = buildDensityContract("30 second tiktok edit", PRE_BAKED_GENRES[0]);
+    expect(withGenre.source).toBe("genre");
+    const emptyReference = buildDensityContract("30 second tiktok edit", PRE_BAKED_GENRES[0], { foo: 1 });
+    expect(emptyReference.source).toBe("genre");
+    expect(emptyReference).toEqual(withGenre);
   });
 
   it("injects the density contract, camera vocabulary and text presets into the task prompt", () => {
@@ -282,10 +317,47 @@ describe("director prompt", () => {
     expect(prompt).toContain("Match the reference shot-duration distribution");
     expect(prompt).toContain("confidence is at least 0.75");
     expect(prompt).toContain("hard cut is adjacent clips with no transition entry");
-    expect(prompt).toContain("Write new, source-grounded copy");
+    expect(prompt).toContain("never copy reference wording unless the user explicitly asks");
     expect(prompt).toContain("omit it rather than inventing an exact match");
+    expect(prompt).toContain("measured reference structure is the density target");
+    expect(prompt).toContain("Reference-sensitivity acceptance check");
+    expect(prompt).toContain("both startOffset and duration");
+    expect(prompt).toContain("black-pixel fraction in frame edges/corners");
+    expect(prompt).toContain("declared and actually rendered effect/transition counts");
+    expect(prompt).toContain("report those gates as unverified rather than passed");
     expect(prompt).toContain('"bounds"');
     expect(prompt).not.toContain("REFERENCE_ONLY_COPY_MUST_NOT_LEAK");
+  });
+
+  it("shares measured creator text only when the prompt explicitly opts in", () => {
+    const referenceAnalysis = {
+      styleEvidence: {
+        textOverlays: [{
+          confidence: 0.9,
+          text: "Same person btw",
+          bounds: { x: 0.2, y: 0.7, width: 0.5, height: 0.1 },
+        }],
+      },
+      shots: [{
+        captionWindows: [{ text: "TRANSCRIPT_TEXT_STAYS_REDACTED" }],
+      }],
+    };
+    const optedIn = buildDirectorPrompt(
+      segmentMap,
+      "Copy the reference captions.",
+      undefined,
+      referenceAnalysis,
+    );
+    const optedOut = buildDirectorPrompt(
+      segmentMap,
+      "Copy the reference captions, but do not reproduce captions.",
+      undefined,
+      referenceAnalysis,
+    );
+
+    expect(optedIn).toContain("Same person btw");
+    expect(optedIn).not.toContain("TRANSCRIPT_TEXT_STAYS_REDACTED");
+    expect(optedOut).not.toContain("Same person btw");
   });
 
   it("carves explicitly hard-cut requests out of the zero-transitions rule", () => {

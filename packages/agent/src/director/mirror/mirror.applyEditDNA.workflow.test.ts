@@ -25,10 +25,11 @@ describe("mirror compiler on headless host", () => {
     expect(clips.map((c) => c.duration)).toEqual([1, 2]);
     expect(clips.map((c) => c.inPoint)).toEqual([0, 1]);
     expect(clips.every((clip) => clip.mediaId === "m1")).toBe(true);
+    expect(clips.every((clip) => clip.transform.fitMode === "cover")).toBe(true);
     expect(clips[0].keyframes.some((kf) => kf.property === "scale.x" && kf.time > 0)).toBe(true);
   });
 
-  it("compiles a per-frame measured shot into a bounded keyframe set", async () => {
+  it("does not copy handheld jitter onto the source footage", async () => {
     const host = hostWithMedia(20);
     const frameSamples = Array.from({ length: 300 }, (_, i) => ({
       frame: i + 1, translateX: i % 2 === 0 ? 3 : -3, translateY: 0,
@@ -42,11 +43,31 @@ describe("mirror compiler on headless host", () => {
     };
     const ids = await applyEditDNA(host, profile, ["m1"]);
     const clip = host.getProject().timeline.tracks.flatMap((t) => t.clips).find((c) => c.id === ids[0]);
-    const keyframeTimes = new Set((clip?.keyframes ?? []).map((kf) => kf.time));
-    expect(keyframeTimes.size).toBeGreaterThanOrEqual(2);
-    expect(keyframeTimes.size).toBeLessThanOrEqual(48);
+    expect(clip?.keyframes ?? []).toEqual([]);
     // Simplification is apply-time only: the stored profile keeps every measured sample.
     expect(host.getProject().mirrorProfile?.shots[0].cameraMotion?.samples).toHaveLength(300);
+  });
+
+  it("omits a push below the motion magnitude threshold", async () => {
+    const host = hostWithMedia(20);
+    const profile = {
+      ...fixture,
+      durationFrames: 330,
+      rhythmCurve: [330],
+      shots: [{
+        ...fixture.shots[0],
+        startFrame: 0,
+        endFrame: 330,
+        cameraMotion: {
+          dominantMove: "push" as const,
+          samples: [{ frame: 15, translateX: 0, translateY: 0, rotationRad: 0, scale: 1.002 }],
+        },
+      }],
+    };
+
+    const ids = await applyEditDNA(host, profile, ["m1"]);
+    const clip = host.getProject().timeline.tracks.flatMap((t) => t.clips).find((c) => c.id === ids[0]);
+    expect(clip?.keyframes ?? []).toEqual([]);
   });
 
   it("writes no keyframes for a near-static shot", async () => {
@@ -99,6 +120,37 @@ describe("mirror compiler on headless host", () => {
     const clip = host.getProject().timeline.tracks.flatMap((track) => track.clips).find((c) => c.id === ids[0]);
     expect(clip?.colorGrading?.lut?.size).toBe(17);
     expect(clip?.colorGrading?.lut?.data).toHaveLength(17 ** 3 * 3);
+  });
+
+  it("compiles high-confidence measured flash evidence as a timed brightness hit", async () => {
+    const host = hostWithMedia();
+    const profile = {
+      ...fixture,
+      styleEvidence: {
+        ...fixture.styleEvidence!,
+        effects: [{
+          source: "local-pixel-analysis" as const,
+          confidence: 0.8,
+          startFrame: 10,
+          endFrame: 11,
+          name: "flash",
+          parameterEstimates: { brightness: 72 },
+        }],
+      },
+    };
+
+    const ids = await applyEditDNA(host, profile, ["m1"]);
+    const clip = host.getProject().timeline.tracks.flatMap((track) => track.clips).find((item) => item.id === ids[0]);
+    expect(clip?.effects).toEqual([
+      expect.objectContaining({
+        type: "brightness",
+        params: {
+          value: 72,
+          startOffset: 10 / 30,
+          duration: 1 / 30,
+        },
+      }),
+    ]);
   });
 
   it("validates before mutating if source is too short", async () => {

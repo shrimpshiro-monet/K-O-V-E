@@ -5,7 +5,9 @@ import { computeLabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import { classifyDominantMove, type CameraMotionSample } from "@kove-advanced/core/vision/camera-motion-extractor";
 import { getWarmOpenCvMotionClient } from "./opencv-motion-client";
 import {
+  buildEditorStructure,
   createReferenceProfile,
+  type ReferenceEffectEvidence,
   type ReferenceProfile,
   type ReferenceTransitionEvidence,
   type ShotProfile,
@@ -36,6 +38,10 @@ const OCR_SAMPLE_BUDGET = 60;
 const OCR_TOTAL_BUDGET_MS = 10_000;
 const OCR_FRAME_TIMEOUT_MS = 1_000;
 const SOURCE_FRAME_TIMEOUT_MS = 15_000;
+const LONG_SHOT_MEDIAN_MULTIPLIER = 4;
+const MAX_LONG_SHOT_RESCAN_FRAMES = 1_800;
+const MAX_TRAILING_RESCAN_FRAMES = 180;
+export const FFMPEG_SCENE_THRESHOLD = 0.08;
 
 export interface ExtractReferenceOptions {
   /** Called with coalesced progress: at most once per ~250ms, plus the total at the end. */
@@ -47,6 +53,8 @@ export interface ExtractReferenceOptions {
   maxAnalysisDimension?: number;
   /** Wall clock for the work budget and the progress throttle. Injectable for tests. */
   now?: () => number;
+  /** Include creator-added text in analysis only after explicit user consent. */
+  includeReferenceText?: boolean;
 }
 
 interface YieldingScheduler {
@@ -81,7 +89,8 @@ async function yieldToEventLoop(): Promise<void> {
 }
 
 /** Bounded, local decoder pass. No media bytes leave the browser or enter the DNA artifact.
- * Cuts use frame difference; camera motion uses sparse patch correspondences + least-squares similarity fit.
+ * Desktop FFmpeg scene scores supplement cut measurements for unusually long
+ * shots; camera motion uses sparse patch correspondences + least-squares similarity fit.
  * Sparse HTML seeking is limited to <= 4 fps: never promise frame-exact cuts from that fallback.
  *
  * Responsiveness contract for the caller: every synchronous stretch of this
@@ -94,6 +103,7 @@ export interface ReferenceClock {
   fps: FrameRate;
   fpsSource: ReferenceProfile["fpsSource"];
   durationSeconds?: number;
+  videoStartTimeSeconds?: number;
   sampleAspectRatio?: FrameRate;
   codedDimensions?: { width: number; height: number };
   rotationDegrees?: number;
@@ -107,7 +117,7 @@ export async function probeReferenceClock(file: File): Promise<{ status: "known"
       const srcPath = bridge.getPathForFile(file);
       if (srcPath) {
         const metadata = await bridge.probeVideoStream({ srcPath });
-        if (metadata.fps) return { status: "known", clock: { fps: metadata.fps, fpsSource: "ffprobe", ...(metadata.durationSeconds && { durationSeconds: metadata.durationSeconds }), ...(metadata.sampleAspectRatio && { sampleAspectRatio: metadata.sampleAspectRatio }), codedDimensions: { width: metadata.width, height: metadata.height }, ...(metadata.rotationDegrees !== null && { rotationDegrees: metadata.rotationDegrees }) } };
+        if (metadata.fps) return { status: "known", clock: { fps: metadata.fps, fpsSource: "ffprobe", ...(metadata.durationSeconds && { durationSeconds: metadata.durationSeconds }), videoStartTimeSeconds: metadata.startTimeSeconds, ...(metadata.sampleAspectRatio && { sampleAspectRatio: metadata.sampleAspectRatio }), codedDimensions: { width: metadata.width, height: metadata.height }, ...(metadata.rotationDegrees !== null && { rotationDegrees: metadata.rotationDegrees }) } };
         return { status: "unknown", reason: metadata.variableFrameRate ? "Variable frame rate: select a target frame clock explicitly." : "ffprobe did not report an authoritative frame rate." };
       }
     } catch { return { status: "unknown", reason: "Desktop ffprobe unavailable. Select a frame rate explicitly." }; }
@@ -140,6 +150,7 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
     if (!clock?.fps || !clock.fpsSource) throw new Error("Reference FPS is unknown: select a frame clock before extraction");
     const fps = clock.fps;
     const durationFrames = secondsToFrame(clock.durationSeconds ?? video.duration, fps);
+    let analyzedDurationFrames = durationFrames;
     if (durationFrames < 1) throw new Error("Reference is shorter than one frame");
     // Analysis never runs at native resolution: the long edge is capped, so a
     // 4K reference costs exactly what a 720p one costs per sampled frame.
@@ -170,7 +181,7 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
         try {
           const data = await abortable(activeIndexed.read(frame, fps).then((image) => image.data), signal);
           throwIfAborted(signal);
-          return data;
+          return maskPersistentCornerOverlays(data, width, height);
         } catch (error) {
           throwIfAborted(signal);
           activeIndexed = null;
@@ -185,7 +196,7 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
       }), signal);
       ctx.drawImage(video, 0, 0, width, height);
       throwIfAborted(signal);
-      return ctx.getImageData(0, 0, width, height).data;
+      return maskPersistentCornerOverlays(ctx.getImageData(0, 0, width, height).data, width, height);
     };
     // An unavailable OpenCV worker does not block extraction: after this short
     // head start, the sparse JS matcher below covers the whole run.
@@ -201,13 +212,18 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
     const frames = Math.ceil(durationFrames / stepFrames);
     const shots: ShotProfile[] = [];
     const transitions: ReferenceTransitionEvidence[] = [];
+    const effects: ReferenceEffectEvidence[] = [];
     let textDetector: ReturnType<typeof createLocalTextDetector> = null;
     const textObservations: TextObservation[] = [];
-    try {
-      textDetector = createLocalTextDetector();
-      if (!textDetector) warnings.push("Local OCR is unavailable in this browser; reference text overlays were not measured.");
-    } catch (error) {
-      warnings.push(`Local OCR could not be initialized: ${error instanceof Error ? error.message : String(error)}.`);
+    if (options.includeReferenceText) {
+      try {
+        textDetector = createLocalTextDetector();
+        if (!textDetector) warnings.push("Local OCR is unavailable in this browser; reference text overlays were not measured.");
+      } catch (error) {
+        warnings.push(`Local OCR could not be initialized: ${error instanceof Error ? error.message : String(error)}.`);
+      }
+    } else {
+      warnings.push("Creator-added reference text was excluded; opt in to analyze and reuse its timing and placement.");
     }
     let previous: Uint8ClampedArray | null = null;
     let previousFrame = 0, startFrame = 0, motion: CameraMotionSample[] = [], grade: ShotProfile["colorStats"];
@@ -356,15 +372,257 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
         }
         motion.push(sample ?? estimateMotion(previous, pixels, width, height, frame, video.videoWidth / width));
       }
-      if (!grade) grade = computeLabStats(pixels);
+      if (!grade) grade = computeLabStats(excludeMaskedPixels(pixels));
       previous = pixels;
       previousFrame = frame;
       sliceFrames++;
       progress.report(i + 1, frames);
     }
+    finish(durationFrames);
+    const coarseShotLengths = shots
+      .map((shot) => shot.endFrame - shot.startFrame)
+      .sort((left, right) => left - right);
+    const middle = Math.floor(coarseShotLengths.length / 2);
+    const medianShotFrames = coarseShotLengths.length === 0
+      ? 0
+      : coarseShotLengths.length % 2 === 0
+        ? (coarseShotLengths[middle - 1]! + coarseShotLengths[middle]!) / 2
+        : coarseShotLengths[middle]!;
+    const transitionsBeforeRescan = transitions.length;
+    const longShots = shots.filter((shot) =>
+      medianShotFrames > 0 &&
+      shot.endFrame - shot.startFrame > medianShotFrames * LONG_SHOT_MEDIAN_MULTIPLIER,
+    );
+    let ffmpegSceneFrames: number[] = [];
+    if (longShots.length > 0 && typeof File !== "undefined" && file instanceof File) {
+      const bridge = window["kove-advanced"]?.media;
+      if (bridge?.detectSceneChanges && bridge.getPathForFile) {
+        try {
+          const srcPath = bridge.getPathForFile(file);
+          if (srcPath) {
+            const candidateFrames: number[] = [];
+            for (const shot of longShots) {
+              const startTimeSeconds = frameToSeconds(shot.startFrame, fps);
+              const shotDurationSeconds = frameToSeconds(shot.endFrame - shot.startFrame, fps);
+              const streamStartTimeSeconds = clock.videoStartTimeSeconds ?? 0;
+              try {
+                const sceneTimes = await abortable(
+                  bridge.detectSceneChanges({
+                    srcPath,
+                    threshold: FFMPEG_SCENE_THRESHOLD,
+                    startTimeSeconds: streamStartTimeSeconds + startTimeSeconds,
+                    durationSeconds: shotDurationSeconds,
+                  }),
+                  signal,
+                );
+                candidateFrames.push(...sceneTimesToFrames(sceneTimes, fps, streamStartTimeSeconds)
+                  .filter((frame) => frame > shot.startFrame && frame < shot.endFrame));
+              } catch (error) {
+                throwIfAborted(signal);
+                warnings.push(
+                  `FFmpeg scene detection failed for long shot ${shot.startFrame}-${shot.endFrame}: ${error instanceof Error ? error.message : String(error)}. Browser rescan evidence may be inexact.`,
+                );
+              }
+            }
+            ffmpegSceneFrames = mergeAdjacentSceneFrames(candidateFrames);
+          }
+        } catch (error) {
+          throwIfAborted(signal);
+          warnings.push(
+            `FFmpeg scene detection failed for long-shot recovery: ${error instanceof Error ? error.message : String(error)}. Browser rescan evidence may be inexact.`,
+          );
+        }
+      }
+    }
+    let remainingRescanFrames = MAX_LONG_SHOT_RESCAN_FRAMES;
+    let rescannedLongShots = 0;
+    const rescannedShots: ShotProfile[] = [];
+    for (const shot of shots) {
+      const shotFrameLength = shot.endFrame - shot.startFrame;
+      if (medianShotFrames > 0 && shotFrameLength > medianShotFrames * LONG_SHOT_MEDIAN_MULTIPLIER) {
+        const framesToScan = shotFrameLength - 1;
+        if (framesToScan > remainingRescanFrames) {
+          warnings.push(
+            `Long shot ${shot.startFrame}-${shot.endFrame} exceeded the ${MAX_LONG_SHOT_RESCAN_FRAMES}-frame pixel-rescan budget; unmeasured cuts or effects may remain.`,
+          );
+          const sceneBoundaries = ffmpegSceneFrames.filter(
+            (frame) => frame > shot.startFrame && frame < shot.endFrame,
+          );
+          if (sceneBoundaries.length > 0) {
+            const boundaries = [shot.startFrame, ...sceneBoundaries, shot.endFrame];
+            for (let index = 0; index < boundaries.length - 1; index++) {
+              const startFrame = boundaries[index]!;
+              const endFrame = boundaries[index + 1]!;
+              rescannedShots.push({
+                ...shot,
+                startFrame,
+                endFrame,
+                cameraMotion: shot.cameraMotion
+                  ? {
+                      ...shot.cameraMotion,
+                      samples: shot.cameraMotion.samples.filter(
+                        (sample) => sample.frame >= startFrame && sample.frame < endFrame,
+                      ),
+                    }
+                  : undefined,
+              });
+            }
+            for (const boundary of sceneBoundaries) {
+              transitions.push({
+                startFrame: Math.max(0, boundary - 1),
+                endFrame: Math.min(durationFrames, boundary + 1),
+                type: "unknown",
+                source: "ffmpeg-scene-score",
+                confidence: 0.55,
+                note: "FFmpeg scene-score event candidate; it may be a cut, flash, or dip. Frame-by-frame pixel verification was skipped due to the rescan budget.",
+              });
+            }
+            rescannedLongShots++;
+            continue;
+          }
+          rescannedShots.push(shot);
+          continue;
+        }
+        let previousPixels = await readFrame(shot.startFrame);
+        const lumaSamples = [meanLuma(previousPixels)];
+        let beforePreviousPixels: Uint8ClampedArray | null = null;
+        const detectedBoundaries = ffmpegSceneFrames.filter(
+          (frame) => frame > shot.startFrame && frame < shot.endFrame,
+        );
+        for (let frame = shot.startFrame + 1; frame < shot.endFrame; frame++) {
+          throwIfAborted(signal);
+          if (budget.expired(now()) || sliceFrames >= REFERENCE_MAX_FRAMES_PER_SLICE) {
+            await yieldToEventLoop();
+            throwIfAborted(signal);
+            budget.reset(now());
+            sliceFrames = 0;
+          }
+          const currentPixels = await readFrame(frame);
+          lumaSamples.push(meanLuma(currentPixels));
+          if (difference(previousPixels, currentPixels) > CUT_DIFFERENCE_THRESHOLD && frame + 1 < shot.endFrame) {
+            const followingPixels = await readFrame(frame + 1);
+            const priorPixels = beforePreviousPixels ?? previousPixels;
+            // Require a stable new image across adjacent frames. This avoids
+            // treating a one-frame flash as a cut on either its rise or return.
+            if (
+              difference(priorPixels, currentPixels) > CUT_DIFFERENCE_THRESHOLD &&
+              difference(currentPixels, followingPixels) < CUT_DIFFERENCE_THRESHOLD &&
+              !detectedBoundaries.some((boundary) => Math.abs(boundary - frame) <= 1)
+            ) {
+              detectedBoundaries.push(frame);
+            }
+          }
+          beforePreviousPixels = previousPixels;
+          previousPixels = currentPixels;
+          remainingRescanFrames--;
+          sliceFrames++;
+        }
+        effects.push(...detectTransientLumaEvents(shot.startFrame, lumaSamples, Boolean(activeIndexed)));
+        detectedBoundaries.sort((left, right) => left - right);
+        if (detectedBoundaries.length > 0) {
+          const boundaries = [shot.startFrame, ...detectedBoundaries, shot.endFrame];
+          for (let index = 0; index < boundaries.length - 1; index++) {
+            const startFrame = boundaries[index]!;
+            const endFrame = boundaries[index + 1]!;
+            rescannedShots.push({
+              ...shot,
+              startFrame,
+              endFrame,
+              cameraMotion: shot.cameraMotion
+                ? {
+                    ...shot.cameraMotion,
+                    samples: shot.cameraMotion.samples.filter(
+                      (sample) => sample.frame >= startFrame && sample.frame < endFrame,
+                    ),
+                  }
+                : undefined,
+            });
+          }
+          for (const boundary of detectedBoundaries) {
+            const ffmpegDetected = ffmpegSceneFrames.includes(boundary);
+            transitions.push({
+              startFrame: Math.max(0, boundary - 1),
+              endFrame: Math.min(durationFrames, boundary + 1),
+              type: ffmpegDetected ? "unknown" : "hard-cut",
+              source: ffmpegDetected ? "ffmpeg-scene-score" : "local-pixel-analysis",
+              confidence: ffmpegDetected ? 0.55 : activeIndexed ? 0.85 : 0.55,
+              note: ffmpegDetected
+                ? "FFmpeg scene-score event candidate; it may be a cut, flash, or dip."
+                : activeIndexed
+                ? "Detected by a frame-by-frame rescan of an unusually long shot."
+                : "Detected by a frame-by-frame rescan using HTML seeking; verify because frame accuracy is not guaranteed.",
+            });
+          }
+          rescannedLongShots++;
+        } else {
+          rescannedShots.push(shot);
+        }
+      } else {
+        rescannedShots.push(shot);
+      }
+    }
+    shots.splice(0, shots.length, ...rescannedShots);
+    if (ffmpegSceneFrames.length > 0) {
+      const trailingStartFrame = Math.max(0, durationFrames - MAX_TRAILING_RESCAN_FRAMES);
+      const trailingLuma: number[] = [];
+      for (let frame = trailingStartFrame; frame < durationFrames; frame++) {
+        throwIfAborted(signal);
+        if (budget.expired(now()) || sliceFrames >= REFERENCE_MAX_FRAMES_PER_SLICE) {
+          await yieldToEventLoop();
+          throwIfAborted(signal);
+          budget.reset(now());
+          sliceFrames = 0;
+        }
+        trailingLuma.push(meanLuma(await readFrame(frame)));
+        sliceFrames++;
+      }
+      const endCardCut = detectTrailingEndCardCut(
+        trailingStartFrame,
+        trailingLuma,
+        durationFrames,
+        ffmpegSceneFrames,
+      );
+      if (endCardCut !== null) {
+        analyzedDurationFrames = Math.min(analyzedDurationFrames, endCardCut);
+        warnings.push(
+          `Trimmed ${durationFrames - endCardCut} trailing non-edit frame(s) after a sustained end-card/black segment.`,
+        );
+      }
+    }
+    if (analyzedDurationFrames < durationFrames) {
+      const trimmedShots = shots
+        .filter((shot) => shot.startFrame < analyzedDurationFrames)
+        .map((shot) => ({
+          ...shot,
+          endFrame: Math.min(shot.endFrame, analyzedDurationFrames),
+          cameraMotion: shot.cameraMotion
+            ? {
+                ...shot.cameraMotion,
+                samples: shot.cameraMotion.samples.filter((sample) => sample.frame < analyzedDurationFrames),
+              }
+            : undefined,
+        }));
+      shots.splice(0, shots.length, ...trimmedShots);
+      for (let index = transitions.length - 1; index >= 0; index--) {
+        if (transitions[index]!.endFrame > analyzedDurationFrames) transitions.splice(index, 1);
+      }
+      for (let index = effects.length - 1; index >= 0; index--) {
+        if (effects[index]!.startFrame >= analyzedDurationFrames) effects.splice(index, 1);
+        else if (effects[index]!.endFrame > analyzedDurationFrames) {
+          effects[index] = { ...effects[index]!, endFrame: analyzedDurationFrames };
+        }
+      }
+      for (let index = textObservations.length - 1; index >= 0; index--) {
+        if (textObservations[index]!.frame >= analyzedDurationFrames) textObservations.splice(index, 1);
+      }
+    }
+    if (rescannedLongShots > 0) {
+      warnings.push(
+        `Long-shot recovery added ${transitions.length - transitionsBeforeRescan} cut(s) from ${rescannedLongShots} unusually long shot(s).`,
+      );
+    }
     } finally { indexed?.close(); }
     progress.report(frames, frames, { force: true });
-    finish(durationFrames);
     if (textDetector && textDetectionMs >= OCR_TOTAL_BUDGET_MS) {
       warnings.push("Local OCR stopped after reaching its 10s analysis budget; later sampled frames were not checked for text.");
     }
@@ -372,17 +630,23 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
       aspectRatio: { width: video.videoWidth, height: video.videoHeight },
       fps,
       fpsSource: clock.fpsSource,
-      durationFrames,
+      durationFrames: analyzedDurationFrames,
       shots,
       beatGridMs: [],
+      structure: buildEditorStructure({
+        shots,
+        styleEvidence: { transitions, textOverlays: [], effects },
+        fps,
+        durationFrames: analyzedDurationFrames,
+      }),
       styleEvidence: {
         transitions,
         textOverlays: mergeTextObservations(
           textObservations,
-          durationFrames,
+          analyzedDurationFrames,
           Math.max(1, Math.ceil(fps.num / fps.den)),
         ),
-        effects: [],
+        effects,
       },
       ...(clock.sampleAspectRatio && { sampleAspectRatio: clock.sampleAspectRatio }),
       ...(clock.codedDimensions && { codedDimensions: clock.codedDimensions }),
@@ -394,12 +658,175 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
 }
 function difference(a: Uint8ClampedArray, b: Uint8ClampedArray): number {
   let sum = 0;
-  for (let i = 0; i < a.length; i += 16) for (let c = 0; c < 3; c++) sum += Math.abs(a[i + c] - b[i + c]);
-  return sum / (Math.ceil(a.length / 16) * 3 * 255);
+  let channels = 0;
+  for (let i = 0; i < a.length; i += 16) {
+    if (a[i + 3] === 0 || b[i + 3] === 0) continue;
+    for (let c = 0; c < 3; c++) {
+      sum += Math.abs(a[i + c]! - b[i + c]!);
+      channels++;
+    }
+  }
+  return channels > 0 ? sum / (channels * 255) : 0;
+}
+
+/** Ignore common platform watermark locations without retaining source pixels. */
+export function maskPersistentCornerOverlays(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+): Uint8ClampedArray {
+  const masked = pixels.slice();
+  const maskWidth = Math.max(1, Math.ceil(width * 0.16));
+  const maskHeight = Math.max(1, Math.ceil(height * 0.12));
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const inCorner = (x < maskWidth || x >= width - maskWidth) &&
+        (y < maskHeight || y >= height - maskHeight);
+      if (!inCorner) continue;
+      const index = (y * width + x) * 4;
+      masked[index] = 0;
+      masked[index + 1] = 0;
+      masked[index + 2] = 0;
+      masked[index + 3] = 0;
+    }
+  }
+  return masked;
+}
+
+function excludeMaskedPixels(pixels: Uint8ClampedArray): Uint8ClampedArray {
+  let visiblePixels = 0;
+  for (let i = 0; i < pixels.length; i += 4) {
+    if (pixels[i + 3] !== 0) visiblePixels++;
+  }
+  const visible = new Uint8ClampedArray(visiblePixels * 4);
+  let outputIndex = 0;
+  for (let i = 0; i < pixels.length; i += 4) {
+    if (pixels[i + 3] === 0) continue;
+    visible.set(pixels.subarray(i, i + 4), outputIndex);
+    outputIndex += 4;
+  }
+  return visible;
+}
+
+export function mergeAdjacentSceneFrames(frames: readonly number[]): number[] {
+  const sorted = [...new Set(frames.filter((frame) => Number.isSafeInteger(frame) && frame >= 0))]
+    .sort((left, right) => left - right);
+  const merged: number[] = [];
+  let cluster: number[] = [];
+  const flush = (): void => {
+    if (!cluster.length) return;
+    merged.push(Math.round(cluster.reduce((sum, frame) => sum + frame, 0) / cluster.length));
+    cluster = [];
+  };
+  for (const frame of sorted) {
+    if (cluster.length && frame - cluster[cluster.length - 1]! > 1) flush();
+    cluster.push(frame);
+  }
+  flush();
+  return merged;
+}
+
+export function sceneTimesToFrames(
+  sceneTimes: readonly number[],
+  fps: FrameRate,
+  videoStartTimeSeconds = 0,
+): number[] {
+  if (!Number.isFinite(videoStartTimeSeconds)) {
+    throw new RangeError("Video start time must be finite.");
+  }
+  return mergeAdjacentSceneFrames(
+    sceneTimes
+      .filter(Number.isFinite)
+      .map((time) => secondsToFrame(time - videoStartTimeSeconds, fps)),
+  );
+}
+
+export function detectTrailingEndCardCut(
+  startFrame: number,
+  lumaSamples: readonly number[],
+  durationFrames: number,
+  sceneCandidateFrames: readonly number[],
+): number | null {
+  const minimumTrailingFrame = Math.floor(durationFrames * 0.7);
+  const minimumBlackFrames = 18;
+  const blackLumaThreshold = 0.035;
+  for (let index = Math.max(1, minimumTrailingFrame - startFrame); index + minimumBlackFrames <= lumaSamples.length; index++) {
+    if (lumaSamples[index - 1]! <= blackLumaThreshold || lumaSamples[index]! > blackLumaThreshold) continue;
+    let sustainedBlack = true;
+    for (let offset = 1; offset < minimumBlackFrames; offset++) {
+      if (lumaSamples[index + offset]! > blackLumaThreshold) {
+        sustainedBlack = false;
+        break;
+      }
+    }
+    if (!sustainedBlack) continue;
+    const blackStartFrame = startFrame + index;
+    const precedingScene = sceneCandidateFrames
+      .filter((frame) => frame <= blackStartFrame && blackStartFrame - frame <= 20)
+      .sort((left, right) => right - left)[0];
+    return precedingScene ?? null;
+  }
+  return null;
+}
+
+function meanLuma(pixels: Uint8ClampedArray): number {
+  let sum = 0;
+  let samples = 0;
+  for (let i = 0; i < pixels.length; i += 16) {
+    if (pixels[i + 3] === 0) continue;
+    sum += pixels[i]! * 0.299 + pixels[i + 1]! * 0.587 + pixels[i + 2]! * 0.114;
+    samples++;
+  }
+  return samples > 0 ? sum / (samples * 255) : 0;
+}
+
+function detectTransientLumaEvents(
+  startFrame: number,
+  lumaSamples: readonly number[],
+  indexed: boolean,
+): ReferenceEffectEvidence[] {
+  const events: ReferenceEffectEvidence[] = [];
+  for (let beforeIndex = 0; beforeIndex + 2 < lumaSamples.length; beforeIndex++) {
+    const baseline = lumaSamples[beforeIndex]!;
+    for (let returnIndex = beforeIndex + 2; returnIndex <= Math.min(beforeIndex + 3, lumaSamples.length - 1); returnIndex++) {
+      if (Math.abs(lumaSamples[returnIndex]! - baseline) > 0.08) continue;
+      let excursion = 0;
+      let eventIndex = -1;
+      for (let index = beforeIndex + 1; index < returnIndex; index++) {
+        const delta = lumaSamples[index]! - baseline;
+        if (Math.abs(delta) > Math.abs(excursion)) {
+          excursion = delta;
+          eventIndex = index;
+        }
+      }
+      if (Math.abs(excursion) < 0.25) continue;
+      const start = startFrame + eventIndex;
+      const end = startFrame + returnIndex;
+      events.push({
+        source: "local-pixel-analysis",
+        confidence: indexed ? 0.8 : 0.55,
+        startFrame: start,
+        endFrame: end,
+        name: excursion > 0 ? "flash" : "dip",
+        parameterEstimates: { brightness: Math.round(Math.max(-100, Math.min(100, excursion * 100))) },
+        note: indexed
+          ? "Detected as a transient luma excursion that returned to baseline within three frames."
+          : "Transient luma event detected using HTML seeking; verify because frame accuracy is not guaranteed.",
+      });
+      beforeIndex = returnIndex - 1;
+      break;
+    }
+  }
+  return events;
 }
 function estimateMotion(a: Uint8ClampedArray, b: Uint8ClampedArray, w: number, h: number, frame: number, scale: number): CameraMotionSample {
   const points: Array<[number, number, number, number]> = [];
-  const luminance = (p: Uint8ClampedArray, x: number, y: number) => p[(y * w + x) * 4] * 0.299 + p[(y * w + x) * 4 + 1] * 0.587 + p[(y * w + x) * 4 + 2] * 0.114;
+  const luminance = (p: Uint8ClampedArray, x: number, y: number) => {
+    const index = (y * w + x) * 4;
+    return p[index + 3] === 0
+      ? Number.NaN
+      : p[index]! * 0.299 + p[index + 1]! * 0.587 + p[index + 2]! * 0.114;
+  };
   for (let y = 9; y < h - 9; y += 12) for (let x = 9; x < w - 9; x += 12) {
     let best = Infinity, dxBest = 0, dyBest = 0;
     for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {

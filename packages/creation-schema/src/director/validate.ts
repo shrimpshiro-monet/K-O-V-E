@@ -143,6 +143,40 @@ export function validateEditPlan(
 ): readonly DirectorValidationIssue[] {
   const issues: DirectorValidationIssue[] = [];
 
+  const validateEffectTiming = (
+    effect: { readonly type: string; readonly startOffset?: number; readonly duration?: number },
+    path: string,
+    segmentDuration?: number,
+  ): void => {
+    if (!isColorGradeType(effect.type) && (effect.startOffset === undefined || effect.duration === undefined)) {
+      issues.push(issue(
+        "error",
+        "effect_timing_required",
+        `${path} hit effect "${effect.type}" must include both startOffset and duration; only color grades may span a whole clip.`,
+        path,
+      ));
+    }
+    if (effect.startOffset !== undefined && (!Number.isFinite(effect.startOffset) || effect.startOffset < 0)) {
+      issues.push(issue("error", "effect_offset_out_of_range", `${path} startOffset cannot be negative.`, `${path}.startOffset`));
+    }
+    if (effect.duration !== undefined && (!Number.isFinite(effect.duration) || effect.duration <= 0)) {
+      issues.push(issue("error", "effect_duration_invalid", `${path} duration must be positive.`, `${path}.duration`));
+    }
+    if (
+      segmentDuration !== undefined &&
+      Number.isFinite(effect.startOffset) &&
+      Number.isFinite(effect.duration) &&
+      effect.startOffset! + effect.duration! > segmentDuration
+    ) {
+      issues.push(issue(
+        "error",
+        "effect_timing_exceeds_segment",
+        `${path} timing must fit within its ${segmentDuration.toFixed(3)}s segment.`,
+        path,
+      ));
+    }
+  };
+
   if (plan.segments.length === 0) {
     issues.push(issue("warning", "empty_plan", "EditPlan has no segments."));
   }
@@ -187,20 +221,16 @@ export function validateEditPlan(
     validateSpeedRamp(seg.speedRamp, seg.sourceEndTime - seg.sourceStartTime, i, issues);
     validateCameraMoves(seg.cameraMoves, seg.sourceEndTime - seg.sourceStartTime, i, issues);
     seg.effectSpecs?.forEach((effect, effectIndex) => {
+      const path = `segments.${i}.effectSpecs.${effectIndex}`;
       if (!effect.type.trim()) {
-        issues.push(issue("error", "empty_effect_type", `Segment ${i} effect ${effectIndex} has no type.`, `segments.${i}.effectSpecs.${effectIndex}.type`));
+        issues.push(issue("error", "empty_effect_type", `Segment ${i} effect ${effectIndex} has no type.`, `${path}.type`));
       }
       if (effect.intensity !== undefined && (!Number.isFinite(effect.intensity) || effect.intensity < 0 || effect.intensity > 1)) {
-        issues.push(issue("error", "effect_intensity_out_of_range", `Segment ${i} effect ${effectIndex} intensity must be between 0 and 1.`, `segments.${i}.effectSpecs.${effectIndex}.intensity`));
+        issues.push(issue("error", "effect_intensity_out_of_range", `Segment ${i} effect ${effectIndex} intensity must be between 0 and 1.`, `${path}.intensity`));
       }
-      if (effect.startOffset !== undefined && (!Number.isFinite(effect.startOffset) || effect.startOffset < 0)) {
-        issues.push(issue("error", "effect_offset_out_of_range", `Segment ${i} effect ${effectIndex} startOffset cannot be negative.`, `segments.${i}.effectSpecs.${effectIndex}.startOffset`));
-      }
-      if (effect.duration !== undefined && (!Number.isFinite(effect.duration) || effect.duration <= 0)) {
-        issues.push(issue("error", "effect_duration_invalid", `Segment ${i} effect ${effectIndex} duration must be positive.`, `segments.${i}.effectSpecs.${effectIndex}.duration`));
-      }
+      validateEffectTiming(effect, path, seg.sourceEndTime - seg.sourceStartTime);
       if (effect.easing !== undefined && !effect.easing.trim()) {
-        issues.push(issue("error", "effect_easing_invalid", `Segment ${i} effect ${effectIndex} easing cannot be empty.`, `segments.${i}.effectSpecs.${effectIndex}.easing`));
+        issues.push(issue("error", "effect_easing_invalid", `Segment ${i} effect ${effectIndex} easing cannot be empty.`, `${path}.easing`));
       }
     });
   }
@@ -275,6 +305,14 @@ export function validateEditPlan(
         issues.push(issue("error", "empty_effect_type", `Segment ${i} effects[${effectIndex}] has no type.`, `segments.${i}.effects.${effectIndex}`));
       } else {
         unsupportedEffect(type, `segments.${i}.effects.${effectIndex}`);
+        if (!isColorGradeType(type)) {
+          issues.push(issue(
+            "error",
+            "whole_clip_hit_effect",
+            `Segment ${i} effect "${type}" would span the whole clip. Use effectSpecs with startOffset and duration for hit effects; only color grades may span a whole clip.`,
+            `segments.${i}.effects.${effectIndex}`,
+          ));
+        }
         // colorGrade in the string effects array gets empty params by default,
         // which means it silently does nothing — warn so the LLM uses
         // effectSpecs with explicit params instead.
@@ -350,6 +388,14 @@ export function validateEditPlan(
   plan.effects.forEach((effect, effectIndex) => {
     const path = `effects.${effectIndex}`;
     unsupportedEffect(effect.type, `${path}.type`);
+    validateEffectTiming(
+      effect,
+      path,
+      effect.targetSegmentIndex === undefined
+        ? undefined
+        : plan.segments[effect.targetSegmentIndex]?.sourceEndTime -
+          plan.segments[effect.targetSegmentIndex]?.sourceStartTime,
+    );
     if (isColorGradeType(effect.type) && (!effect.params || Object.keys(effect.params).length === 0)) {
       issues.push(issue("error", "empty_color_grade_params", `${path} is a colorGrade with no params — it will do nothing.`, `${path}.params`));
     }

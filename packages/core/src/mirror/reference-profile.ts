@@ -17,6 +17,7 @@ export interface ShotProfile {
 
 export type ReferenceEvidenceSource =
   | "local-pixel-analysis"
+  | "ffmpeg-scene-score"
   | "local-ocr"
   | "local-transcription"
   | "vision-model"
@@ -66,6 +67,66 @@ export interface ReferenceEffectEvidence extends ReferenceEvidenceConfidence {
   readonly parameterEstimates?: Readonly<Record<string, number>>;
 }
 
+/**
+ * Measured edit event on the reference clock. Every declared event must come
+ * from a measurement (scene score, luma excursion, or boundary rescan) — an
+ * absent event means "not measured", never "the reference had none".
+ */
+export interface EditEvent {
+  /** Boundary frame on the reference clock (start of the event). */
+  frame: number;
+  type:
+    | "hard-cut"
+    | "flash"
+    | "dip"
+    | "whip"
+    | "dissolve"
+    | "zoom-punch"
+    | "shake-hit"
+    | "rgb-split"
+    | "blur"
+    | "speed-ramp"
+    | "split-panel";
+  /** Event length in frames (1 for an instantaneous cut). */
+  durationFrames: number;
+  /** 0..1 measured strength; 1 for a binary cut. */
+  intensity: number;
+  confidence: number;
+  source: ReferenceEvidenceSource;
+  /** Nearest music beat when a reliable beat grid exists. */
+  beatIndex?: number;
+  /** Event frame minus the beat frame, in frames. */
+  beatOffsetFrames?: number;
+}
+
+export interface EditDensity {
+  cutsPerSec: number;
+  eventsPerSec: number;
+  byType: Record<string, number>;
+}
+
+export interface ShotLengthStats {
+  median: number;
+  p25: number;
+  p75: number;
+  min: number;
+  max: number;
+}
+
+/**
+ * Measured edit structure over the trimmed edit range (end cards, stingers,
+ * and black tails excluded). This is the density/energy contract the compiler
+ * and planner must match — genre defaults are not used when this exists.
+ */
+export interface EditorStructure {
+  editRange: { startFrame: number; endFrame: number };
+  events: EditEvent[];
+  /** Per-second smoothed energy (events + motion), editRange.length entries. */
+  energyCurve: number[];
+  density: EditDensity;
+  shotLengths: ShotLengthStats;
+}
+
 export interface ReferenceStyleEvidence {
   readonly transitions: readonly ReferenceTransitionEvidence[];
   readonly textOverlays: readonly ReferenceTextOverlay[];
@@ -88,6 +149,8 @@ export interface ReferenceProfile {
   beatGridMs: number[];
   /** Extended visual evidence. V2 profiles omit this until migrated. */
   styleEvidence?: ReferenceStyleEvidence;
+  /** Measured edit structure (events, energy, density, shot lengths). */
+  structure?: EditorStructure;
   warnings?: string[];
 }
 
@@ -139,6 +202,30 @@ export function validateReferenceProfile(profile: ReferenceProfile): void {
   if (previousEnd !== profile.durationFrames) throw new Error("Shots must cover the reference duration");
   if (profile.rhythmCurve.length !== profile.shots.length || profile.rhythmCurve.some((value, i) => value !== shotDurationFrames(profile.shots[i]!))) throw new Error("Rhythm curve must match shot durations in frames");
   validateStyleEvidence(profile.styleEvidence, profile.durationFrames);
+  if (profile.structure) {
+    const structure = profile.structure;
+    const { startFrame, endFrame } = structure.editRange;
+    if (!Number.isSafeInteger(startFrame) || !Number.isSafeInteger(endFrame) || startFrame < 0 || endFrame <= startFrame || endFrame > profile.durationFrames) {
+      throw new Error("Edit structure editRange must be a half-open interval within the reference duration");
+    }
+    for (const event of structure.events) {
+      if (!Number.isSafeInteger(event.frame) || event.frame <= startFrame || event.frame > endFrame) {
+        throw new Error("Edit event frame must fall inside the edit range");
+      }
+      if (!Number.isSafeInteger(event.durationFrames) || event.durationFrames <= 0) throw new Error("Edit event duration must be positive");
+      if (![event.intensity, event.confidence].every((value) => Number.isFinite(value) && value >= 0 && value <= 1)) {
+        throw new Error("Edit event intensity/confidence must be between 0 and 1");
+      }
+      if (!["hard-cut", "flash", "dip", "whip", "dissolve", "zoom-punch", "shake-hit", "rgb-split", "blur", "speed-ramp", "split-panel"].includes(event.type)) {
+        throw new Error("Invalid edit event type");
+      }
+      if (!["local-pixel-analysis", "ffmpeg-scene-score", "local-ocr", "local-transcription", "vision-model", "human"].includes(event.source)) {
+        throw new Error("Invalid edit event source");
+      }
+    }
+    if (structure.energyCurve.some((value) => !Number.isFinite(value) || value < 0)) throw new Error("Energy curve values must be non-negative and finite");
+    if (![structure.density.cutsPerSec, structure.density.eventsPerSec].every((value) => Number.isFinite(value) && value >= 0)) throw new Error("Density must be non-negative and finite");
+  }
 }
 
 export const REFERENCE_PROFILE_V3_LIMITATIONS = [
@@ -234,7 +321,7 @@ function validateEvidenceRange(
   if (!Number.isFinite(evidence.confidence) || evidence.confidence < 0 || evidence.confidence > 1) {
     throw new Error(`${label} evidence confidence must be between 0 and 1`);
   }
-  if (!["local-pixel-analysis", "local-ocr", "local-transcription", "vision-model", "human"].includes(evidence.source)) {
+  if (!["local-pixel-analysis", "ffmpeg-scene-score", "local-ocr", "local-transcription", "vision-model", "human"].includes(evidence.source)) {
     throw new Error(`Invalid ${label} evidence source`);
   }
 }
@@ -243,4 +330,188 @@ function validateEvidenceRange(
 export function quantizeShotBoundaries(seconds: readonly number[], fps: FrameRate, durationFrames: number): number[] {
   const frames = [...new Set([0, ...seconds.map((time) => secondsToFrame(time, fps)), durationFrames])].filter((frame) => frame >= 0 && frame <= durationFrames).sort((a, b) => a - b);
   return frames;
+}
+
+const CUT_EVENT_TYPES = new Set(["hard-cut", "whip"]);
+
+/**
+ * Compile measured evidence into the EditorStructure events/density/energy
+ * model. Deterministic: identical evidence always yields identical structure.
+ * Transition evidence types that the analyzer cannot distinguish (ffmpeg scene
+ * candidates) are classified by matching flash/dip luma excursions; anything
+ * left is a hard-cut candidate with reduced confidence. Event types with no
+ * detector yet (whip, zoom-punch, shake-hit, rgb-split, blur, speed-ramp,
+ * split-panel) are simply absent — they are never invented here.
+ */
+export function buildEditorStructure(
+  input: Pick<ReferenceProfile, "shots" | "styleEvidence" | "fps" | "durationFrames"> & {
+    editRange?: { startFrame: number; endFrame: number };
+  },
+): EditorStructure {
+  const fpsNumber = input.fps.num / input.fps.den;
+  const editRange = input.editRange
+    ? { startFrame: Math.max(0, Math.min(input.editRange.startFrame, input.durationFrames)), endFrame: Math.max(1, Math.min(input.editRange.endFrame, input.durationFrames)) }
+    : { startFrame: 0, endFrame: input.durationFrames };
+
+  const lumaExcursionAt = new Map<number, { type: "flash" | "dip"; evidence: ReferenceEffectEvidence }>();
+  for (const effect of input.styleEvidence?.effects ?? []) {
+    if (effect.name !== "flash" && effect.name !== "dip") continue;
+    lumaExcursionAt.set(effect.startFrame, { type: effect.name, evidence: effect });
+  }
+
+  const events: EditEvent[] = [];
+  for (const transition of input.styleEvidence?.transitions ?? []) {
+    // Transition evidence is the half-open range [startFrame, endFrame) around
+    // the boundary; the event frame is the first frame after the boundary.
+    const frame = transition.startFrame + 1;
+    if (frame <= editRange.startFrame || frame > editRange.endFrame) continue;
+    const excursion = lumaExcursionAt.get(frame) ?? lumaExcursionAt.get(transition.startFrame);
+    if (excursion) {
+      events.push({
+        frame,
+        type: excursion.type,
+        durationFrames: Math.max(1, excursion.evidence.endFrame - excursion.evidence.startFrame),
+        intensity: clamp01(Math.abs(excursion.evidence.parameterEstimates?.brightness ?? 100) / 100),
+        confidence: Math.min(transition.confidence, excursion.evidence.confidence),
+        source: transition.source,
+      });
+      continue;
+    }
+    if (transition.type === "dissolve" || transition.type === "fade") {
+      events.push({
+        frame,
+        type: "dissolve",
+        durationFrames: Math.max(2, transition.endFrame - transition.startFrame),
+        intensity: 1,
+        confidence: transition.confidence,
+        source: transition.source,
+      });
+      continue;
+    }
+    // "unknown" scene-score candidates and "hard-cut" boundaries are both cut
+    // candidates; the unknown ones keep their reduced measurement confidence.
+    events.push({
+      frame,
+      type: "hard-cut",
+      durationFrames: 1,
+      intensity: 1,
+      confidence: transition.type === "unknown" ? Math.min(transition.confidence, 0.6) : transition.confidence,
+      source: transition.source,
+    });
+  }
+
+  // Stand-alone luma excursions that did not coincide with a cut boundary.
+  for (const [frame, excursion] of lumaExcursionAt) {
+    if (frame <= editRange.startFrame || frame > editRange.endFrame) continue;
+    if (events.some((event) => Math.abs(event.frame - frame) <= 1)) continue;
+    events.push({
+      frame,
+      type: excursion.type,
+      durationFrames: Math.max(1, excursion.evidence.endFrame - excursion.evidence.startFrame),
+      intensity: clamp01(Math.abs(excursion.evidence.parameterEstimates?.brightness ?? 100) / 100),
+      confidence: excursion.evidence.confidence,
+      source: excursion.evidence.source,
+    });
+  }
+
+  events.sort((left, right) => left.frame - right.frame || left.type.localeCompare(right.type));
+
+  const rangeSeconds = Math.max(1, (editRange.endFrame - editRange.startFrame) / fpsNumber);
+  const byType: Record<string, number> = {};
+  let cuts = 0;
+  for (const event of events) {
+    byType[event.type] = (byType[event.type] ?? 0) + 1;
+    if (CUT_EVENT_TYPES.has(event.type)) cuts += 1;
+  }
+
+  const energyCurve = buildEnergyCurve(input, events, editRange);
+
+  return {
+    editRange,
+    events,
+    energyCurve,
+    density: {
+      cutsPerSec: cuts / rangeSeconds,
+      eventsPerSec: events.length / rangeSeconds,
+      byType,
+    },
+    shotLengths: shotLengthStats(input.shots, editRange),
+  };
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
+}
+
+/**
+ * Per-second energy over the edit range: normalized event pressure blended
+ * with measured camera-motion magnitude, then smoothed with a 3-tap kernel.
+ */
+function buildEnergyCurve(
+  input: Pick<ReferenceProfile, "shots" | "fps">,
+  events: EditEvent[],
+  editRange: { startFrame: number; endFrame: number },
+): number[] {
+  const fpsNumber = input.fps.num / input.fps.den;
+  const seconds = Math.max(1, Math.round((editRange.endFrame - editRange.startFrame) / fpsNumber));
+
+  const eventPressure = new Array<number>(seconds).fill(0);
+  for (const event of events) {
+    const index = Math.min(seconds - 1, Math.max(0, Math.floor((event.frame - editRange.startFrame) / fpsNumber)));
+    eventPressure[index] += 0.5 + 0.5 * event.intensity;
+  }
+  let maxPressure = Math.max(...eventPressure, 1);
+
+  // Motion magnitude per second from the camera-motion samples.
+  const motionEnergy = new Array<number>(seconds).fill(0);
+  const motionSamplesPerSecond = new Array<number>(seconds).fill(0);
+  for (const shot of input.shots) {
+    const samples = shot.cameraMotion?.samples ?? [];
+    for (let i = 1; i < samples.length; i++) {
+      const frame = samples[i]!.frame;
+      if (frame <= editRange.startFrame || frame > editRange.endFrame) continue;
+      const previous = samples[i - 1]!;
+      const magnitude = Math.abs(samples[i]!.translateX - previous.translateX) +
+        Math.abs(samples[i]!.translateY - previous.translateY) +
+        Math.abs(samples[i]!.rotationRad - previous.rotationRad) +
+        Math.abs(samples[i]!.scale - previous.scale);
+      const index = Math.min(seconds - 1, Math.max(0, Math.floor((frame - editRange.startFrame) / fpsNumber)));
+      motionEnergy[index] += magnitude;
+      motionSamplesPerSecond[index] += 1;
+    }
+  }
+  for (let i = 0; i < seconds; i++) {
+    if (motionSamplesPerSecond[i]! > 0) motionEnergy[i] /= motionSamplesPerSecond[i]!;
+  }
+  const maxMotion = Math.max(...motionEnergy, 1);
+
+  const raw = eventPressure.map((pressure, i) =>
+    0.6 * (pressure / maxPressure) + 0.4 * (motionEnergy[i]! / maxMotion),
+  );
+  const smoothed: number[] = [];
+  for (let i = 0; i < seconds; i++) {
+    const previous = raw[Math.max(0, i - 1)]!;
+    const next = raw[Math.min(seconds - 1, i + 1)]!;
+    smoothed.push(0.25 * previous + 0.5 * raw[i]! + 0.25 * next);
+  }
+  return smoothed.map((value) => Math.round(value * 1000) / 1000);
+}
+
+/** Nearest-rank quantiles of shot lengths inside the edit range. */
+export function shotLengthStats(shots: readonly ShotProfile[], editRange: { startFrame: number; endFrame: number }): ShotLengthStats {
+  const lengths = shots
+    .filter((shot) => shot.endFrame > editRange.startFrame && shot.startFrame < editRange.endFrame)
+    .map((shot) => Math.min(shot.endFrame, editRange.endFrame) - Math.max(shot.startFrame, editRange.startFrame))
+    .filter((length) => length > 0)
+    .sort((left, right) => left - right);
+  if (lengths.length === 0) return { median: 0, p25: 0, p75: 0, min: 0, max: 0 };
+  const at = (fraction: number): number => lengths[Math.min(lengths.length - 1, Math.floor(fraction * lengths.length))]!;
+  return {
+    min: lengths[0]!,
+    max: lengths[lengths.length - 1]!,
+    median: at(0.5),
+    p25: at(0.25),
+    p75: at(0.75),
+  };
 }

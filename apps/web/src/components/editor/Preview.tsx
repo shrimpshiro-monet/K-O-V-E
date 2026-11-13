@@ -838,7 +838,7 @@ export const Preview: React.FC = () => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
   const renderBridgeInitialized = useRef<boolean>(false);
-  const lastGoodFrameRef = useRef<ImageBitmap | null>(null);
+  const hasBlittedCompositeRef = useRef<boolean>(false);
   const offscreenCanvasRef = useRef<OffscreenCanvas | null>(null);
   const decodeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const decodeDebounceResolveRef = useRef<((value: ImageBitmap | null) => void) | null>(
@@ -1198,9 +1198,7 @@ export const Preview: React.FC = () => {
   );
 
   useEffect(() => {
-    const cachedFrame = lastGoodFrameRef.current;
-    lastGoodFrameRef.current = null;
-    cachedFrame?.close();
+    hasBlittedCompositeRef.current = false;
   }, [project]);
 
   // Get text clips from TitleEngine
@@ -3157,12 +3155,7 @@ export const Preview: React.FC = () => {
       if (hasRenderedFrame && offscreenCanvasRef.current) {
         mainCtx.clearRect(0, 0, canvas.width, canvas.height);
         mainCtx.drawImage(offscreenCanvasRef.current, 0, 0);
-        try {
-          lastGoodFrameRef.current?.close();
-          lastGoodFrameRef.current = await createImageBitmap(
-            offscreenCanvasRef.current,
-          );
-        } catch {}
+        hasBlittedCompositeRef.current = true;
         return true;
       }
 
@@ -4354,11 +4347,6 @@ export const Preview: React.FC = () => {
           );
         }
 
-        try {
-          lastGoodFrameRef.current?.close();
-          lastGoodFrameRef.current = await createImageBitmap(canvas);
-        } catch {}
-
         rafId = requestAnimationFrame(() => {
           drawFrame();
         });
@@ -5406,6 +5394,7 @@ export const Preview: React.FC = () => {
                   }
 
                   mainCtx.drawImage(offscreenCanvasRef.current!, 0, 0);
+                  hasBlittedCompositeRef.current = true;
 
                   frameCount++;
                   masterClock.reportVideoTime(currentPlayhead);
@@ -5822,20 +5811,8 @@ export const Preview: React.FC = () => {
             }
 
             mainCtx.drawImage(offscreenCanvasRef.current!, 0, 0);
-
-            try {
-              lastGoodFrameRef.current?.close();
-              lastGoodFrameRef.current = await createImageBitmap(offscreenCanvasRef.current!);
-            } catch {}
-          } else if (lastGoodFrameRef.current) {
-            ctx.drawImage(
-              lastGoodFrameRef.current,
-              0,
-              0,
-              canvas.width,
-              canvas.height,
-            );
-
+            hasBlittedCompositeRef.current = true;
+          } else if (hasBlittedCompositeRef.current) {
             const activeSubtitles = getActiveSubtitles(
               allSubtitlesRef.current,
               currentPlayhead,

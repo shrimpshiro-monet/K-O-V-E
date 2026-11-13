@@ -31,6 +31,7 @@ export const CHANNELS = {
   mediaTranscode: "kove-advanced:media:transcode",
   mediaExtractAudioWav: "kove-advanced:media:extractAudioWav",
   mediaProbeVideoStream: "kove-advanced:media:probeVideoStream",
+  mediaDetectSceneChanges: "kove-advanced:media:detectSceneChanges",
   mediaProbeAudioStreams: "kove-advanced:media:probeAudioStreams",
   mediaFetchUrl: "kove-advanced:media:fetchUrl",
   riggingProbeBackend: "kove-advanced:rigging:probeBackend",

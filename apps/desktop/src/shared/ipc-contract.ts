@@ -49,6 +49,19 @@ export const extractAudioArgsSchema = z.object({
   streamIndex: z.number().int().nonnegative().optional(),
 });
 export const probeAudioArgsSchema = z.object({ srcPath: z.string() });
+export const detectSceneChangesArgsSchema = z.object({
+  srcPath: z.string().min(1),
+  threshold: z.number().gt(0).max(1).optional(),
+  startTimeSeconds: z.number().nonnegative().optional(),
+  durationSeconds: z.number().positive().optional(),
+}).superRefine((args, context) => {
+  if ((args.startTimeSeconds === undefined) !== (args.durationSeconds === undefined)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Scene detection window requires both startTimeSeconds and durationSeconds.",
+    });
+  }
+});
 export const fetchUrlArgsSchema = z.object({
   url: z.string().url(),
   maxBytes: z.number().int().positive().optional(),

@@ -236,7 +236,10 @@ export class ExportEngine {
 
       controller.signal.throwIfAborted();
       this.videoEngine?.resetExportState();
-      if (this.videoEngine) this.videoEngine.exportMode = true;
+      if (this.videoEngine) {
+        this.videoEngine.exportMode = true;
+        this.videoEngine.startExportVerification(project);
+      }
       await waitForExportStage(backend.start(fullSettings, project, writableStream), "starting the encoder", controller.signal);
 
       if (backend.audioBeforeVideo) {
@@ -315,6 +318,33 @@ export class ExportEngine {
       }
 
       console.info(`[export] render=${(renderMsTotal / totalFrames).toFixed(1)}ms/f frames=${totalFrames}`);
+
+      // Fail loudly: a declared effect or transition that never rendered means
+      // the output differs from the timeline. Never ship that silently.
+      const verification = this.videoEngine?.getExportVerificationCounts();
+      if (verification) {
+        const missingEffects = verification.declaredEffects - verification.renderedEffects;
+        const missingTransitions = verification.declaredTransitions - verification.renderedTransitions;
+        console.info(
+          `[export] declared ${verification.declaredEffects} effects / ${verification.declaredTransitions} transitions, ` +
+            `rendered ${verification.renderedEffects} / ${verification.renderedTransitions}`,
+        );
+        if (missingEffects > 0 || missingTransitions > 0) {
+          const parts: string[] = [];
+          if (missingEffects > 0) {
+            parts.push(`${missingEffects} of ${verification.declaredEffects} declared effects were never rendered (ids: ${verification.missingEffectIds.join(", ")})`);
+          }
+          if (missingTransitions > 0) {
+            parts.push(`${missingTransitions} of ${verification.declaredTransitions} declared transitions were never rendered (ids: ${verification.missingTransitionIds.join(", ")})`);
+          }
+          throw {
+            code: "RENDER_DECLARED_MISMATCH",
+            message: parts.join("; "),
+            phase: "rendering",
+            recoverable: false,
+          } as ExportError;
+        }
+      }
 
       if (!backend.audioBeforeVideo) {
         if (hasAudio) {

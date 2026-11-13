@@ -7,6 +7,7 @@ import type {
   CurvesValues,
   HSLValues,
 } from "./color-grading-engine";
+import { TransitionEngine } from "./transition-engine";
 
 const mocks = vi.hoisted(() => {
   const effectsInitialize = vi.fn();
@@ -350,6 +351,60 @@ describe("VideoEngine export frame effects", () => {
     // Software rendering of the full grade chain; under a full monorepo run the
     // default 5s budget is blown by contention alone.
   }, 15000);
+
+  it("renders a flash transition from a two-clip track during export", async () => {
+    const sourceBitmap = makeBitmap("source");
+    const finalBitmap = makeBitmap("final");
+    const fillAlphas: number[] = [];
+    ctx.fillRect.mockImplementation(() => fillAlphas.push(ctx.globalAlpha));
+    vi.stubGlobal("createImageBitmap", vi.fn().mockResolvedValue(finalBitmap));
+
+    const clipA = makeClip([], {} as ClipColorGrading);
+    const clipB: Clip = {
+      ...clipA,
+      id: "clip-2",
+      startTime: 5,
+      inPoint: 0,
+      outPoint: 5,
+    };
+    const project = makeProject(clipA);
+    const track = project.timeline.tracks[0];
+    track.clips.push(clipB);
+    track.transitions.push({
+      id: "transition-1",
+      clipAId: clipA.id,
+      clipBId: clipB.id,
+      type: "flash",
+      duration: 1,
+      params: { intensity: 1 },
+    });
+
+    const { VideoEngine } = await import("./video-engine");
+    const engine = new VideoEngine();
+    Object.assign(engine as unknown as Record<string, unknown>, {
+      initialized: true,
+      mediabunny: {},
+    });
+    vi.spyOn(
+      engine as unknown as {
+        decodeFrameWithMediaBunny: () => Promise<ImageBitmap>;
+      },
+      "decodeFrameWithMediaBunny",
+    ).mockResolvedValue(sourceBitmap);
+    const renderTransition = vi.spyOn(TransitionEngine.prototype, "renderTransition");
+
+    const result = await engine.renderFrame(project, 4.75, 640, 360);
+
+    expect(renderTransition).toHaveBeenCalledWith(
+      sourceBitmap,
+      sourceBitmap,
+      expect.objectContaining({ type: "flash" }),
+      0.25,
+    );
+    expect(result.image).toBe(finalBitmap);
+    expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 640, 360);
+    expect(fillAlphas.some((alpha) => Math.abs(alpha - Math.SQRT1_2) < 1e-10)).toBe(true);
+  });
 
   it("does not scale an output-sized decoded frame twice", async () => {
     const outputSizedBitmap = makeBitmap("output-sized", 320, 180);

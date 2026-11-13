@@ -927,8 +927,106 @@ async function getExportState() {
   });
 }
 
-async function verifyDownloadedVideo(path, expectedDuration) {
-  await page.evaluate(() => {
+function runCapture(label, command, args, cwd = repoRoot) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { cwd, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+    child.once("error", reject);
+    child.once("close", (code) => {
+      if (code === 0) resolve({ stdout, stderr });
+      else reject(new Error(`${label} exited ${code}: ${stderr.slice(-400)}`));
+    });
+  });
+}
+
+/** Measure the rendered output with the same analyzer the reference uses:
+ * ffmpeg scene scores at 0.08 (whole file), frames on the output clock. */
+async function measureOutputCuts(renderPath) {
+  const probe = await runCapture(
+    "ffprobe output clock",
+    "ffprobe",
+    ["-v", "error", "-select_streams", "v:0",
+     "-show_entries", "stream=start_time,avg_frame_rate,duration",
+     "-of", "json", renderPath],
+  );
+  const stream = JSON.parse(probe.stdout).streams?.[0];
+  if (!stream) throw new Error("ffprobe found no video stream in the exported file.");
+  const startTime = Number(stream.start_time ?? 0) || 0;
+  const [num, den] = String(stream.avg_frame_rate ?? "30/1").split("/").map(Number);
+  const fps = den > 0 ? num / den : 30;
+  if (!Number.isFinite(fps) || fps <= 0) throw new Error(`ffprobe gave an unusable frame rate: ${stream.avg_frame_rate}.`);
+  const detection = await runCapture(
+    "output scene detection",
+    "ffmpeg",
+    ["-hide_banner", "-loglevel", "info", "-copyts", "-i", renderPath,
+     "-vf", "select='gt(scene,0.08)',showinfo", "-an", "-f", "null", "-"],
+  );
+  const times = new Set();
+  for (const match of detection.stderr.matchAll(/pts_time:([+-]?(?:\d+(?:\.\d*)?|\.\d+))/g)) {
+    const time = Number(match[1]);
+    if (Number.isFinite(time) && time >= 0) times.add(time);
+  }
+  const frames = [...times]
+    .sort((a, b) => a - b)
+    .filter((time, index, sorted) => index === 0 || time - sorted[index - 1] > 1 / 120)
+    .map((time) => Math.round((time - startTime) * fps))
+    .filter((frame) => frame > 0);
+  log(`Output measurement: ${frames.length} scene cut(s) at ${fps.toFixed(2)}fps (start_time ${startTime.toFixed(6)}s).`);
+  return { fps, frames, startTime };
+}
+
+/** Build diff-report.json with the real core module against the attached mirror profile. */
+async function computeDiffReport(renderPath, measurement) {
+  const mirrorProfile = await page.evaluate(async () => {
+    const { useProjectStore } = await import("/src/stores/project-store.ts");
+    const profile = useProjectStore.getState().project.mirrorProfile;
+    return profile ? JSON.parse(JSON.stringify(profile)) : null;
+  });
+  if (!mirrorProfile) throw new Error("The project has no attached mirror profile to diff against.");
+
+  // Grade proximity: mean luma of the output vs the reference's measured lMean.
+  let outputLMean = null;
+  try {
+    const stats = await runCapture(
+      "output mean luma",
+      "ffmpeg",
+      ["-hide_banner", "-nostats", "-i", renderPath,
+       "-vf", "signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-",
+       "-an", "-f", "null", "-"],
+    );
+    const values = [...stats.stdout.matchAll(/YAVG=([0-9.]+)/g)].map((match) => Number(match[1])).filter(Number.isFinite);
+    if (values.length) outputLMean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  } catch (error) {
+    log(`Output luma measurement failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const referenceStats = (mirrorProfile.shots ?? [])
+    .map((shot) => shot.colorStats?.lMean)
+    .filter((value) => typeof value === "number" && Number.isFinite(value));
+  const referenceLMean = referenceStats.length
+    ? referenceStats.reduce((sum, value) => sum + value, 0) / referenceStats.length
+    : undefined;
+
+  const diff = await page.evaluate(async ({ profile, outputCutFrames, outputLabStats, referenceLabLMean }) => {
+    const { buildDiffReport } = await import("/@fs/Users/hamza/Desktop/k.o.v.e/packages/core/src/mirror/diff-report.ts");
+    return buildDiffReport({
+      reference: profile,
+      outputCutFrames,
+      outputLabStats,
+      referenceLabLMean,
+    });
+  }, {
+    profile: mirrorProfile,
+    outputCutFrames: measurement.frames,
+    outputLabStats: outputLMean === null ? null : { lMean: outputLMean },
+    referenceLabLMean,
+  });
+  return diff;
+}
+
+async function verifyDownloadedVideo(path, expectedDuration) {  await page.evaluate(() => {
     const input = document.createElement("input");
     input.type = "file";
     input.id = "kove-emulation-export-verification";
@@ -1575,6 +1673,20 @@ async function main() {
   await saveJson("report.json", report);
   await page.screenshot({ path: join(outputDir, "screens", "06-exported.png") });
   log(`Export saved and decoded (${exportResult.bytes} bytes): ${exportResult.file}`);
+
+  // Measured diff: compare the rendered output against the reference edit.
+  try {
+    const measurement = await measureOutputCuts(exportResult.file);
+    const diff = await computeDiffReport(exportResult.file, measurement);
+    await saveJson("diff-report.json", diff);
+    const subscores = [`rhythm ${diff.score.rhythm}/40`, `treatment ${diff.score.treatmentCoverage}/30`];
+    if (diff.score.grade !== null) subscores.push(`grade ${diff.score.grade}/15`);
+    if (diff.score.energyShape !== null) subscores.push(`energy ${diff.score.energyShape}/15`);
+    log(`Diff report: ${diff.score.total}/100 (${subscores.join(", ")}); cuts matched ${diff.cuts.matchedFrames.length}/${diff.cuts.referenceFrames.length}.`);
+  } catch (diffError) {
+    log(`Diff report failed: ${diffError instanceof Error ? diffError.message : String(diffError)}`);
+  }
+
   log(`Evidence saved to ${outputDir}`);
   if (!headless) {
     log("Chrome will stay open for inspection. Close the Chrome window or press Ctrl+C to stop the local services.");

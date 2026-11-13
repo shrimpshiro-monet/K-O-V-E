@@ -6,7 +6,12 @@ import { probeReferenceClock as probeContainerClock } from "@kove-advanced/core/
 import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import type { LabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import { getLiveEditorHost, runExclusive } from "../agent/host-singleton";
-import { extractReference, sampleVideoStats, type ReferenceClock } from "./extract-reference";
+import {
+  extractReference,
+  probeReferenceClock as probeDesktopReferenceClock,
+  sampleVideoStats,
+  type ReferenceClock,
+} from "./extract-reference";
 import { enrichReferenceWithAudio } from "./enrich-reference-audio";
 import { abortable, abortError, isAbortError, throwIfAborted } from "./reference-measurement";
 
@@ -26,8 +31,12 @@ export interface MeasuredReference {
 export interface MeasureReferenceOptions {
   /** Coalesced measurement progress (at most ~4 notices/s, plus the total). */
   onProgress?: (done: number, total: number) => void;
+  /** Reports the current non-frame measurement stage. */
+  onStatus?: (message: string) => void;
   /** Cancels container probing, decoding and frame analysis. */
   signal?: AbortSignal;
+  /** Include creator-added text in analysis only after explicit user consent. */
+  includeReferenceText?: boolean;
 }
 
 /**
@@ -44,18 +53,30 @@ export async function measureReferenceVideo(
 ): Promise<MeasuredReference> {
   const { signal } = options;
   throwIfAborted(signal);
-  const probe = await abortable(probeContainerClock(file), signal);
-  const clock: ReferenceClock = {
-    fps: probe.fps,
-    fpsSource: "web-metadata",
-    durationSeconds: probe.durationSeconds,
-    codedDimensions: { width: probe.width, height: probe.height },
-    rotationDegrees: probe.rotationDegrees,
-  };
+  options.onStatus?.("Checking the reference video clock…");
+  const desktopProbe = typeof File !== "undefined" && file instanceof File
+    ? await abortable(probeDesktopReferenceClock(file), signal)
+    : { status: "unknown" as const, reason: "Reference is not a desktop File." };
+  let clock: ReferenceClock;
+  if (desktopProbe.status === "known") {
+    clock = desktopProbe.clock;
+  } else {
+    options.onStatus?.("Scanning the video container for its frame rate (up to 20 seconds)…");
+    const probe = await abortable(probeContainerClock(file, { signal }), signal);
+    clock = {
+      fps: probe.fps,
+      fpsSource: "web-metadata",
+      durationSeconds: probe.durationSeconds,
+      codedDimensions: { width: probe.width, height: probe.height },
+      rotationDegrees: probe.rotationDegrees,
+    };
+  }
   throwIfAborted(signal);
+  options.onStatus?.("Preparing local video frame analysis…");
   const profile = await extractReference(file, clock, {
     ...(options.onProgress ? { onProgress: options.onProgress } : {}),
     ...(signal ? { signal } : {}),
+    ...(options.includeReferenceText ? { includeReferenceText: true } : {}),
   });
   return { profile, clock };
 }

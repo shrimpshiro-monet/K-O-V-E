@@ -30,6 +30,8 @@ const {
     getGPUCompositor: vi.fn().mockReturnValue(null),
     renderFrame: mockRenderFrame,
     resetExportState: vi.fn(),
+    startExportVerification: vi.fn(),
+    getExportVerificationCounts: vi.fn().mockReturnValue(null),
     clearVideoElementCache: vi.fn(),
     clearCache: vi.fn(),
   };
@@ -604,6 +606,47 @@ describe("ExportEngine", () => {
       expect(result.error?.message).toMatch(/encoder failed/);
       expect(close).toHaveBeenCalled();
       expect(writableStream.abort).toHaveBeenCalled();
+    });
+
+    it("fails the export when a declared effect or transition never rendered", async () => {
+      mockVideoEngine.getExportVerificationCounts.mockReturnValueOnce({
+        declaredEffects: 2,
+        renderedEffects: 1,
+        declaredTransitions: 1,
+        renderedTransitions: 0,
+        missingEffectIds: ["effect-2"],
+        missingTransitionIds: ["transition-1"],
+      });
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+      await exportEngine.initialize();
+      const result = await resultOf(exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream));
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe("RENDER_DECLARED_MISMATCH");
+      expect(result.error?.message).toContain("1 of 2 declared effects were never rendered (ids: effect-2)");
+      expect(result.error?.message).toContain("1 of 1 declared transitions were never rendered (ids: transition-1)");
+      expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining("declared 2 effects / 1 transitions, rendered 1 / 0"));
+      infoSpy.mockRestore();
+    });
+
+    it("logs declared-vs-rendered counts and succeeds when they match", async () => {
+      mockVideoEngine.getExportVerificationCounts.mockReturnValueOnce({
+        declaredEffects: 2,
+        renderedEffects: 2,
+        declaredTransitions: 1,
+        renderedTransitions: 1,
+        missingEffectIds: [],
+        missingTransitionIds: [],
+      });
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+      await exportEngine.initialize();
+      const result = await resultOf(exportEngine.exportVideo(singleFrameProject(false), {
+        ...DEFAULT_VIDEO_SETTINGS, frameRate: 1, width: 640, height: 360,
+      }, writableStream));
+      expect(result.success).toBe(true);
+      expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining("declared 2 effects / 1 transitions, rendered 2 / 1"));
+      infoSpy.mockRestore();
     });
 
     it.each([

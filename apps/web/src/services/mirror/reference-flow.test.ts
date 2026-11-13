@@ -110,16 +110,22 @@ describe("reference flow", () => {
     extractReferenceMock.mockResolvedValue(profile);
     const controller = new AbortController();
     const progress: number[] = [];
+    const statuses: string[] = [];
 
     await measureReferenceVideo(new Blob(["reference"]), {
       onProgress: (done) => progress.push(done),
+      onStatus: (message) => statuses.push(message),
       signal: controller.signal,
     });
 
     const [file, clock, options] = extractReferenceMock.mock.calls[0] as [
       Blob,
       { fps: { num: number; den: number }; fpsSource: string },
-      { onProgress?: (done: number, total: number) => void; signal?: AbortSignal },
+      {
+        onProgress?: (done: number, total: number) => void;
+        onStatus?: (message: string) => void;
+        signal?: AbortSignal;
+      },
     ];
     expect(file).toBeInstanceOf(Blob);
     expect(clock).toMatchObject({ fps: { num: 30, den: 1 }, fpsSource: "web-metadata" });
@@ -127,6 +133,11 @@ describe("reference flow", () => {
     expect(options.signal).toBe(controller.signal);
     options.onProgress?.(3, 10);
     expect(progress).toEqual([3]);
+    expect(statuses).toEqual([
+      "Checking the reference video clock…",
+      "Scanning the video container for its frame rate (up to 20 seconds)…",
+      "Preparing local video frame analysis…",
+    ]);
   });
 
   it("does not start a measurement that was already cancelled", async () => {

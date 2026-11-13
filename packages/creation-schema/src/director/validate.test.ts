@@ -320,6 +320,68 @@ describe("director validation helpers", () => {
     ]));
   });
 
+  it("requires hit effects to be timed and keeps them inside their segment", () => {
+    const base = {
+      ...plan,
+      metadata: { ...plan.metadata, targetDuration: 4 },
+    };
+    const untimed = validateEditPlan({
+      ...base,
+      segments: [{
+        ...plan.segments[0],
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        effectSpecs: [{ type: "flash", params: {}, rationale: "beat hit" }],
+      }],
+    }, { videos: [{ videoId: "video-1", duration: 4, segments: [] }] });
+    expect(untimed.map((issue) => issue.code)).toContain("effect_timing_required");
+
+    const outsideSegment = validateEditPlan({
+      ...base,
+      segments: [{
+        ...plan.segments[0],
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        effectSpecs: [{
+          type: "flash",
+          params: {},
+          startOffset: 3.8,
+          duration: 0.3,
+          rationale: "beat hit",
+        }],
+      }],
+    }, { videos: [{ videoId: "video-1", duration: 4, segments: [] }] });
+    expect(outsideSegment.map((issue) => issue.code)).toContain("effect_timing_exceeds_segment");
+  });
+
+  it("rejects whole-clip hit effects but permits whole-clip color grades", () => {
+    const base = {
+      ...plan,
+      metadata: { ...plan.metadata, targetDuration: 4 },
+    };
+    const wholeClipHit = validateEditPlan({
+      ...base,
+      segments: [{
+        ...plan.segments[0],
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        effects: ["vignette"],
+      }],
+    }, { videos: [{ videoId: "video-1", duration: 4, segments: [] }] });
+    expect(wholeClipHit.map((issue) => issue.code)).toContain("whole_clip_hit_effect");
+
+    const wholeClipGrade = validateEditPlan({
+      ...base,
+      segments: [{
+        ...plan.segments[0],
+        sourceStartTime: 0,
+        sourceEndTime: 4,
+        effectSpecs: [{ type: "colorGrade", params: { brightness: 0.5 }, rationale: "base grade" }],
+      }],
+    }, { videos: [{ videoId: "video-1", duration: 4, segments: [] }] });
+    expect(wholeClipGrade.map((issue) => issue.code)).not.toContain("effect_timing_required");
+  });
+
   it("rejects colorGrade with empty params in seg.effectSpecs", () => {
     const issues = validateEditPlan({
       ...plan,
