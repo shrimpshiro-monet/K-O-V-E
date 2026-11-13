@@ -128,6 +128,35 @@ describe("shadow mode never changes behaviour", () => {
   });
 });
 
+describe("tool schema integrity", () => {
+  const walk = (node: unknown, path: string, visit: (schema: unknown, path: string) => void): void => {
+    if (node === null || typeof node !== "object" || Array.isArray(node)) return;
+    visit(node, path);
+    for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+      if (key === "properties" && value && typeof value === "object" && !Array.isArray(value)) {
+        for (const [prop, child] of Object.entries(value as Record<string, unknown>)) {
+          walk(child, path ? `${path}.${prop}` : prop, visit);
+        }
+      } else if (key === "items" || key === "additionalProperties" || key.endsWith("Of")) {
+        if (value && typeof value === "object") walk(value, `${path}.${key}`, visit);
+      }
+    }
+  };
+
+  it("every array schema in every registered tool declares items (strict providers 400 otherwise)", async () => {
+    const { listTools } = await import("./registry");
+    const bare: string[] = [];
+    for (const tool of listTools()) {
+      if (!tool.inputSchema) continue;
+      walk(tool.inputSchema, tool.name, (schema, path) => {
+        const s = schema as { type?: unknown; items?: unknown };
+        if (s.type === "array" && s.items === undefined) bare.push(path);
+      });
+    }
+    expect(bare).toEqual([]);
+  });
+});
+
 describe("enforcement via the executor", () => {
   const host = () => new HeadlessHost(makeEmptyProject());
 
