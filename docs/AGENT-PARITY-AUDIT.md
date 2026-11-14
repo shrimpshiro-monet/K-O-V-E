@@ -12,10 +12,10 @@ Competitive facts are current as of Nov 2026 ([1](https://www.descript.com/blog/
 | Suite | Result |
 | --- | --- |
 | `apps/web` unit (vitest) | editor-context 11/11, typecheck clean |
-| `packages/agent` unit | 966 passed / 11 skipped; **1 file red in this sandbox** (`effect-goldens`, WebGPU-only, see §7.3) |
+| `packages/agent` unit | **1029 passed / 11 skipped; 0 red** (§7.3 fixed) |
 | `e2e/manual-edit-ai-handoff.spec.ts` | **5/5 green** (Chromium) |
 | `e2e/director-empty-timeline.spec.ts` | **2/2 green** (Chromium) |
-| CI-relevant note | one pre-existing red: `effect "shader"` golden renders 0.00% pixels under SwiftShader |
+| CI-relevant note | the `effect "shader"` golden now measures 36.00% pixels changed (WebGL2 via ANGLE/SwiftShader; see §7.3) |
 
 ---
 
@@ -36,10 +36,15 @@ color management/HDR, and delivery infrastructure (publish, stock, cloud).
   or XML of any kind. Any user whose pipeline starts or ends in Resolve/Premiere/
   Final Cut/Avid **cannot bring work in or out**. For an editor that calls itself
   professional, this is the #1 gap.
-- **Loud correctness defect found during verification:** a WebGL/WebGPU-only
-  `shader` effect path with no CPU/2D fallback — renders nothing where WebGPU is
-  unavailable (§7.3). Several other E2E "errors" traced to harness bugs, not the
-  product (§7.1–7.2).
+- **Loud correctness defect found during verification (fixed in PR #19):** the
+  `shader` effect path early-bailed when WebGL2 was unavailable, silently
+  dropping pixels — even though a deterministic 2D material fallback already
+  existed in `MotionShaderRenderer.render()`. Fixed: the effects engine now
+  reaches the fallback, and an enabled shader effect that cannot render (or a
+  missing/unknown shaderId) logs a loud once-per-effect diagnostic instead of
+  passing silently. The golden now measures 36.00% pixels changed, via real
+  WebGL2 (ANGLE/SwiftShader) in a sandbox that supplies the SwiftShader
+  libraries. (§7.3)
 
 ## 2. What Kove ships today (measured)
 
@@ -153,13 +158,19 @@ Severity: **P0** = blocks a professional team from adopting/keeping work;
    Even correct Rec.709 in/out with explicit matrix/transfer handling and a
    warning when HDR footage is misdetected would be a start. This is the silent
    correctness area: wrong gamma on export is invisible until a client complains.
-4. **Resolve the `shader` effect path having no non-WebGPU fallback.** The golden
-   `effect "shader" renders 0.00% of pixels` in SwiftShader proves it: on any
-   machine without WebGPU, shader looks apply and produce *nothing* — the worst
-   kind of silent breakage in an editor whose whole selling point is visible
-   effects. Either fall back to a canvas2d approximation, refuse with
-   `WEBGPU_REQUIRED` like `extract_segments` refuses un-analyzed footage, or at
-   minimum surface a warning when the device is unavailable. (§7.3)
+4. ~~**Resolve the `shader` effect path having no non-WebGPU fallback.**~~
+   **Fixed in PR #19.** Root cause: `applyShaderEffect` early-returned when
+   `MotionShaderRenderer.isSupported()` was false, so the 2D fallback inside
+   `MotionShaderRenderer.render()` never ran. Now the effects engine renders
+   through the deterministic 2D material approximation (preserving input
+   alpha), logs a loud once-per-effect warning when an enabled shader effect
+   cannot render (unknown/missing shaderId, non-effect shader category, or no
+   pixels produced), and exposes `MotionShaderRenderer.getFallbackDiagnostics()`
+   so tests and operators can see whether the GPU path was taken. The golden
+   was **not** touched: `effect "shader"` now reports 36.00% pixels changed
+   under WebGL2 (ANGLE/SwiftShader). Remaining caveat: the 2D approximation is
+   a material stand-in, not a shader reimplementation — quality is not
+   equivalent to the WebGL2 path. (§7.3)
 
 ### P1
 5. **Transcript-first surface in the default editor.** Kove has the pieces
@@ -270,14 +281,26 @@ expansion) → 5 final text. `expand_prompt_result` is structured-output-only �
 the spec). Asserted: `outerCalls === 5`, `extractCalls === 1`,
 `analysisBodies === 1`, 1 clip placed, `mediaId` matches source, committed.
 
-### 7.3 `effect "shader"` golden — 0.00% pixels (open, product-relevant)
+### 7.3 `effect "shader"` golden — 0.00% pixels → fixed (36.00% changed)
+
 `packages/agent/src/eval/effect-goldens.test.ts` — the `shader` effect type
-renders no pixels under SwiftShader/ANGLE. All other 62 goldens (effects,
-transitions, baselines) pass. Either the WebGPU path silently no-ops when
-`navigator.gpu` is unavailable, or the effect requires WebGPU unconditionally.
-Action: route shader effects through the documented refusal pattern
-(`WEBGPU_REQUIRED`) or a CPU fallback; add a skip-with-reason golden for
-non-WebGPU environments. **Do not delete or loosen the golden.**
+rendered no pixels. Root cause was not a WebGPU-only path without a fallback;
+it was `VideoEffectsEngine.applyShaderEffect()` early-returning when
+`MotionShaderRenderer.isSupported()` was false, so the deterministic 2D
+material approximation already inside `MotionShaderRenderer.render()` never
+ran. Fix (PR #19): the early bail is gone; the renderer falls back to the 2D
+approximation (input alpha preserved) and reports fallback use via
+`getFallbackDiagnostics()`; `VideoEffectsEngine` logs a loud once-per-effect
+warning when an enabled shader effect cannot render at all (missing/unknown
+shaderId, non-effect shader category, or zero pixels produced).
+
+Verification: with SwiftShader libraries present next to the sandbox's
+chromium binary (`libEGL.so`, `libGLESv2.so`, `libvulkan.so.1`,
+`libvk_swiftshader.so`, `vk_swiftshader_icd.json`), the golden environment has
+full WebGL2 and measures **36.00% pixels changed** — the real shader executes,
+no fallback involved. With no WebGL2 (the default in minimal sandbox builds),
+the same test passes via the 2D fallback instead of failing 0.00%. The golden
+threshold was **not** changed. **Do not delete or loosen the golden.**
 
 ### 7.4 Suite status after fixes
 
@@ -286,7 +309,7 @@ non-WebGPU environments. **Do not delete or loosen the golden.**
 | `e2e/manual-edit-ai-handoff.spec.ts` | 4/5 (brightness test) | **5/5** (`TARGETED_EDIT_HINT`; 3 consecutive runs) |
 | `e2e/director-empty-timeline.spec.ts` | 1/2 | **2/2** (3 consecutive runs) |
 | `tsc --noEmit` (apps/web) | 2 errors | clean |
-| `packages/agent` vitest | 966 pass / 1 file red | unchanged (environmental, §7.3) |
+| `packages/agent` vitest | 966 pass / 1 file red | **1029 pass / 0 red** (§7.3 fixed; goldens unchanged) |
 | `apps/web` vitest | editor-context 11/11 | 11/11 |
 
 ## 8. Recommended order of work
@@ -295,7 +318,9 @@ non-WebGPU environments. **Do not delete or loosen the golden.**
    is invisible to those users without it. (§5.1)
 2. **P0 collaborative review MVP** — share link + timestamped comments + approval
    state; reuse `SharePage` plumbing. (§5.2)
-3. **P0 shader/WEBGPU_REQUIRED + fallback** — small, high trust. (§5.4 / §7.3)
+3. ~~**P0 shader/WEBGPU_REQUIRED + fallback**~~ — **done in PR #19**
+   (§5.4 / §7.3); the remaining open interchange/review/HDR items stay in
+   their own PRs.
 4. **P0 HDR/CM scoping document + Rec.709 matrix correctness** — even a
    "refuse unknown color space with a warning" pass buys trust. (§5.3)
 5. **P1 transcript-first dock** — the #1 AI-editor genre (talking-head) is won
