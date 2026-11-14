@@ -64,6 +64,18 @@ const isDirectorDiscoveryTool = (name: string): boolean =>
 
 const DIRECTOR_REQUEST = /\b(edit|video|footage|clip|cut|trim|highlight|reel|montage|reference|b-roll|vlog|podcast|timeline|sequence|splice|join)\b/i;
 
+/**
+ * Targeted adjustments to content that already exists on the timeline —
+ * "turn off the brightness effect", "change the selected clip's speed".
+ * Requiring a full plan_edit for these hijacks the turn: the model must
+ * re-plan the whole edit (or fail validation) before touching one effect,
+ * which is how manual edits turned AI calls into wrong or no-op output.
+ * Only consulted when the timeline already has clips; an empty timeline
+ * always keeps the director guard.
+ */
+const TARGETED_EDIT_HINT =
+  /\b(selected|selection|chosen|this (clip|effect|title|text|track|marker|transition)|that (clip|effect|title|text|track|marker|transition)|the (clip|effect|title|text|track|marker|transition|selection)|current (clip|effect|title|text)|just added|turn (off|on)|toggle|disable|enable|mute|unmute|update|change|rename|adjust|brighten|brightness|darken|contrast|saturation|exposure|volume|speed|opacity|scale|rotate|crop|resize|position|filter|blur|sharpen|denoise|color grade)\b/i;
+
 /** True when the prompt asks for an edit (the director workflow guard applies). */
 export function isDirectorRequest(prompt: string): boolean {
   return DIRECTOR_REQUEST.test(prompt);
@@ -248,10 +260,16 @@ export async function runTurn(input: RunTurnInput): Promise<RunTurnResult> {
   // deleted or a reference rebuild failed to place any shots.
   const hasExistingPlan = startedWithClips && hasExistingDirectorPlan(projectId);
   const appliedReferencePlan = startedWithClips && input.directorPlanApplied;
+  // On an existing timeline, a prompt that names the targeted entity or a
+  // targeted adjustment is a tool call, not a re-edit brief — let it through
+  // without the plan_edit gate.
+  const targetedEdit =
+    startedWithClips && TARGETED_EDIT_HINT.test(latestUserPrompt(messages));
   const requiresDirectorPlan =
     enforceDirectorWorkflow &&
     !appliedReferencePlan &&
     !hasExistingPlan &&
+    !targetedEdit &&
     DIRECTOR_REQUEST.test(latestUserPrompt(messages));
   const hasSourceFootage = initialProject.mediaLibrary.items.some(
     (item) => item.type === "video" && item.analysisRole !== "reference",
