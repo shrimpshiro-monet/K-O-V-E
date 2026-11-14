@@ -33,6 +33,7 @@ import {
 } from "../services/agent/llm-transport";
 import { logAIDiagnostic } from "../services/agent/console-diagnostics";
 import { normalizeCompatibleBaseUrl } from "../services/api-proxy";
+import { buildEditorContext } from "../services/agent/editor-context";
 import {
   measureReferenceVideo,
   enrichReferenceVideo,
@@ -206,6 +207,7 @@ function buildReducedToolsetInput(
   host: ReturnType<typeof getLiveEditorHost>,
   routingContext: string,
   priorToolNames: string[],
+  editorContext?: string,
 ): (input: LLMTurnInput) => LLMTurnInput {
   const cfToolNames = selectToolsForPrompt(routingContext, { maxTools: 25, priorToolNames });
   const cfTools = toOpenAITools(cfToolNames);
@@ -215,7 +217,7 @@ function buildReducedToolsetInput(
       ...input,
       tools: cfTools,
       ...(input.system !== undefined
-        ? { system: buildSystemPrompt(host, cfToolNames) }
+        ? { system: buildSystemPrompt(host, cfToolNames, editorContext) }
         : {}),
     };
   };
@@ -882,7 +884,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // The ladder owns failover, so a quota 429 should advance immediately.
       ...(provider === "cloudflare" ? { cloudflareRetries: 0 } : {}),
     });
-    const reducedInput = buildReducedToolsetInput(host, routingContext, priorToolNames);
+    // The context is advisory — it must never break a turn.
+    let editorContext: string | undefined;
+    try {
+      editorContext = buildEditorContext();
+    } catch {
+      editorContext = undefined;
+    }
+    const reducedInput = buildReducedToolsetInput(host, routingContext, priorToolNames, editorContext);
     // NVIDIA NIM (OpenAI-compatible) is the first non-Cloudflare provider.
     const nimBaseUrlFromEnv = (import.meta.env.VITE_NVIDIA_NIM_BASE_URL ?? "") as string;
     const nimApiKeyFromEnv = (import.meta.env.VITE_NVIDIA_NIM_API_KEY ?? "") as string;
@@ -1035,7 +1044,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           host,
           llm,
           tools,
-          system: buildSystemPrompt(host, selectedToolNames),
+          system: buildSystemPrompt(host, selectedToolNames, editorContext),
           messages: get().conversation,
           dryRun,
           confirmGate: autoConfirm

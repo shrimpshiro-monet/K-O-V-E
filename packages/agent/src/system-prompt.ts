@@ -38,10 +38,15 @@ function hasAny(selected: Set<string>, candidates: Set<string>): boolean {
  * The prompt is context-aware: it only includes sections relevant to the
  * tools currently available, reducing token bloat and keeping the model focused
  * on the task at hand.
+ *
+ * Interactive hosts may append a live `editorContext` block (playhead position,
+ * current selection with ids/times) so requests like "add a title here" resolve
+ * against what the user can actually see. Headless callers omit it.
  */
 export function buildSystemPrompt(
   host: EditingHost,
   selectedToolNames?: Iterable<string>,
+  editorContext?: string,
 ): string {
   let state = "(no project open)";
   try {
@@ -130,6 +135,13 @@ export function buildSystemPrompt(
     "",
     toCapabilityDoc(selectedToolNames),
   );
+
+  // ---- Live UI context (optional; only interactive hosts provide it) ----
+  // The playhead and selection live in renderer stores, not in the project
+  // model, so hosts pass a pre-rendered block. Headless callers omit it.
+  if (editorContext && editorContext.trim().length > 0) {
+    sections.push("", editorContext.trim());
+  }
 
   return sections.join("\n");
 }

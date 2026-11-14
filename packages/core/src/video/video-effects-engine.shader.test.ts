@@ -106,6 +106,67 @@ describe("VideoEffectsEngine shader effect resolution", () => {
   });
 });
 
+describe("VideoEffectsEngine shader diagnostics", () => {
+  interface DiagnosticsInternals {
+    describeShaderIssue(effect: Effect): string | null;
+    reportUnresolvedShader(effect: Effect, issue: string): void;
+  }
+
+  function diagnostics(engine: VideoEffectsEngine): DiagnosticsInternals {
+    return engine as unknown as DiagnosticsInternals;
+  }
+
+  it("explains why an enabled shader effect cannot render", () => {
+    const engine = new VideoEffectsEngine({ width: 8, height: 8, useGPU: false });
+    expect(
+      diagnostics(engine).describeShaderIssue(
+        shaderEffect({ shaderId: "paper-does-not-exist" }),
+      ),
+    ).toContain("paper-does-not-exist");
+    expect(diagnostics(engine).describeShaderIssue(shaderEffect({}))).toContain(
+      "shaderId",
+    );
+    expect(
+      diagnostics(engine).describeShaderIssue(
+        shaderEffect({ shaderId: "paper-mesh-gradient" }),
+      ),
+    ).toContain("effect-category");
+    expect(
+      diagnostics(engine).describeShaderIssue(
+        shaderEffect({ shaderId: HALFTONE_ID }),
+      ),
+    ).toBeNull();
+  });
+
+  it("warns once per effect and issue, not once per frame", () => {
+    const engine = new VideoEffectsEngine({ width: 8, height: 8, useGPU: false });
+    const warnings: string[] = [];
+    const originalWarn = console.warn;
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args.map(String).join(" "));
+    };
+    try {
+      const effect = shaderEffect({ shaderId: "paper-does-not-exist" });
+      const issue = diagnostics(engine).describeShaderIssue(effect)!;
+      diagnostics(engine).reportUnresolvedShader(effect, issue);
+      diagnostics(engine).reportUnresolvedShader(effect, issue);
+    } finally {
+      console.warn = originalWarn;
+    }
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("paper-does-not-exist");
+    expect(warnings[0]).toContain("did not render");
+  });
+
+  it("motion shader renderer exposes fallback diagnostics starting at zero", () => {
+    const renderer = new MotionShaderRenderer();
+    expect(renderer.getFallbackDiagnostics()).toEqual({
+      fallbackUseCount: 0,
+      fallbackWarnings: [],
+    });
+  });
+});
+
 describe.skipIf(!webgl2)("VideoEffectsEngine shader effect render", () => {
   async function solidFrame(
     width: number,

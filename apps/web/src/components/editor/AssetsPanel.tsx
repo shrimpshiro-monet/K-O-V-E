@@ -787,9 +787,19 @@ export const AssetsPanel: React.FC = () => {
           );
 
           const result = await importMedia(file);
+          if (!result.success) {
+            // The import pipeline returns structured failures without throwing
+            // — surface them, or the user is left staring at the empty state
+            // with no idea why their file never landed in the library.
+            toast.error(
+              `Import failed: ${file.name}`,
+              result.error?.message ?? "The media could not be decoded or probed.",
+            );
+            continue;
+          }
 
           // If it's a video with audio, extract audio to separate track
-          if (result.success && file.type.startsWith("video/")) {
+          if (file.type.startsWith("video/")) {
             setImportProgress(`Extracting audio from ${file.name}...`);
             // Audio extraction is handled by the importMedia function
             // The audio track is created automatically when adding to timeline

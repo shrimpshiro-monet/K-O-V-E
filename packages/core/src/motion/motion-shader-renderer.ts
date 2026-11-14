@@ -274,6 +274,31 @@ export class MotionShaderRenderer {
   private readonly programs = new Map<string, CompiledProgram | null>();
   private contextLostHandler: ((event: Event) => void) | null = null;
   private unavailable = false;
+  private readonly fallbackWarnings = new Set<string>();
+  private fallbackUseCount = 0;
+
+  /**
+   * Diagnostics for callers that need to know whether shader effects actually
+   * ran on WebGL2. `fallbackUseCount` counts every render that dropped to the
+   * deterministic 2D approximation; `fallbackWarnings` holds the deduplicated
+   * reasons (one per distinct failure mode).
+   */
+  getFallbackDiagnostics(): {
+    readonly fallbackUseCount: number;
+    readonly fallbackWarnings: readonly string[];
+  } {
+    return {
+      fallbackUseCount: this.fallbackUseCount,
+      fallbackWarnings: [...this.fallbackWarnings],
+    };
+  }
+
+  private noteFallback(key: string, message: string): void {
+    this.fallbackUseCount += 1;
+    if (this.fallbackWarnings.has(key)) return;
+    this.fallbackWarnings.add(key);
+    console.warn(message);
+  }
 
   static isSupported(): boolean {
     try {
@@ -291,10 +316,22 @@ export class MotionShaderRenderer {
     input: MotionShaderRenderInput,
   ): MotionShaderCanvas | null {
     const gl = this.ensureContext();
-    if (!gl || !this.canvas) return renderMotionShaderFallbackCanvas(def, input);
+    if (!gl || !this.canvas) {
+      this.noteFallback(
+        "webgl2-unavailable",
+        `[MotionShaderRenderer] WebGL2 is unavailable; shader "${def.id}" is rendering with the deterministic 2D fallback approximation`,
+      );
+      return renderMotionShaderFallbackCanvas(def, input);
+    }
 
     const compiled = this.ensureProgram(gl, def);
-    if (!compiled) return renderMotionShaderFallbackCanvas(def, input);
+    if (!compiled) {
+      this.noteFallback(
+        `program-failed:${def.id}`,
+        `[MotionShaderRenderer] Shader "${def.id}" could not be compiled or linked; rendering with the deterministic 2D fallback approximation`,
+      );
+      return renderMotionShaderFallbackCanvas(def, input);
+    }
 
     const width = Math.max(1, Math.floor(input.width));
     const height = Math.max(1, Math.floor(input.height));
@@ -349,7 +386,12 @@ export class MotionShaderRenderer {
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       return this.canvas;
     } catch (error) {
-      console.warn(`[MotionShaderRenderer] Render failed for ${def.id}:`, error);
+      const detail =
+        error instanceof Error ? error.message : String(error);
+      this.noteFallback(
+        `render-failed:${def.id}`,
+        `[MotionShaderRenderer] Render failed for ${def.id} (${detail}); frames render with the deterministic 2D fallback approximation`,
+      );
       return renderMotionShaderFallbackCanvas(def, input);
     }
   }
