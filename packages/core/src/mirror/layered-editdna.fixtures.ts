@@ -20,7 +20,20 @@ export const textOverFootageFixture: LayeredEditDNA = {
   shots: [{ startFrame: 0, endFrame: 60, captionWindows: [] }],
   rhythmCurve: [60],
   beatGridMs: [],
-  styleEvidence: { transitions: [], textOverlays: [], effects: [] },
+  styleEvidence: {
+    transitions: [],
+    textOverlays: [
+      {
+        startFrame: 10,
+        endFrame: 50,
+        bounds: { x: 0.1, y: 0.7, width: 0.8, height: 0.2 },
+        text: "READY",
+        confidence: 0.6,
+        source: "vision-model",
+      },
+    ],
+    effects: [],
+  },
   textMasking: { applied: true, cornerWidthRatio: 0.16, cornerHeightRatio: 0.12 },
   coverage: {
     cuts: { status: "measured", source: "local-pixel-analysis", confidence: 0.95 },
@@ -65,6 +78,7 @@ export const textOverFootageFixture: LayeredEditDNA = {
           startFrame: 10,
           endFrame: 50,
           transform: { base: { ...identity, y: 0.8 }, keyframes: [] },
+          evidenceRef: "textOverlays[0]",
           provenance: { status: "inferred", source: "vision-model", confidence: 0.6 },
         },
       ],

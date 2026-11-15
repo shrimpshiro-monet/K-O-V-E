@@ -54,6 +54,12 @@ export interface TransformTrack {
   readonly provenance?: StyleProvenance;
 }
 
+/**
+ * Structural layer only. Content payloads — text string, font choice, animation
+ * preset, effect id/parameters, and shape geometry — are deliberately out of
+ * the v4.0 graph. They arrive as a discriminated layer-content union before
+ * issue 5 fills text and effect layers.
+ */
 export type LayerKind = "footage" | "still" | "text" | "shape" | "effect" | "adjustment" | "unknown";
 
 export type MaskKind =
@@ -83,6 +89,12 @@ export interface StyleLayer {
   readonly endFrame: number;
   readonly transform: TransformTrack;
   readonly mask?: LayerMask;
+  /**
+   * Path to the retained v3 evidence item this layer was derived from, e.g.
+   * "textOverlays[0]", "effects[2]", or "transitions[1]". The item must exist
+   * in the retained profile. `rebaseScene` leaves this reference unchanged.
+   */
+  readonly evidenceRef?: string;
   readonly provenance?: StyleProvenance;
 }
 
@@ -176,6 +188,17 @@ function validateTransform(track: TransformTrack, startFrame: number, endFrame: 
   }
 }
 
+function validateEvidenceRef(layer: StyleLayer, evidence: ReferenceProfile["styleEvidence"]): void {
+  if (layer.evidenceRef === undefined) return;
+  const match = /^(textOverlays|effects|transitions)\[(\d+)\]$/.exec(layer.evidenceRef);
+  check(match !== null, `Layer ${layer.id} evidenceRef must look like textOverlays[0]`);
+  check(evidence !== undefined, `Layer ${layer.id} references evidence but the profile has none`);
+  const [, collection, rawIndex] = match;
+  const items = collection === "textOverlays" ? evidence.textOverlays : collection === "effects" ? evidence.effects : evidence.transitions;
+  const index = Number(rawIndex);
+  check(Number.isSafeInteger(index) && index < items.length, `Layer ${layer.id} evidenceRef does not resolve`);
+}
+
 function validateMask(mask: LayerMask | undefined, layer: StyleLayer, scene: LayeredScene, label: string): void {
   if (!mask) return;
   check(MASK_KINDS.includes(mask.kind), `${label} has an invalid mask kind`);
@@ -198,7 +221,13 @@ function validateMask(mask: LayerMask | undefined, layer: StyleLayer, scene: Lay
   validateProvenance(mask.provenance, `${label}.provenance`);
 }
 
-function validateScene(scene: LayeredScene, durationFrames: number, layerIds: Set<string>, slotIds: Set<string>): void {
+function validateScene(
+  scene: LayeredScene,
+  durationFrames: number,
+  layerIds: Set<string>,
+  slotIds: Set<string>,
+  evidence: ReferenceProfile["styleEvidence"],
+): void {
   check(typeof scene.id === "string" && scene.id.length > 0, "Scene id is required");
   check(Number.isSafeInteger(scene.revision) && scene.revision >= 1, `Scene ${scene.id} revision must be a positive integer`);
   check(
@@ -225,6 +254,7 @@ function validateScene(scene: LayeredScene, durationFrames: number, layerIds: Se
     );
     validateTransform(layer.transform, layer.startFrame, layer.endFrame, `Layer ${layer.id}`);
     validateMask(layer.mask, layer, scene, `Layer ${layer.id}`);
+    validateEvidenceRef(layer, evidence);
     validateProvenance(layer.provenance, `Layer ${layer.id}.provenance`);
   }
   for (const layer of scene.layers) {
@@ -278,7 +308,54 @@ export function validateLayeredEditDNA(dna: LayeredEditDNA): void {
   for (const scene of dna.scenes) {
     check(!sceneIds.has(scene.id), `Scene id ${scene.id} is duplicated`);
     sceneIds.add(scene.id);
-    validateScene(scene, dna.durationFrames, layerIds, slotIds);
+    validateScene(scene, dna.durationFrames, layerIds, slotIds, dna.styleEvidence);
   }
   validateCoverage(dna.coverage, "profile");
+}
+
+/**
+ * Pure template helper: shifts the scene, its layers, keyframes, and slots by
+ * the delta to `newStartFrame`, and appends `idSuffix` to scene/layer/slot IDs
+ * plus internal parent, matte-source, and slot-layer references. The
+ * `evidenceRef` always keeps pointing at the retained profile evidence.
+ */
+export function rebaseScene(scene: LayeredScene, newStartFrame: number, idSuffix: string): LayeredScene {
+  check(Number.isSafeInteger(newStartFrame) && newStartFrame >= 0, "Scene rebase start must be a non-negative integer");
+  check(typeof idSuffix === "string", "Scene rebase suffix must be a string");
+  const delta = newStartFrame - scene.startFrame;
+  const rename = (id: string) => `${id}${idSuffix}`;
+  return {
+    ...scene,
+    id: rename(scene.id),
+    startFrame: scene.startFrame + delta,
+    endFrame: scene.endFrame + delta,
+    layers: scene.layers.map((layer) => ({
+      ...layer,
+      id: rename(layer.id),
+      parentId: layer.parentId === undefined ? undefined : rename(layer.parentId),
+      startFrame: layer.startFrame + delta,
+      endFrame: layer.endFrame + delta,
+      transform: {
+        ...layer.transform,
+        keyframes: layer.transform.keyframes.map((keyframe) => ({
+          ...keyframe,
+          frame: keyframe.frame + delta,
+        })),
+      },
+      mask:
+        layer.mask === undefined
+          ? undefined
+          : {
+              ...layer.mask,
+              sourceLayerId: layer.mask.sourceLayerId === undefined ? undefined : rename(layer.mask.sourceLayerId),
+            },
+    })),
+    slots: scene.slots.map((slot) => ({
+      ...slot,
+      id: rename(slot.id),
+      layerId: rename(slot.layerId),
+      startFrame: slot.startFrame + delta,
+      endFrame: slot.endFrame + delta,
+    })),
+  };
 }

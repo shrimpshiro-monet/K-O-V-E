@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateLayeredEditDNA, type LayeredEditDNA } from "./layered-editdna";
+import { rebaseScene, validateLayeredEditDNA, type LayeredEditDNA } from "./layered-editdna";
 import { overlappingCollageFixture, singleLayerMigrationFixture, textOverFootageFixture } from "./layered-editdna.fixtures";
 
 const scene = textOverFootageFixture.scenes[0]!;
@@ -31,6 +31,67 @@ describe("layered EditDNA", () => {
       ],
     };
     expect(() => validateLayeredEditDNA(invalid)).toThrow(/tile/);
+  });
+
+  it("rejects a dangling evidence reference", () => {
+    const invalid: LayeredEditDNA = {
+      ...textOverFootageFixture,
+      scenes: [{ ...scene, layers: [footage, { ...title, evidenceRef: "textOverlays[3]" }] }],
+    };
+    expect(() => validateLayeredEditDNA(invalid)).toThrow(/evidenceRef does not resolve/);
+  });
+
+  it("rejects a malformed evidence reference", () => {
+    const invalid: LayeredEditDNA = {
+      ...textOverFootageFixture,
+      scenes: [{ ...scene, layers: [footage, { ...title, evidenceRef: "text overlay 0" }] }],
+    };
+    expect(() => validateLayeredEditDNA(invalid)).toThrow(/must look like/);
+  });
+
+  it("rebases a template scene and keeps internal references valid", () => {
+    const sceneA = overlappingCollageFixture.scenes[0]!;
+    const sceneB = overlappingCollageFixture.scenes[1]!;
+    const shiftedA = rebaseScene(sceneA, 200, "-copy");
+    const shiftedB = rebaseScene(sceneB, 200, "-copy");
+    const profile: LayeredEditDNA = {
+      ...overlappingCollageFixture,
+      durationFrames: 290,
+      shots: [{ startFrame: 0, endFrame: 290, captionWindows: [] }],
+      rhythmCurve: [290],
+      scenes: [shiftedA, shiftedB],
+    };
+    expect(() => validateLayeredEditDNA(profile)).not.toThrow();
+    expect(shiftedA.startFrame).toBe(200);
+    expect(shiftedA.layers[2]!.parentId).toBe("a-cutout-copy");
+    expect(shiftedB.layers[1]!.mask!.sourceLayerId).toBe("b-bg-copy");
+    expect(shiftedA.slots[1]!.layerId).toBe("a-cutout-copy");
+  });
+
+  it("round-trips timing when a rebased scene returns to its start", () => {
+    const original = textOverFootageFixture.scenes[0]!;
+    const shifted = rebaseScene(original, 60, "-copy");
+    const profile: LayeredEditDNA = {
+      ...textOverFootageFixture,
+      durationFrames: 120,
+      shots: [{ startFrame: 0, endFrame: 120, captionWindows: [] }],
+      rhythmCurve: [120],
+      scenes: [shifted],
+    };
+    expect(() => validateLayeredEditDNA(profile)).not.toThrow();
+    expect(shifted.layers[0]!.transform.keyframes.map((keyframe) => keyframe.frame)).toEqual([60, 119]);
+    expect(shifted.layers[1]!.evidenceRef).toBe("textOverlays[0]");
+    expect(shifted.slots[0]!.layerId).toBe("footage-copy");
+    const restored = rebaseScene(shifted, original.startFrame, "");
+    expect(restored.layers.map((layer) => [layer.startFrame, layer.endFrame])).toEqual(
+      original.layers.map((layer) => [layer.startFrame, layer.endFrame]),
+    );
+    expect(restored.layers[0]!.transform.keyframes.map((keyframe) => keyframe.frame)).toEqual(
+      original.layers[0]!.transform.keyframes.map((keyframe) => keyframe.frame),
+    );
+    expect(restored.slots.map((slot) => [slot.startFrame, slot.endFrame])).toEqual(
+      original.slots.map((slot) => [slot.startFrame, slot.endFrame]),
+    );
   });
 
   it("rejects a layer that escapes its scene window", () => {
