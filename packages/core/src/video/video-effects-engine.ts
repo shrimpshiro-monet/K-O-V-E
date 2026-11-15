@@ -439,6 +439,7 @@ export class VideoEffectsEngine {
   private _shaderAlphaCtx: OffscreenCanvasRenderingContext2D | null = null;
 
   private _shaderRenderer: MotionShaderRenderer | null = null;
+  private readonly warnedShaderIssues = new Set<string>();
 
   constructor(config: VideoEffectsConfig) {
     this.width = config.width;
@@ -1131,13 +1132,43 @@ export class VideoEffectsEngine {
     return effect.type === "shader";
   }
 
-  private resolveShaderEffect(effect: Effect): ResolvedShaderEffect | null {
+  /**
+   * Why an enabled shader effect cannot render, or null when it can. The fx
+   * canvas pipeline is best-effort by design, but an enabled effect silently
+   * producing no pixels is never acceptable — callers must surface this.
+   */
+  private describeShaderIssue(effect: Effect): string | null {
     if (!VideoEffectsEngine.isShaderEffect(effect)) return null;
     const params = effect.params as Record<string, unknown>;
     const shaderId = params.shaderId;
-    if (typeof shaderId !== "string" || shaderId.length === 0) return null;
+    if (typeof shaderId !== "string" || shaderId.length === 0) {
+      return "params.shaderId is missing or not a string";
+    }
     const def = getMotionShaderDef(shaderId);
-    if (!def || def.category !== "effect") return null;
+    if (!def) {
+      return `no registered shader with id "${shaderId}"`;
+    }
+    if (def.category !== "effect") {
+      return `shader "${shaderId}" is ${def.category}-category; effects require an effect-category shader`;
+    }
+    return null;
+  }
+
+  private reportUnresolvedShader(effect: Effect, issue: string): void {
+    const key = `${effect.id}:${issue}`;
+    if (this.warnedShaderIssues.has(key)) return;
+    this.warnedShaderIssues.add(key);
+    console.warn(
+      `[VideoEffectsEngine] Shader effect "${effect.id}" did not render: ${issue}`,
+    );
+  }
+
+  private resolveShaderEffect(effect: Effect): ResolvedShaderEffect | null {
+    if (!VideoEffectsEngine.isShaderEffect(effect)) return null;
+    if (this.describeShaderIssue(effect) !== null) return null;
+    const params = effect.params as Record<string, unknown>;
+    const shaderId = params.shaderId as string;
+    const def = getMotionShaderDef(shaderId)!;
 
     const resolvedParams: Record<string, number | string> = {};
     for (const paramDef of def.params) {
@@ -1156,7 +1187,10 @@ export class VideoEffectsEngine {
     width: number,
     height: number,
   ): void {
-    if (!MotionShaderRenderer.isSupported()) return;
+    // No early bail on MotionShaderRenderer.isSupported(): when WebGL2 is
+    // unavailable the renderer already degrades to renderMotionShaderFallbackCanvas
+    // (a deterministic 2D material approximation). Skipping here skipped that
+    // fallback too, silently dropping the effect's pixels entirely.
     if (!this._shaderRenderer) {
       this._shaderRenderer = new MotionShaderRenderer();
     }
@@ -1188,7 +1222,16 @@ export class VideoEffectsEngine {
       params: resolved.params,
       inputCanvas: canvas,
     });
-    if (!result) return;
+    if (!result) {
+      const key = `render-failed:${resolved.def.id}`;
+      if (!this.warnedShaderIssues.has(key)) {
+        this.warnedShaderIssues.add(key);
+        console.warn(
+          `[VideoEffectsEngine] Shader "${resolved.def.id}" produced no pixels (WebGL2 unavailable and the 2D fallback could not run)`,
+        );
+      }
+      return;
+    }
     ctx.save();
     ctx.filter = "none";
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1253,6 +1296,11 @@ export class VideoEffectsEngine {
         const resolved = this.resolveShaderEffect(shaderEffect);
         if (resolved) {
           this.applyShaderEffect(ctx, ctx.canvas, resolved, width, height);
+        } else {
+          const issue = this.describeShaderIssue(shaderEffect);
+          if (issue !== null) {
+            this.reportUnresolvedShader(shaderEffect, issue);
+          }
         }
       } else {
         await this.applyEffectPixelLevel(ctx, effect, width, height);

@@ -36,6 +36,16 @@ that (`hasWebgl`) and **skips with a reason** instead of failing, because it is 
 property of the browser, not of the edit. Everything else in the suite needs no
 GPU.
 
+A minimal sandbox build that is *missing* SwiftShader can be given a working
+WebGL2 anyway: place `libEGL.so`, `libGLESv2.so`, `libvulkan.so.1`,
+`libvk_swiftshader.so` and `vk_swiftshader_icd.json` next to the Chromium
+binary (or on `LD_LIBRARY_PATH`) and launch with
+`--enable-unsafe-swiftshader --use-gl=angle --use-angle=swiftshader`. ANGLE
+then reports a working WebGL2 (`WebKit WebGL`, OpenGL ES 3.0) and the real
+GPU/shader paths — including the shader goldens — execute instead of falling
+back to CPU/2D approximations. Note that `/home/user/.cache` is excluded from
+the Arena session snapshots, so this placement must be redone after a reset.
+
 ## What is real vs substituted
 
 Everything the app does is real; only the segmentation *weights* are synthetic.
