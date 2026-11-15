@@ -1214,7 +1214,620 @@
         "confidence": 0.9
       }
     ],
-    "textOverlays": [],
+    "textOverlays": [
+      {
+        "startFrame": 64,
+        "endFrame": 72,
+        "bounds": {
+          "x": 0.5742,
+          "y": 0.9306,
+          "width": 0.069,
+          "height": 0.0521
+        },
+        "text": "Gc",
+        "style": {
+          "fontSizeRatio": 0.0521,
+          "alignment": "right"
+        },
+        "source": "local-ocr",
+        "confidence": 0.7425,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 96,
+        "endFrame": 104,
+        "bounds": {
+          "x": 0.4466,
+          "y": 0.0208,
+          "width": 0.1003,
+          "height": 0.026
+        },
+        "text": "00:00:19",
+        "style": {
+          "fontSizeRatio": 0.026,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9688,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 96,
+        "endFrame": 104,
+        "bounds": {
+          "x": 0.5521,
+          "y": 0.8767,
+          "width": 0.0534,
+          "height": 0.0295
+        },
+        "text": "£934",
+        "style": {
+          "fontSizeRatio": 0.0295,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.6792,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.444,
+          "y": 0.0208,
+          "width": 0.1029,
+          "height": 0.026
+        },
+        "text": "00:02:26",
+        "style": {
+          "fontSizeRatio": 0.026,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9662,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.1888,
+          "y": 0.1267,
+          "width": 0.0599,
+          "height": 0.0365
+        },
+        "text": "lam",
+        "style": {
+          "fontSizeRatio": 0.0365,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9076,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.0104,
+          "y": 0.1597,
+          "width": 0.1068,
+          "height": 0.0365
+        },
+        "text": "Lewis Hamil",
+        "style": {
+          "fontSizeRatio": 0.0365,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.8046,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.1484,
+          "y": 0.1823,
+          "width": 0.0391,
+          "height": 0.0208
+        },
+        "text": "is on",
+        "style": {
+          "fontSizeRatio": 0.0208,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.8204,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.2943,
+          "y": 0.1458,
+          "width": 0.0326,
+          "height": 0.0313
+        },
+        "text": "On",
+        "style": {
+          "fontSizeRatio": 0.0313,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9624,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.0299,
+          "y": 0.2066,
+          "width": 0.0807,
+          "height": 0.0313
+        },
+        "text": "influential",
+        "style": {
+          "fontSizeRatio": 0.0313,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9005,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.0065,
+          "y": 0.2986,
+          "width": 0.0273,
+          "height": 0.0278
+        },
+        "text": "qui",
+        "style": {
+          "fontSizeRatio": 0.0278,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.7626,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.0078,
+          "y": 0.3368,
+          "width": 0.1862,
+          "height": 0.0313
+        },
+        "text": "he has won multiple we",
+        "style": {
+          "fontSizeRatio": 0.0313,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9098,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.013,
+          "y": 0.3785,
+          "width": 0.1875,
+          "height": 0.0295
+        },
+        "text": "records for       wins at",
+        "style": {
+          "fontSizeRatio": 0.0295,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.7504,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.0104,
+          "y": 0.4201,
+          "width": 0.0977,
+          "height": 0.0313
+        },
+        "text": "determinati",
+        "style": {
+          "fontSizeRatio": 0.0313,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.7019,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.1393,
+          "y": 0.4184,
+          "width": 0.0299,
+          "height": 0.026
+        },
+        "text": "and",
+        "style": {
+          "fontSizeRatio": 0.026,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9686,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.1458,
+          "y": 0.4566,
+          "width": 0.0781,
+          "height": 0.0278
+        },
+        "text": "inant forge)",
+        "style": {
+          "fontSizeRatio": 0.0278,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.598,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.6328,
+          "y": 0.6059,
+          "width": 0.0807,
+          "height": 0.0434
+        },
+        "text": "INEOS",
+        "style": {
+          "fontSizeRatio": 0.0434,
+          "alignment": "right"
+        },
+        "source": "local-ocr",
+        "confidence": 0.7538,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.8203,
+          "y": 0.6719,
+          "width": 0.026,
+          "height": 0.0226
+        },
+        "text": "aa",
+        "style": {
+          "fontSizeRatio": 0.0226,
+          "alignment": "right"
+        },
+        "source": "local-ocr",
+        "confidence": 0.6656,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 160,
+        "endFrame": 168,
+        "bounds": {
+          "x": 0.6641,
+          "y": 0.9462,
+          "width": 0.0599,
+          "height": 0.0226
+        },
+        "text": "an",
+        "style": {
+          "fontSizeRatio": 0.0226,
+          "alignment": "right"
+        },
+        "source": "local-ocr",
+        "confidence": 0.6364,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 192,
+        "endFrame": 200,
+        "bounds": {
+          "x": 0.444,
+          "y": 0.0208,
+          "width": 0.0977,
+          "height": 0.026
+        },
+        "text": "00:03:31",
+        "style": {
+          "fontSizeRatio": 0.026,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.967,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 192,
+        "endFrame": 200,
+        "bounds": {
+          "x": 0.319,
+          "y": 0.0816,
+          "width": 0.1823,
+          "height": 0.033
+        },
+        "text": "SINGAPOR",
+        "style": {
+          "fontSizeRatio": 0.033,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9053,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 192,
+        "endFrame": 200,
+        "bounds": {
+          "x": 0.3411,
+          "y": 0.125,
+          "width": 0.0898,
+          "height": 0.033
+        },
+        "text": "AIRLI",
+        "style": {
+          "fontSizeRatio": 0.033,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.8355,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 192,
+        "endFrame": 200,
+        "bounds": {
+          "x": 0.9375,
+          "y": 0.2622,
+          "width": 0.0417,
+          "height": 0.0313
+        },
+        "text": "RE",
+        "style": {
+          "fontSizeRatio": 0.0313,
+          "alignment": "right"
+        },
+        "source": "local-ocr",
+        "confidence": 0.958,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 192,
+        "endFrame": 200,
+        "bounds": {
+          "x": 0.3477,
+          "y": 0.5486,
+          "width": 0.0872,
+          "height": 0.0399
+        },
+        "text": "AIRG",
+        "style": {
+          "fontSizeRatio": 0.0399,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.8395,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 224,
+        "endFrame": 232,
+        "bounds": {
+          "x": 0.444,
+          "y": 0.0208,
+          "width": 0.1458,
+          "height": 0.0451
+        },
+        "text": "00:04:35    .",
+        "style": {
+          "fontSizeRatio": 0.0451,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.6165,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 320,
+        "endFrame": 328,
+        "bounds": {
+          "x": 0.4427,
+          "y": 0.0347,
+          "width": 0.0234,
+          "height": 0.0139
+        },
+        "text": "ol",
+        "style": {
+          "fontSizeRatio": 0.0139,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.6723,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 352,
+        "endFrame": 360,
+        "bounds": {
+          "x": 0.6094,
+          "y": 0.0156,
+          "width": 0.0169,
+          "height": 0.026
+        },
+        "text": "is",
+        "style": {
+          "fontSizeRatio": 0.026,
+          "alignment": "right"
+        },
+        "source": "local-ocr",
+        "confidence": 0.7397,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 352,
+        "endFrame": 360,
+        "bounds": {
+          "x": 0.112,
+          "y": 0.2743,
+          "width": 0.1979,
+          "height": 0.0625
+        },
+        "text": "Allianz @)",
+        "style": {
+          "fontSizeRatio": 0.0625,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.5878,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 384,
+        "endFrame": 392,
+        "bounds": {
+          "x": 0.6419,
+          "y": 0.566,
+          "width": 0.0716,
+          "height": 0.0538
+        },
+        "text": "Cay",
+        "style": {
+          "fontSizeRatio": 0.0538,
+          "alignment": "right"
+        },
+        "source": "local-ocr",
+        "confidence": 0.5555,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 384,
+        "endFrame": 392,
+        "bounds": {
+          "x": 0.3672,
+          "y": 0.6823,
+          "width": 0.0378,
+          "height": 0.033
+        },
+        "text": "UBS",
+        "style": {
+          "fontSizeRatio": 0.033,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9518,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 416,
+        "endFrame": 424,
+        "bounds": {
+          "x": 0.6576,
+          "y": 0.0556,
+          "width": 0.013,
+          "height": 0.0295
+        },
+        "text": "Zz",
+        "style": {
+          "fontSizeRatio": 0.0295,
+          "alignment": "right"
+        },
+        "source": "local-ocr",
+        "confidence": 0.6319,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 416,
+        "endFrame": 424,
+        "bounds": {
+          "x": 0.3594,
+          "y": 0.6563,
+          "width": 0.0534,
+          "height": 0.0278
+        },
+        "text": "ys",
+        "style": {
+          "fontSizeRatio": 0.0278,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.5678,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 480,
+        "endFrame": 488,
+        "bounds": {
+          "x": 0.444,
+          "y": 0.0208,
+          "width": 0.1029,
+          "height": 0.026
+        },
+        "text": "00:13:07",
+        "style": {
+          "fontSizeRatio": 0.026,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9588,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 544,
+        "endFrame": 616,
+        "bounds": {
+          "x": 0.4492,
+          "y": 0.6389,
+          "width": 0.0964,
+          "height": 0.0243
+        },
+        "text": "colo6ne.",
+        "style": {
+          "fontSizeRatio": 0.0243,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.767,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 576,
+        "endFrame": 616,
+        "bounds": {
+          "x": 0.4492,
+          "y": 0.2413,
+          "width": 0.099,
+          "height": 0.1424
+        },
+        "text": "JS",
+        "style": {
+          "fontSizeRatio": 0.1424,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.5605,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      }
+    ],
     "effects": []
   },
   "textMasking": {
@@ -1224,7 +1837,8 @@
   },
   "warnings": [
     "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
-    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.",
+    "Text detection used the vendored WASM OCR worker because this browser exposes no native TextDetector.",
     "Shot boundary near frame 185 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
     "Shot boundary near frame 206 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
     "Shot boundary near frame 320 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",

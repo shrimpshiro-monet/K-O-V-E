@@ -34,8 +34,8 @@
     "durationFrames": 605,
     "streamStartSeconds": 0.161003
   },
-  "elapsedMs": 76243,
-  "generatedAt": "2026-11-15T08:40:58.230Z",
+  "elapsedMs": 71887,
+  "generatedAt": "2026-11-15T11:07:04.567Z",
   "profilePath": "evaluation-files/mirror-baseline/profiles/captain-price.json",
   "fps": {
     "num": 30,
@@ -44,11 +44,13 @@
   "fpsSource": "ffprobe",
   "durationFrames": 605,
   "shotCount": 10,
-  "textOverlayCount": 0,
+  "textOverlayCount": 20,
+  "ocrBackend": "portable",
   "transitionCount": 9,
   "warnings": [
     "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
-    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.",
+    "Text detection used the vendored WASM OCR worker because this browser exposes no native TextDetector.",
     "Indexed WebCodecs frame read failed at frame 0; continuing with HTML video seeks, which may not decode exact requested frames. Verify critical cuts manually. Source frame 0 is unavailable from the indexed decoder",
     "Shot boundary near frame 497 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
   ],

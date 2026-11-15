@@ -2825,7 +2825,152 @@
         "note": "A boundary was located, but the available sample evidence does not establish the transition type."
       }
     ],
-    "textOverlays": [],
+    "textOverlays": [
+      {
+        "startFrame": 90,
+        "endFrame": 96,
+        "bounds": {
+          "x": 0.4115,
+          "y": 0.7726,
+          "width": 0.1128,
+          "height": 0.1962
+        },
+        "text": "ff",
+        "style": {
+          "fontSizeRatio": 0.1962,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.5855,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 360,
+        "endFrame": 366,
+        "bounds": {
+          "x": 0.3299,
+          "y": 0.474,
+          "width": 0.342,
+          "height": 0.0278
+        },
+        "text": "HOW DID YOU KNOW?",
+        "style": {
+          "fontSizeRatio": 0.0278,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9541,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 720,
+        "endFrame": 726,
+        "bounds": {
+          "x": 0.4271,
+          "y": 0.4757,
+          "width": 0.3438,
+          "height": 0.026
+        },
+        "text": "UST TOLD YOU THIS",
+        "style": {
+          "fontSizeRatio": 0.026,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.8091,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 720,
+        "endFrame": 726,
+        "bounds": {
+          "x": 0.1944,
+          "y": 0.4722,
+          "width": 0.6111,
+          "height": 0.0764
+        },
+        "text": "GIFT IS BETTER THAN MJ'S JERSEY",
+        "style": {
+          "fontSizeRatio": 0.0764,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.8307,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 810,
+        "endFrame": 816,
+        "bounds": {
+          "x": 0.316,
+          "y": 0.4757,
+          "width": 0.0885,
+          "height": 0.0243
+        },
+        "text": "WHAT",
+        "style": {
+          "fontSizeRatio": 0.0243,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9651,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 1260,
+        "endFrame": 1266,
+        "bounds": {
+          "x": 0.2326,
+          "y": 0.474,
+          "width": 0.5347,
+          "height": 0.0642
+        },
+        "text": "HARVEY REGINALD SPECTER",
+        "style": {
+          "fontSizeRatio": 0.0642,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9609,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 1710,
+        "endFrame": 1716,
+        "bounds": {
+          "x": 0.2396,
+          "y": 0.6302,
+          "width": 0.1753,
+          "height": 0.0434
+        },
+        "text": "Q e@",
+        "style": {
+          "fontSizeRatio": 0.0434,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.6655,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 1710,
+        "endFrame": 1716,
+        "bounds": {
+          "x": 0.4323,
+          "y": 0.6389,
+          "width": 0.1493,
+          "height": 0.0243
+        },
+        "text": "dxrkhood",
+        "style": {
+          "fontSizeRatio": 0.0243,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9306,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      }
+    ],
     "effects": []
   },
   "textMasking": {
@@ -2835,7 +2980,8 @@
   },
   "warnings": [
     "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
-    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.",
+    "Text detection used the vendored WASM OCR worker because this browser exposes no native TextDetector.",
     "Shot boundary near frame 182 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
     "Shot boundary near frame 919 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
     "Shot boundary near frame 1567 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."

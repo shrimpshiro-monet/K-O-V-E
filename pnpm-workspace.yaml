@@ -12,6 +12,7 @@ ignoredBuiltDependencies:
   - onnxruntime-node
   - protobufjs
   - sharp
+  - tesseract.js
   - workerd
 allowBuilds:
   core-js: false
@@ -20,9 +21,10 @@ allowBuilds:
   onnxruntime-node: false
   protobufjs: false
   sharp: false
+  tesseract.js: false
   workerd: false
 
 # Desktop builds stage binaries for each packaged target (macOS builds both arches).
 supportedArchitectures:
-  os: [darwin, linux, win32]
-  cpu: [x64, arm64]
+  os: [ darwin, linux, win32 ]
+  cpu: [ x64, arm64 ]

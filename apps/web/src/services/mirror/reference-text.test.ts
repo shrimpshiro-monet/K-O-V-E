@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isPlatformChromeText,
   mergeTextObservations,
   normalizeTextObservations,
 } from "./reference-text";
@@ -39,5 +40,15 @@ describe("reference text measurements", () => {
       style: { alignment: "left" },
     });
     expect(overlays[0]?.note).toContain("sparsely");
+  });
+});
+
+describe("platform chrome filtering", () => {
+  it("drops watermarks, handles, and player UI without dropping reference copy", () => {
+    expect(isPlatformChromeText("TikTok")).toBe(true);
+    expect(isPlatformChromeText("@ranelkuy")).toBe(true);
+    expect(isPlatformChromeText("G3 Full screen")).toBe(true);
+    expect(isPlatformChromeText("WHAT'S UP!!")).toBe(false);
+    expect(isPlatformChromeText("Lamine yamal")).toBe(false);
   });
 });

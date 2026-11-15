@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 import { hasBrowser } from "../playwright.config";
+import { extractHeadlessTextOverlays } from "./headless-ocr";
 
 interface FrameRate {
   readonly num: number;
@@ -50,6 +51,7 @@ const manifestPath = resolve(repoRoot, "evaluation-files/reference/mirror-baseli
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as BaselineManifest;
 const outDir = resolve(repoRoot, "evaluation-files/mirror-baseline/profiles");
 const enabled = process.env.KOVE_MIRROR_BASELINE === "1";
+const headlessOcr = process.env.KOVE_MIRROR_OCR_MODE === "headless";
 const only = process.env.KOVE_MIRROR_BASELINE_IDS?.split(",")
   .map((entry) => entry.trim())
   .filter(Boolean);
@@ -100,17 +102,39 @@ test.describe("Mirror baseline extraction (local references)", () => {
       };
 
       const result = await page.evaluate(
-        async ({ caseClock, includeText }) => {
+        async ({ caseClock, includeText, disablePortableOcr }) => {
           const input = document.querySelector<HTMLInputElement>("#kove-mirror-baseline-input");
           const file = input?.files?.[0];
           if (!file) throw new Error("Baseline file input is empty");
           const { extractReference } = await import("/src/services/mirror/extract-reference.ts");
           const started = performance.now();
-          const profile = await extractReference(file, caseClock, { includeReferenceText: includeText });
+          const profile = await extractReference(file, caseClock, {
+            includeReferenceText: includeText,
+            ocrMode: disablePortableOcr ? "disabled" : "auto",
+          });
           return { profile, elapsedMs: Math.round(performance.now() - started) };
         },
-        { caseClock: clock, includeText: manifest.extraction.includeReferenceText },
+        { caseClock: clock, includeText: manifest.extraction.includeReferenceText, disablePortableOcr: headlessOcr },
       );
+
+      if (
+        manifest.extraction.includeReferenceText &&
+        result.profile.warnings?.some((warning) => warning.includes("Local OCR is unavailable"))
+      ) {
+        const fallback = await extractHeadlessTextOverlays({
+          videoPath: mediaPath,
+          fps: entry.media.fps.num / entry.media.fps.den,
+          durationFrames: result.profile.durationFrames,
+          ffmpegPath: process.env.FFMPEG_PATH ?? "ffmpeg",
+        });
+        if (fallback) {
+          result.profile.styleEvidence!.textOverlays = fallback.overlays;
+          result.profile.warnings = [
+            ...(result.profile.warnings ?? []).filter((warning) => !warning.includes("Local OCR is unavailable")),
+            ...fallback.warnings,
+          ];
+        }
+      }
 
       mkdirSync(outDir, { recursive: true });
       writeFileSync(
@@ -138,7 +162,8 @@ test.describe("Mirror baseline extraction (local references)", () => {
             fpsSource: result.profile.fpsSource,
             durationFrames: result.profile.durationFrames,
             shotCount: result.profile.shots.length,
-            textOverlayCount: result.profile.textOverlays?.length ?? 0,
+            textOverlayCount: result.profile.styleEvidence?.textOverlays.length ?? 0,
+            ocrBackend: headlessOcr ? "headless-fallback" : "portable",
             transitionCount: result.profile.styleEvidence?.transitions?.length ?? 0,
             warnings: result.profile.warnings ?? [],
             notes: entry.notes ?? [],

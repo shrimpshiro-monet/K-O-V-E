@@ -32,8 +32,8 @@
     },
     "durationFrames": 1619
   },
-  "elapsedMs": 538277,
-  "generatedAt": "2026-11-15T09:04:46.327Z",
+  "elapsedMs": 261761,
+  "generatedAt": "2026-11-15T11:17:31.481Z",
   "profilePath": "evaluation-files/mirror-baseline/profiles/montage-b.json",
   "fps": {
     "num": 2997,
@@ -42,11 +42,13 @@
   "fpsSource": "ffprobe",
   "durationFrames": 1619,
   "shotCount": 59,
-  "textOverlayCount": 0,
+  "textOverlayCount": 5,
+  "ocrBackend": "portable",
   "transitionCount": 58,
   "warnings": [
     "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
-    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.",
+    "Text detection used the vendored WASM OCR worker because this browser exposes no native TextDetector.",
     "Shot boundary near frame 1088 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
     "Shot boundary near frame 1117 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
     "Shot boundary near frame 1136 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",

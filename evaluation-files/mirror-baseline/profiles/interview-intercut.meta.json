@@ -32,8 +32,8 @@
     },
     "durationFrames": 1993
   },
-  "elapsedMs": 224199,
-  "generatedAt": "2026-11-15T09:08:37.769Z",
+  "elapsedMs": 142294,
+  "generatedAt": "2026-11-15T11:20:00.286Z",
   "profilePath": "evaluation-files/mirror-baseline/profiles/interview-intercut.json",
   "fps": {
     "num": 30,
@@ -42,11 +42,13 @@
   "fpsSource": "ffprobe",
   "durationFrames": 1993,
   "shotCount": 23,
-  "textOverlayCount": 0,
+  "textOverlayCount": 7,
+  "ocrBackend": "portable",
   "transitionCount": 22,
   "warnings": [
     "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
-    "Local OCR is unavailable in this browser; reference text overlays were not measured."
+    "Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.",
+    "Text detection used the vendored WASM OCR worker because this browser exposes no native TextDetector."
   ],
   "notes": [
     "Ultrawide 1382x576."

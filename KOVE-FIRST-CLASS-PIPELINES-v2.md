@@ -50,6 +50,7 @@ _2026-11-15. Supersedes v1. v1 was written against `main`; this version is corre
 | 1a **[added]** | **Compile `textOverlays` in `applyEditDNA`** | `apply-editdna.ts`, `reference-profile.ts` evidence, tests | Detected text overlays (text, bounds, window, style estimate) become editable text clips with the closest supported animation preset; low-confidence overlays are skipped and listed in a warning. Watermark/end-card regions excluded from text evidence, with provenance (9 of the pool's 13 files carry TikTok UI; unmasked, the watermark compiles into a garbage text clip). Rerun issue 1 corpus and report the delta. Small, visible win, and it measures how far the existing evidence goes. | none (run after 1 for the delta) | S |
 | 1b **[added]** | **Coverage report v0 on current pipeline** | `mirror-reference-tool.ts`, `MirrorReferencePanel.tsx` | Tool output and panel state what was measured (cuts, camera, color, text, transitions) and what was not attempted (layers, fonts, semantic effects). Plain language. States whether watermark masking was applied. | none | S |
 | 1c **[added]** | **Two-element scene fixture (proves the thesis)** | reference-profile validator test | Ten-line test: an authored scene with two simultaneous on-screen elements (e.g., text over footage) fails validation with the shots-tiling error at `packages/core/src/mirror/reference-profile.ts:189`, pinning thesis #1 in code. Written first; unblocks issue 2's schema work. | none | S |
+| 15a **[added]** | **Portable OCR backend for text evidence** | `apps/web/src/services/mirror/reference-text.ts`, OCR worker + local assets, `packages/agent-runner` headless fallback | Native `TextDetector` → WASM OCR in a worker (tesseract.js) → headless-runner fallback. Rerun the 10-reference corpus: text overlays measured on the collage/typography references, issue 1a compiles >0 text clips, watermark/end-card exclusion still applies. | none (run before 5) | M |
 
 ### Phase 1 — Shared data contracts
 
@@ -105,7 +106,7 @@ OTIO/FCPXML/EDL interchange · timestamped review comments + approval · color s
          ├─ 5 ──┼─ 4 ── 6 ── 7
          └─ 5a ─┘         └─ 15
                   4 ─ 9 ─ 10 ; 3,4 ─ 11 ; 4,6 ─ 12 ; 5a ─ 13 ; 5 ─ 8 ; 1,7 ─ 16
-1c runs before 2's schema draft. 14 runs any time, ideally before 4.
+1c runs before 2's schema draft. 15a runs after 1 and before 5 so text evidence exists on desktop Chrome without relying on the retired Shape Detection API. 14 runs any time, ideally before 4.
 ```
 
 - Issues 4 and 5 can run in parallel once issue 2's schema is stable, using authored graph fixtures to unblock the compiler.

@@ -32,8 +32,8 @@
     },
     "durationFrames": 1398
   },
-  "elapsedMs": 375352,
-  "generatedAt": "2026-11-15T08:29:59.349Z",
+  "elapsedMs": 359957,
+  "generatedAt": "2026-11-15T11:27:34.581Z",
   "profilePath": "evaluation-files/mirror-baseline/profiles/spiderman.json",
   "fps": {
     "num": 30,
@@ -42,11 +42,13 @@
   "fpsSource": "ffprobe",
   "durationFrames": 1398,
   "shotCount": 30,
-  "textOverlayCount": 0,
+  "textOverlayCount": 12,
+  "ocrBackend": "portable",
   "transitionCount": 29,
   "warnings": [
     "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
-    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.",
+    "Text detection used the vendored WASM OCR worker because this browser exposes no native TextDetector.",
     "Shot boundary near frame 583 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
     "Shot boundary near frame 644 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
     "Shot boundary near frame 698 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",

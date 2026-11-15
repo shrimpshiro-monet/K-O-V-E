@@ -24,20 +24,24 @@ import {
   throwIfAborted,
 } from "./reference-measurement";
 import {
-  createLocalTextDetector,
-  detectTextInPixels,
+  createPortableTextDetector,
   mergeTextObservations,
   normalizeTextObservations,
+  type OcrBackend,
   type TextObservation,
 } from "./reference-text";
 
 /** Tuned against the existing normalized, sampled-RGB difference signal.
  * Never reuse this value for luma or another signal without recalibration. */
 const CUT_DIFFERENCE_THRESHOLD = 0.23;
-const OCR_SAMPLE_BUDGET = 60;
-const OCR_TOTAL_BUDGET_MS = 10_000;
-const OCR_FRAME_TIMEOUT_MS = 1_000;
+const OCR_NATIVE_SAMPLE_BUDGET = 60;
+const OCR_NATIVE_TOTAL_BUDGET_MS = 10_000;
+const OCR_NATIVE_FRAME_TIMEOUT_MS = 1_000;
+const OCR_WASM_SAMPLE_BUDGET = 20;
+const OCR_WASM_TOTAL_BUDGET_MS = 90_000;
+const OCR_WASM_FRAME_TIMEOUT_MS = 12_000;
 const SOURCE_FRAME_TIMEOUT_MS = 15_000;
+const OCR_MAX_DIMENSION = 1280;
 const LONG_SHOT_MEDIAN_MULTIPLIER = 4;
 const MAX_LONG_SHOT_RESCAN_FRAMES = 1_800;
 const MAX_TRAILING_RESCAN_FRAMES = 180;
@@ -57,6 +61,8 @@ export interface ExtractReferenceOptions {
   now?: () => number;
   /** Include creator-added text in analysis only after explicit user consent. */
   includeReferenceText?: boolean;
+  /** "disabled" lets the baseline runner exercise its headless OCR fallback. */
+  ocrMode?: "auto" | "disabled";
 }
 
 interface YieldingScheduler {
@@ -215,19 +221,58 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
     const shots: ShotProfile[] = [];
     const transitions: ReferenceTransitionEvidence[] = [];
     const effects: ReferenceEffectEvidence[] = [];
-    let textDetector: ReturnType<typeof createLocalTextDetector> = null;
+    let ocr: OcrBackend | null = null;
     const textObservations: TextObservation[] = [];
-    if (options.includeReferenceText) {
+    if (options.includeReferenceText && options.ocrMode === "disabled") {
+      warnings.push("Local OCR is unavailable in this browser and the WASM fallback failed; reference text overlays were not measured. The headless runner can retry OCR as a fallback.");
+    } else if (options.includeReferenceText) {
       try {
-        textDetector = createLocalTextDetector();
-        if (!textDetector) warnings.push("Local OCR is unavailable in this browser; reference text overlays were not measured.");
-        else warnings.push("Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.");
+        ocr = await createPortableTextDetector({ signal });
+        if (!ocr) {
+          warnings.push("Local OCR is unavailable in this browser and the WASM fallback failed; reference text overlays were not measured. The headless runner can retry OCR as a fallback.");
+        } else {
+          warnings.push("Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.");
+          if (ocr.kind === "wasm") warnings.push("Text detection used the vendored WASM OCR worker because this browser exposes no native TextDetector.");
+        }
       } catch (error) {
-        warnings.push(`Local OCR could not be initialized: ${error instanceof Error ? error.message : String(error)}.`);
+        warnings.push(`Portable OCR could not be initialized: ${error instanceof Error ? error.message : String(error)}.`);
       }
     } else {
       warnings.push("Creator-added reference text was excluded; opt in to analyze and reuse its timing and placement.");
     }
+    let ocrWidth = 0;
+    let ocrHeight = 0;
+    let readOcrFrame: ((frame: number) => Promise<Uint8ClampedArray>) | null = null;
+    if (ocr) {
+      // OCR needs legible glyphs, so it reads a separate full-resolution frame
+      // instead of the 160px analysis buffer. The long edge is capped for cost.
+      const ocrScale = Math.min(1, OCR_MAX_DIMENSION / Math.max(video.videoWidth, video.videoHeight));
+      ocrWidth = Math.max(1, Math.round(video.videoWidth * ocrScale));
+      ocrHeight = Math.max(1, Math.round(video.videoHeight * ocrScale));
+      const ocrCanvas = document.createElement("canvas");
+      ocrCanvas.width = ocrWidth; ocrCanvas.height = ocrHeight;
+      const ocrContext = ocrCanvas.getContext("2d", { willReadFrequently: true });
+      if (!ocrContext) throw new Error("Canvas 2D is unavailable for OCR");
+      readOcrFrame = async (frame: number): Promise<Uint8ClampedArray> => {
+        throwIfAborted(signal);
+        const target = Math.min(video.duration - 0.001, frameToSeconds(frame, fps) + fps.den / fps.num / 4);
+        if (Math.abs(video.currentTime - target) > 0.0001) {
+          await abortable(new Promise<void>((resolve, reject) => {
+            video.onseeked = () => resolve();
+            video.onerror = () => reject(new Error("Reference frame seek failed for OCR"));
+            video.currentTime = target;
+          }), signal);
+        }
+        ocrContext.drawImage(video, 0, 0, ocrWidth, ocrHeight);
+        throwIfAborted(signal);
+        return maskPersistentCornerOverlays(ocrContext.getImageData(0, 0, ocrWidth, ocrHeight).data, ocrWidth, ocrHeight);
+      };
+    }
+    const wasmOcr = ocr?.kind === "wasm";
+    const ocrSampleBudget = wasmOcr ? OCR_WASM_SAMPLE_BUDGET : OCR_NATIVE_SAMPLE_BUDGET;
+    const ocrTotalBudgetMs = wasmOcr ? OCR_WASM_TOTAL_BUDGET_MS : OCR_NATIVE_TOTAL_BUDGET_MS;
+    const ocrFrameTimeoutMs = wasmOcr ? OCR_WASM_FRAME_TIMEOUT_MS : OCR_NATIVE_FRAME_TIMEOUT_MS;
+    const ocrMaxFailures = wasmOcr ? 2 : 3;
     let previous: Uint8ClampedArray | null = null;
     let previousFrame = 0, startFrame = 0, motion: CameraMotionSample[] = [], grade: ShotProfile["colorStats"];
     const finish = (endFrame: number) => {
@@ -250,7 +295,7 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
     let sliceFrames = 0;
     let textDetectionFailures = 0;
     let textDetectionMs = 0;
-    const textSampleStride = Math.max(1, Math.ceil(frames / OCR_SAMPLE_BUDGET));
+    const textSampleStride = Math.max(1, Math.ceil(frames / ocrSampleBudget));
     // Difference inside a cut bracket: bounded work, but a cancelled measurement
     // must not keep scanning frames.
     const guard = (a: Uint8ClampedArray, b: Uint8ClampedArray): number => {
@@ -271,24 +316,27 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
       const frame = Math.min(durationFrames - 1, i * stepFrames);
       const pixels = await readFrame(frame);
       if (
-        textDetector &&
+        ocr &&
+        readOcrFrame &&
         i % textSampleStride === 0 &&
-        textDetectionFailures < 3 &&
-        textDetectionMs < OCR_TOTAL_BUDGET_MS
+        textDetectionFailures < ocrMaxFailures &&
+        textDetectionMs < ocrTotalBudgetMs
       ) {
+        const backend = ocr;
+        const reader = readOcrFrame;
         const detectionStartedAt = now();
         try {
           const blocks = await abortable(withTimeout(
-            detectTextInPixels(textDetector, pixels, width, height),
-            OCR_FRAME_TIMEOUT_MS,
-            "Local OCR sample exceeded its 1s analysis limit.",
+            reader(frame).then((ocrPixels) => backend.detect(ocrPixels, ocrWidth, ocrHeight)),
+            ocrFrameTimeoutMs,
+            `Portable OCR sample exceeded its ${Math.round(ocrFrameTimeoutMs / 1_000)}s analysis limit.`,
           ), signal);
           textObservations.push(...normalizeTextObservations(
             blocks,
             frame,
             Math.min(durationFrames, frame + stepFrames),
-            width,
-            height,
+            ocrWidth,
+            ocrHeight,
           ));
         } catch (error) {
           throwIfAborted(signal);
@@ -628,10 +676,13 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
         `Long-shot recovery added ${transitions.length - transitionsBeforeRescan} cut(s) from ${rescannedLongShots} unusually long shot(s).`,
       );
     }
-    } finally { indexed?.close(); }
+    } finally {
+      await ocr?.dispose();
+      indexed?.close();
+    }
     progress.report(frames, frames, { force: true });
-    if (textDetector && textDetectionMs >= OCR_TOTAL_BUDGET_MS) {
-      warnings.push("Local OCR stopped after reaching its 10s analysis budget; later sampled frames were not checked for text.");
+    if (ocr && textDetectionMs >= ocrTotalBudgetMs) {
+      warnings.push(`Portable OCR stopped after reaching its ${Math.round(ocrTotalBudgetMs / 1_000)}s analysis budget; later sampled frames were not checked for text.`);
     }
     const profile = createReferenceProfile({
       aspectRatio: { width: video.videoWidth, height: video.videoHeight },

@@ -32,8 +32,8 @@
     },
     "durationFrames": 437
   },
-  "elapsedMs": 67714,
-  "generatedAt": "2026-11-15T08:23:39.587Z",
+  "elapsedMs": 56867,
+  "generatedAt": "2026-11-15T11:21:27.914Z",
   "profilePath": "evaluation-files/mirror-baseline/profiles/magazine-edit.json",
   "fps": {
     "num": 18,
@@ -42,10 +42,12 @@
   "fpsSource": "ffprobe",
   "durationFrames": 437,
   "shotCount": 31,
-  "textOverlayCount": 0,
+  "textOverlayCount": 32,
+  "ocrBackend": "portable",
   "transitionCount": 30,
   "warnings": [
-    "Local OCR is unavailable in this browser; reference text overlays were not measured."
+    "Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.",
+    "Text detection used the vendored WASM OCR worker because this browser exposes no native TextDetector."
   ],
   "notes": [
     "Native 18 fps clock; 437 frames."

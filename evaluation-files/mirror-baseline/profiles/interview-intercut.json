@@ -2438,7 +2438,134 @@
         "confidence": 0.9
       }
     ],
-    "textOverlays": [],
+    "textOverlays": [
+      {
+        "startFrame": 416,
+        "endFrame": 424,
+        "bounds": {
+          "x": 0.3047,
+          "y": 0.4371,
+          "width": 0.3906,
+          "height": 0.1182
+        },
+        "text": "C REED",
+        "style": {
+          "fontSizeRatio": 0.1182,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9391,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 416,
+        "endFrame": 424,
+        "bounds": {
+          "x": 0.1516,
+          "y": 0.8386,
+          "width": 0.3164,
+          "height": 0.0206
+        },
+        "text": "(COPYRIGHT DISCLAIMER UNDER SECTION 107 OF THE COPYRIGHTACT 1976,",
+        "style": {
+          "fontSizeRatio": 0.0206,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.8973,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 416,
+        "endFrame": 424,
+        "bounds": {
+          "x": 0.3602,
+          "y": 0.8687,
+          "width": 0.1328,
+          "height": 0.0188
+        },
+        "text": "FAIRUSE!S A USE PERMITTED BY (",
+        "style": {
+          "fontSizeRatio": 0.0188,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.7226,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 416,
+        "endFrame": 424,
+        "bounds": {
+          "x": 0.4258,
+          "y": 0.8912,
+          "width": 0.1695,
+          "height": 0.0281
+        },
+        "text": "LUSE TIPS THE BALANCE IN FAVOURITE OF",
+        "style": {
+          "fontSizeRatio": 0.0281,
+          "alignment": "center"
+        },
+        "source": "local-ocr",
+        "confidence": 0.7749,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 1352,
+        "endFrame": 1360,
+        "bounds": {
+          "x": 0.1516,
+          "y": 0.8386,
+          "width": 0.1031,
+          "height": 0.0188
+        },
+        "text": "(COPYRIGHT DISCLAIMER’",
+        "style": {
+          "fontSizeRatio": 0.0188,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.5671,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 1456,
+        "endFrame": 1464,
+        "bounds": {
+          "x": 0.2141,
+          "y": 0.8537,
+          "width": 0.2523,
+          "height": 0.0225
+        },
+        "text": "VOICE OF DAME ANDERSON",
+        "style": {
+          "fontSizeRatio": 0.0225,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.9431,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      },
+      {
+        "startFrame": 1456,
+        "endFrame": 1464,
+        "bounds": {
+          "x": 0.1602,
+          "y": 0.9343,
+          "width": 0.0336,
+          "height": 0.0657
+        },
+        "text": "Ey",
+        "style": {
+          "fontSizeRatio": 0.0657,
+          "alignment": "left"
+        },
+        "source": "local-ocr",
+        "confidence": 0.6276,
+        "note": "Local text detection is sampled sparsely; bounds, alignment, and relative size are estimates, and the detector does not expose a calibrated confidence score."
+      }
+    ],
     "effects": []
   },
   "textMasking": {
@@ -2448,7 +2575,8 @@
   },
   "warnings": [
     "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
-    "Local OCR is unavailable in this browser; reference text overlays were not measured."
+    "Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.",
+    "Text detection used the vendored WASM OCR worker because this browser exposes no native TextDetector."
   ],
   "version": "kove.mirror.v3",
   "rhythmCurve": [

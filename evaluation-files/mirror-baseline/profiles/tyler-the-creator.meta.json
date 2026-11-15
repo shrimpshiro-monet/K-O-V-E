@@ -35,8 +35,8 @@
     },
     "durationFrames": 1336
   },
-  "elapsedMs": 127816,
-  "generatedAt": "2026-11-15T08:47:12.384Z",
+  "elapsedMs": 65490,
+  "generatedAt": "2026-11-15T11:13:03.498Z",
   "profilePath": "evaluation-files/mirror-baseline/profiles/tyler-the-creator.json",
   "fps": {
     "num": 24,
@@ -45,11 +45,13 @@
   "fpsSource": "ffprobe",
   "durationFrames": 1336,
   "shotCount": 10,
-  "textOverlayCount": 0,
+  "textOverlayCount": 9,
+  "ocrBackend": "portable",
   "transitionCount": 9,
   "warnings": [
     "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
-    "Local OCR is unavailable in this browser; reference text overlays were not measured."
+    "Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.",
+    "Text detection used the vendored WASM OCR worker because this browser exposes no native TextDetector."
   ],
   "notes": [
     "24 fps; 55.7s."
