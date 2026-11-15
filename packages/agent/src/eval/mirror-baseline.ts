@@ -30,6 +30,8 @@ export interface MirrorBaselineExtraction {
   readonly warnings: readonly string[];
   readonly textStatus: MirrorMetricStatus;
   readonly textReason: string;
+  readonly watermarkMasking: "applied" | "unknown";
+  readonly endCardTrimmedFrames?: number;
 }
 
 export interface MirrorBaselineCompile {

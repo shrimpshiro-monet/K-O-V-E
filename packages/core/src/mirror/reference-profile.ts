@@ -151,6 +151,13 @@ export interface ReferenceProfile {
   styleEvidence?: ReferenceStyleEvidence;
   /** Measured edit structure (events, energy, density, shot lengths). */
   structure?: EditorStructure;
+  /** Provenance for text-evidence masking applied before OCR. */
+  textMasking?: {
+    readonly applied: boolean;
+    readonly cornerWidthRatio: number;
+    readonly cornerHeightRatio: number;
+    readonly endCardTrimmedFrames?: number;
+  };
   warnings?: string[];
 }
 
@@ -182,6 +189,15 @@ export function validateReferenceProfile(profile: ReferenceProfile): void {
   if (profile.codedDimensions && (!Number.isSafeInteger(profile.codedDimensions.width) || !Number.isSafeInteger(profile.codedDimensions.height) || profile.codedDimensions.width <= 0 || profile.codedDimensions.height <= 0)) throw new Error("Invalid coded dimensions");
   if (profile.sampleAspectRatio && (!Number.isSafeInteger(profile.sampleAspectRatio.num) || !Number.isSafeInteger(profile.sampleAspectRatio.den) || profile.sampleAspectRatio.num <= 0 || profile.sampleAspectRatio.den <= 0)) throw new Error("Invalid sample aspect ratio");
   if (profile.rotationDegrees !== undefined && !Number.isFinite(profile.rotationDegrees)) throw new Error("Invalid rotation");
+  if (profile.textMasking) {
+    const masking = profile.textMasking;
+    if (typeof masking.applied !== "boolean" ||
+        !Number.isFinite(masking.cornerWidthRatio) || masking.cornerWidthRatio <= 0 || masking.cornerWidthRatio > 0.5 ||
+        !Number.isFinite(masking.cornerHeightRatio) || masking.cornerHeightRatio <= 0 || masking.cornerHeightRatio > 0.5 ||
+        (masking.endCardTrimmedFrames !== undefined && (!Number.isSafeInteger(masking.endCardTrimmedFrames) || masking.endCardTrimmedFrames <= 0))) {
+      throw new Error("Invalid text masking provenance");
+    }
+  }
   if (profile.shots.length === 0) throw new Error("EditDNA needs at least one shot");
   let previousEnd = 0;
   for (const shot of profile.shots) {

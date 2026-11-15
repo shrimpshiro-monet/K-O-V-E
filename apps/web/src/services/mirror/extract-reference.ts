@@ -42,6 +42,8 @@ const LONG_SHOT_MEDIAN_MULTIPLIER = 4;
 const MAX_LONG_SHOT_RESCAN_FRAMES = 1_800;
 const MAX_TRAILING_RESCAN_FRAMES = 180;
 export const FFMPEG_SCENE_THRESHOLD = 0.08;
+export const PERSISTENT_CORNER_MASK_WIDTH_RATIO = 0.16;
+export const PERSISTENT_CORNER_MASK_HEIGHT_RATIO = 0.12;
 
 export interface ExtractReferenceOptions {
   /** Called with coalesced progress: at most once per ~250ms, plus the total at the end. */
@@ -219,6 +221,7 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
       try {
         textDetector = createLocalTextDetector();
         if (!textDetector) warnings.push("Local OCR is unavailable in this browser; reference text overlays were not measured.");
+        else warnings.push("Watermark-risk corner regions (16% width x 12% height per corner) were masked before OCR; text evidence excludes them.");
       } catch (error) {
         warnings.push(`Local OCR could not be initialized: ${error instanceof Error ? error.message : String(error)}.`);
       }
@@ -612,8 +615,12 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
           effects[index] = { ...effects[index]!, endFrame: analyzedDurationFrames };
         }
       }
+      const textObservationsBeforeTrim = textObservations.length;
       for (let index = textObservations.length - 1; index >= 0; index--) {
         if (textObservations[index]!.frame >= analyzedDurationFrames) textObservations.splice(index, 1);
+      }
+      if (textObservations.length < textObservationsBeforeTrim) {
+        warnings.push(`Excluded ${textObservationsBeforeTrim - textObservations.length} text observation(s) inside the trailing end-card region (frames >= ${analyzedDurationFrames}).`);
       }
     }
     if (rescannedLongShots > 0) {
@@ -651,6 +658,12 @@ export async function extractReference(file: Blob, clock: ReferenceClock, option
       ...(clock.sampleAspectRatio && { sampleAspectRatio: clock.sampleAspectRatio }),
       ...(clock.codedDimensions && { codedDimensions: clock.codedDimensions }),
       ...(clock.rotationDegrees !== undefined && { rotationDegrees: clock.rotationDegrees }),
+      textMasking: {
+        applied: true,
+        cornerWidthRatio: PERSISTENT_CORNER_MASK_WIDTH_RATIO,
+        cornerHeightRatio: PERSISTENT_CORNER_MASK_HEIGHT_RATIO,
+        ...(durationFrames > analyzedDurationFrames && { endCardTrimmedFrames: durationFrames - analyzedDurationFrames }),
+      },
       warnings,
     });
     return profile;
@@ -676,8 +689,8 @@ export function maskPersistentCornerOverlays(
   height: number,
 ): Uint8ClampedArray {
   const masked = pixels.slice();
-  const maskWidth = Math.max(1, Math.ceil(width * 0.16));
-  const maskHeight = Math.max(1, Math.ceil(height * 0.12));
+  const maskWidth = Math.max(1, Math.ceil(width * PERSISTENT_CORNER_MASK_WIDTH_RATIO));
+  const maskHeight = Math.max(1, Math.ceil(height * PERSISTENT_CORNER_MASK_HEIGHT_RATIO));
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const inCorner = (x < maskWidth || x >= width - maskWidth) &&

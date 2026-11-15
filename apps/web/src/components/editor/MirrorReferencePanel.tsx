@@ -187,6 +187,11 @@ export function MirrorReferencePanel() {
           {profile.styleEvidence?.textOverlays.length ?? 0} text/overlay observations ·{" "}
           {profile.styleEvidence?.effects.length ?? 0} effect candidates.
         </p>
+        <p>
+          Coverage — measured: cuts, camera motion, transitions, text/overlay observations, effect candidates.
+          Not attempted: layered scenes, font identification, semantic effect classification.
+          Watermark masking: {profile.textMasking?.applied ? "applied to text evidence" : "unknown for this profile"}.
+        </p>
         {profile.warnings?.map((warning, index) => <p key={`${index}-${warning}`}>Analysis note: {warning}</p>)}
         {REFERENCE_PROFILE_V3_LIMITATIONS.map((limitation) => <p key={limitation}>Limitation: {limitation}</p>)}
       </div>

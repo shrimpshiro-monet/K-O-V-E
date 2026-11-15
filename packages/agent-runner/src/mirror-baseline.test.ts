@@ -222,6 +222,8 @@ describe("Mirror 10-reference baseline (real extract -> compile -> refine)", () 
             warnings: meta.warnings,
             textStatus: textWarning ? "unavailable" : "measured",
             textReason: textWarning ?? "Measured by the browser's local text detector.",
+            watermarkMasking: profile.textMasking?.applied ? "applied" : "unknown",
+            ...(profile.textMasking?.endCardTrimmedFrames !== undefined && { endCardTrimmedFrames: profile.textMasking.endCardTrimmedFrames }),
           },
           compile: {
             shotItemIds: compiled.shotItemIds,

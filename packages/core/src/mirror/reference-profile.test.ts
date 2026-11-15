@@ -52,6 +52,14 @@ describe("EditDNA v3 reference profiles", () => {
     expect(JSON.parse(serializeReferenceProfile(value)).styleEvidence.textOverlays).toHaveLength(1);
   });
 
+  it("validates text-masking provenance and preserves it through serialization", () => {
+    const value = profile();
+    const masked = { ...value, textMasking: { applied: true, cornerWidthRatio: 0.16, cornerHeightRatio: 0.12, endCardTrimmedFrames: 12 } };
+    expect(() => validateReferenceProfile(masked)).not.toThrow();
+    expect(JSON.parse(serializeReferenceProfile(masked)).textMasking).toEqual(masked.textMasking);
+    expect(() => validateReferenceProfile({ ...value, textMasking: { applied: true, cornerWidthRatio: 2, cornerHeightRatio: 0.12 } })).toThrow(/masking/i);
+  });
+
   it("migrates v2 profiles with an explicit note and empty inferred evidence", () => {
     const value = profile();
     const legacy = { ...value, version: "kove.mirror.v2", styleEvidence: undefined };

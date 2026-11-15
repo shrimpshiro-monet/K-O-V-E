@@ -1,0 +1,1439 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-15T08:12:28.176Z",
+  "summary": {
+    "cases": 10,
+    "refinedCases": 10,
+    "unavailableRefines": 0,
+    "measuredTextCases": 0,
+    "unavailableTextCases": 10,
+    "corpusGaps": [
+      "No product-ad reference exists in the pool.",
+      "Only one collage reference exists (magazine edit); risk 2 stays open.",
+      "No independent human shot labels exist for the 10 references; boundary accuracy is unavailable, not estimated."
+    ]
+  },
+  "cases": [
+    {
+      "id": "captain-price",
+      "styleFamily": "kinetic-type",
+      "source": "reference_videos_to_select/captain price (2nd priority).MP4",
+      "sourceSha256": "7a92d50cbf32a847f8a7eb968b53afe14bfb003e5c6622eca0b716fbc71feab4",
+      "decodePath": {
+        "kind": "native",
+        "codec": "h264"
+      },
+      "media": {
+        "width": 576,
+        "height": 640,
+        "fps": {
+          "num": 30,
+          "den": 1
+        },
+        "durationFrames": 605,
+        "streamStartSeconds": 0.161003
+      },
+      "clockProvenance": "external-ffprobe-manifest",
+      "extraction": {
+        "backend": "chromium-vite-web",
+        "shotCount": 10,
+        "boundariesFrames": [
+          62,
+          116,
+          158,
+          172,
+          469,
+          482,
+          496,
+          497,
+          524
+        ],
+        "cameraClasses": {
+          "handheld": 6,
+          "pan": 1,
+          "orbit": 1,
+          "static": 2
+        },
+        "transitionCount": 9,
+        "eventCount": 9,
+        "cameraShotCount": 8,
+        "elapsedMs": 53569,
+        "warnings": [
+          "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+          "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Indexed WebCodecs frame read failed at frame 0; continuing with HTML video seeks, which may not decode exact requested frames. Verify critical cuts manually. Source frame 0 is unavailable from the indexed decoder",
+          "Shot boundary near frame 497 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
+        ],
+        "textStatus": "unavailable",
+        "textReason": "Local OCR is unavailable in this browser; reference text overlays were not measured."
+      },
+      "compile": {
+        "shotItemIds": [
+          "05167fd3-1d27-4810-a970-6a9398278b3c",
+          "16ffde14-4b31-474b-ba2f-a164f6a9d950",
+          "b1248b63-920a-45e4-acd3-51fb059ededc",
+          "6de598b4-2be8-4f3a-8b31-6ee4f6f46eaf",
+          "e48403ef-e9f2-416b-80fb-81c54607393f",
+          "f80108cd-2e25-4ff0-b717-517bae7d839f",
+          "9015396f-6c21-4592-8661-2f9ea0497e54",
+          "f52930ee-3e46-4a6d-aeba-eb67190e070c",
+          "ef59be68-1ca1-42ef-88ec-77b5eedd6408",
+          "35b1ec35-1ee9-4d92-be18-089e72eccdd6"
+        ],
+        "rhythmScore": 1,
+        "colorApplied": true
+      },
+      "refine": {
+        "bestKnobs": {
+          "motionScale": 1.3984068893217783,
+          "gradeStrength": 0.4855264893620226
+        },
+        "bestScore": 0.826839222854721,
+        "bestSsim": 0.7691189638062946,
+        "rhythmScore": 1,
+        "trials": 9,
+        "history": [
+          0.8254622901502907,
+          0.8260678924447362,
+          0.8260678924447362,
+          0.8260678924447362,
+          0.8263062585224352,
+          0.8263454972865035,
+          0.8266507771641501,
+          0.8266507771641501,
+          0.826839222854721
+        ],
+        "sampleFrames": [
+          30,
+          164,
+          488
+        ],
+        "fps": {
+          "num": 30,
+          "den": 1
+        }
+      },
+      "basis": {
+        "compile": "reference-self-reconstruction",
+        "refine": "64x64-luma-ssim-plus-duration-dtw",
+        "fidelity": "unavailable",
+        "lpips": "unavailable",
+        "textWindows": "unavailable",
+        "notes": [
+          "The reference is compiled onto itself to measure how much of the measured edit the current pipeline can rebuild; this is not a cross-footage generalization score.",
+          "Refine scores are real 64x64 luma SSIM and duration-pattern DTW from rendered frames; LPIPS has no model and is labeled unavailable.",
+          "Camera classes come from the extraction's measured motion samples.",
+          "Text windows are unavailable: Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Boundary and camera accuracy against human labels are unavailable: only the synthetic corpus case carries verified labels."
+        ]
+      }
+    },
+    {
+      "id": "harvey",
+      "styleFamily": "talking-head-captions",
+      "source": "reference_videos_to_select/harvey.MP4",
+      "sourceSha256": "9fb70ad20b07cfa6f9fba175d99daab37416090ea3ea94dbf568579dbbdfe9c0",
+      "decodePath": {
+        "kind": "native",
+        "codec": "h264"
+      },
+      "media": {
+        "width": 576,
+        "height": 576,
+        "fps": {
+          "num": 2997,
+          "den": 125
+        },
+        "durationFrames": 1778
+      },
+      "clockProvenance": "external-ffprobe-manifest",
+      "extraction": {
+        "backend": "chromium-vite-web",
+        "shotCount": 25,
+        "boundariesFrames": [
+          73,
+          178,
+          182,
+          218,
+          350,
+          385,
+          422,
+          496,
+          676,
+          779,
+          835,
+          915,
+          919,
+          1266,
+          1268,
+          1311,
+          1340,
+          1462,
+          1471,
+          1490,
+          1509,
+          1518,
+          1565,
+          1567
+        ],
+        "cameraClasses": {
+          "tilt": 2,
+          "handheld": 11,
+          "static": 7,
+          "pan": 3,
+          "push": 2
+        },
+        "transitionCount": 24,
+        "eventCount": 24,
+        "cameraShotCount": 20,
+        "elapsedMs": 231234,
+        "warnings": [
+          "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+          "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Shot boundary near frame 182 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 919 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 1567 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
+        ],
+        "textStatus": "unavailable",
+        "textReason": "Local OCR is unavailable in this browser; reference text overlays were not measured."
+      },
+      "compile": {
+        "shotItemIds": [
+          "56de46de-1df9-40ab-bea7-3485aa5175b7",
+          "d19a66bc-139e-44b3-b42a-56c590b64dc9",
+          "fbde0fae-8adb-4d01-b236-07497235f4c2",
+          "c5d878cb-1027-444f-87a9-090960449938",
+          "afc1a6e9-ef68-4939-a451-62bbe64effd4",
+          "af7e4a3c-1eee-4470-bc86-9bf039c6817f",
+          "a5b2c6a4-4dae-4614-8e7c-fc9022d90039",
+          "a7f396eb-5c02-4b4d-b533-0b19c41f40cc",
+          "6d829c6d-32ff-4c5c-8f9b-ebdb382ed698",
+          "0e7280d1-bc4c-468c-8fa7-75a10b7cf8a6",
+          "f3c6f6cd-296a-445d-905d-2d718a31cc06",
+          "5390faf6-af9b-401f-826c-0a6d51866e86",
+          "78c678b2-357f-4cdb-a5ff-d24e098f0c83",
+          "010525f8-a74e-4b93-bd28-6360a76e525f",
+          "c56e83c1-fe16-44ef-af3e-853668b08ebf",
+          "469c825e-bf70-4b3e-a2c8-f1b95a8f62e5",
+          "e334a6d3-fe24-4572-bcd3-9fe64eeac5eb",
+          "6b30269e-bb50-444a-81e5-fad57696810a",
+          "f5b7fe78-79e0-47dd-9a06-c1fde8ad782d",
+          "1e44c6e3-e83a-467e-98ea-c6edcdacf6e9",
+          "896c967f-acd0-4f27-abbe-fbce3fbccd7f",
+          "9e1a5137-41ce-4f42-ae9b-0cc3e3164cbe",
+          "a27666bd-ff01-49e0-9ddf-d028891bdff5",
+          "284afc0e-ba1e-40a4-95bd-15080869cb6e",
+          "eca6c8ba-2dd4-4b97-aa7e-f06e578fb25d"
+        ],
+        "rhythmScore": 1,
+        "colorApplied": true
+      },
+      "refine": {
+        "bestKnobs": {
+          "motionScale": 1.3984068893217783,
+          "gradeStrength": 0.4855264893620226
+        },
+        "bestScore": 0.9161937028030509,
+        "bestSsim": 0.8882582704040679,
+        "rhythmScore": 1,
+        "trials": 9,
+        "history": [
+          0.8564772131992527,
+          0.8796103719047648,
+          0.8796103719047648,
+          0.8796103719047648,
+          0.8906297623057962,
+          0.8921900724464904,
+          0.9088948675807776,
+          0.9088948675807776,
+          0.9161937028030509
+        ],
+        "sampleFrames": [
+          36,
+          585,
+          1325
+        ],
+        "fps": {
+          "num": 2997,
+          "den": 125
+        }
+      },
+      "basis": {
+        "compile": "reference-self-reconstruction",
+        "refine": "64x64-luma-ssim-plus-duration-dtw",
+        "fidelity": "unavailable",
+        "lpips": "unavailable",
+        "textWindows": "unavailable",
+        "notes": [
+          "The reference is compiled onto itself to measure how much of the measured edit the current pipeline can rebuild; this is not a cross-footage generalization score.",
+          "Refine scores are real 64x64 luma SSIM and duration-pattern DTW from rendered frames; LPIPS has no model and is labeled unavailable.",
+          "Camera classes come from the extraction's measured motion samples.",
+          "Text windows are unavailable: Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Boundary and camera accuracy against human labels are unavailable: only the synthetic corpus case carries verified labels."
+        ]
+      }
+    },
+    {
+      "id": "interview-intercut",
+      "styleFamily": "interview-intercut",
+      "source": "reference_videos_to_select/v24044gl0000d5e58cvog65p89sa6v30.MP4",
+      "sourceSha256": "e013648e7d10c48b10339dcaf12fbd1c325c6d088f32add6e38d08348c131e34",
+      "decodePath": {
+        "kind": "native",
+        "codec": "h264"
+      },
+      "media": {
+        "width": 1382,
+        "height": 576,
+        "fps": {
+          "num": 30,
+          "den": 1
+        },
+        "durationFrames": 1993
+      },
+      "clockProvenance": "external-ffprobe-manifest",
+      "extraction": {
+        "backend": "chromium-vite-web",
+        "shotCount": 23,
+        "boundariesFrames": [
+          46,
+          153,
+          203,
+          253,
+          296,
+          320,
+          338,
+          357,
+          524,
+          549,
+          754,
+          861,
+          991,
+          1009,
+          1096,
+          1117,
+          1133,
+          1294,
+          1356,
+          1492,
+          1674,
+          1736
+        ],
+        "cameraClasses": {
+          "handheld": 19,
+          "tilt": 1,
+          "orbit": 1,
+          "pan": 2
+        },
+        "transitionCount": 22,
+        "eventCount": 22,
+        "cameraShotCount": 23,
+        "elapsedMs": 169225,
+        "warnings": [
+          "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+          "Local OCR is unavailable in this browser; reference text overlays were not measured."
+        ],
+        "textStatus": "unavailable",
+        "textReason": "Local OCR is unavailable in this browser; reference text overlays were not measured."
+      },
+      "compile": {
+        "shotItemIds": [
+          "d1482d74-7b85-4aa8-bb37-43e46195c2ae",
+          "2242f7c0-655a-4fc9-a1f1-abc77dcc5467",
+          "39917c2a-7a43-4326-9957-2a5dc9ee80fe",
+          "1ad05fcf-f19b-4d4e-9737-a0603abc108e",
+          "1f18be66-4f77-4498-b63a-b9c8ba2c574b",
+          "b7d6beb5-62f8-44ed-b601-b4b47c37d591",
+          "927adae3-b26c-4a28-b1c2-1b4e467d6d1b",
+          "76eab393-cf9e-4172-aea3-551f6617c294",
+          "30d43ead-5cb8-4387-9809-06ce60e6c5ec",
+          "9f4b78cc-9202-4435-a213-a35f64bb6660",
+          "f0d772d1-705f-4338-a9f5-8ec1bc93cd74",
+          "467cddb7-ba58-4976-a4f1-dc862afe19be",
+          "cd9ecc7c-6ff8-47fd-89dd-0d0fc636a015",
+          "2fb3b419-385f-41c1-ae4b-80a509bc681a",
+          "2af2628c-7bfc-4e18-9724-48cfb9e51dd2",
+          "699d5162-13c7-4c41-b602-a78d608392ef",
+          "4bd52732-776c-495a-983b-dd129dfbc3b0",
+          "2c0ce7fe-9a2e-439f-af7e-1cd45baa4925",
+          "750d60c5-de72-4941-a32b-a270257da266",
+          "3d0b8a4a-ce87-4620-98c9-cf587b7ff79b",
+          "bb346bca-8125-43c4-8a28-8638f9ce9def",
+          "2826f797-e93a-42be-8d66-0e7744de23bd",
+          "39d27f70-2cc9-4f96-b653-8d254de1e186"
+        ],
+        "rhythmScore": 1,
+        "colorApplied": true
+      },
+      "refine": {
+        "bestKnobs": {
+          "motionScale": 1.3984068893217783,
+          "gradeStrength": 0.4855264893620226
+        },
+        "bestScore": 0.4424430929675294,
+        "bestSsim": 0.2565907906233726,
+        "rhythmScore": 1,
+        "trials": 9,
+        "history": [
+          0.43545361313596836,
+          0.43860300569117305,
+          0.43860300569117305,
+          0.43860300569117305,
+          0.43953252434619927,
+          0.4397155165490448,
+          0.4419588364735616,
+          0.4419588364735616,
+          0.4424430929675294
+        ],
+        "sampleFrames": [
+          22,
+          347,
+          1106
+        ],
+        "fps": {
+          "num": 30,
+          "den": 1
+        }
+      },
+      "basis": {
+        "compile": "reference-self-reconstruction",
+        "refine": "64x64-luma-ssim-plus-duration-dtw",
+        "fidelity": "unavailable",
+        "lpips": "unavailable",
+        "textWindows": "unavailable",
+        "notes": [
+          "The reference is compiled onto itself to measure how much of the measured edit the current pipeline can rebuild; this is not a cross-footage generalization score.",
+          "Refine scores are real 64x64 luma SSIM and duration-pattern DTW from rendered frames; LPIPS has no model and is labeled unavailable.",
+          "Camera classes come from the extraction's measured motion samples.",
+          "Text windows are unavailable: Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Boundary and camera accuracy against human labels are unavailable: only the synthetic corpus case carries verified labels."
+        ]
+      }
+    },
+    {
+      "id": "kinetic-type-b",
+      "styleFamily": "kinetic-type",
+      "source": "reference_videos_to_select/v26044gc0000d7s94ivog65r9lu88r30.MP4",
+      "sourceSha256": "afa9bc5a945a1b0207fef3841b110d2776c2e574cbb2ab3b7439cf85ebb5a66b",
+      "decodePath": {
+        "kind": "native",
+        "codec": "h264"
+      },
+      "media": {
+        "width": 1024,
+        "height": 576,
+        "fps": {
+          "num": 30,
+          "den": 1
+        },
+        "durationFrames": 752
+      },
+      "clockProvenance": "external-ffprobe-manifest",
+      "extraction": {
+        "backend": "chromium-vite-web",
+        "shotCount": 5,
+        "boundariesFrames": [
+          72,
+          134,
+          139,
+          150
+        ],
+        "cameraClasses": {
+          "handheld": 3,
+          "static": 2
+        },
+        "transitionCount": 4,
+        "eventCount": 4,
+        "cameraShotCount": 3,
+        "elapsedMs": 231643,
+        "warnings": [
+          "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+          "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Shot boundary near frame 72 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 134 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 139 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 150 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
+        ],
+        "textStatus": "unavailable",
+        "textReason": "Local OCR is unavailable in this browser; reference text overlays were not measured."
+      },
+      "compile": {
+        "shotItemIds": [
+          "fcd1e4ab-ee7c-45f2-b7a4-99f73bd6516d",
+          "b4298b15-cb22-420a-9a44-d071dcec22fb",
+          "bcfa135f-2c2d-4906-8a5c-6af1b9e369ff",
+          "731fdd6b-1557-47a7-8403-b38bf49e4a44",
+          "b5709bb3-6763-4828-8c7d-4e2474743a35"
+        ],
+        "rhythmScore": 1,
+        "colorApplied": true
+      },
+      "refine": {
+        "bestKnobs": {
+          "motionScale": 1.3984068893217783,
+          "gradeStrength": 0.4855264893620226
+        },
+        "bestScore": 0.5914796806347307,
+        "bestSsim": 0.4553062408463076,
+        "rhythmScore": 1,
+        "trials": 9,
+        "history": [
+          0.584645479994552,
+          0.5891891328233567,
+          0.5891891328233567,
+          0.5891891328233567,
+          0.5903758703204267,
+          0.5905089975044935,
+          0.5913629174637878,
+          0.5913629174637878,
+          0.5914796806347307
+        ],
+        "sampleFrames": [
+          35,
+          102,
+          144
+        ],
+        "fps": {
+          "num": 30,
+          "den": 1
+        }
+      },
+      "basis": {
+        "compile": "reference-self-reconstruction",
+        "refine": "64x64-luma-ssim-plus-duration-dtw",
+        "fidelity": "unavailable",
+        "lpips": "unavailable",
+        "textWindows": "unavailable",
+        "notes": [
+          "The reference is compiled onto itself to measure how much of the measured edit the current pipeline can rebuild; this is not a cross-footage generalization score.",
+          "Refine scores are real 64x64 luma SSIM and duration-pattern DTW from rendered frames; LPIPS has no model and is labeled unavailable.",
+          "Camera classes come from the extraction's measured motion samples.",
+          "Text windows are unavailable: Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Boundary and camera accuracy against human labels are unavailable: only the synthetic corpus case carries verified labels."
+        ]
+      }
+    },
+    {
+      "id": "lewis-hamilton",
+      "styleFamily": "broadcast-montage",
+      "source": "reference_videos_to_select/lewis hamilton.MP4",
+      "sourceSha256": "6c7557fa8ef4833c31e2bde534da1b79f0f769c586c3b63e9eb64d133dab0b67",
+      "decodePath": {
+        "kind": "native",
+        "codec": "h264"
+      },
+      "media": {
+        "width": 768,
+        "height": 576,
+        "fps": {
+          "num": 30,
+          "den": 1
+        },
+        "durationFrames": 632
+      },
+      "clockProvenance": "external-ffprobe-manifest",
+      "extraction": {
+        "backend": "chromium-vite-web",
+        "shotCount": 24,
+        "boundariesFrames": [
+          128,
+          130,
+          149,
+          153,
+          183,
+          185,
+          198,
+          206,
+          213,
+          221,
+          263,
+          271,
+          297,
+          320,
+          321,
+          341,
+          384,
+          389,
+          400,
+          441,
+          463,
+          469,
+          512
+        ],
+        "cameraClasses": {
+          "handheld": 7,
+          "static": 12,
+          "pan": 2,
+          "orbit": 1,
+          "pull": 1,
+          "push": 1
+        },
+        "transitionCount": 23,
+        "eventCount": 23,
+        "cameraShotCount": 12,
+        "elapsedMs": 55041,
+        "warnings": [
+          "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+          "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Shot boundary near frame 185 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 206 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 320 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 389 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
+        ],
+        "textStatus": "unavailable",
+        "textReason": "Local OCR is unavailable in this browser; reference text overlays were not measured."
+      },
+      "compile": {
+        "shotItemIds": [
+          "5aee2297-e6ae-4746-967f-070d3ebb7046",
+          "cef74725-a517-48f7-b548-6150daf971c5",
+          "b03fcb00-d230-4b82-a90a-2c1fa0d601cb",
+          "b6523193-7df1-4cc5-b0fa-0885fe2ab9de",
+          "3a8d4b53-eedc-4d7b-ba05-c419a6aa7d8f",
+          "bcbca4ed-977e-4ab2-b35d-242522503f99",
+          "f508149e-d852-47f8-8be7-1b6039fd878b",
+          "33e81c32-2b5a-4532-8148-021a667c6f6a",
+          "3c89c91a-49a3-42f9-a194-b3fb86035137",
+          "7780f2ea-a01a-4275-8774-58db928c0eb0",
+          "1ffc376a-fe05-48b4-9f96-1ef08a4a5dc9",
+          "869f0c0b-c68f-4140-85f1-b4122d4994f0",
+          "176676ff-f7f9-4b26-affe-9eab6117b58c",
+          "15b0005f-02ef-4c2e-a6ce-8a081673c754",
+          "cd287e7e-6747-430f-b21b-f2a9d4c0e8f8",
+          "fb253f84-8a5e-4db4-a5e1-d81d599d1251",
+          "bba58df1-d7ba-4977-b401-dde5ae31ab86",
+          "3353ff12-6832-45c1-bb4b-d3be3377ccf5",
+          "5d69bfce-95df-425c-8031-abbbe900b56f",
+          "f29d0eaf-8094-4b57-9a37-e796ff504917",
+          "20ac8d67-619a-40f1-980f-733833e38ff5",
+          "889989e0-833b-4278-bfd8-9c129b39768a",
+          "04a54e72-6cad-4766-909e-0cc8b2a45939",
+          "2febb5e2-ec99-4423-ad1a-f08da48c9d32"
+        ],
+        "rhythmScore": 1,
+        "colorApplied": true
+      },
+      "refine": {
+        "bestKnobs": {
+          "motionScale": 1.3984068893217783,
+          "gradeStrength": 0.4855264893620226
+        },
+        "bestScore": 0.6223793867743275,
+        "bestSsim": 0.4965058490324366,
+        "rhythmScore": 1,
+        "trials": 9,
+        "history": [
+          0.5374799741731646,
+          0.578261778881854,
+          0.578261778881854,
+          0.578261778881854,
+          0.594387710325519,
+          0.596465345016356,
+          0.6149592789574827,
+          0.6149592789574827,
+          0.6223793867743275
+        ],
+        "sampleFrames": [
+          63,
+          209,
+          362
+        ],
+        "fps": {
+          "num": 30,
+          "den": 1
+        }
+      },
+      "basis": {
+        "compile": "reference-self-reconstruction",
+        "refine": "64x64-luma-ssim-plus-duration-dtw",
+        "fidelity": "unavailable",
+        "lpips": "unavailable",
+        "textWindows": "unavailable",
+        "notes": [
+          "The reference is compiled onto itself to measure how much of the measured edit the current pipeline can rebuild; this is not a cross-footage generalization score.",
+          "Refine scores are real 64x64 luma SSIM and duration-pattern DTW from rendered frames; LPIPS has no model and is labeled unavailable.",
+          "Camera classes come from the extraction's measured motion samples.",
+          "Text windows are unavailable: Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Boundary and camera accuracy against human labels are unavailable: only the synthetic corpus case carries verified labels."
+        ]
+      }
+    },
+    {
+      "id": "magazine-edit",
+      "styleFamily": "football-collage",
+      "source": "reference_videos_to_select/magazine edit, motion graphics.MP4",
+      "sourceSha256": "cc9093fecf1fefc234f17ac05f0fc0a313955b2048ac7e002a00f6ac81d248d4",
+      "decodePath": {
+        "kind": "native",
+        "codec": "h264"
+      },
+      "media": {
+        "width": 1024,
+        "height": 576,
+        "fps": {
+          "num": 18,
+          "den": 1
+        },
+        "durationFrames": 437
+      },
+      "clockProvenance": "external-ffprobe-manifest",
+      "extraction": {
+        "backend": "chromium-vite-web",
+        "shotCount": 31,
+        "boundariesFrames": [
+          9,
+          115,
+          116,
+          130,
+          131,
+          132,
+          133,
+          141,
+          142,
+          143,
+          145,
+          153,
+          154,
+          162,
+          166,
+          179,
+          180,
+          194,
+          195,
+          207,
+          208,
+          222,
+          224,
+          231,
+          233,
+          240,
+          258,
+          301,
+          302,
+          303
+        ],
+        "cameraClasses": {
+          "handheld": 16,
+          "static": 12,
+          "pan": 2,
+          "pull": 1
+        },
+        "transitionCount": 30,
+        "eventCount": 30,
+        "cameraShotCount": 19,
+        "elapsedMs": 67331,
+        "warnings": [
+          "Local OCR is unavailable in this browser; reference text overlays were not measured."
+        ],
+        "textStatus": "unavailable",
+        "textReason": "Local OCR is unavailable in this browser; reference text overlays were not measured."
+      },
+      "compile": {
+        "shotItemIds": [
+          "3ecc868c-4e13-443f-a702-9353236a3c98",
+          "0e3783a3-6a2b-443f-96b9-8dec2410caed",
+          "7deeb5dc-c898-41cd-9092-ca9770383d03",
+          "8885f783-1440-410b-9df2-bb56245c7a66",
+          "5bb51130-78a5-4bb6-8907-bff7d74ef7f6",
+          "67996749-c982-4de4-9606-baa9caaaa793",
+          "69bafe86-1615-4452-8167-b420c7d36908",
+          "23a5abb0-31a6-439b-80bf-9d3edf1923c8",
+          "704d88a0-0143-4c6d-b3e0-2ad965731a84",
+          "b90f2e7c-b608-4bb9-a956-cb1029bd17b2",
+          "3e1c8671-c668-446d-afa7-de50f0849b41",
+          "e3e076b1-d252-4846-ba54-c43e398f6172",
+          "6e1976f4-18bf-4fb8-91da-71dc050d78c8",
+          "80a4594d-6fc9-4df9-aea6-317847f9737d",
+          "e3e8eaaf-897a-4f7c-8a72-a8d1fd0ee079",
+          "84efe3b9-6c45-42cf-9e0c-f238581babe2",
+          "89347b98-61d0-4c58-bbcc-ace5d9bd640f",
+          "38567678-5bf9-475b-b5e4-d28292902f62",
+          "04220d72-aa43-40fa-8e2b-852cbb57fa4a",
+          "8b46ef07-d012-4164-8b93-aa2730c060fd",
+          "5e62c18d-e552-48d7-b91c-3f5acd0c495e",
+          "baa32bd7-2ee0-4cc1-95af-18bd56d2a8bf",
+          "db90b5ef-3213-41b7-9aee-5440ecc7f2ca",
+          "64619bed-565a-434f-8f22-ac7a7dde012d",
+          "6dd6801b-8aa6-40a4-b3bb-c3354ee9ddb7",
+          "77b021e3-6fa5-4798-b286-3116797cd7be",
+          "e5e1bc90-50f6-4a60-af00-2a922e3dd4de",
+          "e18e7e35-c1a8-416c-b6d9-b39b2451763c",
+          "1595df9a-a2c6-4212-9ccb-0c3e741a668f",
+          "29d91026-4d02-4248-94e4-6ce519db1413",
+          "02ec071b-f317-4e1b-a595-19321d959a58"
+        ],
+        "rhythmScore": 1,
+        "colorApplied": true
+      },
+      "refine": {
+        "bestKnobs": {
+          "motionScale": 1.3984068893217783,
+          "gradeStrength": 0.4855264893620226
+        },
+        "bestScore": 0.5762416224363406,
+        "bestSsim": 0.4349888299151208,
+        "rhythmScore": 1,
+        "trials": 9,
+        "history": [
+          0.5756360760383664,
+          0.5758898120971561,
+          0.5758898120971561,
+          0.5758898120971561,
+          0.5760374137171673,
+          0.5760497133394143,
+          0.5761550340875559,
+          0.5761550340875559,
+          0.5762416224363406
+        ],
+        "sampleFrames": [
+          4,
+          143,
+          207
+        ],
+        "fps": {
+          "num": 18,
+          "den": 1
+        }
+      },
+      "basis": {
+        "compile": "reference-self-reconstruction",
+        "refine": "64x64-luma-ssim-plus-duration-dtw",
+        "fidelity": "unavailable",
+        "lpips": "unavailable",
+        "textWindows": "unavailable",
+        "notes": [
+          "The reference is compiled onto itself to measure how much of the measured edit the current pipeline can rebuild; this is not a cross-footage generalization score.",
+          "Refine scores are real 64x64 luma SSIM and duration-pattern DTW from rendered frames; LPIPS has no model and is labeled unavailable.",
+          "Camera classes come from the extraction's measured motion samples.",
+          "Text windows are unavailable: Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Boundary and camera accuracy against human labels are unavailable: only the synthetic corpus case carries verified labels."
+        ]
+      }
+    },
+    {
+      "id": "montage-b",
+      "styleFamily": "montage",
+      "source": "reference_videos_to_select/v24044gl0000d7368pfog65ufcnb2f60.MP4",
+      "sourceSha256": "9f8a17d8e4950f203879d9b7b2c276b4278ed085074e0c1781f29398d850a0ba",
+      "decodePath": {
+        "kind": "native",
+        "codec": "h264"
+      },
+      "media": {
+        "width": 576,
+        "height": 650,
+        "fps": {
+          "num": 2997,
+          "den": 125
+        },
+        "durationFrames": 1619
+      },
+      "clockProvenance": "external-ffprobe-manifest",
+      "extraction": {
+        "backend": "chromium-vite-web",
+        "shotCount": 59,
+        "boundariesFrames": [
+          43,
+          44,
+          347,
+          395,
+          612,
+          676,
+          762,
+          775,
+          776,
+          865,
+          926,
+          943,
+          1062,
+          1063,
+          1088,
+          1104,
+          1110,
+          1113,
+          1117,
+          1126,
+          1129,
+          1136,
+          1146,
+          1147,
+          1160,
+          1171,
+          1186,
+          1227,
+          1235,
+          1249,
+          1269,
+          1273,
+          1284,
+          1285,
+          1296,
+          1297,
+          1307,
+          1309,
+          1315,
+          1324,
+          1327,
+          1334,
+          1344,
+          1345,
+          1358,
+          1369,
+          1383,
+          1425,
+          1433,
+          1447,
+          1468,
+          1471,
+          1482,
+          1483,
+          1494,
+          1495,
+          1505,
+          1507
+        ],
+        "cameraClasses": {
+          "handheld": 20,
+          "tilt": 1,
+          "static": 31,
+          "pull": 2,
+          "push": 4,
+          "pan": 1
+        },
+        "transitionCount": 58,
+        "eventCount": 58,
+        "cameraShotCount": 26,
+        "elapsedMs": 348742,
+        "warnings": [
+          "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+          "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Shot boundary near frame 1088 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 1117 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 1136 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 1249 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 1273 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 1315 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 1334 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 1447 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 1471 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Long-shot recovery added 2 cut(s) from 2 unusually long shot(s)."
+        ],
+        "textStatus": "unavailable",
+        "textReason": "Local OCR is unavailable in this browser; reference text overlays were not measured."
+      },
+      "compile": {
+        "shotItemIds": [
+          "90820f98-831f-424b-8073-a8a538256cae",
+          "ba047f5f-66e4-4efc-9459-9ccc9e2501bc",
+          "883a0563-d4cc-4e13-b6a8-a5b161bc9ef6",
+          "9ae108b9-b06d-49cb-a631-14c33c7e0af0",
+          "715d5425-cf36-4007-842f-427367d41c00",
+          "9a1035fb-c443-41a3-bbc0-b75fc6ea345a",
+          "3067a08f-d581-4ef7-8d3c-dbd04cfd3228",
+          "a26f6c82-ac18-44c6-9c2c-2d2d6bf92717",
+          "d243d69c-45d8-4032-8aa8-237537de10a0",
+          "449a2523-ab94-4b61-8fc9-63caa56dbaca",
+          "3f518faf-aea4-46a1-954c-4369bb25c927",
+          "c167997e-6f03-40eb-912b-194e663186df",
+          "afd3c51f-5a21-4682-81f7-6a8ef065629e",
+          "ef336537-2bde-4f84-a324-9f787a7ee55e",
+          "d0787c59-a2c4-49b9-934f-a9bdeaed67df",
+          "45f32dac-1ea5-470a-952d-3823a0bb0c7f",
+          "db26d321-30e6-4caf-9db8-7543c237a3cd",
+          "68725a37-9854-4feb-acd3-ea44945ca695",
+          "94811b2b-532b-4b8c-b335-ac7b4257adb6",
+          "712ab42e-620d-4aa3-a6a7-98c77c6a23d5",
+          "15295112-71a4-4da5-9fb1-2d80c4eae493",
+          "cb0b14e5-b745-4075-830e-d98db4d95d5e",
+          "9fe8d78d-b742-4546-a0d3-aed0102fccb9",
+          "ab607bd0-521b-4f52-b8fa-4466b370a547",
+          "2a6a90a2-9cee-43d6-959a-f2b3ca8130ef",
+          "0fb2739c-62c4-4ae7-aae5-0382d83aa35f",
+          "56f357ed-6e3d-4e52-8eca-2c3ee131b162",
+          "e508caf2-ff48-46c3-aba2-dcae2540cfc5",
+          "43c47337-c839-4bc2-9b19-a96cee5f8de2",
+          "7dd4ad49-2ade-4e1e-8c02-a1a1b30f95cc",
+          "fae9067d-b723-46ab-8356-d5ab4fb3fdec",
+          "56ae2ab1-6e77-4d2a-8707-12e6dae55959",
+          "0da9b1a1-621b-4460-8475-fdf643b7f6ba",
+          "a225ab4e-4a27-4094-b183-1c02cc9f4ccb",
+          "307d01d3-20c4-4161-9e8e-5c577e538088",
+          "000b9b51-f24c-436b-8a44-e2b4ec54d76f",
+          "8a2a99ae-3ba0-4fe8-b0d5-479958b6fe75",
+          "579cf9e8-ff2a-4029-99e5-13b5b5f28e57",
+          "b4b5a4e5-7df8-4d9c-8d25-20246509188b",
+          "1b104e5d-eabd-4df2-b83d-2cfd2d3cd312",
+          "912a92a7-ae21-4c13-9485-060a4b38dcc0",
+          "924af2e5-f865-4444-93d4-7c40780d0442",
+          "deba09a3-98a8-4d2a-8214-4a6eabc126a4",
+          "57fcb2e0-abf1-49bb-b2b5-ed3eeb7251b1",
+          "f0ec4813-441d-4b00-8707-fcde0ea60b88",
+          "9d49c9c0-99c7-41d0-b6b8-ca3d9b721955",
+          "54d66f39-9177-4a70-b5cc-9d5ee5aea1a9",
+          "d0e282a3-77c2-4aed-8e5c-44edfd43138a",
+          "eed5cf7e-b31b-422f-96fc-28b8d1f5539f",
+          "ad24db7b-b59f-45f2-a208-68b391afe034",
+          "ca446c4d-7cfa-4eab-956e-648d3940fc91",
+          "411463a0-aa61-4002-a40d-b450c8634386",
+          "b9e8c46b-f165-4a1f-a490-2c9965a15dce",
+          "a0f427f4-62e0-4079-ac2f-7d60ab9a6172",
+          "52fddd56-e6e1-4fe2-a341-37bc0b2c5824",
+          "c249f8e7-b1a9-46f9-adb6-c8e9504caef5",
+          "8fbb1f64-07c0-490a-8761-a61083de17da",
+          "37383c8f-c88d-48e1-81dc-14161fae125a",
+          "30a7450f-129d-44f7-ac21-d9fc20b726dc"
+        ],
+        "rhythmScore": 1,
+        "colorApplied": true
+      },
+      "refine": {
+        "bestKnobs": {
+          "motionScale": 1.3984068893217783,
+          "gradeStrength": 0.4855264893620226
+        },
+        "bestScore": 0.9384281397474552,
+        "bestSsim": 0.9179041863299403,
+        "rhythmScore": 1,
+        "trials": 9,
+        "history": [
+          0.9373436573012234,
+          0.9379271921131045,
+          0.9379271921131045,
+          0.9379271921131045,
+          0.9380727920826913,
+          0.9380747435196182,
+          0.9383890179939532,
+          0.9383890179939532,
+          0.9384281397474552
+        ],
+        "sampleFrames": [
+          21,
+          1121,
+          1319
+        ],
+        "fps": {
+          "num": 2997,
+          "den": 125
+        }
+      },
+      "basis": {
+        "compile": "reference-self-reconstruction",
+        "refine": "64x64-luma-ssim-plus-duration-dtw",
+        "fidelity": "unavailable",
+        "lpips": "unavailable",
+        "textWindows": "unavailable",
+        "notes": [
+          "The reference is compiled onto itself to measure how much of the measured edit the current pipeline can rebuild; this is not a cross-footage generalization score.",
+          "Refine scores are real 64x64 luma SSIM and duration-pattern DTW from rendered frames; LPIPS has no model and is labeled unavailable.",
+          "Camera classes come from the extraction's measured motion samples.",
+          "Text windows are unavailable: Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Boundary and camera accuracy against human labels are unavailable: only the synthetic corpus case carries verified labels."
+        ]
+      }
+    },
+    {
+      "id": "spiderman",
+      "styleFamily": "comic-halftone-glitch",
+      "source": "reference_videos_to_select/SPIDERMAN (IMPORTANT).MP4",
+      "sourceSha256": "07ea3556bb5c8e2cdb1a9a93a606cfad8dc7e35244e65f563177cd5381752e36",
+      "decodePath": {
+        "kind": "native",
+        "codec": "h264"
+      },
+      "media": {
+        "width": 576,
+        "height": 1104,
+        "fps": {
+          "num": 30,
+          "den": 1
+        },
+        "durationFrames": 1398
+      },
+      "clockProvenance": "external-ffprobe-manifest",
+      "extraction": {
+        "backend": "chromium-vite-web",
+        "shotCount": 30,
+        "boundariesFrames": [
+          358,
+          368,
+          420,
+          440,
+          446,
+          484,
+          511,
+          513,
+          583,
+          606,
+          611,
+          622,
+          633,
+          644,
+          649,
+          655,
+          666,
+          698,
+          709,
+          718,
+          728,
+          734,
+          740,
+          751,
+          761,
+          778,
+          811,
+          822,
+          1112
+        ],
+        "cameraClasses": {
+          "handheld": 12,
+          "static": 13,
+          "orbit": 2,
+          "pan": 2,
+          "push": 1
+        },
+        "transitionCount": 29,
+        "eventCount": 29,
+        "cameraShotCount": 15,
+        "elapsedMs": 342452,
+        "warnings": [
+          "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+          "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Shot boundary near frame 583 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 644 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 698 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 709 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 718 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 728 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 751 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 761 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 778 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Shot boundary near frame 811 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+          "Long-shot recovery added 3 cut(s) from 1 unusually long shot(s)."
+        ],
+        "textStatus": "unavailable",
+        "textReason": "Local OCR is unavailable in this browser; reference text overlays were not measured."
+      },
+      "compile": {
+        "shotItemIds": [
+          "5844ab24-2a84-4cbe-a5b5-ce51ccf7ad07",
+          "c73271ec-ead4-43c4-a84b-029747291057",
+          "d67fb68d-e35e-4ef0-91d3-88fee2f4df88",
+          "4c1004b2-d261-4e90-a727-10a6ca35f05a",
+          "0e22116c-57e1-410d-8324-e7609de56284",
+          "067d122d-c63a-4f80-82e0-0ed2181f85d0",
+          "1a2f6271-a0c1-40d0-a8be-10be21449400",
+          "d8c0e0fd-51b9-4b40-af82-dd701839f936",
+          "ace00b65-b5b8-40e0-ad8e-305c85f59d7c",
+          "8a6fca08-d95f-40aa-8269-2b9667389eb4",
+          "48b80fc6-9a63-459b-9e89-d654357823a3",
+          "50e86366-d93a-4083-864b-ed29062e7d16",
+          "77405373-6806-47cc-9c6a-a8d6df5e7056",
+          "4a450690-9360-4e3d-a1ce-d38bfa676b36",
+          "d45e2161-04ba-48b0-b1ff-04fda684ede4",
+          "17383b28-4b2d-4f9b-b606-6e1e83d327d6",
+          "73696cd4-430e-44e0-9c8d-0812b4a0b199",
+          "e7c0fee5-7f99-43c3-842e-67ebcdab219d",
+          "200c77be-d89e-406d-b63c-ec78b7a46dd0",
+          "28136c6b-3608-4ec2-bb8d-b0e3e20e40af",
+          "529b471e-9e45-4c8f-b8ee-328e3619b135",
+          "d0f179fb-4223-4707-a4b5-4a90e14c87fb",
+          "0a9ff161-fc2c-4cdb-980c-45a62e23b7cc",
+          "bbee5ee2-2319-43b2-bc34-2c714d7098ef",
+          "0f3d9de9-cefd-4a3c-a776-811ccdd7e61c",
+          "e314bd50-576f-4fc8-af8b-1ad0abe66981",
+          "1b0fb364-507a-45d6-a725-d43200c138bd",
+          "0a20857e-9e00-49bd-81cd-2018f8f26a78",
+          "7a0254dd-7465-48f6-9e32-5a9d5f55eac8",
+          "26a2e3dc-5c5d-4078-88dc-73e0f2d3b51c"
+        ],
+        "rhythmScore": 1,
+        "colorApplied": true
+      },
+      "refine": {
+        "bestKnobs": {
+          "motionScale": 1.2544832270592452,
+          "gradeStrength": 0.7802154315635562
+        },
+        "bestScore": 0.5153410920507848,
+        "bestSsim": 0.35378812273437976,
+        "rhythmScore": 1,
+        "trials": 9,
+        "history": [
+          0.5149806067220728,
+          0.5153410920507848,
+          0.5153410920507848,
+          0.5153410920507848,
+          0.5153410920507848,
+          0.5153410920507848,
+          0.5153410920507848,
+          0.5153410920507848,
+          0.5153410920507848
+        ],
+        "sampleFrames": [
+          178,
+          608,
+          722
+        ],
+        "fps": {
+          "num": 30,
+          "den": 1
+        }
+      },
+      "basis": {
+        "compile": "reference-self-reconstruction",
+        "refine": "64x64-luma-ssim-plus-duration-dtw",
+        "fidelity": "unavailable",
+        "lpips": "unavailable",
+        "textWindows": "unavailable",
+        "notes": [
+          "The reference is compiled onto itself to measure how much of the measured edit the current pipeline can rebuild; this is not a cross-footage generalization score.",
+          "Refine scores are real 64x64 luma SSIM and duration-pattern DTW from rendered frames; LPIPS has no model and is labeled unavailable.",
+          "Camera classes come from the extraction's measured motion samples.",
+          "Text windows are unavailable: Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Boundary and camera accuracy against human labels are unavailable: only the synthetic corpus case carries verified labels."
+        ]
+      }
+    },
+    {
+      "id": "steph-curry",
+      "styleFamily": "talking-head-captions",
+      "source": "reference_videos_to_select/steph curry.MP4",
+      "sourceSha256": "0d8a79f3f8815f0dc04e759e0328dffb9dc60a499bc1342a4b3ab39373ac34f9",
+      "decodePath": {
+        "kind": "h264-proxy",
+        "codec": "hevc",
+        "proxy": "reference_videos_to_select/proxies/steph curry.h264.mp4",
+        "proxySha256": "758e9201b9ef811448114f8699be3bc2004a3974b254cdb9cdeb8b45466ae1f5",
+        "reason": "HEVC source; extraction uses a local H.264 proxy with the same dimensions and frame clock. libx264 crf 18, yuv420p, AAC 160k."
+      },
+      "media": {
+        "width": 576,
+        "height": 576,
+        "fps": {
+          "num": 2997,
+          "den": 100
+        },
+        "durationFrames": 574
+      },
+      "clockProvenance": "external-ffprobe-manifest",
+      "extraction": {
+        "backend": "chromium-vite-web",
+        "shotCount": 21,
+        "boundariesFrames": [
+          213,
+          234,
+          235,
+          236,
+          269,
+          270,
+          360,
+          361,
+          362,
+          363,
+          377,
+          378,
+          379,
+          411,
+          412,
+          426,
+          430,
+          484,
+          494,
+          521
+        ],
+        "cameraClasses": {
+          "pan": 2,
+          "handheld": 10,
+          "static": 9
+        },
+        "transitionCount": 20,
+        "eventCount": 20,
+        "cameraShotCount": 12,
+        "elapsedMs": 133434,
+        "warnings": [
+          "Local OCR is unavailable in this browser; reference text overlays were not measured."
+        ],
+        "textStatus": "unavailable",
+        "textReason": "Local OCR is unavailable in this browser; reference text overlays were not measured."
+      },
+      "compile": {
+        "shotItemIds": [
+          "4f56a58d-1226-482c-8bde-2b3e00fe9435",
+          "d9122a80-7a8b-4b78-939f-d07040ab1b03",
+          "27b236e1-afda-4f9c-9406-3bc11069779a",
+          "22c5c449-a569-4176-8e46-a0f16aeaa8dd",
+          "08769971-098c-4c13-b2fb-befab80ba852",
+          "db8e10b7-267a-4b0e-8510-65b0e1516e74",
+          "63bc8537-acd3-4c14-9b32-b0068380f807",
+          "f9ed1a15-be97-4bd4-b6b3-94820c350ef0",
+          "69edf381-1104-4084-becf-5f05e0b32137",
+          "9d6c3304-71ef-47ff-b69d-b193e84ff212",
+          "5e7c338f-b905-4c54-8c17-affe8dad827a",
+          "cbe81c85-ed1a-4903-9dc9-79c52ccf762a",
+          "70242be9-a58f-4a07-b60d-3b9fa68c4236",
+          "4faf359a-9113-4af5-b040-3bc375c6f149",
+          "0df8e544-e427-47b7-9aa5-f074ffccf212",
+          "5465f9a9-d246-4022-bed4-6458c5b97f6c",
+          "b4376d3c-9831-4b5f-9e65-c057a613ee21",
+          "e500827b-225c-41c6-bf25-5e87527054c4",
+          "73ffe719-73d0-40d1-87fa-f7dccc5a966e",
+          "ef93126f-6f51-4936-b802-cb64470e96e4",
+          "a72b94ef-7ea4-4d20-90e3-050099f52755"
+        ],
+        "rhythmScore": 1,
+        "colorApplied": true
+      },
+      "refine": {
+        "bestKnobs": {
+          "motionScale": 1,
+          "gradeStrength": 1
+        },
+        "bestScore": 0.9720952824864104,
+        "bestSsim": 0.9627937099818805,
+        "rhythmScore": 1,
+        "trials": 1,
+        "history": [
+          0.9720952824864104
+        ],
+        "sampleFrames": [
+          106,
+          360,
+          411
+        ],
+        "fps": {
+          "num": 2997,
+          "den": 100
+        }
+      },
+      "basis": {
+        "compile": "reference-self-reconstruction",
+        "refine": "64x64-luma-ssim-plus-duration-dtw",
+        "fidelity": "unavailable",
+        "lpips": "unavailable",
+        "textWindows": "unavailable",
+        "notes": [
+          "The reference is compiled onto itself to measure how much of the measured edit the current pipeline can rebuild; this is not a cross-footage generalization score.",
+          "Refine scores are real 64x64 luma SSIM and duration-pattern DTW from rendered frames; LPIPS has no model and is labeled unavailable.",
+          "Camera classes come from the extraction's measured motion samples.",
+          "Text windows are unavailable: Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Boundary and camera accuracy against human labels are unavailable: only the synthetic corpus case carries verified labels."
+        ]
+      }
+    },
+    {
+      "id": "tyler-the-creator",
+      "styleFamily": "talking-head-captions",
+      "source": "reference_videos_to_select/tyler_the_creator.MP4",
+      "sourceSha256": "68db4727acd328c13a19e13a87739cc8f4493f3f6a1e96dc847dd85949eef361",
+      "decodePath": {
+        "kind": "h264-proxy",
+        "codec": "hevc",
+        "proxy": "reference_videos_to_select/proxies/tyler_the_creator.h264.mp4",
+        "proxySha256": "110f4d28596ba7a46e81796ddfb7a6ff3e570909fdbf689d713c54067ffbc28f",
+        "reason": "HEVC source; extraction uses a local H.264 proxy with the same dimensions and frame clock. libx264 crf 18, yuv420p, AAC 160k."
+      },
+      "media": {
+        "width": 800,
+        "height": 576,
+        "fps": {
+          "num": 24,
+          "den": 1
+        },
+        "durationFrames": 1336
+      },
+      "clockProvenance": "external-ffprobe-manifest",
+      "extraction": {
+        "backend": "chromium-vite-web",
+        "shotCount": 10,
+        "boundariesFrames": [
+          150,
+          370,
+          593,
+          648,
+          830,
+          879,
+          968,
+          1069,
+          1151
+        ],
+        "cameraClasses": {
+          "pan": 3,
+          "handheld": 4,
+          "tilt": 1,
+          "static": 1,
+          "orbit": 1
+        },
+        "transitionCount": 9,
+        "eventCount": 9,
+        "cameraShotCount": 10,
+        "elapsedMs": 58413,
+        "warnings": [
+          "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+          "Local OCR is unavailable in this browser; reference text overlays were not measured."
+        ],
+        "textStatus": "unavailable",
+        "textReason": "Local OCR is unavailable in this browser; reference text overlays were not measured."
+      },
+      "compile": {
+        "shotItemIds": [
+          "2ee88027-70da-4c90-bf61-99a49c71fcb4",
+          "144a1fbc-7321-4a24-a817-b5fc32eaeb19",
+          "822dd370-44f8-4cad-892b-ddaaed95197f",
+          "07918db5-33b8-4491-bc8c-aed7e0dbaaed",
+          "28695b05-ce12-4253-8df1-45fce3474ef0",
+          "ce1b2b68-f11e-44f5-9c77-b4e86f90dc6c",
+          "52089a53-d830-443a-87fb-e8f5d848ed05",
+          "c882e93d-5afb-4324-a861-f1fa6a2a79c8",
+          "76072d78-1c3e-4eca-882e-900d0f7840c5",
+          "381d46c8-4e7f-4099-8c33-dc0297548619"
+        ],
+        "rhythmScore": 1,
+        "colorApplied": true
+      },
+      "refine": {
+        "bestKnobs": {
+          "motionScale": 1.3984068893217783,
+          "gradeStrength": 0.4855264893620226
+        },
+        "bestScore": 0.877655337374884,
+        "bestSsim": 0.836873783166512,
+        "rhythmScore": 1,
+        "trials": 9,
+        "history": [
+          0.8621329299833538,
+          0.8690567744359068,
+          0.8690567744359068,
+          0.8690567744359068,
+          0.8718664770867168,
+          0.8722736596689402,
+          0.8761444175100692,
+          0.8761444175100692,
+          0.877655337374884
+        ],
+        "sampleFrames": [
+          74,
+          620,
+          923
+        ],
+        "fps": {
+          "num": 24,
+          "den": 1
+        }
+      },
+      "basis": {
+        "compile": "reference-self-reconstruction",
+        "refine": "64x64-luma-ssim-plus-duration-dtw",
+        "fidelity": "unavailable",
+        "lpips": "unavailable",
+        "textWindows": "unavailable",
+        "notes": [
+          "The reference is compiled onto itself to measure how much of the measured edit the current pipeline can rebuild; this is not a cross-footage generalization score.",
+          "Refine scores are real 64x64 luma SSIM and duration-pattern DTW from rendered frames; LPIPS has no model and is labeled unavailable.",
+          "Camera classes come from the extraction's measured motion samples.",
+          "Text windows are unavailable: Local OCR is unavailable in this browser; reference text overlays were not measured.",
+          "Boundary and camera accuracy against human labels are unavailable: only the synthetic corpus case carries verified labels."
+        ]
+      }
+    }
+  ]
+}

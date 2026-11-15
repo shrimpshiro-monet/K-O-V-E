@@ -1,4 +1,4 @@
-import type { EditingHost } from "../../host";
+import type { EditingHost, TextOverlayOptions } from "../../host";
 import type { EditEvent, ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import type { LabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import { createReinhardLut } from "@kove-advanced/core/color/reinhard-transfer";
@@ -28,6 +28,91 @@ const EVENT_TRANSITIONS: Partial<Record<EditEvent["type"], string>> = {
  * from deterministic pixel/scene analysis, so 0.5 keeps low-confidence ffmpeg
  * scene candidates out without discarding measured pixel excursions (0.8). */
 const EVENT_CONFIDENCE_FLOOR = 0.5;
+const TEXT_CONFIDENCE_FLOOR = 0.5;
+const CORNER_MASK_WIDTH_RATIO = 0.16;
+const CORNER_MASK_HEIGHT_RATIO = 0.12;
+
+export interface ReferenceTextCompileResult {
+  readonly clipIds: readonly string[];
+  readonly skippedLowConfidence: number;
+  readonly skippedEmpty: number;
+  readonly skippedWatermarkRegions: number;
+  readonly unsupportedHost: boolean;
+  readonly warnings: readonly string[];
+}
+
+function cornerOverlapRatio(bounds: { readonly x: number; readonly y: number; readonly width: number; readonly height: number }): number {
+  const area = bounds.width * bounds.height;
+  if (area <= 0) return 0;
+  const regions = [
+    { x: 0, y: 0 },
+    { x: 1 - CORNER_MASK_WIDTH_RATIO, y: 0 },
+    { x: 0, y: 1 - CORNER_MASK_HEIGHT_RATIO },
+    { x: 1 - CORNER_MASK_WIDTH_RATIO, y: 1 - CORNER_MASK_HEIGHT_RATIO },
+  ];
+  return Math.max(...regions.map((region) => {
+    const overlapWidth = Math.max(0, Math.min(bounds.x + bounds.width, region.x + CORNER_MASK_WIDTH_RATIO) - Math.max(bounds.x, region.x));
+    const overlapHeight = Math.max(0, Math.min(bounds.y + bounds.height, region.y + CORNER_MASK_HEIGHT_RATIO) - Math.max(bounds.y, region.y));
+    return (overlapWidth * overlapHeight) / area;
+  }));
+}
+
+export async function compileReferenceText(host: EditingHost, profile: ReferenceProfile): Promise<ReferenceTextCompileResult> {
+  const overlays = profile.styleEvidence?.textOverlays ?? [];
+  const warnings: string[] = [];
+  const clipIds: string[] = [];
+  let skippedLowConfidence = 0, skippedEmpty = 0, skippedWatermarkRegions = 0;
+  if (!overlays.length) return { clipIds, skippedLowConfidence, skippedEmpty, skippedWatermarkRegions, unsupportedHost: false, warnings };
+  if (!host.createTextOverlay) {
+    warnings.push(`Host cannot compile text overlays; ${overlays.length} measured text evidence item(s) were not compiled.`);
+    return { clipIds, skippedLowConfidence, skippedEmpty, skippedWatermarkRegions, unsupportedHost: true, warnings };
+  }
+  const origin = profile.shots[0]?.startFrame ?? 0;
+  for (const overlay of overlays) {
+    const text = overlay.text?.trim();
+    if (!text) {
+      skippedEmpty++;
+      continue;
+    }
+    if (overlay.confidence < TEXT_CONFIDENCE_FLOOR) {
+      skippedLowConfidence++;
+      continue;
+    }
+    if (cornerOverlapRatio(overlay.bounds) >= 0.5) {
+      skippedWatermarkRegions++;
+      continue;
+    }
+    const startFrame = Math.max(overlay.startFrame, origin);
+    const endFrame = Math.min(overlay.endFrame, profile.durationFrames);
+    if (endFrame <= startFrame) continue;
+    const style = overlay.style ?? {};
+    const fontSize = Math.max(8, Math.round((style.fontSizeRatio ?? 0.05) * host.getProject().settings.height));
+    const options: TextOverlayOptions = {
+      text,
+      startSec: frameToSeconds(startFrame - origin, profile.fps),
+      durationSec: frameToSeconds(endFrame - startFrame, profile.fps),
+      position: {
+        x: overlay.bounds.x + overlay.bounds.width / 2,
+        y: overlay.bounds.y + overlay.bounds.height / 2,
+      },
+      animation: "fade",
+      style: {
+        fontFamily: style.fontFamily ?? "Inter",
+        fontSize,
+        fontWeight: style.fontWeight ?? 700,
+        color: style.color ?? "#ffffff",
+        ...(style.backgroundColor && { backgroundColor: style.backgroundColor }),
+        textAlign: style.alignment ?? "center",
+      },
+    };
+    const ref = await host.createTextOverlay(options);
+    clipIds.push(ref.id);
+  }
+  if (skippedLowConfidence > 0) warnings.push(`${skippedLowConfidence} text overlay(s) were skipped below the ${TEXT_CONFIDENCE_FLOOR} confidence floor.`);
+  if (skippedEmpty > 0) warnings.push(`${skippedEmpty} text overlay(s) had no recognized text and were skipped.`);
+  if (skippedWatermarkRegions > 0) warnings.push(`${skippedWatermarkRegions} text overlay(s) were skipped inside the corner watermark mask (16% width x 12% height per corner).`);
+  return { clipIds, skippedLowConfidence, skippedEmpty, skippedWatermarkRegions, unsupportedHost: false, warnings };
+}
 
 interface TimedAccent {
   readonly startFrame: number;

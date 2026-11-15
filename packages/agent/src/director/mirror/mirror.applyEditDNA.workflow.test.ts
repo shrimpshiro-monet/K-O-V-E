@@ -4,6 +4,7 @@ import { makeEmptyProject } from "../../test-fixtures";
 import { applyEditDNA } from "./apply-editdna";
 import { mirrorReference1to1 } from "./mirror-reference-tool";
 import { fixture } from "./mirror-fixture";
+import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import type { MediaItem } from "@kove-advanced/core/types/project";
 function hostWithMedia(duration = 5) {
   const project = makeEmptyProject();
@@ -169,5 +170,46 @@ describe("mirror compiler on headless host", () => {
       textOverlays: [],
       effects: [],
     });
+  });
+
+  it("compiles measured text overlays and names every skipped category", async () => {
+    const host = hostWithMedia();
+    const profile: ReferenceProfile = {
+      ...fixture,
+      textMasking: { applied: true, cornerWidthRatio: 0.16, cornerHeightRatio: 0.12, endCardTrimmedFrames: 12 },
+      styleEvidence: {
+        ...fixture.styleEvidence!,
+        textOverlays: [
+          { startFrame: 10, endFrame: 40, bounds: { x: 0.25, y: 0.4, width: 0.5, height: 0.12 }, text: "FINISH HIM", style: { fontSizeRatio: 0.08, fontWeight: 800, color: "#ff2d2d", alignment: "center" }, confidence: 0.9, source: "local-ocr" },
+          { startFrame: 40, endFrame: 60, bounds: { x: 0.3, y: 0.3, width: 0.4, height: 0.1 }, text: "LOW", confidence: 0.2, source: "local-ocr" },
+          { startFrame: 40, endFrame: 60, bounds: { x: 0.86, y: 0.9, width: 0.12, height: 0.06 }, text: "TikTok", confidence: 0.95, source: "local-ocr" },
+          { startFrame: 60, endFrame: 70, bounds: { x: 0.3, y: 0.3, width: 0.4, height: 0.1 }, text: "   ", confidence: 0.95, source: "local-ocr" },
+        ],
+      },
+    };
+
+    const result = await mirrorReference1to1(host, profile, ["m1"]);
+    expect(result.text.clipIds).toHaveLength(1);
+    expect(result.text.skippedLowConfidence).toBe(1);
+    expect(result.text.skippedEmpty).toBe(1);
+    expect(result.text.skippedWatermarkRegions).toBe(1);
+    expect(result.text.warnings).toEqual(expect.arrayContaining([
+      expect.stringMatching(/confidence floor/),
+      expect.stringMatching(/corner watermark mask/),
+    ]));
+    expect(result.coverage.watermarkMasking).toBe("applied");
+    expect(result.coverage.endCardTrimmedFrames).toBe(12);
+    expect(result.coverage.measured).toMatchObject({ shots: 2, cuts: 1, textEvidence: 3, textCompiled: 1 });
+    expect(result.coverage.notAttempted).toEqual(expect.arrayContaining(["Layered scenes and simultaneous elements"]));
+    expect(result.coverage.summary).toMatch(/Watermark masking was applied/);
+    const clip = host.getProject().textClips?.[0];
+    expect(clip?.text).toBe("FINISH HIM");
+    expect(clip?.startTime).toBeCloseTo(10 / 30, 5);
+    expect(clip?.duration).toBeCloseTo(1, 5);
+    expect(clip?.transform.position.x).toBeCloseTo(0.5, 5);
+    expect(clip?.transform.position.y).toBeCloseTo(0.46, 5);
+    expect(clip?.style.fontSize).toBe(Math.round(0.08 * host.getProject().settings.height));
+    expect(clip?.style.fontWeight).toBe(800);
+    expect(clip?.style.textAlign).toBe("center");
   });
 });
