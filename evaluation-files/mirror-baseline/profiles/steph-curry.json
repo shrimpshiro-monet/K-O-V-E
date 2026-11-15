@@ -4601,6 +4601,11 @@
     "textOverlays": [],
     "effects": []
   },
+  "textMasking": {
+    "applied": true,
+    "cornerWidthRatio": 0.16,
+    "cornerHeightRatio": 0.12
+  },
   "warnings": [
     "Local OCR is unavailable in this browser; reference text overlays were not measured."
   ],

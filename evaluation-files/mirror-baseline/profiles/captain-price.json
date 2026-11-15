@@ -838,6 +838,11 @@
     "textOverlays": [],
     "effects": []
   },
+  "textMasking": {
+    "applied": true,
+    "cornerWidthRatio": 0.16,
+    "cornerHeightRatio": 0.12
+  },
   "warnings": [
     "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
     "Local OCR is unavailable in this browser; reference text overlays were not measured.",

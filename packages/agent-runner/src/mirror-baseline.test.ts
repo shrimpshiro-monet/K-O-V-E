@@ -229,6 +229,7 @@ describe("Mirror 10-reference baseline (real extract -> compile -> refine)", () 
             shotItemIds: compiled.shotItemIds,
             rhythmScore: compiled.rhythmScore,
             colorApplied: compiled.colorApplied,
+            text: compiled.text,
           },
           refine: {
             bestKnobs: refined.bestKnobs,

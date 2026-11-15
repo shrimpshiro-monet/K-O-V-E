@@ -38,6 +38,14 @@ export interface MirrorBaselineCompile {
   readonly shotItemIds: readonly string[];
   readonly rhythmScore: number;
   readonly colorApplied: boolean;
+  readonly text: {
+    readonly clipIds: readonly string[];
+    readonly skippedLowConfidence: number;
+    readonly skippedEmpty: number;
+    readonly skippedWatermarkRegions: number;
+    readonly unsupportedHost: boolean;
+    readonly warnings: readonly string[];
+  };
 }
 
 export interface MirrorBaselineRefine {
