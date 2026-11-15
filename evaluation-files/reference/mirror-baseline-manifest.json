@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "createdFor": "KOVE-FIRST-CLASS-PIPELINES-v2 issue 1",
+  "mediaPolicy": "external-local; commit metadata, hashes and reports only",
+  "familyProvenance": "contact-sheet-observation",
+  "corpusNotes": [
+    "No product-ad reference exists in the current pool; the gap is logged per issue 1.",
+    "Only one collage reference exists (magazine edit); risk 2 stays open until the corpus grows.",
+    "Nine of thirteen pool files carry TikTok UI; text evidence may include watermark/end-card regions until issue 1a masks them."
+  ],
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "cases": [
+    {
+      "id": "magazine-edit",
+      "styleFamily": "football-collage",
+      "source": "reference_videos_to_select/magazine edit, motion graphics.MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "cc9093fecf1fefc234f17ac05f0fc0a313955b2048ac7e002a00f6ac81d248d4",
+      "decodePath": { "kind": "native", "codec": "h264" },
+      "media": { "width": 1024, "height": 576, "fps": { "num": 18, "den": 1 }, "durationFrames": 437 },
+      "notes": ["Native 18 fps clock; 437 frames."]
+    },
+    {
+      "id": "spiderman",
+      "styleFamily": "comic-halftone-glitch",
+      "source": "reference_videos_to_select/SPIDERMAN (IMPORTANT).MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "07ea3556bb5c8e2cdb1a9a93a606cfad8dc7e35244e65f563177cd5381752e36",
+      "decodePath": { "kind": "native", "codec": "h264" },
+      "media": { "width": 576, "height": 1104, "fps": { "num": 30, "den": 1 }, "durationFrames": 1398 },
+      "notes": ["Portrait 576x1104; comic-panel glitch reads as halftone, not VHS."]
+    },
+    {
+      "id": "harvey",
+      "styleFamily": "talking-head-captions",
+      "source": "reference_videos_to_select/harvey.MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "9fb70ad20b07cfa6f9fba175d99daab37416090ea3ea94dbf568579dbbdfe9c0",
+      "decodePath": { "kind": "native", "codec": "h264" },
+      "media": { "width": 576, "height": 576, "fps": { "num": 2997, "den": 125 }, "durationFrames": 1778 },
+      "notes": ["23.976 fps; square frame."]
+    },
+    {
+      "id": "captain-price",
+      "styleFamily": "kinetic-type",
+      "source": "reference_videos_to_select/captain price (2nd priority).MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "7a92d50cbf32a847f8a7eb968b53afe14bfb003e5c6622eca0b716fbc71feab4",
+      "decodePath": { "kind": "native", "codec": "h264" },
+      "media": {
+        "width": 576,
+        "height": 640,
+        "fps": { "num": 30, "den": 1 },
+        "durationFrames": 605,
+        "streamStartSeconds": 0.161003
+      },
+      "notes": ["Video stream starts at 0.161003s; format duration includes the audio tail."]
+    },
+    {
+      "id": "lewis-hamilton",
+      "styleFamily": "broadcast-montage",
+      "source": "reference_videos_to_select/lewis hamilton.MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "6c7557fa8ef4833c31e2bde534da1b79f0f769c586c3b63e9eb64d133dab0b67",
+      "decodePath": { "kind": "native", "codec": "h264" },
+      "media": { "width": 768, "height": 576, "fps": { "num": 30, "den": 1 }, "durationFrames": 632 },
+      "notes": []
+    },
+    {
+      "id": "steph-curry",
+      "styleFamily": "talking-head-captions",
+      "source": "reference_videos_to_select/steph curry.MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "0d8a79f3f8815f0dc04e759e0328dffb9dc60a499bc1342a4b3ab39373ac34f9",
+      "decodePath": {
+        "kind": "h264-proxy",
+        "codec": "hevc",
+        "proxy": "reference_videos_to_select/proxies/steph curry.h264.mp4",
+        "proxySha256": "758e9201b9ef811448114f8699be3bc2004a3974b254cdb9cdeb8b45466ae1f5",
+        "reason": "HEVC source; extraction uses a local H.264 proxy with the same dimensions and frame clock. libx264 crf 18, yuv420p, AAC 160k."
+      },
+      "media": { "width": 576, "height": 576, "fps": { "num": 2997, "den": 100 }, "durationFrames": 574 },
+      "notes": ["29.97 fps."]
+    },
+    {
+      "id": "tyler-the-creator",
+      "styleFamily": "talking-head-captions",
+      "source": "reference_videos_to_select/tyler_the_creator.MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "68db4727acd328c13a19e13a87739cc8f4493f3f6a1e96dc847dd85949eef361",
+      "decodePath": {
+        "kind": "h264-proxy",
+        "codec": "hevc",
+        "proxy": "reference_videos_to_select/proxies/tyler_the_creator.h264.mp4",
+        "proxySha256": "110f4d28596ba7a46e81796ddfb7a6ff3e570909fdbf689d713c54067ffbc28f",
+        "reason": "HEVC source; extraction uses a local H.264 proxy with the same dimensions and frame clock. libx264 crf 18, yuv420p, AAC 160k."
+      },
+      "media": { "width": 800, "height": 576, "fps": { "num": 24, "den": 1 }, "durationFrames": 1336 },
+      "notes": ["24 fps; 55.7s."]
+    },
+    {
+      "id": "kinetic-type-b",
+      "styleFamily": "kinetic-type",
+      "source": "reference_videos_to_select/v26044gc0000d7s94ivog65r9lu88r30.MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "afa9bc5a945a1b0207fef3841b110d2776c2e574cbb2ab3b7439cf85ebb5a66b",
+      "decodePath": { "kind": "native", "codec": "h264" },
+      "media": { "width": 1024, "height": 576, "fps": { "num": 30, "den": 1 }, "durationFrames": 752 },
+      "notes": []
+    },
+    {
+      "id": "montage-b",
+      "styleFamily": "montage",
+      "source": "reference_videos_to_select/v24044gl0000d7368pfog65ufcnb2f60.MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "9f8a17d8e4950f203879d9b7b2c276b4278ed085074e0c1781f29398d850a0ba",
+      "decodePath": { "kind": "native", "codec": "h264" },
+      "media": { "width": 576, "height": 650, "fps": { "num": 2997, "den": 125 }, "durationFrames": 1619 },
+      "notes": ["23.976 fps."]
+    },
+    {
+      "id": "interview-intercut",
+      "styleFamily": "interview-intercut",
+      "source": "reference_videos_to_select/v24044gl0000d5e58cvog65p89sa6v30.MP4",
+      "sourceAvailability": "local-only",
+      "sha256": "e013648e7d10c48b10339dcaf12fbd1c325c6d088f32add6e38d08348c131e34",
+      "decodePath": { "kind": "native", "codec": "h264" },
+      "media": { "width": 1382, "height": 576, "fps": { "num": 30, "den": 1 }, "durationFrames": 1993 },
+      "notes": ["Ultrawide 1382x576."]
+    }
+  ]
+}
