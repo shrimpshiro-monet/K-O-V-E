@@ -27751,6 +27751,9 @@ const TOOLS: RegisteredTool[] = [
       if (!layer) return fail("Motion layer not found", "NOT_FOUND");
       const effectId = optionalString(args.effectId);
       if (!effectId) return fail("effectId is required", "INVALID_PARAMS");
+      if (!(layer.effects ?? []).some((effect) => effect.id === effectId)) {
+        return fail("Motion effect not found", "NOT_FOUND");
+      }
       const nextLayer = removeMotionLayerEffect(layer, effectId);
       const result = await commitMotionComposition(
         host,
@@ -27785,6 +27788,9 @@ const TOOLS: RegisteredTool[] = [
       if (!effectId) return fail("effectId is required", "INVALID_PARAMS");
       if (typeof args.enabled !== "boolean") {
         return fail("enabled must be a boolean", "INVALID_PARAMS");
+      }
+      if (!(layer.effects ?? []).some((effect) => effect.id === effectId)) {
+        return fail("Motion effect not found", "NOT_FOUND");
       }
       const nextLayer = toggleMotionLayerEffect(layer, effectId, args.enabled);
       const result = await commitMotionComposition(

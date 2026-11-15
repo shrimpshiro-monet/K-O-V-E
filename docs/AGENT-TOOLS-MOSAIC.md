@@ -14,8 +14,8 @@ tests). The differentiator below is **behavioral** proof, not registration.
 | Status | Meaning |
 | --- | --- |
 | 🖥️ | **E2E-proven** — executed through the real editor in a real browser (Playwright). 8 tools: 6 via stubbed-LLM turns where the tool itself ran for real; `set_clip_keyframes` and `create_text_clip` via direct `executeTool` in the browser host (`e2e/vision.spec.ts`). |
-| ✅ | **Unit-proven** — a test in `packages/agent`/`packages/core`/`apps/web` names and exercises this tool. 282 more (290 unit-referenced incl. the 8 e2e). |
-| 🟡 | **Implemented, unverified** — registered, schema-gated (every new tool is `strict` and closed), reachable via discovery, but **no test names the tool directly**. Assume it works; verify before relying on it. 46 tools. |
+| ✅ | **Unit-proven** — a test in `packages/agent`/`packages/core`/`apps/web` names and exercises this tool. 290 more (298 unit-referenced incl. the 8 e2e). |
+| 🟡 | **Implemented, unverified** — registered, schema-gated (every new tool is `strict` and closed), reachable via discovery, but **no test names the tool directly**. Assume it works; verify before relying on it. 38 tools. |
 
 Flags: ◐ read-only · 🧨 destructive · ⚡ expensive (needs confirmation) · ⚲ needs a live service / model / binary / network · 🔒 internal-only (never shown to the model).
 
@@ -29,7 +29,7 @@ require footage analysis refuse honestly (`ANALYSIS_REQUIRED`) instead of planni
 ## At a glance
 
 - **336 tools** registered across **23 domains**
-- 🖥️ 8 e2e-proven · ✅ 290 with direct unit-test references (incl. the 8) · 🟡 46 without any direct test reference
+- 🖥️ 8 e2e-proven · ✅ 298 with direct unit-test references (incl. the 8) · 🟡 38 without any direct test reference
 - 47 read-only · 39 destructive · 20 expensive · 1 internal (`submit_edit_plan`)
 - MCP exposure: the whole registry is exposed via `toMcpTools()`; discovery pair `search_tools` + `run_tool` makes every public tool callable even when the router did not select it
 
@@ -384,7 +384,7 @@ require footage analysis refuse honestly (`ANALYSIS_REQUIRED`) instead of planni
 | `add_creation_scene_object` | Append one editable semantic object to an existing Kove Advanced creation scene and sync the bound Motion Creator scene3d layer when a render binding… | ✅ |  |
 | `add_creation_screen_stack` | Add an editable layered product display stack to an existing creation scene and sync every layer into the bound scene3d… | ✅ |  |
 | `add_creation_ui_panel` | Add an editable 3D UI/screen/holographic panel to a creation scene and sync it as a scene3d plane with editable text3d child… | ✅ |  |
-| `add_motion_3d_object` | Add a TRUE 3D object (WebGL/Three.js under the hood) to a composition — it renders with real depth and rotates so every side is visible (unlike the 2.5D… | 🟡 |  |
+| `add_motion_3d_object` | Add a TRUE 3D object (WebGL/Three.js under the hood) to a composition — it renders with real depth and rotates so every side is visible (unlike the 2.5D… | ✅ |  |
 | `add_motion_3d_scene` | Create ONE scene3d layer that is a FULL 3D WORLD — many objects sharing a camera, lights, and an optional room — instead of a single… | ✅ |  |
 | `add_motion_component_instance` | Stamp another instance of a component: duplicate an existing precomp (composition) layer so it references the same master… | ✅ |  |
 | `add_motion_cursor_click` | Drop an animated mouse cursor that travels to a target layer, click-presses on arrival, and makes the target react (a Click Press pulse) — the classic UI-demo 'a hand… | ✅ |  |
@@ -408,7 +408,7 @@ require footage analysis refuse honestly (`ANALYSIS_REQUIRED`) instead of planni
 | `add_motion_text_shader_animator` | Add a per-glyph GPU shader animator (glyph-dissolve\|glyph-glow-wave\|chromatic-cascade\|scanline-materialize) to a text… | ✅ |  |
 | `add_motion_ui_component` | Add a high-level UI component built from native shape/text layers and grouped… | ✅ |  |
 | `add_scene_object` | Append one object to an existing scene3d layer (created by… | ✅ |  |
-| `align_motion_layers` | Align layers by edge or… | 🟡 |  |
+| `align_motion_layers` | Align layers by edge or… | ✅ |  |
 | `animate_creation_camera` | Create or replace semantic animation tracks for a creation scene camera and sync the bound Motion Creator scene3d camera… | ✅ |  |
 | `animate_creation_exploded_view` | Create or replace a semantic multi-object exploded-view animation for agent-native product parts or arbitrary creation objects, store per-object exploded-view recipe… | ✅ |  |
 | `animate_creation_object` | Create or replace semantic animation tracks for a creation scene object and sync the bound Motion Creator scene3d render object when a render binding… | ✅ |  |
@@ -429,7 +429,7 @@ require footage analysis refuse honestly (`ANALYSIS_REQUIRED`) instead of planni
 | `apply_creation_texture_map` | Bake a procedural texture (noise, voronoi, fbm, marble, circuit, fabric-weave, lunar-dust, hex-grid, gradient, brushed, checker) into a real image and apply it as the… | ✅ |  |
 | `apply_creation_xray_material` | Make selected semantic creation objects render as editable X-ray/ghosted materials so product internals, cutaways, and exploded assemblies are… | ✅ |  |
 | `apply_motion_preset_to_beats` | Apply an animation preset to a layer at every detected beat (run sync_motion_to_audio or set_motion_beat_markers… | ✅ |  |
-| `apply_motion_template` | Create a new Motion Creator composition from a built-in motion template/preset. | 🟡 |  |
+| `apply_motion_template` | Create a new Motion Creator composition from a built-in motion template/preset. | ✅ |  |
 | `arrange_motion_layers` | Lay out layers precisely. mode is stack-vertical, stack-horizontal, or… | ✅ |  |
 | `attach_motion_expression` | Attach an expression to an animatable layer… | ✅ |  |
 | `bake_creation_asset` | Bake a persisted creation asset's procedural recipe into a real CPU-generated triangle mesh, update its mesh cache to ready with bounds and vertex/triangle stats, and… | ✅ |  |
@@ -450,7 +450,7 @@ require footage analysis refuse honestly (`ANALYSIS_REQUIRED`) instead of planni
 | `delete_motion_composition` | Delete a Motion Creator composition by… | ✅ | 🧨 |
 | `delete_motion_variable` | Delete a composition variable by… | ✅ | 🧨 |
 | `disintegrate_motion_layer` | After-Effects-style disintegration: fade the target layer out while spawning a matching particle burst from its position (colored from its fill/text color), so it… | ✅ |  |
-| `distribute_motion_layers` | Evenly distribute 3+ layers along an axis (horizontal\|vertical) so spacing between centers is equal. | 🟡 |  |
+| `distribute_motion_layers` | Evenly distribute 3+ layers along an axis (horizontal\|vertical) so spacing between centers is equal. | ✅ |  |
 | `duplicate_creation_object` | Duplicate one semantic creation object into an independent editable variant (its own asset and material) and sync it into the bound scene3d… | ✅ |  |
 | `duplicate_motion_composition` | Deep-clone a Motion Creator composition into a new standalone composition with fresh ids for every layer, keyframe, mask, effect, text animator, expression, marker… | ✅ |  |
 | `duplicate_motion_layer` | Duplicate one or more layers (with their keyframes, effects, masks, and… | ✅ |  |
@@ -480,7 +480,7 @@ require footage analysis refuse honestly (`ANALYSIS_REQUIRED`) instead of planni
 | `remove_ai_shader` | Remove an AI-authored (generated) shader from the project's shader library by its shaderId (as returned by create_ai_shader /… | ✅ | 🧨 |
 | `remove_creation_scene_object` | Remove a semantic creation scene object and sync any bound Motion Creator scene3d render… | ✅ | 🧨 |
 | `remove_motion_beat_marker` | Remove a single beat marker from the composition by its `index` (0-based position in the beat marker… | ✅ | 🧨 |
-| `remove_motion_effect` | Remove an effect from a layer by effectId. | 🟡 | 🧨 |
+| `remove_motion_effect` | Remove an effect from a layer by effectId. | ✅ | 🧨 |
 | `remove_motion_expression` | Remove an expression from a layer by expressionId. | 🟡 | 🧨 |
 | `remove_motion_guide` | Remove a ruler guide from the composition canvas by guideId. | ✅ | 🧨 |
 | `remove_motion_keyframe` | Delete a single keyframe (by keyframeId) from a motion layer, or pass property to clear ALL keyframes on that property (turn the property back into a static… | ✅ | 🧨 |
@@ -514,7 +514,7 @@ require footage analysis refuse honestly (`ANALYSIS_REQUIRED`) instead of planni
 | `set_motion_group_auto_layout` | Turn a group into a Figma-style auto-layout frame: its children pack into a centered row (horizontal) or column (vertical) with a fixed gap, and re-pack automatically… | ✅ |  |
 | `set_motion_instance_overrides` | Override text and/or color on individual child layers of a component INSTANCE, without touching the master component or its other… | ✅ |  |
 | `set_motion_layer_3d` | Toggle a 2D layer's 3D container… | ✅ |  |
-| `set_motion_layer_blend_mode` | Set a layer's blend mode (see get_capabilities motion.blendModes / blendModes). | 🟡 |  |
+| `set_motion_layer_blend_mode` | Set a layer's blend mode (see get_capabilities motion.blendModes / blendModes). | ✅ |  |
 | `set_motion_layer_guide` | Toggle a layer's guideLayer… | ✅ |  |
 | `set_motion_layer_lock` | Lock or unlock a motion layer. | 🟡 |  |
 | `set_motion_layer_motion_blur` | Enable or disable motion blur for a single layer by layerId (per-layer… | ✅ |  |
@@ -523,7 +523,7 @@ require footage analysis refuse honestly (`ANALYSIS_REQUIRED`) instead of planni
 | `set_motion_layer_solo` | Toggle a layer's solo flag. solo=true isolates soloed layers in preview/render (all non-soloed, non-guide layers are… | ✅ |  |
 | `set_motion_layer_timing` | Move a layer on the timeline by setting its startTime and/or duration… | ✅ |  |
 | `set_motion_layer_transform` | Set a layer's static transform without… | ✅ |  |
-| `set_motion_layer_visibility` | Show or hide a motion layer. | 🟡 |  |
+| `set_motion_layer_visibility` | Show or hide a motion layer. | ✅ |  |
 | `set_motion_light_style` | Update a light's non-numeric style by… | ✅ |  |
 | `set_motion_mask_path` | Replace a path mask's bezier… | ✅ |  |
 | `set_motion_scene3d_lighting` | Set lighting + image-based environment on a scene3d layer (EEVEE-class Three.js… | ✅ |  |
@@ -542,7 +542,7 @@ require footage analysis refuse honestly (`ANALYSIS_REQUIRED`) instead of planni
 | `split_motion_layer` | Split a layer into two at a composition-time… | ✅ |  |
 | `sync_creation_scene_to_motion` | Create, repair, or refresh the Motion Creator scene3d composition/layer for a persisted semantic Kove Advanced creation… | ✅ |  |
 | `sync_motion_to_audio` | Sync a motion composition to… | ✅ | ⚡ |
-| `toggle_motion_effect` | Enable or disable an effect on a layer by effectId. | 🟡 |  |
+| `toggle_motion_effect` | Enable or disable an effect on a layer by effectId. | ✅ |  |
 | `toggle_motion_expression` | Enable or disable an expression on a layer by expressionId without removing… | ✅ |  |
 | `transfer_motion_effect_stack` | Copy a source layer's complete ordered effect stack, including animated parameters and expressions, to one or more target… | ✅ |  |
 | `transfer_motion_mask_stack` | Copy a source layer's complete mask stack, including animated mask properties, path keyframes, and expressions, to one or more target… | ✅ |  |
@@ -610,7 +610,7 @@ is a proposed name/shape, not a commitment. Nothing in this section is registere
 
 ---
 
-## The 46 implemented-but-unverified tools (🟡)
+## The 38 implemented-but-unverified tools (🟡)
 
 Every one of these is registered, schema-gated (`strict`, closed object), reachable through
 `search_tools` + `run_tool`, and covered by the registry-wide invariants — but **no test names
@@ -618,14 +618,12 @@ the tool directly**. They are not known-broken; they are unproven. First action 
 be one behavioral test in the style of `executor.test.ts` (registry → host → store), then this
 table gets its icon upgraded.
 
-**motion (23):** `add_motion_3d_object` · `align_motion_layers` · `apply_motion_template` ·
-`bind_motion_variable` · `create_motion_variable` · `distribute_motion_layers` ·
+**motion (15):** `bind_motion_variable` · `create_motion_variable` ·
 `import_figma_composition` · `import_lottie_composition` · `morph_motion_shape` ·
-`remove_motion_effect` · `remove_motion_expression` · `remove_motion_light` ·
-`remove_motion_mask` · `remove_motion_shape_modifier` · `remove_motion_text_animator` ·
-`set_motion_camera` · `set_motion_layer_blend_mode` · `set_motion_layer_lock` ·
-`set_motion_layer_visibility` · `toggle_motion_effect` · `unbind_motion_variable` ·
-`update_motion_light` · `update_motion_mask`
+`remove_motion_expression` · `remove_motion_light` · `remove_motion_mask` ·
+`remove_motion_shape_modifier` · `remove_motion_text_animator` · `set_motion_camera` ·
+`set_motion_layer_lock` · `unbind_motion_variable` · `update_motion_light` ·
+`update_motion_mask`
 
 **clip (3):** `close_gap` · `ripple_delete_clip` · `trim_to_playhead`
 
