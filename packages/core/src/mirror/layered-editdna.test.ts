@@ -143,6 +143,22 @@ function v3Profile(): ReferenceProfile {
       { startFrame: 30, endFrame: 90, captionWindows: [] },
     ],
     beatGridMs: [1000, 2000],
+    structure: {
+      editRange: { startFrame: 0, endFrame: 90 },
+      events: [
+        {
+          frame: 30,
+          type: "hard-cut",
+          durationFrames: 1,
+          intensity: 1,
+          confidence: 0.9,
+          source: "local-pixel-analysis",
+        },
+      ],
+      energyCurve: [0.2, 0.4, 0.8],
+      density: { cutsPerSec: 1, eventsPerSec: 1, byType: { "hard-cut": 1 } },
+      shotLengths: { median: 45, p25: 30, p75: 60, min: 30, max: 60 },
+    },
     styleEvidence: {
       transitions: [{ startFrame: 29, endFrame: 31, type: "hard-cut", source: "local-pixel-analysis", confidence: 0.9 }],
       textOverlays: [
@@ -178,6 +194,8 @@ describe("layered EditDNA migration", () => {
     expect(layered.rhythmCurve).toEqual(profile.rhythmCurve);
     expect(layered.beatGridMs).toEqual(profile.beatGridMs);
     expect(layered.styleEvidence).toEqual(profile.styleEvidence);
+    expect(layered.structure).toEqual(profile.structure);
+    expect(layered.structure?.events).toHaveLength(1);
     expect(layered.warnings?.some((warning) => warning.includes("Layered graph migrated"))).toBe(true);
     expect(layered.coverage.layers?.status).toBe("not-attempted");
     expect(() => validateLayeredEditDNA(layered)).not.toThrow();
