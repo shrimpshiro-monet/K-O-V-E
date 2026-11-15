@@ -371,12 +371,34 @@ const DEFAULT_LAYER_TRANSFORM: LayerTransform = {
   anchorY: 0.5,
 };
 
+interface EvidenceEntry {
+  readonly source: ReferenceEvidenceSource;
+  readonly confidence: number;
+}
+
+function summarizeEvidence(entries: readonly EvidenceEntry[]): StyleProvenance | null {
+  if (entries.length === 0) return null;
+  const counts = new Map<ReferenceEvidenceSource, number>();
+  let confidenceTotal = 0;
+  for (const entry of entries) {
+    counts.set(entry.source, (counts.get(entry.source) ?? 0) + 1);
+    confidenceTotal += entry.confidence;
+  }
+  const source = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]![0];
+  return {
+    status: "measured",
+    source,
+    confidence: Math.min(1, Math.max(0, confidenceTotal / entries.length)),
+  };
+}
+
 /**
  * Lossless structural migration from v3: every v3 shot becomes a scene with a
  * single full-frame footage layer and a hero slot. Retained clock, shots,
  * rhythm, beat grid, structure, and style evidence are copied unchanged.
- * Layered/coverage evidence is not invented; it is marked not attempted until
- * extraction measures it.
+ * Coverage for the five features v3 measured is carried over from that
+ * evidence; layered, mask, parent, and slot evidence is marked not attempted
+ * until extraction measures it.
  */
 export function migrateReferenceProfileToLayered(profile: ReferenceProfile): LayeredEditDNA {
   check(profile.version === "kove.mirror.v3", "Layered migration requires an EditDNA v3 profile");
@@ -410,11 +432,47 @@ export function migrateReferenceProfileToLayered(profile: ReferenceProfile): Lay
       ],
     };
   });
+  const cameraSamples = profile.shots.flatMap((shot) => shot.cameraMotion?.samples ?? []);
+  const colorShots = profile.shots.filter((shot) => shot.colorStats !== undefined);
+  const cutEvidence = summarizeEvidence(profile.structure?.events ?? []) ?? {
+    status: "measured" as const,
+    source: "local-pixel-analysis" as const,
+    confidence: 0.95,
+    note: "Migrated from v3 shot boundaries; v3 did not retain per-cut source confidence.",
+  };
+  const transitionEvidence = summarizeEvidence(profile.styleEvidence?.transitions ?? []);
+  const textEvidence = summarizeEvidence(profile.styleEvidence?.textOverlays ?? []);
   const layered: LayeredEditDNA = {
     ...profile,
     version: LAYERED_EDIT_DNA_VERSION,
     scenes,
     coverage: {
+      cuts: {
+        ...cutEvidence,
+        note: cutEvidence.note ?? "Migrated from v3 shot boundaries.",
+      },
+      camera: cameraSamples.length > 0
+        ? {
+            status: "measured",
+            source: "local-pixel-analysis",
+            confidence: 0.7,
+            note: `Migrated from ${cameraSamples.length} retained v3 camera motion sample(s); the migration uses a default provenance confidence.`,
+          }
+        : { status: "not-attempted", note: "v3 profile retained no camera motion samples." },
+      color: colorShots.length > 0
+        ? {
+            status: "measured",
+            source: "local-pixel-analysis",
+            confidence: 0.6,
+            note: `Migrated from v3 color statistics on ${colorShots.length} of ${profile.shots.length} shots; the migration uses a default provenance confidence.`,
+          }
+        : { status: "not-attempted", note: "v3 profile retained no per-shot color statistics." },
+      transitions: transitionEvidence
+        ? { ...transitionEvidence, note: "Migrated from v3 transition evidence." }
+        : { status: "not-attempted", note: "v3 profile retained no transition evidence." },
+      text: textEvidence
+        ? { ...textEvidence, note: "Migrated from v3 text overlay evidence." }
+        : { status: "not-attempted", note: "v3 profile retained no text overlay evidence." },
       layers: {
         status: "not-attempted",
         note: "v3 profiles carry no layered evidence; one full-frame footage layer was defaulted per shot.",

@@ -201,6 +201,30 @@ describe("layered EditDNA migration", () => {
     expect(() => validateLayeredEditDNA(layered)).not.toThrow();
   });
 
+  it("carries over coverage for the five features v3 measured", () => {
+    const layered = migrateReferenceProfileToLayered(v3Profile());
+    expect(layered.coverage.cuts).toMatchObject({ status: "measured", source: "local-pixel-analysis" });
+    expect(layered.coverage.transitions).toMatchObject({ status: "measured", source: "local-pixel-analysis", confidence: 0.9 });
+    expect(layered.coverage.text).toMatchObject({ status: "measured", source: "local-ocr", confidence: 0.8 });
+    expect(layered.coverage.camera?.status).toBe("not-attempted");
+    expect(layered.coverage.color?.status).toBe("not-attempted");
+  });
+
+  it("carries camera and color coverage when v3 retained per-shot measurements", () => {
+    const profile = v3Profile();
+    profile.shots[0]!.cameraMotion = {
+      dominantMove: "pan",
+      samples: [
+        { frame: 0, translateX: 0, translateY: 0, rotationRad: 0, scale: 1 },
+        { frame: 15, translateX: 1, translateY: 0, rotationRad: 0, scale: 1.02 },
+      ],
+    };
+    profile.shots[0]!.colorStats = { lMean: 0.5, lStd: 0.1, aMean: 0, aStd: 0.05, bMean: 0, bStd: 0.05 };
+    const layered = migrateReferenceProfileToLayered(profile);
+    expect(layered.coverage.camera).toMatchObject({ status: "measured", source: "local-pixel-analysis", confidence: 0.7 });
+    expect(layered.coverage.color).toMatchObject({ status: "measured", source: "local-pixel-analysis", confidence: 0.6 });
+  });
+
   it("rejects a profile that is not v3", () => {
     expect(() => migrateReferenceProfileToLayered(textOverFootageFixture as unknown as ReferenceProfile)).toThrow(/v3 profile/);
   });
