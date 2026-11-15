@@ -102,4 +102,40 @@ describe("EditDNA v3 reference profiles", () => {
     const missingEvidence = { ...value, styleEvidence: undefined };
     expect(() => validateReferenceProfile(missingEvidence)).toThrow(/requires style evidence/);
   });
+
+  it("rejects two simultaneous elements: a layered scene cannot tile", () => {
+    const tiled = profile();
+    const twoFullFrameElements: ReferenceProfile = {
+      ...tiled,
+      shots: [
+        { startFrame: 0, endFrame: 60, captionWindows: [] },
+        { startFrame: 0, endFrame: 60, captionWindows: [] },
+      ],
+      rhythmCurve: [60, 60],
+    };
+    expect(() => validateReferenceProfile(twoFullFrameElements)).toThrow(
+      "Shots must tile the reference in positive, contiguous, half-open frame intervals",
+    );
+
+    const staggeredElements: ReferenceProfile = {
+      ...tiled,
+      shots: [
+        { startFrame: 0, endFrame: 40, captionWindows: [] },
+        { startFrame: 20, endFrame: 60, captionWindows: [] },
+      ],
+      rhythmCurve: [40, 40],
+    };
+    expect(() => validateReferenceProfile(staggeredElements)).toThrow(
+      "Shots must tile the reference in positive, contiguous, half-open frame intervals",
+    );
+
+    const zeroLengthElement: ReferenceProfile = {
+      ...tiled,
+      shots: [{ startFrame: 0, endFrame: 0, captionWindows: [] }],
+      rhythmCurve: [0],
+    };
+    expect(() => validateReferenceProfile(zeroLengthElement)).toThrow(
+      "Shots must tile the reference in positive, contiguous, half-open frame intervals",
+    );
+  });
 });
