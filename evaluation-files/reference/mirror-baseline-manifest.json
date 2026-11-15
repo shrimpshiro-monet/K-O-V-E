@@ -14,6 +14,12 @@
     "ffmpegSceneDetection": false,
     "endCardTrim": false
   },
+  "crossRestyle": {
+    "id": "kinetic-on-interview",
+    "styleProfile": "kinetic-type-b",
+    "heldOutSource": "interview-intercut",
+    "note": "Style DNA from kinetic-type-b applied to interview-intercut footage that was not used to derive it; reported separately from self-reconstruction and not scored against a ground-truth render."
+  },
   "cases": [
     {
       "id": "magazine-edit",

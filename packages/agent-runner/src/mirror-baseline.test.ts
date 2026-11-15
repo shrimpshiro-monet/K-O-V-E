@@ -10,10 +10,14 @@ import { mirrorRefine } from "@kove-advanced/agent/director/mirror/mirror-refine
 import {
   aggregateMirrorBaseline,
   assembleMirrorBaselineReport,
+  compiledCutTimesMs,
+  measureBeatAlignment,
   type MirrorBaselineCaseReport,
   type MirrorBaselineDecodePath,
   type MirrorBaselineMedia,
+  type MirrorCrossRestyleReport,
 } from "@kove-advanced/agent/eval/mirror-baseline";
+import { BeatDetectionEngine } from "@kove-advanced/core/audio/beat-detection-engine";
 import { computeLabStats, type LabStats } from "@kove-advanced/core/color/reinhard-transfer";
 import type { ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
 import type { MediaItem, Project } from "@kove-advanced/core/types/project";
@@ -29,8 +33,16 @@ interface ManifestCase {
   readonly media: MirrorBaselineMedia;
 }
 
+interface ManifestCrossRestyle {
+  readonly id: string;
+  readonly styleProfile: string;
+  readonly heldOutSource: string;
+  readonly note: string;
+}
+
 interface Manifest {
   readonly cases: readonly ManifestCase[];
+  readonly crossRestyle?: ManifestCrossRestyle;
 }
 
 interface ExtractionMeta {
@@ -69,6 +81,7 @@ const enabled = process.env.KOVE_MIRROR_BASELINE_RUN === "1";
 const only = process.env.KOVE_MIRROR_BASELINE_IDS?.split(",")
   .map((entry) => entry.trim())
   .filter(Boolean);
+const crossRestyle = manifest.crossRestyle;
 
 function profilePath(id: string): string {
   return resolve(profileDir, `${id}.json`);
@@ -110,6 +123,41 @@ function projectForCase(entry: ManifestCase): Project {
   return { ...base, mediaLibrary: { items: [item] } };
 }
 
+function decodeMonoAudio(path: string): Promise<Float32Array> {
+  return new Promise((resolvePromise, reject) => {
+    const proc = spawn(ffmpeg, ["-v", "error", "-i", path, "-vn", "-ac", "1", "-ar", "48000", "-f", "f32le", "pipe:1"], { windowsHide: true });
+    const chunks: Buffer[] = [];
+    let stderr = "";
+    proc.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
+    proc.stderr.on("data", (chunk: Buffer) => { stderr = (stderr + chunk.toString()).slice(-1000); });
+    proc.on("error", reject);
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`FFmpeg audio decode failed for ${path}: ${stderr || code}`));
+        return;
+      }
+      const buffer = Buffer.concat(chunks);
+      const samples = new Float32Array(Math.floor(buffer.length / 4));
+      for (let index = 0; index < samples.length; index++) samples[index] = buffer.readFloatLE(index * 4);
+      resolvePromise(samples);
+    });
+  });
+}
+
+async function measureBeatGridMs(path: string): Promise<number[]> {
+  const samples = await decodeMonoAudio(path);
+  if (samples.length === 0) return [];
+  const audioBuffer = {
+    length: samples.length,
+    duration: samples.length / 48_000,
+    sampleRate: 48_000,
+    numberOfChannels: 1,
+    getChannelData: () => samples,
+  } as unknown as AudioBuffer;
+  const analysis = await new BeatDetectionEngine().analyzeAudioBuffer(audioBuffer);
+  return [...new Set(analysis.beats.map((beat) => Math.round(beat.time * 1000)))].sort((a, b) => a - b);
+}
+
 function sampleShotLabStats(
   path: string,
   shots: readonly { readonly startFrame: number; readonly endFrame: number }[],
@@ -146,7 +194,10 @@ function sampleShotLabStats(
 function writeReport(entry: MirrorBaselineCaseReport): void {
   mkdirSync(resolve(repoRoot, "evaluation-files/mirror-baseline"), { recursive: true });
   const existing = existsSync(reportPath)
-    ? (JSON.parse(readFileSync(reportPath, "utf8")) as { cases?: readonly MirrorBaselineCaseReport[] })
+    ? (JSON.parse(readFileSync(reportPath, "utf8")) as {
+        cases?: readonly MirrorBaselineCaseReport[];
+        crossRestyle?: MirrorCrossRestyleReport;
+      })
     : { cases: [] };
   const cases = [...(existing.cases ?? []).filter((value) => value.id !== entry.id), entry]
     .sort((a, b) => a.id.localeCompare(b.id));
@@ -154,6 +205,25 @@ function writeReport(entry: MirrorBaselineCaseReport): void {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     summary: aggregateMirrorBaseline(cases),
+    ...(existing.crossRestyle && { crossRestyle: existing.crossRestyle }),
+    cases,
+  }, null, 2)}\n`);
+}
+
+function writeCrossRestyleReport(entry: MirrorCrossRestyleReport): void {
+  mkdirSync(resolve(repoRoot, "evaluation-files/mirror-baseline"), { recursive: true });
+  const existing = existsSync(reportPath)
+    ? (JSON.parse(readFileSync(reportPath, "utf8")) as {
+        cases?: readonly MirrorBaselineCaseReport[];
+        crossRestyle?: MirrorCrossRestyleReport;
+      })
+    : { cases: [] };
+  const cases = existing.cases ?? [];
+  writeFileSync(reportPath, `${JSON.stringify({
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    summary: aggregateMirrorBaseline(cases),
+    crossRestyle: entry,
     cases,
   }, null, 2)}\n`);
 }
@@ -162,9 +232,14 @@ const runnable = enabled
   ? manifest.cases.filter((entry) =>
       (!only || only.includes(entry.id)) && existsSync(profilePath(entry.id)) && existsSync(metaPath(entry.id)))
   : [];
+const crossRunnable = enabled && crossRestyle &&
+  (!only || only.includes(crossRestyle.id)) &&
+  existsSync(profilePath(crossRestyle.styleProfile)) &&
+  existsSync(profilePath(crossRestyle.heldOutSource)) &&
+  existsSync(metaPath(crossRestyle.heldOutSource));
 
 describe("Mirror 10-reference baseline (real extract -> compile -> refine)", () => {
-  if (!runnable.length) {
+  if (!runnable.length && !crossRunnable) {
     it.skip("No runnable baseline cases: extract profiles first, then set KOVE_MIRROR_BASELINE_RUN=1", () => {});
     return;
   }
@@ -197,6 +272,11 @@ describe("Mirror 10-reference baseline (real extract -> compile -> refine)", () 
           sampleCount: Math.min(3, profile.shots.length),
           seed: 0x1234abcd,
         });
+        const beatGridMs = await measureBeatGridMs(mediaPath);
+        const beatAlignment = measureBeatAlignment(
+          compiledCutTimesMs(host.getProject(), compiled.shotItemIds),
+          beatGridMs,
+        );
         const textWarning = meta.warnings.find((warning) => warning.includes("Local OCR is unavailable"));
         const report = assembleMirrorBaselineReport({
           id: entry.id,
@@ -231,6 +311,7 @@ describe("Mirror 10-reference baseline (real extract -> compile -> refine)", () 
             colorApplied: compiled.colorApplied,
             text: compiled.text,
           },
+          beatAlignment,
           refine: {
             bestKnobs: refined.bestKnobs,
             bestScore: refined.bestScore,
@@ -252,10 +333,83 @@ describe("Mirror 10-reference baseline (real extract -> compile -> refine)", () 
           bestSsim: refined.bestSsim,
           bestScore: refined.bestScore,
           trials: refined.trials,
+          beatErrorMs: beatAlignment.meanAbsoluteErrorMs,
         });
       } finally {
         await runner.close();
       }
     }, 900_000);
+  }
+
+  if (crossRunnable) {
+    it(`restyles held-out footage with ${crossRestyle.styleProfile}`, async () => {
+      const styleEntry = manifest.cases.find((entry) => entry.id === crossRestyle.styleProfile);
+      const footageEntry = manifest.cases.find((entry) => entry.id === crossRestyle.heldOutSource);
+      if (!styleEntry || !footageEntry) throw new Error("Cross-restyle manifest case is incomplete");
+      const styleProfile = JSON.parse(readFileSync(profilePath(styleEntry.id), "utf8")) as ReferenceProfile;
+      const mediaPath = resolve(repoRoot, footageEntry.decodePath.kind === "h264-proxy"
+        ? footageEntry.decodePath.proxy!
+        : footageEntry.source);
+      const expectedHash = footageEntry.decodePath.kind === "h264-proxy"
+        ? footageEntry.decodePath.proxySha256!
+        : footageEntry.sha256;
+      if (sha256File(mediaPath) !== expectedHash) throw new Error(`Media hash mismatch for ${footageEntry.id}`);
+      const targetStats = await sampleShotLabStats(mediaPath, styleProfile.shots);
+      let host: HeadlessHost;
+      const runner = createCompositorMirrorFrameRunner({
+        referencePath: mediaPath,
+        getProject: () => host.getProject(),
+        mediaPaths: { source: mediaPath },
+        ffmpegPath: ffmpeg,
+        chromiumExecutablePath,
+      });
+      host = new HeadlessHost(projectForCase(footageEntry), { mirrorFrameRunner: runner.sample });
+      try {
+        const compiled = await mirrorReference1to1(host, styleProfile, ["source"], targetStats);
+        const beatGridMs = await measureBeatGridMs(mediaPath);
+        const beatAlignment = measureBeatAlignment(
+          compiledCutTimesMs(host.getProject(), compiled.shotItemIds),
+          beatGridMs,
+        );
+        writeCrossRestyleReport({
+          id: crossRestyle.id,
+          styleProfileId: styleEntry.id,
+          styleSource: styleEntry.source,
+          styleSourceSha256: styleEntry.sha256,
+          heldOutProfileId: footageEntry.id,
+          heldOutSource: footageEntry.source,
+          heldOutSourceSha256: footageEntry.sha256,
+          compile: {
+            shotItemIds: compiled.shotItemIds,
+            rhythmScore: compiled.rhythmScore,
+            colorApplied: compiled.colorApplied,
+            text: compiled.text,
+          },
+          beatAlignment,
+          basis: {
+            compile: "held-out-cross-restyle",
+            refine: "not-scored",
+            notes: [
+              `Style DNA from ${styleEntry.id} was applied to ${footageEntry.id} footage that was not used to derive it.`,
+              "No ground-truth render exists for this pairing, so SSIM, LPIPS, and fidelity are not scored; the case reports structure, color/text application, and beat alignment only.",
+              beatAlignment.status === "measured"
+                ? `Beat-alignment error compares the restyled cuts to the held-out footage's own measured beat grid (${Math.round(beatAlignment.meanAbsoluteErrorMs!)} ms mean).`
+                : `Beat alignment is unavailable: ${beatAlignment.reason}`,
+            ],
+          },
+        });
+        console.info("Mirror cross-restyle case", {
+          id: crossRestyle.id,
+          style: styleEntry.id,
+          footage: footageEntry.id,
+          shots: compiled.shotItemIds.length,
+          rhythmScore: compiled.rhythmScore,
+          colorApplied: compiled.colorApplied,
+          beatErrorMs: beatAlignment.meanAbsoluteErrorMs,
+        });
+      } finally {
+        await runner.close();
+      }
+    }, 300_000);
   }
 });
