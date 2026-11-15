@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "spiderman",
+  "styleFamily": "comic-halftone-glitch",
+  "source": "reference_videos_to_select/SPIDERMAN (IMPORTANT).MP4",
+  "sourceSha256": "07ea3556bb5c8e2cdb1a9a93a606cfad8dc7e35244e65f563177cd5381752e36",
+  "decodePath": {
+    "kind": "native",
+    "codec": "h264"
+  },
+  "clock": {
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "fpsSource": "ffprobe",
+    "durationSeconds": 46.6
+  },
+  "clockProvenance": "external-ffprobe-manifest",
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "media": {
+    "width": 576,
+    "height": 1104,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "durationFrames": 1398
+  },
+  "elapsedMs": 342452,
+  "generatedAt": "2026-11-15T06:35:52.410Z",
+  "profilePath": "evaluation-files/mirror-baseline/profiles/spiderman.json",
+  "fps": {
+    "num": 30,
+    "den": 1
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 1398,
+  "shotCount": 30,
+  "textOverlayCount": 0,
+  "transitionCount": 29,
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Shot boundary near frame 583 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 644 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 698 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 709 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 718 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 728 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 751 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 761 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 778 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 811 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Long-shot recovery added 3 cut(s) from 1 unusually long shot(s)."
+  ],
+  "notes": [
+    "Portrait 576x1104; comic-panel glitch reads as halftone, not VHS."
+  ]
+}

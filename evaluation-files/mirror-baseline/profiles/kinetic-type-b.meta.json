@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "kinetic-type-b",
+  "styleFamily": "kinetic-type",
+  "source": "reference_videos_to_select/v26044gc0000d7s94ivog65r9lu88r30.MP4",
+  "sourceSha256": "afa9bc5a945a1b0207fef3841b110d2776c2e574cbb2ab3b7439cf85ebb5a66b",
+  "decodePath": {
+    "kind": "native",
+    "codec": "h264"
+  },
+  "clock": {
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "fpsSource": "ffprobe",
+    "durationSeconds": 25.066666666666666
+  },
+  "clockProvenance": "external-ffprobe-manifest",
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "media": {
+    "width": 1024,
+    "height": 576,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "durationFrames": 752
+  },
+  "elapsedMs": 231643,
+  "generatedAt": "2026-11-15T07:52:17.889Z",
+  "profilePath": "evaluation-files/mirror-baseline/profiles/kinetic-type-b.json",
+  "fps": {
+    "num": 30,
+    "den": 1
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 752,
+  "shotCount": 5,
+  "textOverlayCount": 0,
+  "transitionCount": 4,
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Shot boundary near frame 72 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 134 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 139 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 150 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
+  ],
+  "notes": []
+}

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "montage-b",
+  "styleFamily": "montage",
+  "source": "reference_videos_to_select/v24044gl0000d7368pfog65ufcnb2f60.MP4",
+  "sourceSha256": "9f8a17d8e4950f203879d9b7b2c276b4278ed085074e0c1781f29398d850a0ba",
+  "decodePath": {
+    "kind": "native",
+    "codec": "h264"
+  },
+  "clock": {
+    "fps": {
+      "num": 2997,
+      "den": 125
+    },
+    "fpsSource": "ffprobe",
+    "durationSeconds": 67.52585919252586
+  },
+  "clockProvenance": "external-ffprobe-manifest",
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "media": {
+    "width": 576,
+    "height": 650,
+    "fps": {
+      "num": 2997,
+      "den": 125
+    },
+    "durationFrames": 1619
+  },
+  "elapsedMs": 348742,
+  "generatedAt": "2026-11-15T07:58:13.626Z",
+  "profilePath": "evaluation-files/mirror-baseline/profiles/montage-b.json",
+  "fps": {
+    "num": 2997,
+    "den": 125
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 1619,
+  "shotCount": 59,
+  "textOverlayCount": 0,
+  "transitionCount": 58,
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Shot boundary near frame 1088 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 1117 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 1136 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 1249 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 1273 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 1315 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 1334 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 1447 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 1471 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Long-shot recovery added 2 cut(s) from 2 unusually long shot(s)."
+  ],
+  "notes": [
+    "23.976 fps."
+  ]
+}

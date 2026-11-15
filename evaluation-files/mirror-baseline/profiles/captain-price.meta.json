@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "captain-price",
+  "styleFamily": "kinetic-type",
+  "source": "reference_videos_to_select/captain price (2nd priority).MP4",
+  "sourceSha256": "7a92d50cbf32a847f8a7eb968b53afe14bfb003e5c6622eca0b716fbc71feab4",
+  "decodePath": {
+    "kind": "native",
+    "codec": "h264"
+  },
+  "clock": {
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "fpsSource": "ffprobe",
+    "durationSeconds": 20.166666666666668,
+    "videoStartTimeSeconds": 0.161003
+  },
+  "clockProvenance": "external-ffprobe-manifest",
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "media": {
+    "width": 576,
+    "height": 640,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "durationFrames": 605,
+    "streamStartSeconds": 0.161003
+  },
+  "elapsedMs": 53569,
+  "generatedAt": "2026-11-15T07:43:53.640Z",
+  "profilePath": "evaluation-files/mirror-baseline/profiles/captain-price.json",
+  "fps": {
+    "num": 30,
+    "den": 1
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 605,
+  "shotCount": 10,
+  "textOverlayCount": 0,
+  "transitionCount": 9,
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Indexed WebCodecs frame read failed at frame 0; continuing with HTML video seeks, which may not decode exact requested frames. Verify critical cuts manually. Source frame 0 is unavailable from the indexed decoder",
+    "Shot boundary near frame 497 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
+  ],
+  "notes": [
+    "Video stream starts at 0.161003s; format duration includes the audio tail."
+  ]
+}

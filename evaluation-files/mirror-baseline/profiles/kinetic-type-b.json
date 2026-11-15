@@ -1,0 +1,861 @@
+{
+  "aspectRatio": {
+    "width": 1024,
+    "height": 576
+  },
+  "fps": {
+    "num": 30,
+    "den": 1
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 752,
+  "shots": [
+    {
+      "startFrame": 0,
+      "endFrame": 72,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 8,
+            "translateX": -2.9459895131085005,
+            "translateY": 0.7128449438203006,
+            "rotationRad": -0.002810050595995335,
+            "scale": 1.0036219400177737
+          },
+          {
+            "frame": 16,
+            "translateX": -19.509148330313188,
+            "translateY": 0.03296919492622692,
+            "rotationRad": -0.01248572639334836,
+            "scale": 1.0252719079115418
+          },
+          {
+            "frame": 24,
+            "translateX": 29.85914143094853,
+            "translateY": 8.738715474209767,
+            "rotationRad": 0.00814869351730688,
+            "scale": 0.9454168568994072
+          },
+          {
+            "frame": 32,
+            "translateX": -3.5930350769673924,
+            "translateY": -4.674948628285074,
+            "rotationRad": -0.004311450422483346,
+            "scale": 1.0120967806930066
+          },
+          {
+            "frame": 40,
+            "translateX": -22.60252148997152,
+            "translateY": -19.9863610315188,
+            "rotationRad": 0.0032985131991798743,
+            "scale": 1.0369803308553514
+          },
+          {
+            "frame": 48,
+            "translateX": -7.505710102488924,
+            "translateY": -6.1625449221348845,
+            "rotationRad": -0.009623682991221969,
+            "scale": 1.0071620832772732
+          },
+          {
+            "frame": 56,
+            "translateX": 20.525190220148065,
+            "translateY": 6.890859287815738,
+            "rotationRad": -0.002781165882048967,
+            "scale": 0.9545030320527285
+          },
+          {
+            "frame": 64,
+            "translateX": -23.787118588829696,
+            "translateY": -12.461645007536617,
+            "rotationRad": -0.0028261587989465084,
+            "scale": 1.041462042682252
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 14.020926182990243,
+        "lStd": 22.011937666331693,
+        "aMean": 15.670267897714137,
+        "aStd": 27.592139260218328,
+        "bMean": 13.387403563374402,
+        "bStd": 20.985036680552952
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 72,
+      "endFrame": 134,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 80,
+            "translateX": 3.352079207920815,
+            "translateY": 18.148118811881204,
+            "rotationRad": -0.030130632772806108,
+            "scale": 0.9804780355889074
+          },
+          {
+            "frame": 88,
+            "translateX": 10.807798215662453,
+            "translateY": 14.087983258068062,
+            "rotationRad": -0.010557940231675035,
+            "scale": 0.9732708251821285
+          },
+          {
+            "frame": 96,
+            "translateX": 9.621596582819047,
+            "translateY": 8.765266255339293,
+            "rotationRad": -0.008590638858457381,
+            "scale": 0.9730987131900755
+          },
+          {
+            "frame": 104,
+            "translateX": -23.80522512506949,
+            "translateY": -19.393885491940047,
+            "rotationRad": -0.009808900664408298,
+            "scale": 1.0295103380926893
+          },
+          {
+            "frame": 112,
+            "translateX": 24.039881928501075,
+            "translateY": 22.442505739586707,
+            "rotationRad": -0.01568155951558907,
+            "scale": 0.9377177879620808
+          },
+          {
+            "frame": 120,
+            "translateX": 24.22070841598203,
+            "translateY": 15.382941343156745,
+            "rotationRad": 0.0010683069693596134,
+            "scale": 0.9548933379482554
+          },
+          {
+            "frame": 128,
+            "translateX": 5.4036938281271505,
+            "translateY": 14.607206634213345,
+            "rotationRad": -0.009390704695026049,
+            "scale": 0.9794804699753749
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 39.6288850848014,
+        "lStd": 25.67134326700443,
+        "aMean": 29.699482795112864,
+        "aStd": 21.741793389982526,
+        "bMean": 33.74723046718523,
+        "bStd": 18.33295825803468
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 134,
+      "endFrame": 139,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 66.53295924301487,
+        "lStd": 28.39056316238021,
+        "aMean": 18.29236798657198,
+        "aStd": 15.667147998397253,
+        "bMean": 30.49230466976109,
+        "bStd": 19.719815954577403
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 139,
+      "endFrame": 150,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 43.96552568387252,
+        "lStd": 31.525637470382524,
+        "aMean": 26.267063790706796,
+        "aStd": 22.10885689934418,
+        "bMean": 28.438050938379043,
+        "bStd": 17.832053565504168
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 150,
+      "endFrame": 752,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 160,
+            "translateX": 16.282600485567738,
+            "translateY": 9.748152144591268,
+            "rotationRad": 0.005113538786110748,
+            "scale": 0.9638647732423103
+          },
+          {
+            "frame": 168,
+            "translateX": -5.5706752094627845,
+            "translateY": 4.843913257762461,
+            "rotationRad": -0.011586728805124551,
+            "scale": 0.9991763398579252
+          },
+          {
+            "frame": 176,
+            "translateX": -2.8984504148191026,
+            "translateY": 1.1334497195915447,
+            "rotationRad": -0.007075861964308647,
+            "scale": 1.0094713547192895
+          },
+          {
+            "frame": 184,
+            "translateX": -8.0417797752809,
+            "translateY": 0.6681168539325881,
+            "rotationRad": -0.010285110154933889,
+            "scale": 1.0105328491241226
+          },
+          {
+            "frame": 192,
+            "translateX": -7.427563395810195,
+            "translateY": -4.235501653803704,
+            "rotationRad": -0.00297895650923998,
+            "scale": 1.010088090816695
+          },
+          {
+            "frame": 200,
+            "translateX": -6.042605489553613,
+            "translateY": -3.200819336337645,
+            "rotationRad": -0.00550491825820934,
+            "scale": 1.0124078021332639
+          },
+          {
+            "frame": 208,
+            "translateX": 18.072361583610423,
+            "translateY": 15.126457063815407,
+            "rotationRad": -0.012930018071148946,
+            "scale": 0.9534330953093939
+          },
+          {
+            "frame": 216,
+            "translateX": 5.284110706803289,
+            "translateY": 3.3713088543389405,
+            "rotationRad": -0.004795431383209718,
+            "scale": 0.9829936232450013
+          },
+          {
+            "frame": 224,
+            "translateX": 3.490747148093307,
+            "translateY": 2.1705046075844168,
+            "rotationRad": 0.0032312685761866026,
+            "scale": 0.9943584734963219
+          },
+          {
+            "frame": 232,
+            "translateX": -18.406461993104514,
+            "translateY": -5.709696273189866,
+            "rotationRad": -0.007989296563792677,
+            "scale": 1.0256059816064877
+          },
+          {
+            "frame": 240,
+            "translateX": -8.225941123996492,
+            "translateY": 1.582729705619977,
+            "rotationRad": -0.013242648341797838,
+            "scale": 1.0087860444054628
+          },
+          {
+            "frame": 248,
+            "translateX": -1.6423986873903986,
+            "translateY": -7.478230800444317,
+            "rotationRad": 0.007619567873151363,
+            "scale": 1.0023990871769293
+          },
+          {
+            "frame": 256,
+            "translateX": -22.06380805321329,
+            "translateY": -13.482076256087613,
+            "rotationRad": 0.0026694314566456166,
+            "scale": 1.0382406235956954
+          },
+          {
+            "frame": 264,
+            "translateX": 25.988532755046254,
+            "translateY": 2.9366060577176087,
+            "rotationRad": 0.0016627122156115711,
+            "scale": 0.9578769128910228
+          },
+          {
+            "frame": 272,
+            "translateX": -2.2440311347807778,
+            "translateY": -3.9700778369520777,
+            "rotationRad": -0.004284980890104847,
+            "scale": 0.9931062085840026
+          },
+          {
+            "frame": 280,
+            "translateX": -25.527067729725417,
+            "translateY": -2.9965370057180283,
+            "rotationRad": -0.005211122844379065,
+            "scale": 1.041244574650191
+          },
+          {
+            "frame": 288,
+            "translateX": -16.580026999440346,
+            "translateY": 2.710480392479667,
+            "rotationRad": -0.013636293656280938,
+            "scale": 1.0135582834989312
+          },
+          {
+            "frame": 296,
+            "translateX": 10.41891482267348,
+            "translateY": 5.536708093361586,
+            "rotationRad": 0.0048166761653229695,
+            "scale": 0.9793801090736205
+          },
+          {
+            "frame": 304,
+            "translateX": -19.206918884128992,
+            "translateY": -14.105223355256658,
+            "rotationRad": 0.004730411636473282,
+            "scale": 1.0374570508517034
+          },
+          {
+            "frame": 312,
+            "translateX": -4.4659056179775005,
+            "translateY": -2.220632209737778,
+            "rotationRad": 0.00013738048739340124,
+            "scale": 1.008707874687412
+          },
+          {
+            "frame": 320,
+            "translateX": -1.5317278466216349,
+            "translateY": -6.1893227340036905,
+            "rotationRad": -0.0008411437574036647,
+            "scale": 0.9999029334168651
+          },
+          {
+            "frame": 328,
+            "translateX": 16.393295499538226,
+            "translateY": 5.993189916853726,
+            "rotationRad": 0.011635726644830355,
+            "scale": 0.9655530224631131
+          },
+          {
+            "frame": 336,
+            "translateX": -6.848079925070213,
+            "translateY": -16.504027474242868,
+            "rotationRad": 0.015497224634874938,
+            "scale": 1.0153404973854658
+          },
+          {
+            "frame": 344,
+            "translateX": 7.07705839237726,
+            "translateY": 3.790666992426077,
+            "rotationRad": -0.003125269984584917,
+            "scale": 0.9765439823922142
+          },
+          {
+            "frame": 352,
+            "translateX": -19.783393501804923,
+            "translateY": -7.701315942703968,
+            "rotationRad": -0.0015636065747591731,
+            "scale": 1.0333899127583734
+          },
+          {
+            "frame": 360,
+            "translateX": -0.11481056257191719,
+            "translateY": -6.070001640150941,
+            "rotationRad": 0.007906518549891849,
+            "scale": 0.9966005011459823
+          },
+          {
+            "frame": 368,
+            "translateX": 2.208015401893213,
+            "translateY": -5.451859457724959,
+            "rotationRad": 0.011153915962595524,
+            "scale": 0.9929865233420181
+          },
+          {
+            "frame": 376,
+            "translateX": -10.90955451564166,
+            "translateY": 5.197037473746241,
+            "rotationRad": -0.01383767901487724,
+            "scale": 1.007246352462171
+          },
+          {
+            "frame": 384,
+            "translateX": -13.68709576138162,
+            "translateY": -12.038367346938868,
+            "rotationRad": 0.004771513973117071,
+            "scale": 1.0350032787149555
+          },
+          {
+            "frame": 392,
+            "translateX": 7.895901468234597,
+            "translateY": -13.701148145570961,
+            "rotationRad": 0.023055885951060128,
+            "scale": 1.0028469599932979
+          },
+          {
+            "frame": 400,
+            "translateX": 22.83196312396075,
+            "translateY": 3.986813315050904,
+            "rotationRad": 0.005778601496625466,
+            "scale": 0.9697650996702287
+          },
+          {
+            "frame": 408,
+            "translateX": -0.720062625810828,
+            "translateY": -7.093044061731144,
+            "rotationRad": 0.007958268691892202,
+            "scale": 1.0076760797656785
+          },
+          {
+            "frame": 416,
+            "translateX": 18.463287541449617,
+            "translateY": -5.672193273330141,
+            "rotationRad": 0.022971077871569563,
+            "scale": 0.9789857783759509
+          },
+          {
+            "frame": 424,
+            "translateX": -19.52295853910679,
+            "translateY": -6.221476972551091,
+            "rotationRad": -0.0008495740799605225,
+            "scale": 1.030789775161906
+          },
+          {
+            "frame": 432,
+            "translateX": 14.517443687794799,
+            "translateY": 8.599266631744468,
+            "rotationRad": -0.0038175184242546316,
+            "scale": 0.9669645499234718
+          },
+          {
+            "frame": 440,
+            "translateX": -14.655192399398334,
+            "translateY": -7.481163567000431,
+            "rotationRad": 0.011565973431966697,
+            "scale": 1.012286016305445
+          },
+          {
+            "frame": 448,
+            "translateX": 12.227593492499466,
+            "translateY": -0.13446017325163667,
+            "rotationRad": -0.0005628833217530297,
+            "scale": 0.9931334765788605
+          },
+          {
+            "frame": 456,
+            "translateX": -18.419404973356986,
+            "translateY": 1.3603463587922306,
+            "rotationRad": -0.012417101542405192,
+            "scale": 1.0322569943163395
+          },
+          {
+            "frame": 464,
+            "translateX": -20.371074053584096,
+            "translateY": 4.405089702047053,
+            "rotationRad": -0.011062142594201558,
+            "scale": 1.0023236363806027
+          },
+          {
+            "frame": 472,
+            "translateX": 2.629543696829054,
+            "translateY": -7.34981769970168,
+            "rotationRad": 0.0017748999157170802,
+            "scale": 0.9959780723164717
+          },
+          {
+            "frame": 480,
+            "translateX": -5.66343956704745,
+            "translateY": -8.846602525556227,
+            "rotationRad": 0.00004380160373642419,
+            "scale": 1.0010241290420523
+          },
+          {
+            "frame": 488,
+            "translateX": -1.3969740308620082,
+            "translateY": 0.7115694392170554,
+            "rotationRad": -0.004810004630332412,
+            "scale": 1.0012284935647189
+          },
+          {
+            "frame": 496,
+            "translateX": 7.82571385767787,
+            "translateY": 1.2171745318352352,
+            "rotationRad": 0.002751087244649072,
+            "scale": 0.988374526761422
+          },
+          {
+            "frame": 504,
+            "translateX": -14.67695586193532,
+            "translateY": -10.345729876335918,
+            "rotationRad": 0.004877021744330576,
+            "scale": 1.0358348086738058
+          },
+          {
+            "frame": 512,
+            "translateX": -5.5218841048882625,
+            "translateY": -4.369019100032392,
+            "rotationRad": -0.006933678222903022,
+            "scale": 1.007721226257883
+          },
+          {
+            "frame": 520,
+            "translateX": 5.990649350649164,
+            "translateY": -7.658571428571486,
+            "rotationRad": 0.007457302914778138,
+            "scale": 0.9864147384148514
+          },
+          {
+            "frame": 528,
+            "translateX": -17.13480324928832,
+            "translateY": -16.379449308999074,
+            "rotationRad": 0.010991909518408385,
+            "scale": 1.0409647031784288
+          },
+          {
+            "frame": 536,
+            "translateX": 9.16739527743259,
+            "translateY": 2.208114628262365,
+            "rotationRad": -0.0034653043651909324,
+            "scale": 0.9858098885498674
+          },
+          {
+            "frame": 544,
+            "translateX": -3.6212637220158514,
+            "translateY": -2.8131454749763183,
+            "rotationRad": 0.006345202313010135,
+            "scale": 0.9989943808049164
+          },
+          {
+            "frame": 552,
+            "translateX": 3.8640985159455186,
+            "translateY": 12.727213676755719,
+            "rotationRad": -0.010993523542394074,
+            "scale": 0.9878523324788945
+          },
+          {
+            "frame": 560,
+            "translateX": -4.571815488785485,
+            "translateY": -4.9903897203093495,
+            "rotationRad": -0.00026465027737519937,
+            "scale": 1.0175816922354473
+          },
+          {
+            "frame": 568,
+            "translateX": -3.8688113413304808,
+            "translateY": 1.67826245001811,
+            "rotationRad": -0.00503171768768644,
+            "scale": 1.0023697864831367
+          },
+          {
+            "frame": 576,
+            "translateX": 1.3288354973100232,
+            "translateY": -4.221364721110013,
+            "rotationRad": 0.004184862007682788,
+            "scale": 1.0047968501378168
+          },
+          {
+            "frame": 584,
+            "translateX": -9.61811918431988,
+            "translateY": -0.0347178776479268,
+            "rotationRad": -0.007460733077811888,
+            "scale": 1.0039677554653283
+          },
+          {
+            "frame": 592,
+            "translateX": -2.268572284644408,
+            "translateY": -0.5246082397004103,
+            "rotationRad": -0.00873271386514418,
+            "scale": 0.9975960906770348
+          },
+          {
+            "frame": 600,
+            "translateX": 10.446808179283998,
+            "translateY": 5.396309043621841,
+            "rotationRad": -0.003813757674467358,
+            "scale": 0.9865190907690394
+          },
+          {
+            "frame": 608,
+            "translateX": 2.2920110192837355,
+            "translateY": 4.273278236914621,
+            "rotationRad": -0.011791228031038804,
+            "scale": 0.9978310729382651
+          },
+          {
+            "frame": 616,
+            "translateX": 6.873475514416308,
+            "translateY": -5.545762711864291,
+            "rotationRad": 0.008073543178629176,
+            "scale": 1.0002984083409105
+          },
+          {
+            "frame": 624,
+            "translateX": 1.0545232509560327,
+            "translateY": -5.271022270784442,
+            "rotationRad": 0.003225816815621407,
+            "scale": 1.0020499158609344
+          },
+          {
+            "frame": 632,
+            "translateX": -25.6,
+            "translateY": -25.6,
+            "rotationRad": 0,
+            "scale": 1
+          },
+          {
+            "frame": 640,
+            "translateX": -26.504550985641533,
+            "translateY": -22.0408858603068,
+            "rotationRad": -0.001866369641399447,
+            "scale": 1.0064991773397651
+          },
+          {
+            "frame": 648,
+            "translateX": -27.459861661406407,
+            "translateY": -23.041353837888757,
+            "rotationRad": -0.0013318641149978221,
+            "scale": 1.0073809104897502
+          },
+          {
+            "frame": 656,
+            "translateX": -25.887836335334715,
+            "translateY": -22.32777407160329,
+            "rotationRad": -0.002562867757007224,
+            "scale": 1.005043698009907
+          },
+          {
+            "frame": 664,
+            "translateX": -27.029447554149797,
+            "translateY": -20.15653443660276,
+            "rotationRad": -0.004867865035714913,
+            "scale": 1.009275160649728
+          },
+          {
+            "frame": 672,
+            "translateX": -26.090338281820387,
+            "translateY": -20.14397663665127,
+            "rotationRad": -0.004255100841140847,
+            "scale": 1.0080554874988417
+          },
+          {
+            "frame": 680,
+            "translateX": -26.360518973639472,
+            "translateY": -20.027015901571716,
+            "rotationRad": -0.004600777058635633,
+            "scale": 1.0082231794165548
+          },
+          {
+            "frame": 688,
+            "translateX": -25.764578277153596,
+            "translateY": -20.084973782771524,
+            "rotationRad": -0.004001122894080995,
+            "scale": 1.0081466464702356
+          },
+          {
+            "frame": 696,
+            "translateX": -26.360518973639472,
+            "translateY": -20.027015901571716,
+            "rotationRad": -0.004600777058635633,
+            "scale": 1.0082231794165548
+          },
+          {
+            "frame": 704,
+            "translateX": -25.764578277153596,
+            "translateY": -20.084973782771524,
+            "rotationRad": -0.004001122894080995,
+            "scale": 1.0081466464702356
+          },
+          {
+            "frame": 712,
+            "translateX": -26.360518973639472,
+            "translateY": -20.027015901571716,
+            "rotationRad": -0.004600777058635633,
+            "scale": 1.0082231794165548
+          },
+          {
+            "frame": 720,
+            "translateX": -25.764578277153596,
+            "translateY": -20.084973782771524,
+            "rotationRad": -0.004001122894080995,
+            "scale": 1.0081466464702356
+          },
+          {
+            "frame": 728,
+            "translateX": -26.360518973639472,
+            "translateY": -20.027015901571716,
+            "rotationRad": -0.004600777058635633,
+            "scale": 1.0082231794165548
+          },
+          {
+            "frame": 736,
+            "translateX": -25.764578277153596,
+            "translateY": -20.084973782771524,
+            "rotationRad": -0.004001122894080995,
+            "scale": 1.0081466464702356
+          },
+          {
+            "frame": 744,
+            "translateX": -26.360518973639472,
+            "translateY": -20.027015901571716,
+            "rotationRad": -0.004600777058635633,
+            "scale": 1.0082231794165548
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 19.09595658582326,
+        "lStd": 21.314257965485655,
+        "aMean": 21.387821364264816,
+        "aStd": 28.16663703799136,
+        "bMean": 18.159385404101954,
+        "bStd": 20.942045082584
+      },
+      "captionWindows": []
+    }
+  ],
+  "beatGridMs": [],
+  "structure": {
+    "editRange": {
+      "startFrame": 0,
+      "endFrame": 752
+    },
+    "events": [
+      {
+        "frame": 72,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 134,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 139,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 150,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      }
+    ],
+    "energyCurve": [
+      0.287,
+      0.362,
+      0.465,
+      0.522,
+      0.558,
+      0.415,
+      0.196,
+      0.158,
+      0.204,
+      0.211,
+      0.232,
+      0.236,
+      0.193,
+      0.217,
+      0.257,
+      0.203,
+      0.16,
+      0.169,
+      0.143,
+      0.102,
+      0.094,
+      0.078,
+      0.033,
+      0.006,
+      0.005
+    ],
+    "density": {
+      "cutsPerSec": 0.1595744680851064,
+      "eventsPerSec": 0.1595744680851064,
+      "byType": {
+        "hard-cut": 4
+      }
+    },
+    "shotLengths": {
+      "min": 5,
+      "max": 602,
+      "median": 62,
+      "p25": 11,
+      "p75": 72
+    }
+  },
+  "styleEvidence": {
+    "transitions": [
+      {
+        "startFrame": 71,
+        "endFrame": 73,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 133,
+        "endFrame": 135,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 138,
+        "endFrame": 140,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 149,
+        "endFrame": 151,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      }
+    ],
+    "textOverlays": [],
+    "effects": []
+  },
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Shot boundary near frame 72 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 134 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 139 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 150 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
+  ],
+  "version": "kove.mirror.v3",
+  "rhythmCurve": [
+    72,
+    62,
+    5,
+    11,
+    602
+  ]
+}

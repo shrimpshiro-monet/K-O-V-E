@@ -21,6 +21,8 @@ export interface MirrorBaselineMedia {
 export interface MirrorBaselineExtraction {
   readonly backend: string;
   readonly shotCount: number;
+  readonly boundariesFrames: readonly number[];
+  readonly cameraClasses: Readonly<Record<string, number>>;
   readonly transitionCount: number;
   readonly eventCount: number;
   readonly cameraShotCount: number;

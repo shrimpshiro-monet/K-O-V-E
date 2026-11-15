@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "steph-curry",
+  "styleFamily": "talking-head-captions",
+  "source": "reference_videos_to_select/steph curry.MP4",
+  "sourceSha256": "0d8a79f3f8815f0dc04e759e0328dffb9dc60a499bc1342a4b3ab39373ac34f9",
+  "decodePath": {
+    "kind": "h264-proxy",
+    "codec": "hevc",
+    "proxy": "reference_videos_to_select/proxies/steph curry.h264.mp4",
+    "proxySha256": "758e9201b9ef811448114f8699be3bc2004a3974b254cdb9cdeb8b45466ae1f5",
+    "reason": "HEVC source; extraction uses a local H.264 proxy with the same dimensions and frame clock. libx264 crf 18, yuv420p, AAC 160k."
+  },
+  "clock": {
+    "fps": {
+      "num": 2997,
+      "den": 100
+    },
+    "fpsSource": "ffprobe",
+    "durationSeconds": 19.152485819152485
+  },
+  "clockProvenance": "external-ffprobe-manifest",
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "media": {
+    "width": 576,
+    "height": 576,
+    "fps": {
+      "num": 2997,
+      "den": 100
+    },
+    "durationFrames": 574
+  },
+  "elapsedMs": 133434,
+  "generatedAt": "2026-11-15T07:47:15.315Z",
+  "profilePath": "evaluation-files/mirror-baseline/profiles/steph-curry.json",
+  "fps": {
+    "num": 2997,
+    "den": 100
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 574,
+  "shotCount": 21,
+  "textOverlayCount": 0,
+  "transitionCount": 20,
+  "warnings": [
+    "Local OCR is unavailable in this browser; reference text overlays were not measured."
+  ],
+  "notes": [
+    "29.97 fps."
+  ]
+}

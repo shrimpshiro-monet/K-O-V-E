@@ -209,6 +209,12 @@ describe("Mirror 10-reference baseline (real extract -> compile -> refine)", () 
           extraction: {
             backend: meta.extraction.backend,
             shotCount: profile.shots.length,
+            boundariesFrames: profile.shots.slice(1).map((shot) => shot.startFrame),
+            cameraClasses: profile.shots.reduce<Record<string, number>>((classes, shot) => {
+              const move = shot.cameraMotion?.dominantMove ?? "unknown";
+              classes[move] = (classes[move] ?? 0) + 1;
+              return classes;
+            }, {}),
             transitionCount: profile.styleEvidence?.transitions.length ?? 0,
             eventCount: profile.structure?.events.length ?? 0,
             cameraShotCount: profile.shots.filter((shot) => (shot.cameraMotion?.samples.length ?? 0) > 0).length,

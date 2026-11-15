@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "lewis-hamilton",
+  "styleFamily": "broadcast-montage",
+  "source": "reference_videos_to_select/lewis hamilton.MP4",
+  "sourceSha256": "6c7557fa8ef4833c31e2bde534da1b79f0f769c586c3b63e9eb64d133dab0b67",
+  "decodePath": {
+    "kind": "native",
+    "codec": "h264"
+  },
+  "clock": {
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "fpsSource": "ffprobe",
+    "durationSeconds": 21.066666666666666
+  },
+  "clockProvenance": "external-ffprobe-manifest",
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "media": {
+    "width": 768,
+    "height": 576,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "durationFrames": 632
+  },
+  "elapsedMs": 55041,
+  "generatedAt": "2026-11-15T07:44:55.410Z",
+  "profilePath": "evaluation-files/mirror-baseline/profiles/lewis-hamilton.json",
+  "fps": {
+    "num": 30,
+    "den": 1
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 632,
+  "shotCount": 24,
+  "textOverlayCount": 0,
+  "transitionCount": 23,
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Shot boundary near frame 185 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 206 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 320 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 389 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
+  ],
+  "notes": []
+}

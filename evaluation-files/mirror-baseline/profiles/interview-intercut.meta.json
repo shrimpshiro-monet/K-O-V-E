@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "interview-intercut",
+  "styleFamily": "interview-intercut",
+  "source": "reference_videos_to_select/v24044gl0000d5e58cvog65p89sa6v30.MP4",
+  "sourceSha256": "e013648e7d10c48b10339dcaf12fbd1c325c6d088f32add6e38d08348c131e34",
+  "decodePath": {
+    "kind": "native",
+    "codec": "h264"
+  },
+  "clock": {
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "fpsSource": "ffprobe",
+    "durationSeconds": 66.43333333333334
+  },
+  "clockProvenance": "external-ffprobe-manifest",
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "media": {
+    "width": 1382,
+    "height": 576,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "durationFrames": 1993
+  },
+  "elapsedMs": 169225,
+  "generatedAt": "2026-11-15T08:01:10.608Z",
+  "profilePath": "evaluation-files/mirror-baseline/profiles/interview-intercut.json",
+  "fps": {
+    "num": 30,
+    "den": 1
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 1993,
+  "shotCount": 23,
+  "textOverlayCount": 0,
+  "transitionCount": 22,
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured."
+  ],
+  "notes": [
+    "Ultrawide 1382x576."
+  ]
+}

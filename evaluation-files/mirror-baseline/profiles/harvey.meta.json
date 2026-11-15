@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "id": "harvey",
+  "styleFamily": "talking-head-captions",
+  "source": "reference_videos_to_select/harvey.MP4",
+  "sourceSha256": "9fb70ad20b07cfa6f9fba175d99daab37416090ea3ea94dbf568579dbbdfe9c0",
+  "decodePath": {
+    "kind": "native",
+    "codec": "h264"
+  },
+  "clock": {
+    "fps": {
+      "num": 2997,
+      "den": 125
+    },
+    "fpsSource": "ffprobe",
+    "durationSeconds": 74.15749082415749
+  },
+  "clockProvenance": "external-ffprobe-manifest",
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "media": {
+    "width": 576,
+    "height": 576,
+    "fps": {
+      "num": 2997,
+      "den": 125
+    },
+    "durationFrames": 1778
+  },
+  "elapsedMs": 231234,
+  "generatedAt": "2026-11-15T07:42:55.164Z",
+  "profilePath": "evaluation-files/mirror-baseline/profiles/harvey.json",
+  "fps": {
+    "num": 2997,
+    "den": 125
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 1778,
+  "shotCount": 25,
+  "textOverlayCount": 0,
+  "transitionCount": 24,
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Shot boundary near frame 182 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 919 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 1567 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
+  ],
+  "notes": [
+    "23.976 fps; square frame."
+  ]
+}

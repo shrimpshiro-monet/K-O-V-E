@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "magazine-edit",
+  "styleFamily": "football-collage",
+  "source": "reference_videos_to_select/magazine edit, motion graphics.MP4",
+  "sourceSha256": "cc9093fecf1fefc234f17ac05f0fc0a313955b2048ac7e002a00f6ac81d248d4",
+  "decodePath": {
+    "kind": "native",
+    "codec": "h264"
+  },
+  "clock": {
+    "fps": {
+      "num": 18,
+      "den": 1
+    },
+    "fpsSource": "ffprobe",
+    "durationSeconds": 24.27777777777778
+  },
+  "clockProvenance": "external-ffprobe-manifest",
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "media": {
+    "width": 1024,
+    "height": 576,
+    "fps": {
+      "num": 18,
+      "den": 1
+    },
+    "durationFrames": 437
+  },
+  "elapsedMs": 67331,
+  "generatedAt": "2026-11-15T06:29:21.247Z",
+  "profilePath": "evaluation-files/mirror-baseline/profiles/magazine-edit.json",
+  "fps": {
+    "num": 18,
+    "den": 1
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 437,
+  "shotCount": 31,
+  "textOverlayCount": 0,
+  "transitionCount": 30,
+  "warnings": [
+    "Local OCR is unavailable in this browser; reference text overlays were not measured."
+  ],
+  "notes": [
+    "Native 18 fps clock; 437 frames."
+  ]
+}

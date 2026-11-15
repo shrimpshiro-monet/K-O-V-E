@@ -1,0 +1,2149 @@
+{
+  "aspectRatio": {
+    "width": 576,
+    "height": 1104
+  },
+  "fps": {
+    "num": 30,
+    "den": 1
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 1398,
+  "shots": [
+    {
+      "startFrame": 0,
+      "endFrame": 358,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 8,
+            "translateX": 4.372800945846038,
+            "translateY": -4.367652671041339,
+            "rotationRad": 0.008206288909570718,
+            "scale": 1.0053330320855371
+          },
+          {
+            "frame": 16,
+            "translateX": -7.97387495366704,
+            "translateY": -5.757877962268107,
+            "rotationRad": -0.004584195822441807,
+            "scale": 1.0063377900259585
+          },
+          {
+            "frame": 24,
+            "translateX": -8.478156287254556,
+            "translateY": -2.7348370557142516,
+            "rotationRad": -0.007341644520303383,
+            "scale": 1.0021394190958541
+          },
+          {
+            "frame": 32,
+            "translateX": -9.987649052745086,
+            "translateY": -3.3829357251551557,
+            "rotationRad": -0.008876575625999679,
+            "scale": 1.0051464645968833
+          },
+          {
+            "frame": 40,
+            "translateX": -12.392584034769216,
+            "translateY": -2.353146440949688,
+            "rotationRad": -0.013106618157873891,
+            "scale": 1.0041557980868907
+          },
+          {
+            "frame": 48,
+            "translateX": -13.392249448185229,
+            "translateY": -6.677265234276612,
+            "rotationRad": -0.006607387248500383,
+            "scale": 1.0059203215848724
+          },
+          {
+            "frame": 56,
+            "translateX": -9.261207040142097,
+            "translateY": -4.302504025317895,
+            "rotationRad": -0.0044155607597175855,
+            "scale": 1.0012145796900989
+          },
+          {
+            "frame": 64,
+            "translateX": -10.785319652722862,
+            "translateY": -4.6877919750845,
+            "rotationRad": -0.0022461051419969897,
+            "scale": 1.001352632918191
+          },
+          {
+            "frame": 72,
+            "translateX": -8.417010457641625,
+            "translateY": -6.127362563561096,
+            "rotationRad": -0.0036837008867642634,
+            "scale": 1.0008322885625225
+          },
+          {
+            "frame": 80,
+            "translateX": -10.245239195539614,
+            "translateY": -5.433456767154406,
+            "rotationRad": -0.003207558584398301,
+            "scale": 1.0019726934652937
+          },
+          {
+            "frame": 88,
+            "translateX": -9.05197511712815,
+            "translateY": -4.248201946128899,
+            "rotationRad": -0.00035513148279564164,
+            "scale": 0.9994988625839674
+          },
+          {
+            "frame": 96,
+            "translateX": -8.49707895937952,
+            "translateY": -3.373938840712266,
+            "rotationRad": -0.002107267631781761,
+            "scale": 0.9981185632881332
+          },
+          {
+            "frame": 104,
+            "translateX": -9.835298361099301,
+            "translateY": -3.610225658829222,
+            "rotationRad": -0.004721487105037075,
+            "scale": 1.0005864775484823
+          },
+          {
+            "frame": 112,
+            "translateX": -15.477456976248195,
+            "translateY": -6.303553650161672,
+            "rotationRad": -0.010773363074625909,
+            "scale": 1.0121539823039334
+          },
+          {
+            "frame": 120,
+            "translateX": -10.025085505190042,
+            "translateY": -6.587481144051902,
+            "rotationRad": -0.0048597455970572695,
+            "scale": 1.0028694831287563
+          },
+          {
+            "frame": 128,
+            "translateX": -8.339347947126313,
+            "translateY": -2.8578616648645556,
+            "rotationRad": -0.0029251439979034784,
+            "scale": 0.9957785643654854
+          },
+          {
+            "frame": 136,
+            "translateX": -7.926099401509237,
+            "translateY": -2.3367161072077187,
+            "rotationRad": -0.003943117150515973,
+            "scale": 0.996600879945747
+          },
+          {
+            "frame": 144,
+            "translateX": -6.213979603655741,
+            "translateY": -0.90711334918134,
+            "rotationRad": -0.004082051737604786,
+            "scale": 0.9958643129601377
+          },
+          {
+            "frame": 152,
+            "translateX": -9.158456316410858,
+            "translateY": -4.3662485242030336,
+            "rotationRad": -0.0013211486313183265,
+            "scale": 0.9969727192483212
+          },
+          {
+            "frame": 160,
+            "translateX": -5.570912634716756,
+            "translateY": -5.353187342352547,
+            "rotationRad": 0.004488514245146426,
+            "scale": 0.9957229783797487
+          },
+          {
+            "frame": 168,
+            "translateX": -7.2542497220341895,
+            "translateY": -4.40875276532792,
+            "rotationRad": -0.003850865595827601,
+            "scale": 0.9975367498629895
+          },
+          {
+            "frame": 176,
+            "translateX": -28.599344166372234,
+            "translateY": -18.21649823851411,
+            "rotationRad": -0.0075291235180437645,
+            "scale": 1.0086932941587154
+          },
+          {
+            "frame": 184,
+            "translateX": -22.915813953488318,
+            "translateY": -19.86916943521578,
+            "rotationRad": -0.0050509955807335,
+            "scale": 1.0090923295994378
+          },
+          {
+            "frame": 192,
+            "translateX": -14.822498046413566,
+            "translateY": -18.708939248005596,
+            "rotationRad": -0.007384286966530472,
+            "scale": 1.0077979041735867
+          },
+          {
+            "frame": 200,
+            "translateX": -27.516325316563297,
+            "translateY": -20.520999405116168,
+            "rotationRad": -0.006798338797903416,
+            "scale": 1.0052135919743383
+          },
+          {
+            "frame": 208,
+            "translateX": -24.09174247356288,
+            "translateY": -24.50294723136205,
+            "rotationRad": -0.004513763755196066,
+            "scale": 1.0090605523364284
+          },
+          {
+            "frame": 216,
+            "translateX": -22.024634602431338,
+            "translateY": -20.06328690597859,
+            "rotationRad": -0.005175250526021875,
+            "scale": 1.0023818936974527
+          },
+          {
+            "frame": 224,
+            "translateX": -19.49567089914053,
+            "translateY": -24.605042016806657,
+            "rotationRad": -0.000992795914823358,
+            "scale": 1.0088437236292367
+          },
+          {
+            "frame": 232,
+            "translateX": -19.003998882142177,
+            "translateY": -14.513381265719804,
+            "rotationRad": -0.007868860623430483,
+            "scale": 1.0027238529478102
+          },
+          {
+            "frame": 240,
+            "translateX": -22.90732362206388,
+            "translateY": -11.925125266918972,
+            "rotationRad": -0.017100933158390764,
+            "scale": 1.0117778541776017
+          },
+          {
+            "frame": 248,
+            "translateX": -7.3888798585855735,
+            "translateY": -16.373397403336476,
+            "rotationRad": 0.006327321016249049,
+            "scale": 1.0098901959674045
+          },
+          {
+            "frame": 256,
+            "translateX": -31.239555736702574,
+            "translateY": -19.33847564703462,
+            "rotationRad": -0.019939642277059556,
+            "scale": 1.0259588223746154
+          },
+          {
+            "frame": 264,
+            "translateX": -22.98714909544606,
+            "translateY": -9.850779787897766,
+            "rotationRad": -0.020788073965126833,
+            "scale": 1.0107108578406947
+          },
+          {
+            "frame": 272,
+            "translateX": -25.082143051739294,
+            "translateY": -19.38024923912787,
+            "rotationRad": -0.016068209289048892,
+            "scale": 1.018657081005479
+          },
+          {
+            "frame": 280,
+            "translateX": -29.297380536424498,
+            "translateY": -16.81182661519431,
+            "rotationRad": -0.02208334245104925,
+            "scale": 1.0183457243614762
+          },
+          {
+            "frame": 288,
+            "translateX": -26.59332060179795,
+            "translateY": -16.379523964786422,
+            "rotationRad": -0.014294544245123955,
+            "scale": 1.0163248960230726
+          },
+          {
+            "frame": 296,
+            "translateX": -25.835763193441707,
+            "translateY": -16.981073485801257,
+            "rotationRad": -0.011782066200776571,
+            "scale": 1.0136950850648552
+          },
+          {
+            "frame": 304,
+            "translateX": -26.512973159680655,
+            "translateY": -16.32606619663956,
+            "rotationRad": -0.013715491091051125,
+            "scale": 1.012494190395878
+          },
+          {
+            "frame": 312,
+            "translateX": -26.00960019819765,
+            "translateY": -16.06057415378898,
+            "rotationRad": -0.013039986479698808,
+            "scale": 1.017796145366533
+          },
+          {
+            "frame": 320,
+            "translateX": -27.88034934497817,
+            "translateY": -16.202994385527127,
+            "rotationRad": -0.018442847468331018,
+            "scale": 1.0198362229837894
+          },
+          {
+            "frame": 328,
+            "translateX": -20.605108480076932,
+            "translateY": -16.745189013762843,
+            "rotationRad": -0.008452410497508044,
+            "scale": 1.004381341385984
+          },
+          {
+            "frame": 336,
+            "translateX": -27.68093911659375,
+            "translateY": -25.92976522085155,
+            "rotationRad": -0.0064503338932919005,
+            "scale": 1.0071849500169194
+          },
+          {
+            "frame": 344,
+            "translateX": -22.084328670147062,
+            "translateY": -25.23371368095273,
+            "rotationRad": 0.005977567815701514,
+            "scale": 1.0111046190189699
+          },
+          {
+            "frame": 352,
+            "translateX": -29.585751193551868,
+            "translateY": -23.136070863048154,
+            "rotationRad": -0.008531084688247063,
+            "scale": 1.015989689620884
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 8.377322483535703,
+        "lStd": 20.36995818156949,
+        "aMean": 1.9752957820231682,
+        "aStd": 9.94177985901009,
+        "bMean": -3.0430827280120907,
+        "bStd": 20.142512428163144
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 358,
+      "endFrame": 368,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 19.170985777590275,
+        "lStd": 21.753788179712373,
+        "aMean": 26.85829323020661,
+        "aStd": 30.950888742579597,
+        "bMean": 15.547318227110875,
+        "bStd": 29.50993814934041
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 368,
+      "endFrame": 420,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 376,
+            "translateX": -23.23348821491932,
+            "translateY": -24.15601926163718,
+            "rotationRad": 0.00016673286787858354,
+            "scale": 1.0049231363811293
+          },
+          {
+            "frame": 384,
+            "translateX": -25.86106882461333,
+            "translateY": -19.257965440803314,
+            "rotationRad": -0.005636469573829089,
+            "scale": 1.0033395082456127
+          },
+          {
+            "frame": 392,
+            "translateX": -18.24022461883361,
+            "translateY": -16.981053227263306,
+            "rotationRad": -0.003243472982129398,
+            "scale": 0.9962343862814403
+          },
+          {
+            "frame": 400,
+            "translateX": -8.4448755829269,
+            "translateY": 0.9121426791499029,
+            "rotationRad": -0.008037404671262034,
+            "scale": 1.0024671747009772
+          },
+          {
+            "frame": 408,
+            "translateX": -10.660047802904934,
+            "translateY": -17.320363034648768,
+            "rotationRad": 0.0072110978710519325,
+            "scale": 1.014973154100166
+          },
+          {
+            "frame": 416,
+            "translateX": -12.346984199084915,
+            "translateY": -26.513532980759656,
+            "rotationRad": 0.009713492299512825,
+            "scale": 1.024134164695426
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 27.921609730351122,
+        "lStd": 32.648113604989874,
+        "aMean": -15.33657906175822,
+        "aStd": 22.733730068616023,
+        "bMean": -2.024087252071811,
+        "bStd": 12.270318515363039
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 420,
+      "endFrame": 440,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 432,
+            "translateX": -31.20917622523459,
+            "translateY": -19.84671532846703,
+            "rotationRad": -0.02433195219982739,
+            "scale": 1.021931655804367
+          }
+        ],
+        "dominantMove": "orbit"
+      },
+      "colorStats": {
+        "lMean": 31.479962590628375,
+        "lStd": 31.781555923581166,
+        "aMean": 23.498103497569574,
+        "aStd": 35.00881517373043,
+        "bMean": -3.1350077319874874,
+        "bStd": 34.753493221155615
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 440,
+      "endFrame": 446,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 50.92256167702346,
+        "lStd": 30.925521675320486,
+        "aMean": 41.805847341851525,
+        "aStd": 33.306554409225676,
+        "bMean": -19.121495332139858,
+        "bStd": 33.35715656000729
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 446,
+      "endFrame": 484,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 456,
+            "translateX": -0.14387340935582874,
+            "translateY": -9.045170863701708,
+            "rotationRad": 0.011269624994501482,
+            "scale": 1.013688368805833
+          },
+          {
+            "frame": 464,
+            "translateX": -8.125301876277192,
+            "translateY": -3.642299832807063,
+            "rotationRad": -0.018055881625630876,
+            "scale": 1.011340079037315
+          },
+          {
+            "frame": 472,
+            "translateX": -11.324912891986086,
+            "translateY": -2.169860627177627,
+            "rotationRad": -0.012497231065199513,
+            "scale": 0.9995699257102684
+          },
+          {
+            "frame": 480,
+            "translateX": -16.59758517632991,
+            "translateY": -6.81123729826647,
+            "rotationRad": -0.017223160742971533,
+            "scale": 1.0157189866344345
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 34.01080072629604,
+        "lStd": 34.03235626372218,
+        "aMean": -10.765514602951182,
+        "aStd": 25.99047519243701,
+        "bMean": -16.993401307801662,
+        "bStd": 23.240929334692428
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 484,
+      "endFrame": 511,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 496,
+            "translateX": -7.734670316983853,
+            "translateY": -8.365603456806346,
+            "rotationRad": -0.0023863734925680673,
+            "scale": 1.013240782418846
+          },
+          {
+            "frame": 504,
+            "translateX": -6.372637136990324,
+            "translateY": -4.419689058374972,
+            "rotationRad": -0.0079542061193131,
+            "scale": 0.997334767191988
+          }
+        ],
+        "dominantMove": "pan"
+      },
+      "colorStats": {
+        "lMean": 23.396315500132243,
+        "lStd": 23.908870738966176,
+        "aMean": 22.60929654235979,
+        "aStd": 25.734886957989968,
+        "bMean": -19.77850061409669,
+        "bStd": 51.55333624486367
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 511,
+      "endFrame": 513,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 50.7520272726442,
+        "lStd": 37.07253583072959,
+        "aMean": 0.0654809257042427,
+        "aStd": 15.204331501077471,
+        "bMean": 33.72512598081701,
+        "bStd": 38.492340829018985
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 513,
+      "endFrame": 583,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 528,
+            "translateX": -28.944502710607544,
+            "translateY": -13.49040577869037,
+            "rotationRad": -0.026255209990404375,
+            "scale": 1.033440480464011
+          },
+          {
+            "frame": 536,
+            "translateX": -16.21541113069009,
+            "translateY": -0.9802312569940048,
+            "rotationRad": -0.016082674530051754,
+            "scale": 1.0119102220557732
+          },
+          {
+            "frame": 544,
+            "translateX": -11.19414983959242,
+            "translateY": -2.121343649745313,
+            "rotationRad": -0.011745676289664487,
+            "scale": 1.0122285638278008
+          },
+          {
+            "frame": 552,
+            "translateX": -3.973403824011303,
+            "translateY": -0.3061154987595143,
+            "rotationRad": -0.0095468816390203,
+            "scale": 1.011726079263259
+          },
+          {
+            "frame": 560,
+            "translateX": -2.0226704450741457,
+            "translateY": -2.3450575095847137,
+            "rotationRad": -0.005688934804847659,
+            "scale": 1.007041772363844
+          },
+          {
+            "frame": 568,
+            "translateX": 1.2313387702740095,
+            "translateY": -8.343150371116963,
+            "rotationRad": -0.0019982094664773432,
+            "scale": 1.0165190274744758
+          },
+          {
+            "frame": 576,
+            "translateX": -13.960979015554084,
+            "translateY": -13.076606803459915,
+            "rotationRad": -0.023305497136854647,
+            "scale": 1.0350353514400314
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 15.271514253594516,
+        "lStd": 19.763434925889584,
+        "aMean": 12.038608254236253,
+        "aStd": 19.076470742334013,
+        "bMean": -29.589583708517598,
+        "bStd": 23.25098056522247
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 583,
+      "endFrame": 606,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 592,
+            "translateX": -1.7620798670475142,
+            "translateY": -6.100688640770386,
+            "rotationRad": -0.002950791141098735,
+            "scale": 1.0063837800941018
+          },
+          {
+            "frame": 600,
+            "translateX": -14.726862930602707,
+            "translateY": -12.758139017196429,
+            "rotationRad": -0.013590206542619073,
+            "scale": 1.0200185545304252
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 31.48989720237541,
+        "lStd": 26.435440842540032,
+        "aMean": 24.435117442900815,
+        "aStd": 37.07046585618374,
+        "bMean": -4.352387302046839,
+        "bStd": 43.357515396010754
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 606,
+      "endFrame": 611,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 34.041806610818604,
+        "lStd": 20.15829108865012,
+        "aMean": 46.034769306472306,
+        "aStd": 34.34468018662183,
+        "bMean": 4.320936577536275,
+        "bStd": 47.06767669429993
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 611,
+      "endFrame": 622,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 33.49016907007671,
+        "lStd": 22.882106010129704,
+        "aMean": 23.993480877066503,
+        "aStd": 35.09962081173488,
+        "bMean": -40.02249726760979,
+        "bStd": 26.29456045135457
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 622,
+      "endFrame": 633,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 632,
+            "translateX": 4.675466241518646,
+            "translateY": -7.594156686811824,
+            "rotationRad": 0.011903432953359123,
+            "scale": 1.0075330968456349
+          }
+        ],
+        "dominantMove": "orbit"
+      },
+      "colorStats": {
+        "lMean": 14.61254728823369,
+        "lStd": 17.815394259305577,
+        "aMean": 7.902032875417245,
+        "aStd": 13.135033681191235,
+        "bMean": -20.382663398685548,
+        "bStd": 20.255859931636056
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 633,
+      "endFrame": 644,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 52.247738700922405,
+        "lStd": 33.95474296027439,
+        "aMean": -14.950285217347929,
+        "aStd": 26.1895230440165,
+        "bMean": -0.7177555960046829,
+        "bStd": 37.0986023411772
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 644,
+      "endFrame": 649,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 33.006804557066815,
+        "lStd": 31.52260238376122,
+        "aMean": -5.858369410558268,
+        "aStd": 20.228543159266888,
+        "bMean": -13.356477726929457,
+        "bStd": 31.022639921596024
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 649,
+      "endFrame": 655,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 33.006804557066815,
+        "lStd": 31.52260238376122,
+        "aMean": -5.858369410558268,
+        "aStd": 20.228543159266888,
+        "bMean": -13.356477726929457,
+        "bStd": 31.022639921596024
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 655,
+      "endFrame": 666,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 656,
+            "translateX": -3.6315428571428603,
+            "translateY": -5.568914285714202,
+            "rotationRad": -0.002226480460001142,
+            "scale": 1.0080691652735485
+          },
+          {
+            "frame": 664,
+            "translateX": 0.5732650765592516,
+            "translateY": -1.1330318404078363,
+            "rotationRad": -0.0027765038506390827,
+            "scale": 0.9983701238461241
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 33.006804557066815,
+        "lStd": 31.52260238376122,
+        "aMean": -5.858369410558268,
+        "aStd": 20.228543159266888,
+        "bMean": -13.356477726929457,
+        "bStd": 31.022639921596024
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 666,
+      "endFrame": 698,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 672,
+            "translateX": -5.024121516820962,
+            "translateY": 9.048296518157906,
+            "rotationRad": -0.00397752008522241,
+            "scale": 0.9909496416349463
+          },
+          {
+            "frame": 680,
+            "translateX": 4.789616326530608,
+            "translateY": -0.3058285714285895,
+            "rotationRad": 0.008166674771612176,
+            "scale": 0.995928449423894
+          },
+          {
+            "frame": 688,
+            "translateX": -6.640298923997617,
+            "translateY": 1.109522775900002,
+            "rotationRad": -0.0031764455318471717,
+            "scale": 0.9993945577984548
+          },
+          {
+            "frame": 696,
+            "translateX": -1.4306525940240709,
+            "translateY": -1.191615876319377,
+            "rotationRad": -0.0017463980642225133,
+            "scale": 1.0096269298518468
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 33.006804557066815,
+        "lStd": 31.52260238376122,
+        "aMean": -5.858369410558268,
+        "aStd": 20.228543159266888,
+        "bMean": -13.356477726929457,
+        "bStd": 31.022639921596024
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 698,
+      "endFrame": 709,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 27.019363004490856,
+        "lStd": 21.63811910317561,
+        "aMean": 10.704472434453207,
+        "aStd": 14.36237731747096,
+        "bMean": -29.177585980511072,
+        "bStd": 36.40074250077459
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 709,
+      "endFrame": 718,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 31.137951166328154,
+        "lStd": 29.692019035400065,
+        "aMean": 18.806203109997274,
+        "aStd": 28.568475741603166,
+        "bMean": 6.082652789408322,
+        "bStd": 37.3220304399947
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 718,
+      "endFrame": 728,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 10.977532129929317,
+        "lStd": 18.305293124233206,
+        "aMean": 10.340097661179904,
+        "aStd": 19.425337318505306,
+        "bMean": -1.9653212709751389,
+        "bStd": 16.10867440418919
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 728,
+      "endFrame": 734,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 34.66004687857159,
+        "lStd": 25.081082536753165,
+        "aMean": 3.2425153657740293,
+        "aStd": 29.669429343666533,
+        "bMean": -15.71087725515134,
+        "bStd": 25.448650362990517
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 734,
+      "endFrame": 740,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 28.127461294830912,
+        "lStd": 22.711157815968207,
+        "aMean": 35.03196622235729,
+        "aStd": 25.27073390422018,
+        "bMean": -0.07052272929922473,
+        "bStd": 38.04735091495304
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 740,
+      "endFrame": 751,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 43.54903447085891,
+        "lStd": 25.956929663795222,
+        "aMean": 15.68521902005722,
+        "aStd": 29.30211848750313,
+        "bMean": -8.25627451834345,
+        "bStd": 31.398290255763573
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 751,
+      "endFrame": 761,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 760,
+            "translateX": -0.8967729760331729,
+            "translateY": 0.9443291187015866,
+            "rotationRad": -0.0032969064930714344,
+            "scale": 1.0040864156715528
+          }
+        ],
+        "dominantMove": "pan"
+      },
+      "colorStats": {
+        "lMean": 40.091919745617915,
+        "lStd": 23.540926455095253,
+        "aMean": 43.66844720588435,
+        "aStd": 26.971358295872808,
+        "bMean": 19.200322648122302,
+        "bStd": 36.841082242643544
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 761,
+      "endFrame": 778,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 776,
+            "translateX": -0.19819311123666522,
+            "translateY": -0.48616600790532105,
+            "rotationRad": 0.0015251232355641964,
+            "scale": 1.0258575830594163
+          }
+        ],
+        "dominantMove": "push"
+      },
+      "colorStats": {
+        "lMean": 42.56169804036501,
+        "lStd": 26.029456876964097,
+        "aMean": 34.2013681682794,
+        "aStd": 29.826142854505445,
+        "bMean": -15.628882659281771,
+        "bStd": 49.555331267430844
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 778,
+      "endFrame": 811,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 792,
+            "translateX": 6.636046105483701,
+            "translateY": -0.31582256374440476,
+            "rotationRad": 0.008418493469400674,
+            "scale": 0.9995769851093822
+          },
+          {
+            "frame": 800,
+            "translateX": -0.1859005784880679,
+            "translateY": -3.515638788116413,
+            "rotationRad": 0.004455261534541161,
+            "scale": 1.0077599444809247
+          },
+          {
+            "frame": 808,
+            "translateX": 3.2584356819651816,
+            "translateY": -0.3511312217192913,
+            "rotationRad": 0.01325226655116239,
+            "scale": 0.997800035120981
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 39.00822674794536,
+        "lStd": 24.965824703104182,
+        "aMean": 22.343585851522747,
+        "aStd": 31.651833174666542,
+        "bMean": -11.082019394949228,
+        "bStd": 40.14796821123272
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 811,
+      "endFrame": 822,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 36.78892143233,
+        "lStd": 25.665417244985232,
+        "aMean": 28.265014943713293,
+        "aStd": 27.29919720911536,
+        "bMean": -13.447861436492257,
+        "bStd": 38.23908839563789
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 822,
+      "endFrame": 1112,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 832,
+            "translateX": 2.567738849695118,
+            "translateY": -4.997420611195561,
+            "rotationRad": 0.005706648611313366,
+            "scale": 1.0110123169442427
+          },
+          {
+            "frame": 840,
+            "translateX": 2.7445736675166286,
+            "translateY": -1.8840723925617664,
+            "rotationRad": 0.0008301299231869627,
+            "scale": 1.005170133017511
+          },
+          {
+            "frame": 848,
+            "translateX": 2.2968262310554004,
+            "translateY": -2.302746881469131,
+            "rotationRad": 0.009432215092636333,
+            "scale": 1.0056319898393726
+          },
+          {
+            "frame": 856,
+            "translateX": -4.123121356367298,
+            "translateY": 3.400438573033154,
+            "rotationRad": -0.007526228599881463,
+            "scale": 1.0066531619629357
+          },
+          {
+            "frame": 864,
+            "translateX": 1.8345969210393582,
+            "translateY": 3.992782651878477,
+            "rotationRad": 0.00553316848324182,
+            "scale": 1.005796264440447
+          },
+          {
+            "frame": 872,
+            "translateX": 0.28778549478274246,
+            "translateY": -0.10421333453382431,
+            "rotationRad": 0.002879092569676029,
+            "scale": 1.010349445272533
+          },
+          {
+            "frame": 880,
+            "translateX": -4.68065003779287,
+            "translateY": -1.009750566893347,
+            "rotationRad": -0.011286572887163494,
+            "scale": 1.007589161364478
+          },
+          {
+            "frame": 888,
+            "translateX": -5.577624135763575,
+            "translateY": -5.354583819699948,
+            "rotationRad": -0.000541460343124614,
+            "scale": 1.0157135366995007
+          },
+          {
+            "frame": 896,
+            "translateX": 2.927091740651042,
+            "translateY": 6.1372074253430515,
+            "rotationRad": -0.0020276469907902894,
+            "scale": 0.9932799242633368
+          },
+          {
+            "frame": 904,
+            "translateX": 4.0302605155293145,
+            "translateY": 13.717586861434613,
+            "rotationRad": -0.008382554156344158,
+            "scale": 0.981441075710319
+          },
+          {
+            "frame": 912,
+            "translateX": 6.436765114341124,
+            "translateY": -2.945143968151261,
+            "rotationRad": 0.009821577803458797,
+            "scale": 0.9980566167288089
+          },
+          {
+            "frame": 920,
+            "translateX": 2.4175029849301963,
+            "translateY": 4.385117299687148,
+            "rotationRad": 0.0012075264586518687,
+            "scale": 0.9883299126307014
+          },
+          {
+            "frame": 928,
+            "translateX": 1.7436475175370085,
+            "translateY": 4.734854819261175,
+            "rotationRad": -0.001835732012079877,
+            "scale": 0.9942693318416238
+          },
+          {
+            "frame": 936,
+            "translateX": 2.4006245120998924,
+            "translateY": 6.287587822014042,
+            "rotationRad": -0.0002921374185699699,
+            "scale": 0.9929906650540008
+          },
+          {
+            "frame": 944,
+            "translateX": 2.9333262100651587,
+            "translateY": 6.912597499732945,
+            "rotationRad": -0.003321357891370944,
+            "scale": 0.9899082274304981
+          },
+          {
+            "frame": 952,
+            "translateX": -3.7563640590492,
+            "translateY": 7.084903937164654,
+            "rotationRad": -0.010207905634341522,
+            "scale": 0.9935424065733174
+          },
+          {
+            "frame": 960,
+            "translateX": -0.15294156292085404,
+            "translateY": -2.799067109023456,
+            "rotationRad": -0.0011929865784106256,
+            "scale": 1.0038617552087643
+          },
+          {
+            "frame": 968,
+            "translateX": -1.2507014409785224,
+            "translateY": -8.82632578780187,
+            "rotationRad": 0.00015182818886271622,
+            "scale": 1.0087630901762787
+          },
+          {
+            "frame": 976,
+            "translateX": -5.635853827911123,
+            "translateY": 2.5797617955736962,
+            "rotationRad": -0.012000299227491453,
+            "scale": 0.9955201805802101
+          },
+          {
+            "frame": 984,
+            "translateX": -4.957333397650648,
+            "translateY": 20.691830877210318,
+            "rotationRad": -0.017273857314654337,
+            "scale": 0.9790700355450122
+          },
+          {
+            "frame": 992,
+            "translateX": 6.355334700441515,
+            "translateY": 9.739897722147719,
+            "rotationRad": 0.00012854442273243849,
+            "scale": 0.9846476941198674
+          },
+          {
+            "frame": 1000,
+            "translateX": -2.48175595606574,
+            "translateY": 2.8870337289305485,
+            "rotationRad": -0.00672710400328425,
+            "scale": 0.9972962027767861
+          },
+          {
+            "frame": 1008,
+            "translateX": -2.834992356038766,
+            "translateY": 6.018141668082242,
+            "rotationRad": -0.007823567022508636,
+            "scale": 0.9929752958176368
+          },
+          {
+            "frame": 1016,
+            "translateX": 2.0673169050491254,
+            "translateY": 2.085514389109091,
+            "rotationRad": 0.0022805618514505203,
+            "scale": 1.0014541523114053
+          },
+          {
+            "frame": 1024,
+            "translateX": 5.988040821210572,
+            "translateY": 2.7845399066650316,
+            "rotationRad": 0.007308313415028604,
+            "scale": 0.9965883790827931
+          },
+          {
+            "frame": 1032,
+            "translateX": 1.4546050927923837,
+            "translateY": 3.48315925766071,
+            "rotationRad": 0.0003747803054728675,
+            "scale": 0.9942045008402391
+          },
+          {
+            "frame": 1040,
+            "translateX": 10.210338565049664,
+            "translateY": -4.039573065937507,
+            "rotationRad": 0.01447197264284829,
+            "scale": 1.000822928538698
+          },
+          {
+            "frame": 1048,
+            "translateX": 2.344466398457413,
+            "translateY": -0.7689194658033297,
+            "rotationRad": -0.0005459247099304546,
+            "scale": 1.0005139523484912
+          },
+          {
+            "frame": 1056,
+            "translateX": 8.994871093482889,
+            "translateY": 3.7754613573529565,
+            "rotationRad": 0.006511851307555955,
+            "scale": 0.9915412305774088
+          },
+          {
+            "frame": 1064,
+            "translateX": 10.713001887979928,
+            "translateY": 10.775531780994632,
+            "rotationRad": 0.005809898828696103,
+            "scale": 0.984451269911595
+          },
+          {
+            "frame": 1072,
+            "translateX": 5.888112518595338,
+            "translateY": -3.2652030834422345,
+            "rotationRad": 0.0066626676372937635,
+            "scale": 1.003817729191705
+          },
+          {
+            "frame": 1080,
+            "translateX": 2.0518982137146513,
+            "translateY": -5.6162456028141605,
+            "rotationRad": 0.004913943646317379,
+            "scale": 1.0051155356490296
+          },
+          {
+            "frame": 1088,
+            "translateX": 4.377553475476333,
+            "translateY": -5.989413746090414,
+            "rotationRad": 0.008793918056677529,
+            "scale": 1.0081323856747326
+          },
+          {
+            "frame": 1096,
+            "translateX": 10.118397068226791,
+            "translateY": -5.222106639435716,
+            "rotationRad": 0.011899112576200981,
+            "scale": 1.0031050615671888
+          },
+          {
+            "frame": 1104,
+            "translateX": -0.9035130734979618,
+            "translateY": 4.526862948941925,
+            "rotationRad": -0.005639205365601263,
+            "scale": 0.9957564845494477
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 17.880130015084013,
+        "lStd": 23.19267714394885,
+        "aMean": 16.12928262454093,
+        "aStd": 21.765884074036887,
+        "bMean": -7.488263586941097,
+        "bStd": 25.89921146379244
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 1112,
+      "endFrame": 1398,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 1120,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1128,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1136,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1144,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1152,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1160,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1168,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1176,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1184,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1192,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1200,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1208,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1216,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1224,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1232,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1240,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1248,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1256,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1264,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1272,
+            "translateX": -28.094255333477758,
+            "translateY": -28.20703846988447,
+            "rotationRad": -0.0007139870617344675,
+            "scale": 1.0026367509425966
+          },
+          {
+            "frame": 1280,
+            "translateX": 0,
+            "translateY": 0,
+            "rotationRad": 0,
+            "scale": 1
+          },
+          {
+            "frame": 1288,
+            "translateX": -25.219292271096016,
+            "translateY": -26.58463368269073,
+            "rotationRad": 0.000164044417619125,
+            "scale": 1.0031161927234766
+          },
+          {
+            "frame": 1296,
+            "translateX": -25.746243687362213,
+            "translateY": -23.449084569802476,
+            "rotationRad": -0.0021786060439133144,
+            "scale": 0.9998427653312051
+          },
+          {
+            "frame": 1304,
+            "translateX": -25.89408421596487,
+            "translateY": -26.693811594123382,
+            "rotationRad": 0.0005105952072522232,
+            "scale": 1.001566377848642
+          },
+          {
+            "frame": 1312,
+            "translateX": -25.73831048594142,
+            "translateY": -26.357539639317174,
+            "rotationRad": 0.0003180829290221315,
+            "scale": 1.0035051760848934
+          },
+          {
+            "frame": 1320,
+            "translateX": -25.746673308190527,
+            "translateY": -25.647863699667756,
+            "rotationRad": -0.0011757992531242986,
+            "scale": 1.0036209171946633
+          },
+          {
+            "frame": 1328,
+            "translateX": -25.746673308190527,
+            "translateY": -25.647863699667756,
+            "rotationRad": -0.0011757992531242986,
+            "scale": 1.0036209171946633
+          },
+          {
+            "frame": 1336,
+            "translateX": -25.746673308190527,
+            "translateY": -25.647863699667756,
+            "rotationRad": -0.0011757992531242986,
+            "scale": 1.0036209171946633
+          },
+          {
+            "frame": 1344,
+            "translateX": -25.746673308190527,
+            "translateY": -25.647863699667756,
+            "rotationRad": -0.0011757992531242986,
+            "scale": 1.0036209171946633
+          },
+          {
+            "frame": 1352,
+            "translateX": -25.746673308190527,
+            "translateY": -25.647863699667756,
+            "rotationRad": -0.0011757992531242986,
+            "scale": 1.0036209171946633
+          },
+          {
+            "frame": 1360,
+            "translateX": -25.746673308190527,
+            "translateY": -25.647863699667756,
+            "rotationRad": -0.0011757992531242986,
+            "scale": 1.0036209171946633
+          },
+          {
+            "frame": 1368,
+            "translateX": -25.746673308190527,
+            "translateY": -25.647863699667756,
+            "rotationRad": -0.0011757992531242986,
+            "scale": 1.0036209171946633
+          },
+          {
+            "frame": 1376,
+            "translateX": -25.746673308190527,
+            "translateY": -25.647863699667756,
+            "rotationRad": -0.0011757992531242986,
+            "scale": 1.0036209171946633
+          },
+          {
+            "frame": 1384,
+            "translateX": -25.746673308190527,
+            "translateY": -25.647863699667756,
+            "rotationRad": -0.0011757992531242986,
+            "scale": 1.0036209171946633
+          },
+          {
+            "frame": 1392,
+            "translateX": -25.746673308190527,
+            "translateY": -25.647863699667756,
+            "rotationRad": -0.0011757992531242986,
+            "scale": 1.0036209171946633
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 0.5314683296029178,
+        "lStd": 4.512697506814264,
+        "aMean": 0.010060283392198999,
+        "aStd": 0.9624961232031202,
+        "bMean": 0.00042687201471778967,
+        "bStd": 0.42829770519098276
+      },
+      "captionWindows": []
+    }
+  ],
+  "beatGridMs": [],
+  "structure": {
+    "editRange": {
+      "startFrame": 0,
+      "endFrame": 1398
+    },
+    "events": [
+      {
+        "frame": 358,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 368,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 420,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 440,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 446,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 484,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 511,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 513,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 583,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 606,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 611,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 622,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 633,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 644,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 649,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.85,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 655,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.85,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 666,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.85,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 698,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 709,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 718,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 728,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 734,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 740,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 751,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 761,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 778,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 811,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 822,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 1112,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      }
+    ],
+    "energyCurve": [
+      0.112,
+      0.074,
+      0.05,
+      0.052,
+      0.087,
+      0.14,
+      0.146,
+      0.161,
+      0.183,
+      0.119,
+      0.121,
+      0.231,
+      0.272,
+      0.305,
+      0.322,
+      0.245,
+      0.333,
+      0.429,
+      0.333,
+      0.434,
+      0.632,
+      0.573,
+      0.466,
+      0.481,
+      0.478,
+      0.368,
+      0.249,
+      0.202,
+      0.151,
+      0.126,
+      0.121,
+      0.114,
+      0.161,
+      0.179,
+      0.163,
+      0.164,
+      0.152,
+      0.108,
+      0.038,
+      0,
+      0,
+      0.1,
+      0.209,
+      0.119,
+      0.011,
+      0.001,
+      0
+    ],
+    "density": {
+      "cutsPerSec": 0.6223175965665236,
+      "eventsPerSec": 0.6223175965665236,
+      "byType": {
+        "hard-cut": 29
+      }
+    },
+    "shotLengths": {
+      "min": 2,
+      "max": 358,
+      "median": 11,
+      "p25": 9,
+      "p75": 32
+    }
+  },
+  "styleEvidence": {
+    "transitions": [
+      {
+        "startFrame": 357,
+        "endFrame": 359,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 367,
+        "endFrame": 369,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 419,
+        "endFrame": 421,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 439,
+        "endFrame": 441,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 445,
+        "endFrame": 447,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 483,
+        "endFrame": 485,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 510,
+        "endFrame": 512,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 512,
+        "endFrame": 514,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 582,
+        "endFrame": 584,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 605,
+        "endFrame": 607,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 610,
+        "endFrame": 612,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 621,
+        "endFrame": 623,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 632,
+        "endFrame": 634,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 643,
+        "endFrame": 645,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 697,
+        "endFrame": 699,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 708,
+        "endFrame": 710,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 717,
+        "endFrame": 719,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 727,
+        "endFrame": 729,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 733,
+        "endFrame": 735,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 739,
+        "endFrame": 741,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 750,
+        "endFrame": 752,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 760,
+        "endFrame": 762,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 777,
+        "endFrame": 779,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 810,
+        "endFrame": 812,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 821,
+        "endFrame": 823,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 1111,
+        "endFrame": 1113,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 648,
+        "endFrame": 650,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.85,
+        "note": "Detected by a frame-by-frame rescan of an unusually long shot."
+      },
+      {
+        "startFrame": 654,
+        "endFrame": 656,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.85,
+        "note": "Detected by a frame-by-frame rescan of an unusually long shot."
+      },
+      {
+        "startFrame": 665,
+        "endFrame": 667,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.85,
+        "note": "Detected by a frame-by-frame rescan of an unusually long shot."
+      }
+    ],
+    "textOverlays": [],
+    "effects": []
+  },
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Shot boundary near frame 583 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 644 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 698 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 709 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 718 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 728 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 751 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 761 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 778 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Shot boundary near frame 811 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence.",
+    "Long-shot recovery added 3 cut(s) from 1 unusually long shot(s)."
+  ],
+  "version": "kove.mirror.v3",
+  "rhythmCurve": [
+    358,
+    10,
+    52,
+    20,
+    6,
+    38,
+    27,
+    2,
+    70,
+    23,
+    5,
+    11,
+    11,
+    11,
+    5,
+    6,
+    11,
+    32,
+    11,
+    9,
+    10,
+    6,
+    6,
+    11,
+    10,
+    17,
+    33,
+    11,
+    290,
+    286
+  ]
+}

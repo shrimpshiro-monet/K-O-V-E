@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "id": "tyler-the-creator",
+  "styleFamily": "talking-head-captions",
+  "source": "reference_videos_to_select/tyler_the_creator.MP4",
+  "sourceSha256": "68db4727acd328c13a19e13a87739cc8f4493f3f6a1e96dc847dd85949eef361",
+  "decodePath": {
+    "kind": "h264-proxy",
+    "codec": "hevc",
+    "proxy": "reference_videos_to_select/proxies/tyler_the_creator.h264.mp4",
+    "proxySha256": "110f4d28596ba7a46e81796ddfb7a6ff3e570909fdbf689d713c54067ffbc28f",
+    "reason": "HEVC source; extraction uses a local H.264 proxy with the same dimensions and frame clock. libx264 crf 18, yuv420p, AAC 160k."
+  },
+  "clock": {
+    "fps": {
+      "num": 24,
+      "den": 1
+    },
+    "fpsSource": "ffprobe",
+    "durationSeconds": 55.666666666666664
+  },
+  "clockProvenance": "external-ffprobe-manifest",
+  "extraction": {
+    "backend": "chromium-vite-web",
+    "includeReferenceText": true,
+    "ffmpegSceneDetection": false,
+    "endCardTrim": false
+  },
+  "media": {
+    "width": 800,
+    "height": 576,
+    "fps": {
+      "num": 24,
+      "den": 1
+    },
+    "durationFrames": 1336
+  },
+  "elapsedMs": 58413,
+  "generatedAt": "2026-11-15T07:48:19.959Z",
+  "profilePath": "evaluation-files/mirror-baseline/profiles/tyler-the-creator.json",
+  "fps": {
+    "num": 24,
+    "den": 1
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 1336,
+  "shotCount": 10,
+  "textOverlayCount": 0,
+  "transitionCount": 9,
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured."
+  ],
+  "notes": [
+    "24 fps; 55.7s."
+  ]
+}

@@ -1,0 +1,860 @@
+{
+  "aspectRatio": {
+    "width": 576,
+    "height": 640
+  },
+  "fps": {
+    "num": 30,
+    "den": 1
+  },
+  "fpsSource": "ffprobe",
+  "durationFrames": 605,
+  "shots": [
+    {
+      "startFrame": 0,
+      "endFrame": 62,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 8,
+            "translateX": 4.976924761582364,
+            "translateY": 2.0673011195837034,
+            "rotationRad": -0.0002887544616358611,
+            "scale": 0.9969016084467349
+          },
+          {
+            "frame": 16,
+            "translateX": 7.76208980198946,
+            "translateY": -3.441070930556805,
+            "rotationRad": 0.006168519813022683,
+            "scale": 1.003450964732108
+          },
+          {
+            "frame": 24,
+            "translateX": 12.116018880018565,
+            "translateY": 7.845150340889177,
+            "rotationRad": -0.0033928499077601074,
+            "scale": 0.9838877818272439
+          },
+          {
+            "frame": 32,
+            "translateX": -2.9119774981224547,
+            "translateY": 1.6619430095492476,
+            "rotationRad": -0.0009877994511904875,
+            "scale": 0.9931251236671069
+          },
+          {
+            "frame": 40,
+            "translateX": -6.964492564894549,
+            "translateY": 2.2071659783456425,
+            "rotationRad": -0.00848365775636199,
+            "scale": 0.9923918366233087
+          },
+          {
+            "frame": 48,
+            "translateX": -0.2731084048713073,
+            "translateY": -1.218473414520588,
+            "rotationRad": 0.009566835716245035,
+            "scale": 1.0022585490148672
+          },
+          {
+            "frame": 56,
+            "translateX": 2.850524600631791,
+            "translateY": -1.750107342207059,
+            "rotationRad": -0.0015153857755247349,
+            "scale": 1.00379758035532
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 25.98168369001944,
+        "lStd": 19.230420066892968,
+        "aMean": -4.805490338837027,
+        "aStd": 3.6448428702819067,
+        "bMean": -8.23081312893922,
+        "bStd": 4.620759088889723
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 62,
+      "endFrame": 116,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 72,
+            "translateX": 5.998533661868611,
+            "translateY": 2.3044764143236875,
+            "rotationRad": 0.0061991467639778116,
+            "scale": 1.0083505189868172
+          },
+          {
+            "frame": 80,
+            "translateX": 9.47004339452268,
+            "translateY": 0.23616050379217768,
+            "rotationRad": 0.00618035812175286,
+            "scale": 1.000787308320468
+          },
+          {
+            "frame": 88,
+            "translateX": 3.8857618246401757,
+            "translateY": -1.7139614881285183,
+            "rotationRad": 0.008862846729652624,
+            "scale": 1.0084710899891889
+          },
+          {
+            "frame": 96,
+            "translateX": 5.603781749902472,
+            "translateY": 3.9802404301039473,
+            "rotationRad": -0.011238459798892897,
+            "scale": 1.0009519270565572
+          },
+          {
+            "frame": 104,
+            "translateX": 4.033577459673593,
+            "translateY": -3.697530490573058,
+            "rotationRad": 0.007847533807659787,
+            "scale": 0.9993120101478958
+          },
+          {
+            "frame": 112,
+            "translateX": -8.210436351550461,
+            "translateY": -3.5616678084748514,
+            "rotationRad": -0.013049231705868233,
+            "scale": 1.018451167029636
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 17.91394484485975,
+        "lStd": 17.969276639587367,
+        "aMean": -2.5848286753555714,
+        "aStd": 3.7920469107006327,
+        "bMean": -5.453338102184327,
+        "bStd": 7.59673365573766
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 116,
+      "endFrame": 158,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 128,
+            "translateX": 1.1056063143819288,
+            "translateY": 9.938466404525798,
+            "rotationRad": -0.0020623139768170327,
+            "scale": 1.0015440639911994
+          },
+          {
+            "frame": 136,
+            "translateX": 1.8846686463440199,
+            "translateY": -4.484060204486013,
+            "rotationRad": -0.002562929180042307,
+            "scale": 1.0015807313473393
+          },
+          {
+            "frame": 144,
+            "translateX": 4.539041181532587,
+            "translateY": -7.204263785405999,
+            "rotationRad": -0.0010281356142622536,
+            "scale": 0.9943894589944874
+          },
+          {
+            "frame": 152,
+            "translateX": -0.0851036295219959,
+            "translateY": 1.0771397853744133,
+            "rotationRad": -0.0024054779322524025,
+            "scale": 0.9980426204433923
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 36.656881763192956,
+        "lStd": 34.15222525188685,
+        "aMean": -1.675046477923286,
+        "aStd": 3.894914227141395,
+        "bMean": -1.7563531660863483,
+        "bStd": 7.808550177211894
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 158,
+      "endFrame": 172,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 168,
+            "translateX": -5.222832755401487,
+            "translateY": 3.1061438605849503,
+            "rotationRad": -0.0028633936937375835,
+            "scale": 0.9998588750188172
+          }
+        ],
+        "dominantMove": "pan"
+      },
+      "colorStats": {
+        "lMean": 21.4811014484173,
+        "lStd": 19.132243333074165,
+        "aMean": -2.542763378892825,
+        "aStd": 3.4789947208835676,
+        "bMean": -4.2669540529732775,
+        "bStd": 7.79776760683544
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 172,
+      "endFrame": 469,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 184,
+            "translateX": 5.504038643015909,
+            "translateY": -8.816997488843754,
+            "rotationRad": 0.0006170892255776957,
+            "scale": 1.00707947977337
+          },
+          {
+            "frame": 192,
+            "translateX": 6.256495049914248,
+            "translateY": -1.2353305913233612,
+            "rotationRad": 0.009725553722939102,
+            "scale": 0.995213240514862
+          },
+          {
+            "frame": 200,
+            "translateX": -10.620610247553138,
+            "translateY": -1.352139704471199,
+            "rotationRad": -0.013342647770217719,
+            "scale": 1.012803642172267
+          },
+          {
+            "frame": 208,
+            "translateX": 1.7058386937161951,
+            "translateY": 3.095497278575067,
+            "rotationRad": -0.005908704774611374,
+            "scale": 0.9892037267305498
+          },
+          {
+            "frame": 216,
+            "translateX": -13.06027737605223,
+            "translateY": -4.230643008121035,
+            "rotationRad": 0.005720015594220571,
+            "scale": 1.017485140733339
+          },
+          {
+            "frame": 224,
+            "translateX": -9.052893256798415,
+            "translateY": -7.313837189076423,
+            "rotationRad": 0.002452801251670587,
+            "scale": 1.0248383198780733
+          },
+          {
+            "frame": 232,
+            "translateX": -7.668025078369967,
+            "translateY": -6.829833546735017,
+            "rotationRad": -0.0029362252861772245,
+            "scale": 1.0176313606749896
+          },
+          {
+            "frame": 240,
+            "translateX": -3.877654290452427,
+            "translateY": -1.5228703842613527,
+            "rotationRad": 0.000860675158206314,
+            "scale": 1.0093399756983108
+          },
+          {
+            "frame": 248,
+            "translateX": -5.789851691568485,
+            "translateY": -2.5926422559633693,
+            "rotationRad": 0.0024806899567834024,
+            "scale": 1.0051824381726842
+          },
+          {
+            "frame": 256,
+            "translateX": -4.857817403909843,
+            "translateY": 2.3696606758334724,
+            "rotationRad": -0.006970969412026172,
+            "scale": 0.9993856743827317
+          },
+          {
+            "frame": 264,
+            "translateX": 5.7933939158100385,
+            "translateY": 0.4662714308603313,
+            "rotationRad": -0.0016486429435346585,
+            "scale": 0.9915644364907591
+          },
+          {
+            "frame": 272,
+            "translateX": 7.4290102197168135,
+            "translateY": 2.014696993125881,
+            "rotationRad": -0.00336095781027591,
+            "scale": 0.9947522574882623
+          },
+          {
+            "frame": 280,
+            "translateX": 5.036880630630572,
+            "translateY": -6.792042042042169,
+            "rotationRad": 0.00808920833340208,
+            "scale": 1.0030240889303772
+          },
+          {
+            "frame": 288,
+            "translateX": -17.640299779782794,
+            "translateY": -3.670419833771575,
+            "rotationRad": -0.013241712649899031,
+            "scale": 1.0161939654893812
+          },
+          {
+            "frame": 296,
+            "translateX": 5.02075508993861,
+            "translateY": -3.4396125716546635,
+            "rotationRad": 0.011261063949474202,
+            "scale": 0.9983584186381201
+          },
+          {
+            "frame": 304,
+            "translateX": -1.5421738943630166,
+            "translateY": 0.945230150091561,
+            "rotationRad": -0.0012752660736628598,
+            "scale": 0.9973984345849342
+          },
+          {
+            "frame": 312,
+            "translateX": 5.970015929312572,
+            "translateY": 4.760488264232947,
+            "rotationRad": 0.004117591266004005,
+            "scale": 0.9882590429238574
+          },
+          {
+            "frame": 320,
+            "translateX": 5.33607324324004,
+            "translateY": -3.8273264559226163,
+            "rotationRad": 0.015764227366037838,
+            "scale": 1.0092220772786153
+          },
+          {
+            "frame": 328,
+            "translateX": -0.7040200330904265,
+            "translateY": -6.040915798417046,
+            "rotationRad": 0.00148712065053547,
+            "scale": 1.011081548490239
+          },
+          {
+            "frame": 336,
+            "translateX": 2.659229608242014,
+            "translateY": 5.666907277380346,
+            "rotationRad": -0.01191892964419307,
+            "scale": 0.9884352219034495
+          },
+          {
+            "frame": 344,
+            "translateX": 3.1456728021035465,
+            "translateY": 6.676471933234268,
+            "rotationRad": -0.0023318955708957543,
+            "scale": 0.9823713878307996
+          },
+          {
+            "frame": 352,
+            "translateX": 2.4090139751551782,
+            "translateY": -1.50300465838518,
+            "rotationRad": -0.0029674337034156398,
+            "scale": 0.9903065081825091
+          },
+          {
+            "frame": 360,
+            "translateX": -4.361364916168552,
+            "translateY": -4.897921926940342,
+            "rotationRad": 0.0025163235401016283,
+            "scale": 1.0124454558611957
+          },
+          {
+            "frame": 368,
+            "translateX": 7.187575489895821,
+            "translateY": -0.5327107858155955,
+            "rotationRad": 0.017960957027052027,
+            "scale": 0.9885317465406727
+          },
+          {
+            "frame": 376,
+            "translateX": 2.7160084553995825,
+            "translateY": 4.6451898274464725,
+            "rotationRad": 0.0042488518020861905,
+            "scale": 0.9826964859889594
+          },
+          {
+            "frame": 384,
+            "translateX": 4.611164236194098,
+            "translateY": 1.2701012032831045,
+            "rotationRad": 0.0062118107683989355,
+            "scale": 0.9965240384190334
+          },
+          {
+            "frame": 392,
+            "translateX": -1.9120241917885208,
+            "translateY": 1.3218193721357352,
+            "rotationRad": -0.009782025772279967,
+            "scale": 1.0007233362521224
+          },
+          {
+            "frame": 400,
+            "translateX": 1.3848764128023456,
+            "translateY": 4.371633041090092,
+            "rotationRad": -0.0055410812089285374,
+            "scale": 0.9927746287027662
+          },
+          {
+            "frame": 408,
+            "translateX": -3.643917037571984,
+            "translateY": 2.175132102460111,
+            "rotationRad": -0.007446023479832507,
+            "scale": 0.9974255267760416
+          },
+          {
+            "frame": 416,
+            "translateX": 4.623066209023524,
+            "translateY": 5.801397801323276,
+            "rotationRad": -0.0029800174581729477,
+            "scale": 0.9890296613979271
+          },
+          {
+            "frame": 424,
+            "translateX": 7.120228932925245,
+            "translateY": -11.921736883724861,
+            "rotationRad": 0.018726285609815582,
+            "scale": 1.0071725232427935
+          },
+          {
+            "frame": 432,
+            "translateX": -8.450553368599596,
+            "translateY": -2.0972051429445173,
+            "rotationRad": -0.008229978406987448,
+            "scale": 1.016504205000445
+          },
+          {
+            "frame": 440,
+            "translateX": -1.9016665724301918,
+            "translateY": -3.0969764220287743,
+            "rotationRad": 0.0028847736210638737,
+            "scale": 1.0083865321637395
+          },
+          {
+            "frame": 448,
+            "translateX": -0.16132126590795803,
+            "translateY": 0.8703996602376947,
+            "rotationRad": 0.0016600201779950951,
+            "scale": 1.000945977352825
+          },
+          {
+            "frame": 456,
+            "translateX": -17.96898702174269,
+            "translateY": -18.103404685656415,
+            "rotationRad": -0.0006467074078452226,
+            "scale": 1.0153557098262005
+          },
+          {
+            "frame": 464,
+            "translateX": 0.8968753332622237,
+            "translateY": 3.885037858590124,
+            "rotationRad": -0.0006420418202581869,
+            "scale": 0.9910705537049692
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 35.85911845800767,
+        "lStd": 25.55883915001358,
+        "aMean": -4.238848257578323,
+        "aStd": 5.004335428612719,
+        "bMean": -5.944404754548498,
+        "bStd": 8.637246556575652
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 469,
+      "endFrame": 482,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 480,
+            "translateX": -3.6323101084108593,
+            "translateY": 4.115066104895902,
+            "rotationRad": -0.019400263030797733,
+            "scale": 1.0063464224634475
+          }
+        ],
+        "dominantMove": "orbit"
+      },
+      "colorStats": {
+        "lMean": 30.51198429369125,
+        "lStd": 28.464377468498913,
+        "aMean": 4.297134841596397,
+        "aStd": 7.141357521316271,
+        "bMean": 1.9229878836633874,
+        "bStd": 10.085864643415174
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 482,
+      "endFrame": 496,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 33.635164207743074,
+        "lStd": 29.08883755763263,
+        "aMean": -1.4372838698913477,
+        "aStd": 4.818600362112879,
+        "bMean": -5.531924726601368,
+        "bStd": 6.480453307383902
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 496,
+      "endFrame": 497,
+      "cameraMotion": {
+        "samples": [],
+        "dominantMove": "static"
+      },
+      "colorStats": {
+        "lMean": 68.04890851136287,
+        "lStd": 29.560420608260436,
+        "aMean": -4.023367528688854,
+        "aStd": 2.9446622342863873,
+        "bMean": -8.542916257164874,
+        "bStd": 5.980242882773428
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 497,
+      "endFrame": 524,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 512,
+            "translateX": -13.041700061289077,
+            "translateY": -0.8191740134836891,
+            "rotationRad": -0.01448561746757468,
+            "scale": 1.0276858842195613
+          },
+          {
+            "frame": 520,
+            "translateX": -3.3074781900269263,
+            "translateY": -1.9099426321329247,
+            "rotationRad": -0.00009921309807119549,
+            "scale": 0.9979293304146705
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 50.28989944056218,
+        "lStd": 33.5656865623795,
+        "aMean": -3.8939739188442837,
+        "aStd": 2.9599067091180173,
+        "bMean": -9.817243836957092,
+        "bStd": 4.572784969248737
+      },
+      "captionWindows": []
+    },
+    {
+      "startFrame": 524,
+      "endFrame": 605,
+      "cameraMotion": {
+        "samples": [
+          {
+            "frame": 536,
+            "translateX": -15.428841858691413,
+            "translateY": -15.775249223729304,
+            "rotationRad": -0.0006977680448182419,
+            "scale": 1.00515835876679
+          },
+          {
+            "frame": 544,
+            "translateX": -14.567499493551177,
+            "translateY": -14.202768586670231,
+            "rotationRad": -0.0007358544742253812,
+            "scale": 1.0013977883948604
+          },
+          {
+            "frame": 552,
+            "translateX": -14.486339666359259,
+            "translateY": -14.424174993553834,
+            "rotationRad": -0.0008504908916160997,
+            "scale": 0.9981030433633732
+          },
+          {
+            "frame": 560,
+            "translateX": 0,
+            "translateY": 0,
+            "rotationRad": 0,
+            "scale": 1
+          },
+          {
+            "frame": 568,
+            "translateX": -16.602697920899217,
+            "translateY": -14.780369599078824,
+            "rotationRad": -0.0024927269910196464,
+            "scale": 1.0086240787124965
+          },
+          {
+            "frame": 576,
+            "translateX": -15.121460086856223,
+            "translateY": -14.168381543475789,
+            "rotationRad": -0.0010356917271460103,
+            "scale": 1.002255737790404
+          },
+          {
+            "frame": 584,
+            "translateX": -15.426579993496256,
+            "translateY": -14.129734339432275,
+            "rotationRad": -0.00036650565741104627,
+            "scale": 1.0049716631196508
+          },
+          {
+            "frame": 592,
+            "translateX": -15.426579993496256,
+            "translateY": -14.129734339432275,
+            "rotationRad": -0.00036650565741104627,
+            "scale": 1.0049716631196508
+          },
+          {
+            "frame": 600,
+            "translateX": -15.426579993496256,
+            "translateY": -14.129734339432275,
+            "rotationRad": -0.00036650565741104627,
+            "scale": 1.0049716631196508
+          }
+        ],
+        "dominantMove": "handheld"
+      },
+      "colorStats": {
+        "lMean": 0.4536219156066322,
+        "lStd": 3.840623633107815,
+        "aMean": -0.07231204395791226,
+        "aStd": 0.5343603964256066,
+        "bMean": -0.025228455951135518,
+        "bStd": 0.3125064455967144
+      },
+      "captionWindows": []
+    }
+  ],
+  "beatGridMs": [],
+  "structure": {
+    "editRange": {
+      "startFrame": 0,
+      "endFrame": 605
+    },
+    "events": [
+      {
+        "frame": 62,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 116,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 158,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 172,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 469,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 482,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 496,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 497,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.55,
+        "source": "local-pixel-analysis"
+      },
+      {
+        "frame": 524,
+        "type": "hard-cut",
+        "durationFrames": 1,
+        "intensity": 1,
+        "confidence": 0.9,
+        "source": "local-pixel-analysis"
+      }
+    ],
+    "energyCurve": [
+      0.118,
+      0.149,
+      0.234,
+      0.243,
+      0.261,
+      0.329,
+      0.232,
+      0.109,
+      0.107,
+      0.127,
+      0.114,
+      0.096,
+      0.095,
+      0.106,
+      0.247,
+      0.488,
+      0.528,
+      0.347,
+      0.161,
+      0.045
+    ],
+    "density": {
+      "cutsPerSec": 0.44628099173553715,
+      "eventsPerSec": 0.44628099173553715,
+      "byType": {
+        "hard-cut": 9
+      }
+    },
+    "shotLengths": {
+      "min": 1,
+      "max": 297,
+      "median": 42,
+      "p25": 14,
+      "p75": 62
+    }
+  },
+  "styleEvidence": {
+    "transitions": [
+      {
+        "startFrame": 61,
+        "endFrame": 63,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 115,
+        "endFrame": 117,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 157,
+        "endFrame": 159,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 171,
+        "endFrame": 173,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 468,
+        "endFrame": 470,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 481,
+        "endFrame": 483,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 495,
+        "endFrame": 497,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      },
+      {
+        "startFrame": 496,
+        "endFrame": 498,
+        "type": "unknown",
+        "source": "local-pixel-analysis",
+        "confidence": 0.55,
+        "note": "A boundary was located, but the available sample evidence does not establish the transition type."
+      },
+      {
+        "startFrame": 523,
+        "endFrame": 525,
+        "type": "hard-cut",
+        "source": "local-pixel-analysis",
+        "confidence": 0.9
+      }
+    ],
+    "textOverlays": [],
+    "effects": []
+  },
+  "warnings": [
+    "Long reference sampled at up to 600 positions: rapid cuts between samples may be missed; detected cut candidates are resolved at integer frames.",
+    "Local OCR is unavailable in this browser; reference text overlays were not measured.",
+    "Indexed WebCodecs frame read failed at frame 0; continuing with HTML video seeks, which may not decode exact requested frames. Verify critical cuts manually. Source frame 0 is unavailable from the indexed decoder",
+    "Shot boundary near frame 497 looks like a gradual transition (fade/dissolve) rather than a hard cut; boundary position is lower-confidence."
+  ],
+  "version": "kove.mirror.v3",
+  "rhythmCurve": [
+    62,
+    54,
+    42,
+    14,
+    297,
+    13,
+    14,
+    1,
+    27,
+    81
+  ]
+}
