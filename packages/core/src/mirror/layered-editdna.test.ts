@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { rebaseScene, validateLayeredEditDNA, type LayeredEditDNA } from "./layered-editdna";
+import { migrateReferenceProfileToLayered, rebaseScene, validateLayeredEditDNA, type LayeredEditDNA } from "./layered-editdna";
+import { createReferenceProfile, type ReferenceProfile } from "./reference-profile";
 import { overlappingCollageFixture, singleLayerMigrationFixture, textOverFootageFixture } from "./layered-editdna.fixtures";
 
 const scene = textOverFootageFixture.scenes[0]!;
@@ -128,5 +129,61 @@ describe("layered EditDNA", () => {
   it("requires a source for measured coverage", () => {
     const invalid: LayeredEditDNA = { ...textOverFootageFixture, coverage: { ...textOverFootageFixture.coverage, text: { status: "measured" } } };
     expect(() => validateLayeredEditDNA(invalid)).toThrow(/must name an evidence source/);
+  });
+});
+
+function v3Profile(): ReferenceProfile {
+  return createReferenceProfile({
+    fps: { num: 30, den: 1 },
+    fpsSource: "ffprobe",
+    durationFrames: 90,
+    aspectRatio: { width: 1920, height: 1080 },
+    shots: [
+      { startFrame: 0, endFrame: 30, captionWindows: [] },
+      { startFrame: 30, endFrame: 90, captionWindows: [] },
+    ],
+    beatGridMs: [1000, 2000],
+    styleEvidence: {
+      transitions: [{ startFrame: 29, endFrame: 31, type: "hard-cut", source: "local-pixel-analysis", confidence: 0.9 }],
+      textOverlays: [
+        {
+          startFrame: 10,
+          endFrame: 25,
+          bounds: { x: 0.1, y: 0.7, width: 0.8, height: 0.2 },
+          text: "HELLO",
+          source: "local-ocr",
+          confidence: 0.8,
+        },
+      ],
+      effects: [],
+    },
+  });
+}
+
+describe("layered EditDNA migration", () => {
+  it("migrates a v3 profile into one scene per shot without losing retained fields", () => {
+    const profile = v3Profile();
+    const layered = migrateReferenceProfileToLayered(profile);
+    expect(layered.version).toBe("kove.mirror.v4");
+    expect(layered.scenes).toHaveLength(profile.shots.length);
+    layered.scenes.forEach((scene, index) => {
+      const shot = profile.shots[index]!;
+      expect([scene.startFrame, scene.endFrame]).toEqual([shot.startFrame, shot.endFrame]);
+      expect(scene.layers).toHaveLength(1);
+      expect(scene.layers[0]!.kind).toBe("footage");
+      expect([scene.layers[0]!.startFrame, scene.layers[0]!.endFrame]).toEqual([shot.startFrame, shot.endFrame]);
+      expect(scene.slots[0]!.layerId).toBe(scene.layers[0]!.id);
+    });
+    expect(layered.shots).toEqual(profile.shots);
+    expect(layered.rhythmCurve).toEqual(profile.rhythmCurve);
+    expect(layered.beatGridMs).toEqual(profile.beatGridMs);
+    expect(layered.styleEvidence).toEqual(profile.styleEvidence);
+    expect(layered.warnings?.some((warning) => warning.includes("Layered graph migrated"))).toBe(true);
+    expect(layered.coverage.layers?.status).toBe("not-attempted");
+    expect(() => validateLayeredEditDNA(layered)).not.toThrow();
+  });
+
+  it("rejects a profile that is not v3", () => {
+    expect(() => migrateReferenceProfileToLayered(textOverFootageFixture as unknown as ReferenceProfile)).toThrow(/v3 profile/);
   });
 });

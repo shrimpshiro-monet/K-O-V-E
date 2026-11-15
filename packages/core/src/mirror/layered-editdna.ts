@@ -359,3 +359,78 @@ export function rebaseScene(scene: LayeredScene, newStartFrame: number, idSuffix
     })),
   };
 }
+
+const DEFAULT_LAYER_TRANSFORM: LayerTransform = {
+  x: 0.5,
+  y: 0.5,
+  scaleX: 1,
+  scaleY: 1,
+  rotationDegrees: 0,
+  opacity: 1,
+  anchorX: 0.5,
+  anchorY: 0.5,
+};
+
+/**
+ * Lossless structural migration from v3: every v3 shot becomes a scene with a
+ * single full-frame footage layer and a hero slot. Retained clock, shots,
+ * rhythm, beat grid, structure, and style evidence are copied unchanged.
+ * Layered/coverage evidence is not invented; it is marked not attempted until
+ * extraction measures it.
+ */
+export function migrateReferenceProfileToLayered(profile: ReferenceProfile): LayeredEditDNA {
+  check(profile.version === "kove.mirror.v3", "Layered migration requires an EditDNA v3 profile");
+  validateReferenceProfile(profile);
+  const scenes: LayeredScene[] = profile.shots.map((shot, index) => {
+    const sceneId = `shot-${index}`;
+    const layerId = `${sceneId}-layer`;
+    return {
+      id: sceneId,
+      revision: 1,
+      startFrame: shot.startFrame,
+      endFrame: shot.endFrame,
+      layers: [
+        {
+          id: layerId,
+          kind: "footage",
+          zIndex: 0,
+          startFrame: shot.startFrame,
+          endFrame: shot.endFrame,
+          transform: { base: DEFAULT_LAYER_TRANSFORM, keyframes: [] },
+        },
+      ],
+      slots: [
+        {
+          id: `${sceneId}-hero`,
+          layerId,
+          role: "hero",
+          startFrame: shot.startFrame,
+          endFrame: shot.endFrame,
+        },
+      ],
+    };
+  });
+  const layered: LayeredEditDNA = {
+    ...profile,
+    version: LAYERED_EDIT_DNA_VERSION,
+    scenes,
+    coverage: {
+      layers: {
+        status: "not-attempted",
+        note: "v3 profiles carry no layered evidence; one full-frame footage layer was defaulted per shot.",
+      },
+      masks: { status: "not-attempted" },
+      parents: { status: "not-attempted" },
+      slots: {
+        status: "not-attempted",
+        note: "One structural hero slot was defaulted per shot; content casting was not analyzed.",
+      },
+    },
+    warnings: [
+      ...(profile.warnings ?? []),
+      "Layered graph migrated from v3 shots: one full-frame footage layer and hero slot per shot; layer, mask, parent, and slot evidence remains not attempted.",
+    ],
+  };
+  validateLayeredEditDNA(layered);
+  return layered;
+}

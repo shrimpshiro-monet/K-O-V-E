@@ -109,6 +109,33 @@ export type {
   ReferenceEffectEvidence,
   NormalizedFrameRect,
 } from "./mirror/reference-profile";
+export {
+  LAYERED_EDIT_DNA_VERSION,
+  STYLE_FEATURES,
+  migrateReferenceProfileToLayered,
+  rebaseScene,
+  validateLayeredEditDNA,
+} from "./mirror/layered-editdna";
+export type {
+  ContentSlot,
+  LayerEasing,
+  LayerKeyframe,
+  LayeredEditDNA,
+  LayeredEditDNAVersion,
+  LayeredScene,
+  LayerKind,
+  LayerMask,
+  LayerTransform,
+  MaskKind,
+  SlotConstraints,
+  SlotRole,
+  StyleCoverage,
+  StyleEvidenceStatus,
+  StyleFeature,
+  StyleLayer,
+  StyleProvenance,
+  TransformTrack,
+} from "./mirror/layered-editdna";
 export { allocateSourceRanges } from "./mirror/allocate-shots";
 export { applyAudioAnnotations } from "./mirror/audio-annotations";
 export type { ReferenceWordTiming, AudioAnnotationInput, AudioAnnotationResult } from "./mirror/audio-annotations";
