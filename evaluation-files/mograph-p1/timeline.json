@@ -1,0 +1,720 @@
+{
+  "version": "kove.mograph.timeline.v1",
+  "durationSeconds": 28.0,
+  "scenes": [
+    {
+      "id": "scene-clip-00",
+      "startSeconds": 0.0,
+      "endSeconds": 7.0,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-00",
+          "role": "footage",
+          "startSeconds": 0.0,
+          "endSeconds": 7.0,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-01",
+      "startSeconds": 7.0,
+      "endSeconds": 7.5,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-01",
+          "role": "footage",
+          "startSeconds": 7.0,
+          "endSeconds": 7.5,
+          "keyframes": 2,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-02",
+      "startSeconds": 7.5,
+      "endSeconds": 8.0,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-02",
+          "role": "footage",
+          "startSeconds": 7.5,
+          "endSeconds": 8.0,
+          "keyframes": 6,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-03",
+      "startSeconds": 8.0,
+      "endSeconds": 8.5,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-03",
+          "role": "footage",
+          "startSeconds": 8.0,
+          "endSeconds": 8.5,
+          "keyframes": 2,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-04",
+      "startSeconds": 8.5,
+      "endSeconds": 9.0,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-04",
+          "role": "footage",
+          "startSeconds": 8.5,
+          "endSeconds": 9.0,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-05",
+      "startSeconds": 9.0,
+      "endSeconds": 9.5,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-05",
+          "role": "footage",
+          "startSeconds": 9.0,
+          "endSeconds": 9.5,
+          "keyframes": 2,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-06",
+      "startSeconds": 9.5,
+      "endSeconds": 10.0,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-06",
+          "role": "footage",
+          "startSeconds": 9.5,
+          "endSeconds": 10.0,
+          "keyframes": 6,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-07",
+      "startSeconds": 10.0,
+      "endSeconds": 10.44,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-07",
+          "role": "footage",
+          "startSeconds": 10.0,
+          "endSeconds": 10.44,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-08",
+      "startSeconds": 10.44,
+      "endSeconds": 10.879999999999999,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-08",
+          "role": "footage",
+          "startSeconds": 10.44,
+          "endSeconds": 10.879999999999999,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-09",
+      "startSeconds": 10.88,
+      "endSeconds": 11.32,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-09",
+          "role": "footage",
+          "startSeconds": 10.88,
+          "endSeconds": 11.32,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-10",
+      "startSeconds": 11.32,
+      "endSeconds": 11.76,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-10",
+          "role": "footage",
+          "startSeconds": 11.32,
+          "endSeconds": 11.76,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-11",
+      "startSeconds": 11.76,
+      "endSeconds": 12.2,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-11",
+          "role": "footage",
+          "startSeconds": 11.76,
+          "endSeconds": 12.2,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-12",
+      "startSeconds": 12.2,
+      "endSeconds": 12.639999999999999,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-12",
+          "role": "footage",
+          "startSeconds": 12.2,
+          "endSeconds": 12.639999999999999,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-13",
+      "startSeconds": 12.64,
+      "endSeconds": 13.08,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-13",
+          "role": "footage",
+          "startSeconds": 12.64,
+          "endSeconds": 13.08,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-14",
+      "startSeconds": 13.08,
+      "endSeconds": 13.52,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-14",
+          "role": "footage",
+          "startSeconds": 13.08,
+          "endSeconds": 13.52,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-15",
+      "startSeconds": 13.52,
+      "endSeconds": 13.959999999999999,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-15",
+          "role": "footage",
+          "startSeconds": 13.52,
+          "endSeconds": 13.959999999999999,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-16",
+      "startSeconds": 13.96,
+      "endSeconds": 14.400000000000002,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-16",
+          "role": "footage",
+          "startSeconds": 13.96,
+          "endSeconds": 14.400000000000002,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-17",
+      "startSeconds": 14.4,
+      "endSeconds": 14.840000000000002,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-17",
+          "role": "footage",
+          "startSeconds": 14.4,
+          "endSeconds": 14.840000000000002,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-18",
+      "startSeconds": 14.84,
+      "endSeconds": 15.280000000000001,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-18",
+          "role": "footage",
+          "startSeconds": 14.84,
+          "endSeconds": 15.280000000000001,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-19",
+      "startSeconds": 15.280000000000001,
+      "endSeconds": 15.720000000000002,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-19",
+          "role": "footage",
+          "startSeconds": 15.280000000000001,
+          "endSeconds": 15.720000000000002,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-20",
+      "startSeconds": 15.719999999999999,
+      "endSeconds": 16.16,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-20",
+          "role": "footage",
+          "startSeconds": 15.719999999999999,
+          "endSeconds": 16.16,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-21",
+      "startSeconds": 16.16,
+      "endSeconds": 16.6,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-21",
+          "role": "footage",
+          "startSeconds": 16.16,
+          "endSeconds": 16.6,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-22",
+      "startSeconds": 16.6,
+      "endSeconds": 17.04,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-22",
+          "role": "footage",
+          "startSeconds": 16.6,
+          "endSeconds": 17.04,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-23",
+      "startSeconds": 17.04,
+      "endSeconds": 17.479999999999997,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-23",
+          "role": "footage",
+          "startSeconds": 17.04,
+          "endSeconds": 17.479999999999997,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-24",
+      "startSeconds": 17.48,
+      "endSeconds": 17.919999999999998,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-24",
+          "role": "footage",
+          "startSeconds": 17.48,
+          "endSeconds": 17.919999999999998,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-25",
+      "startSeconds": 17.92,
+      "endSeconds": 18.36,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-25",
+          "role": "footage",
+          "startSeconds": 17.92,
+          "endSeconds": 18.36,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-26",
+      "startSeconds": 18.36,
+      "endSeconds": 18.799999999999997,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-26",
+          "role": "footage",
+          "startSeconds": 18.36,
+          "endSeconds": 18.799999999999997,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-27",
+      "startSeconds": 18.8,
+      "endSeconds": 19.24,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-27",
+          "role": "footage",
+          "startSeconds": 18.8,
+          "endSeconds": 19.24,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-28",
+      "startSeconds": 19.240000000000002,
+      "endSeconds": 19.68,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-28",
+          "role": "footage",
+          "startSeconds": 19.240000000000002,
+          "endSeconds": 19.68,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-29",
+      "startSeconds": 19.68,
+      "endSeconds": 20.119999999999997,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-29",
+          "role": "footage",
+          "startSeconds": 19.68,
+          "endSeconds": 20.119999999999997,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-30",
+      "startSeconds": 20.119999999999997,
+      "endSeconds": 20.559999999999995,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-30",
+          "role": "footage",
+          "startSeconds": 20.119999999999997,
+          "endSeconds": 20.559999999999995,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-31",
+      "startSeconds": 20.560000000000002,
+      "endSeconds": 21.0,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-31",
+          "role": "footage",
+          "startSeconds": 20.560000000000002,
+          "endSeconds": 21.0,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-32",
+      "startSeconds": 21.0,
+      "endSeconds": 23.5,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-32",
+          "role": "footage",
+          "startSeconds": 21.0,
+          "endSeconds": 23.5,
+          "keyframes": 0,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-33",
+      "startSeconds": 23.5,
+      "endSeconds": 24.0,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-33",
+          "role": "footage",
+          "startSeconds": 23.5,
+          "endSeconds": 24.0,
+          "keyframes": 2,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-34",
+      "startSeconds": 24.0,
+      "endSeconds": 24.5,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-34",
+          "role": "footage",
+          "startSeconds": 24.0,
+          "endSeconds": 24.5,
+          "keyframes": 6,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-35",
+      "startSeconds": 24.5,
+      "endSeconds": 25.0,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-35",
+          "role": "footage",
+          "startSeconds": 24.5,
+          "endSeconds": 25.0,
+          "keyframes": 2,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-36",
+      "startSeconds": 25.0,
+      "endSeconds": 25.5,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-36",
+          "role": "footage",
+          "startSeconds": 25.0,
+          "endSeconds": 25.5,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-37",
+      "startSeconds": 25.5,
+      "endSeconds": 26.0,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-37",
+          "role": "footage",
+          "startSeconds": 25.5,
+          "endSeconds": 26.0,
+          "keyframes": 2,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-38",
+      "startSeconds": 26.0,
+      "endSeconds": 26.5,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-38",
+          "role": "footage",
+          "startSeconds": 26.0,
+          "endSeconds": 26.5,
+          "keyframes": 6,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-39",
+      "startSeconds": 26.5,
+      "endSeconds": 27.0,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-39",
+          "role": "footage",
+          "startSeconds": 26.5,
+          "endSeconds": 27.0,
+          "keyframes": 2,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-40",
+      "startSeconds": 27.0,
+      "endSeconds": 27.5,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-40",
+          "role": "footage",
+          "startSeconds": 27.0,
+          "endSeconds": 27.5,
+          "keyframes": 4,
+          "moves": []
+        }
+      ]
+    },
+    {
+      "id": "scene-clip-41",
+      "startSeconds": 27.5,
+      "endSeconds": 28.0,
+      "composed": false,
+      "hold": false,
+      "layers": [
+        {
+          "id": "layer-clip-41",
+          "role": "footage",
+          "startSeconds": 27.5,
+          "endSeconds": 28.0,
+          "keyframes": 2,
+          "moves": []
+        }
+      ]
+    }
+  ]
+}

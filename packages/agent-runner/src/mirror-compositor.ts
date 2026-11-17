@@ -127,19 +127,22 @@ export class MirrorCompositor {
     }
   }
 
-  sample(snapshot: MirrorSnapshot, timeSeconds: number): Promise<GrayImage> {
+  sample(snapshot: MirrorSnapshot, timeSeconds: number, width = 64, height = 64): Promise<GrayImage> {
+    if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1 || width > 512 || height > 512) {
+      throw new Error("Mirror sample size must be an integer between 1x1 and 512x512");
+    }
     const task = this.queue.then(async () => {
       const page = await this.start();
       this.active = snapshot;
-      const data = await page.evaluate(async ({ json, hash, mediaIds, timeSeconds }) => {
-        const render = (window as Window & { koveMirrorRender?: (s: { json: string; hash: string; mediaIds: readonly string[] }, t: number) => Promise<number[]> }).koveMirrorRender;
+      const data = await page.evaluate(async ({ json, hash, mediaIds, timeSeconds, width, height }) => {
+        const render = (window as Window & { koveMirrorRender?: (s: { json: string; hash: string; mediaIds: readonly string[] }, t: number, w: number, h: number) => Promise<number[]> }).koveMirrorRender;
         if (!render) throw new Error("Mirror browser compositor was not loaded");
-        return render({ json, hash, mediaIds }, timeSeconds);
-      }, { json: snapshot.json, hash: snapshot.hash, mediaIds: snapshot.mediaIds, timeSeconds });
-      if (!Array.isArray(data) || data.length !== 4096 || data.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) {
-        throw new Error("Compositor did not return a checked 64x64 luma buffer");
+        return render({ json, hash, mediaIds }, timeSeconds, width, height);
+      }, { json: snapshot.json, hash: snapshot.hash, mediaIds: snapshot.mediaIds, timeSeconds, width, height });
+      if (!Array.isArray(data) || data.length !== width * height || data.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) {
+        throw new Error(`Compositor did not return a checked ${width}x${height} luma buffer`);
       }
-      return { width: 64, height: 64, data: Uint8Array.from(data) };
+      return { width, height, data: Uint8Array.from(data) };
     });
     this.queue = task.catch(() => {});
     return task;

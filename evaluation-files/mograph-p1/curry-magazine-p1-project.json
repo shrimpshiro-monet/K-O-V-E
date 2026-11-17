@@ -1,0 +1,4173 @@
+{
+  "version": "1.2.0",
+  "project": {
+    "id": "29ceb029-ac4a-4f1d-bd79-1660aba71d6c",
+    "name": "Curry 56 — Magazine P1 Proof",
+    "createdAt": 1794892649739,
+    "modifiedAt": 1794892649745,
+    "settings": {
+      "width": 1024,
+      "height": 576,
+      "frameRate": 30,
+      "sampleRate": 48000,
+      "channels": 2
+    },
+    "mediaLibrary": {
+      "items": [
+        {
+          "id": "curry-source",
+          "name": "High Quality Steph Curry Clips for Edits! (2024-25).mp4",
+          "type": "video",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 72.827891,
+            "width": 1280,
+            "height": 720,
+            "frameRate": 30,
+            "codec": "h264",
+            "sampleRate": 44100,
+            "channels": 2,
+            "fileSize": 19866887,
+            "hasVideo": true,
+            "hasAudio": false
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "curry56-source",
+          "name": "Steph Curry IGNITES For 56 PTS In Orlando | February 27, 2025.mp4",
+          "type": "video",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 418.184433,
+            "width": 1280,
+            "height": 720,
+            "frameRate": 30,
+            "codec": "h264",
+            "sampleRate": 44100,
+            "channels": 2,
+            "fileSize": 0,
+            "hasVideo": true,
+            "hasAudio": true
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "jersey-still",
+          "name": "Steph Curry jersey still",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 0.04,
+            "width": 720,
+            "height": 720,
+            "frameRate": 0,
+            "codec": "jpg",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 0,
+            "hasVideo": true,
+            "hasAudio": false
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "portrait-card",
+          "name": "Curry cutout card",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 0.04,
+            "width": 335,
+            "height": 597,
+            "frameRate": 0,
+            "codec": "jpg",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 0,
+            "hasVideo": true,
+            "hasAudio": false
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        }
+      ]
+    },
+    "timeline": {
+      "tracks": [
+        {
+          "id": "track-main",
+          "type": "video",
+          "name": "Main",
+          "clips": [
+            {
+              "id": "clip-00",
+              "mediaId": "curry56-source",
+              "trackId": "track-main",
+              "startTime": 0,
+              "duration": 7,
+              "inPoint": 396,
+              "outPoint": 403,
+              "effects": [
+                {
+                  "id": "clip-00-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-00-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-00-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-00-cam-1",
+                  "time": 7,
+                  "property": "scale.x",
+                  "value": 1.036,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-00-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-00-cam-3",
+                  "time": 7,
+                  "property": "scale.y",
+                  "value": 1.036,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-01",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 7,
+              "duration": 0.5,
+              "inPoint": 5.33,
+              "outPoint": 5.83,
+              "effects": [
+                {
+                  "id": "clip-01-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-01-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-01-cam-0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-01-cam-1",
+                  "time": 0.5,
+                  "property": "position.x",
+                  "value": -0.007000000000000001,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-02",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 7.5,
+              "duration": 0.5,
+              "inPoint": 6.33,
+              "outPoint": 6.83,
+              "effects": [
+                {
+                  "id": "clip-02-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-02-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-02-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-02-cam-1",
+                  "time": 0.25,
+                  "property": "scale.x",
+                  "value": 1.00875,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-02-cam-2",
+                  "time": 0.5,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-02-cam-3",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-02-cam-4",
+                  "time": 0.25,
+                  "property": "scale.y",
+                  "value": 1.00875,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-02-cam-5",
+                  "time": 0.5,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-03",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 8,
+              "duration": 0.5,
+              "inPoint": 8.17,
+              "outPoint": 8.67,
+              "effects": [
+                {
+                  "id": "clip-03-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-03-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-03-cam-0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-03-cam-1",
+                  "time": 0.5,
+                  "property": "position.x",
+                  "value": 0.007000000000000001,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-04",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 8.5,
+              "duration": 0.5,
+              "inPoint": 9.83,
+              "outPoint": 10.33,
+              "effects": [
+                {
+                  "id": "clip-04-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-04-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-04-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-04-cam-1",
+                  "time": 0.5,
+                  "property": "scale.x",
+                  "value": 1.0256,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-04-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-04-cam-3",
+                  "time": 0.5,
+                  "property": "scale.y",
+                  "value": 1.0256,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-05",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 9,
+              "duration": 0.5,
+              "inPoint": 10.83,
+              "outPoint": 11.33,
+              "effects": [
+                {
+                  "id": "clip-05-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-05-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-05-cam-0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-05-cam-1",
+                  "time": 0.5,
+                  "property": "position.x",
+                  "value": -0.007000000000000001,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-06",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 9.5,
+              "duration": 0.5,
+              "inPoint": 12.83,
+              "outPoint": 13.33,
+              "effects": [
+                {
+                  "id": "clip-06-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-06-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-06-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-06-cam-1",
+                  "time": 0.25,
+                  "property": "scale.x",
+                  "value": 1.00875,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-06-cam-2",
+                  "time": 0.5,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-06-cam-3",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-06-cam-4",
+                  "time": 0.25,
+                  "property": "scale.y",
+                  "value": 1.00875,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-06-cam-5",
+                  "time": 0.5,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-07",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 10,
+              "duration": 0.44000000000000006,
+              "inPoint": 0.83,
+              "outPoint": 1.27,
+              "effects": [
+                {
+                  "id": "clip-07-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-07-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-07-cam-0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-07-cam-1",
+                  "time": 0.06,
+                  "property": "rotation",
+                  "value": 1.4400000000000002,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-07-cam-2",
+                  "time": 0.14,
+                  "property": "rotation",
+                  "value": -1.1199999999999999,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-07-cam-3",
+                  "time": 0.28,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-08",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 10.44,
+              "duration": 0.4400000000000004,
+              "inPoint": 5.33,
+              "outPoint": 5.7700000000000005,
+              "effects": [
+                {
+                  "id": "clip-08-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-08-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-08-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-08-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-08-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-08-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-09",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 10.88,
+              "duration": 0.4400000000000004,
+              "inPoint": 6.33,
+              "outPoint": 6.7700000000000005,
+              "effects": [
+                {
+                  "id": "clip-09-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-09-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-09-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-09-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-09-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-09-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-10",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 11.32,
+              "duration": 0.4399999999999995,
+              "inPoint": 8.17,
+              "outPoint": 8.61,
+              "effects": [
+                {
+                  "id": "clip-10-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-10-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-10-cam-0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-10-cam-1",
+                  "time": 0.06,
+                  "property": "rotation",
+                  "value": 1.4400000000000002,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-10-cam-2",
+                  "time": 0.14,
+                  "property": "rotation",
+                  "value": -1.1199999999999999,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-10-cam-3",
+                  "time": 0.28,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-11",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 11.76,
+              "duration": 0.4399999999999995,
+              "inPoint": 9.83,
+              "outPoint": 10.27,
+              "effects": [
+                {
+                  "id": "clip-11-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-11-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-11-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-11-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-11-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-11-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-12",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 12.2,
+              "duration": 0.4399999999999995,
+              "inPoint": 10.83,
+              "outPoint": 11.27,
+              "effects": [
+                {
+                  "id": "clip-12-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-12-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-12-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-12-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-12-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-12-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-13",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 12.64,
+              "duration": 0.4399999999999995,
+              "inPoint": 12.83,
+              "outPoint": 13.27,
+              "effects": [
+                {
+                  "id": "clip-13-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-13-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-13-cam-0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-13-cam-1",
+                  "time": 0.06,
+                  "property": "rotation",
+                  "value": 1.4400000000000002,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-13-cam-2",
+                  "time": 0.14,
+                  "property": "rotation",
+                  "value": -1.1199999999999999,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-13-cam-3",
+                  "time": 0.28,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-14",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 13.08,
+              "duration": 0.4399999999999995,
+              "inPoint": 14.67,
+              "outPoint": 15.11,
+              "effects": [
+                {
+                  "id": "clip-14-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-14-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-14-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-14-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-14-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-14-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-15",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 13.52,
+              "duration": 0.4399999999999995,
+              "inPoint": 15.5,
+              "outPoint": 15.94,
+              "effects": [
+                {
+                  "id": "clip-15-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-15-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-15-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-15-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-15-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-15-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-16",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 13.96,
+              "duration": 0.4400000000000013,
+              "inPoint": 17,
+              "outPoint": 17.44,
+              "effects": [
+                {
+                  "id": "clip-16-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-16-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-16-cam-0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-16-cam-1",
+                  "time": 0.06,
+                  "property": "rotation",
+                  "value": 1.4400000000000002,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-16-cam-2",
+                  "time": 0.14,
+                  "property": "rotation",
+                  "value": -1.1199999999999999,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-16-cam-3",
+                  "time": 0.28,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-17",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 14.4,
+              "duration": 0.4400000000000013,
+              "inPoint": 18,
+              "outPoint": 18.44,
+              "effects": [
+                {
+                  "id": "clip-17-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-17-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-17-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-17-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-17-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-17-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-18",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 14.84,
+              "duration": 0.4400000000000013,
+              "inPoint": 22.67,
+              "outPoint": 23.110000000000003,
+              "effects": [
+                {
+                  "id": "clip-18-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-18-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-18-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-18-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-18-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-18-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-19",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 15.280000000000001,
+              "duration": 0.4400000000000013,
+              "inPoint": 25.5,
+              "outPoint": 25.94,
+              "effects": [
+                {
+                  "id": "clip-19-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-19-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-19-cam-0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-19-cam-1",
+                  "time": 0.06,
+                  "property": "rotation",
+                  "value": 1.4400000000000002,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-19-cam-2",
+                  "time": 0.14,
+                  "property": "rotation",
+                  "value": -1.1199999999999999,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-19-cam-3",
+                  "time": 0.28,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-20",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 15.719999999999999,
+              "duration": 0.4400000000000013,
+              "inPoint": 26.5,
+              "outPoint": 26.94,
+              "effects": [
+                {
+                  "id": "clip-20-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-20-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-20-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-20-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-20-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-20-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-21",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 16.16,
+              "duration": 0.4400000000000013,
+              "inPoint": 28.17,
+              "outPoint": 28.610000000000003,
+              "effects": [
+                {
+                  "id": "clip-21-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-21-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-21-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-21-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-21-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-21-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-22",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 16.6,
+              "duration": 0.4399999999999977,
+              "inPoint": 34.83,
+              "outPoint": 35.269999999999996,
+              "effects": [
+                {
+                  "id": "clip-22-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-22-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-22-cam-0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-22-cam-1",
+                  "time": 0.06,
+                  "property": "rotation",
+                  "value": 1.4400000000000002,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-22-cam-2",
+                  "time": 0.14,
+                  "property": "rotation",
+                  "value": -1.1199999999999999,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-22-cam-3",
+                  "time": 0.28,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-23",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 17.04,
+              "duration": 0.4399999999999977,
+              "inPoint": 36.17,
+              "outPoint": 36.61,
+              "effects": [
+                {
+                  "id": "clip-23-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-23-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-23-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-23-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-23-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-23-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-24",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 17.48,
+              "duration": 0.4399999999999977,
+              "inPoint": 39,
+              "outPoint": 39.44,
+              "effects": [
+                {
+                  "id": "clip-24-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-24-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-24-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-24-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-24-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-24-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-25",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 17.92,
+              "duration": 0.4399999999999977,
+              "inPoint": 39.83,
+              "outPoint": 40.269999999999996,
+              "effects": [
+                {
+                  "id": "clip-25-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-25-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-25-cam-0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-25-cam-1",
+                  "time": 0.06,
+                  "property": "rotation",
+                  "value": 1.4400000000000002,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-25-cam-2",
+                  "time": 0.14,
+                  "property": "rotation",
+                  "value": -1.1199999999999999,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-25-cam-3",
+                  "time": 0.28,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-26",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 18.36,
+              "duration": 0.4399999999999977,
+              "inPoint": 43.17,
+              "outPoint": 43.61,
+              "effects": [
+                {
+                  "id": "clip-26-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-26-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-26-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-26-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-26-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-26-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-27",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 18.8,
+              "duration": 0.4399999999999977,
+              "inPoint": 44.17,
+              "outPoint": 44.61,
+              "effects": [
+                {
+                  "id": "clip-27-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-27-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-27-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-27-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-27-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-27-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-28",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 19.240000000000002,
+              "duration": 0.4399999999999977,
+              "inPoint": 48.33,
+              "outPoint": 48.769999999999996,
+              "effects": [
+                {
+                  "id": "clip-28-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-28-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-28-cam-0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-28-cam-1",
+                  "time": 0.06,
+                  "property": "rotation",
+                  "value": 1.4400000000000002,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-28-cam-2",
+                  "time": 0.14,
+                  "property": "rotation",
+                  "value": -1.1199999999999999,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-28-cam-3",
+                  "time": 0.28,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-29",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 19.68,
+              "duration": 0.4399999999999977,
+              "inPoint": 49,
+              "outPoint": 49.44,
+              "effects": [
+                {
+                  "id": "clip-29-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-29-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-29-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-29-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-29-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-29-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-30",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 20.119999999999997,
+              "duration": 0.4399999999999977,
+              "inPoint": 49.67,
+              "outPoint": 50.11,
+              "effects": [
+                {
+                  "id": "clip-30-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-30-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-30-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-30-cam-1",
+                  "time": 0.35,
+                  "property": "scale.x",
+                  "value": 1.096,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-30-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-30-cam-3",
+                  "time": 0.35,
+                  "property": "scale.y",
+                  "value": 1.096,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-31",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 20.560000000000002,
+              "duration": 0.4399999999999977,
+              "inPoint": 50.67,
+              "outPoint": 51.11,
+              "effects": [
+                {
+                  "id": "clip-31-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-31-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-31-cam-0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-31-cam-1",
+                  "time": 0.06,
+                  "property": "rotation",
+                  "value": 1.4400000000000002,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-31-cam-2",
+                  "time": 0.14,
+                  "property": "rotation",
+                  "value": -1.1199999999999999,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "clip-31-cam-3",
+                  "time": 0.28,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-32",
+              "mediaId": "jersey-still",
+              "trackId": "track-main",
+              "startTime": 21,
+              "duration": 2.5,
+              "inPoint": 0,
+              "outPoint": 2.5,
+              "effects": [
+                {
+                  "id": "clip-32-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-32-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": []
+            },
+            {
+              "id": "clip-33",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 23.5,
+              "duration": 0.5,
+              "inPoint": 51.33,
+              "outPoint": 51.83,
+              "effects": [
+                {
+                  "id": "clip-33-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-33-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-33-cam-0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-33-cam-1",
+                  "time": 0.5,
+                  "property": "position.x",
+                  "value": -0.007000000000000001,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-34",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 24,
+              "duration": 0.5,
+              "inPoint": 54.67,
+              "outPoint": 55.17,
+              "effects": [
+                {
+                  "id": "clip-34-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-34-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-34-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-34-cam-1",
+                  "time": 0.25,
+                  "property": "scale.x",
+                  "value": 1.00875,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-34-cam-2",
+                  "time": 0.5,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-34-cam-3",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-34-cam-4",
+                  "time": 0.25,
+                  "property": "scale.y",
+                  "value": 1.00875,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-34-cam-5",
+                  "time": 0.5,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-35",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 24.5,
+              "duration": 0.5,
+              "inPoint": 55.5,
+              "outPoint": 56,
+              "effects": [
+                {
+                  "id": "clip-35-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-35-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-35-cam-0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-35-cam-1",
+                  "time": 0.5,
+                  "property": "position.x",
+                  "value": 0.007000000000000001,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-36",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 25,
+              "duration": 0.5,
+              "inPoint": 58.67,
+              "outPoint": 59.17,
+              "effects": [
+                {
+                  "id": "clip-36-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-36-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-36-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-36-cam-1",
+                  "time": 0.5,
+                  "property": "scale.x",
+                  "value": 1.0256,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-36-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-36-cam-3",
+                  "time": 0.5,
+                  "property": "scale.y",
+                  "value": 1.0256,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-37",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 25.5,
+              "duration": 0.5,
+              "inPoint": 60.67,
+              "outPoint": 61.17,
+              "effects": [
+                {
+                  "id": "clip-37-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-37-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-37-cam-0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-37-cam-1",
+                  "time": 0.5,
+                  "property": "position.x",
+                  "value": -0.007000000000000001,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-38",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 26,
+              "duration": 0.5,
+              "inPoint": 62.33,
+              "outPoint": 62.83,
+              "effects": [
+                {
+                  "id": "clip-38-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-38-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-38-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-38-cam-1",
+                  "time": 0.25,
+                  "property": "scale.x",
+                  "value": 1.00875,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-38-cam-2",
+                  "time": 0.5,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-38-cam-3",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-38-cam-4",
+                  "time": 0.25,
+                  "property": "scale.y",
+                  "value": 1.00875,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-38-cam-5",
+                  "time": 0.5,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-39",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 26.5,
+              "duration": 0.5,
+              "inPoint": 63.67,
+              "outPoint": 64.17,
+              "effects": [
+                {
+                  "id": "clip-39-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-39-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-39-cam-0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-39-cam-1",
+                  "time": 0.5,
+                  "property": "position.x",
+                  "value": 0.007000000000000001,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-40",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 27,
+              "duration": 0.5,
+              "inPoint": 64.33,
+              "outPoint": 64.83,
+              "effects": [
+                {
+                  "id": "clip-40-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-40-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-40-cam-0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-40-cam-1",
+                  "time": 0.5,
+                  "property": "scale.x",
+                  "value": 1.0256,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-40-cam-2",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "clip-40-cam-3",
+                  "time": 0.5,
+                  "property": "scale.y",
+                  "value": 1.0256,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "clip-41",
+              "mediaId": "curry-source",
+              "trackId": "track-main",
+              "startTime": 27.5,
+              "duration": 0.5,
+              "inPoint": 66.17,
+              "outPoint": 66.67,
+              "effects": [
+                {
+                  "id": "clip-41-grade-tonal",
+                  "type": "tonal",
+                  "params": {
+                    "shadows": -0.12,
+                    "midtones": -0.02,
+                    "highlights": 0.06
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "clip-41-grade-temp",
+                  "type": "temperature",
+                  "params": {
+                    "value": -10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "colorGrading": {
+                "contrast": 1.16,
+                "saturation": 1.05,
+                "brightness": 1
+              },
+              "volume": 1,
+              "keyframes": [
+                {
+                  "id": "clip-41-cam-0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "clip-41-cam-1",
+                  "time": 0.5,
+                  "property": "position.x",
+                  "value": -0.007000000000000001,
+                  "easing": "linear"
+                }
+              ]
+            }
+          ],
+          "transitions": [
+            {
+              "id": "transition-0",
+              "clipAId": "clip-14",
+              "clipBId": "clip-15",
+              "type": "whipPan",
+              "duration": 0.08,
+              "params": {}
+            },
+            {
+              "id": "transition-1",
+              "clipAId": "clip-18",
+              "clipBId": "clip-19",
+              "type": "crossZoom",
+              "duration": 0.08,
+              "params": {}
+            },
+            {
+              "id": "transition-2",
+              "clipAId": "clip-22",
+              "clipBId": "clip-23",
+              "type": "impactShake",
+              "duration": 0.08,
+              "params": {}
+            },
+            {
+              "id": "transition-3",
+              "clipAId": "clip-26",
+              "clipBId": "clip-27",
+              "type": "motionSmear",
+              "duration": 0.08,
+              "params": {}
+            },
+            {
+              "id": "transition-4",
+              "clipAId": "clip-30",
+              "clipBId": "clip-31",
+              "type": "whipPan",
+              "duration": 0.08,
+              "params": {}
+            }
+          ],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-overlay",
+          "type": "video",
+          "name": "Cutout cards",
+          "clips": [
+            {
+              "id": "overlay-1",
+              "mediaId": "portrait-card",
+              "trackId": "track-overlay",
+              "startTime": 10.4,
+              "duration": 2,
+              "inPoint": 0,
+              "outPoint": 2,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 285,
+                  "y": -90
+                },
+                "scale": {
+                  "x": 0.36,
+                  "y": 0.36
+                },
+                "rotation": -7,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "overlay-1-x0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 285,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-1-x1",
+                  "time": 2,
+                  "property": "position.x",
+                  "value": 355,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-1-y0",
+                  "time": 0,
+                  "property": "position.y",
+                  "value": -90,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-1-y1",
+                  "time": 2,
+                  "property": "position.y",
+                  "value": -130,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-1-r0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": -7,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-1-r1",
+                  "time": 2,
+                  "property": "rotation",
+                  "value": 2,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-1-s0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 0.36,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-1-s1",
+                  "time": 2,
+                  "property": "scale.x",
+                  "value": 0.43,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-1-t0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 0.36,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-1-t1",
+                  "time": 2,
+                  "property": "scale.y",
+                  "value": 0.43,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "overlay-2",
+              "mediaId": "portrait-card",
+              "trackId": "track-overlay",
+              "startTime": 14.4,
+              "duration": 2,
+              "inPoint": 0,
+              "outPoint": 2,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": -285,
+                  "y": 75
+                },
+                "scale": {
+                  "x": 0.36,
+                  "y": 0.36
+                },
+                "rotation": 6,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "overlay-2-x0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": -285,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-2-x1",
+                  "time": 2,
+                  "property": "position.x",
+                  "value": -355,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-2-y0",
+                  "time": 0,
+                  "property": "position.y",
+                  "value": 75,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-2-y1",
+                  "time": 2,
+                  "property": "position.y",
+                  "value": 115,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-2-r0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 6,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-2-r1",
+                  "time": 2,
+                  "property": "rotation",
+                  "value": -3,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-2-s0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 0.36,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-2-s1",
+                  "time": 2,
+                  "property": "scale.x",
+                  "value": 0.43,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-2-t0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 0.36,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-2-t1",
+                  "time": 2,
+                  "property": "scale.y",
+                  "value": 0.43,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "overlay-3",
+              "mediaId": "portrait-card",
+              "trackId": "track-overlay",
+              "startTime": 18.4,
+              "duration": 2,
+              "inPoint": 0,
+              "outPoint": 2,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 260,
+                  "y": 105
+                },
+                "scale": {
+                  "x": 0.36,
+                  "y": 0.36
+                },
+                "rotation": -5,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "overlay-3-x0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 260,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-3-x1",
+                  "time": 2,
+                  "property": "position.x",
+                  "value": 330,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-3-y0",
+                  "time": 0,
+                  "property": "position.y",
+                  "value": 105,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-3-y1",
+                  "time": 2,
+                  "property": "position.y",
+                  "value": 65,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-3-r0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": -5,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-3-r1",
+                  "time": 2,
+                  "property": "rotation",
+                  "value": 4,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-3-s0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 0.36,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-3-s1",
+                  "time": 2,
+                  "property": "scale.x",
+                  "value": 0.43,
+                  "easing": "linear"
+                },
+                {
+                  "id": "overlay-3-t0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 0.36,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "overlay-3-t1",
+                  "time": 2,
+                  "property": "scale.y",
+                  "value": 0.43,
+                  "easing": "linear"
+                }
+              ]
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "text-track",
+          "type": "text",
+          "name": "Type",
+          "clips": [],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "subtitles": [],
+      "duration": 28,
+      "markers": []
+    },
+    "textClips": [
+      {
+        "id": "text-hook",
+        "trackId": "text-track",
+        "startTime": 0.2,
+        "duration": 3.6,
+        "text": "STEPH CURRY",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 112,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#F7F3EA",
+          "strokeColor": "#101828",
+          "strokeWidth": 4,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.2,
+          "letterSpacing": 0,
+          "shadowColor": "#E9B45F",
+          "shadowBlur": 18,
+          "shadowOffsetY": 2
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.63
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": []
+      },
+      {
+        "id": "text-points",
+        "trackId": "text-track",
+        "startTime": 4.4,
+        "duration": 3,
+        "text": "56 POINTS",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 96,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#F7F3EA",
+          "strokeColor": "#101828",
+          "strokeWidth": 4,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.2,
+          "letterSpacing": 0,
+          "shadowColor": "#E9B45F",
+          "shadowBlur": 18,
+          "shadowOffsetY": 2
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.2
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": []
+      },
+      {
+        "id": "text-orlando",
+        "trackId": "text-track",
+        "startTime": 10.2,
+        "duration": 2,
+        "text": "ORLANDO",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 82,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#F7F3EA",
+          "strokeColor": "#101828",
+          "strokeWidth": 4,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.2,
+          "letterSpacing": 0,
+          "shadowColor": "#E9B45F",
+          "shadowBlur": 18,
+          "shadowOffsetY": 2
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.78
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": []
+      },
+      {
+        "id": "text-night",
+        "trackId": "text-track",
+        "startTime": 14,
+        "duration": 2,
+        "text": "NIGHT 56",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 92,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#F7F3EA",
+          "strokeColor": "#101828",
+          "strokeWidth": 4,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.2,
+          "letterSpacing": 0,
+          "shadowColor": "#E9B45F",
+          "shadowBlur": 18,
+          "shadowOffsetY": 2
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.17
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": []
+      },
+      {
+        "id": "text-30",
+        "trackId": "text-track",
+        "startTime": 21.1,
+        "duration": 1.8,
+        "text": "30",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 220,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#F7F3EA",
+          "strokeColor": "#101828",
+          "strokeWidth": 4,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.2,
+          "letterSpacing": 0,
+          "shadowColor": "#E9B45F",
+          "shadowBlur": 18,
+          "shadowOffsetY": 2
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": []
+      },
+      {
+        "id": "text-outro",
+        "trackId": "text-track",
+        "startTime": 23.3,
+        "duration": 4.2,
+        "text": "STEPH CURRY",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 118,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#F7F3EA",
+          "strokeColor": "#101828",
+          "strokeWidth": 4,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.2,
+          "letterSpacing": 0,
+          "shadowColor": "#E9B45F",
+          "shadowBlur": 18,
+          "shadowOffsetY": 2
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": []
+      },
+      {
+        "id": "text-kove",
+        "trackId": "text-track",
+        "startTime": 27.1,
+        "duration": 0.85,
+        "text": "A K.O.V.E. EDIT",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 38,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#E9B45F",
+          "strokeColor": "#101828",
+          "strokeWidth": 4,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.2,
+          "letterSpacing": 0,
+          "shadowColor": "#E9B45F",
+          "shadowBlur": 18,
+          "shadowOffsetY": 2
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.92
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": []
+      }
+    ]
+  }
+}

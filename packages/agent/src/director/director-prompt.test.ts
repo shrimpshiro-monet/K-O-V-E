@@ -518,3 +518,32 @@ describe("genre look presets", () => {
     expect(prompt).not.toContain("## Genre look");
   });
 });
+
+describe("mograph density contract", () => {
+  it("activates the mograph arc only for magazine-style requests", () => {
+    const mograph = buildDensityContract("make a 28s magazine motion graphics edit");
+    expect(mograph.targetDuration).toBe(28);
+    expect(mograph.mograph?.hookNoHardCutSeconds).toBe(4);
+    expect(mograph.mograph?.hold).toMatchObject({ count: 1, minSeconds: 1.5, maxSeconds: 2.5, startFraction: 0.75 });
+    expect(mograph.mograph?.phases.map((phase) => phase.id)).toEqual([
+      "hook",
+      "build",
+      "peak",
+      "hold",
+      "exit",
+    ]);
+
+    const standard = buildDensityContract("make a 30s tiktok edit", PRE_BAKED_GENRES[0]);
+    expect(standard.mograph).toBeNull();
+  });
+
+  it("renders the hook, motion floor and hold into the prompt contract", () => {
+    const contract = buildDensityContract("make a 28s scrapbook motion graphics edit");
+    const rendered = formatDensityContract(contract);
+    expect(rendered).toContain("Mograph arc");
+    expect(rendered).toContain("one continuous shot for the first 4.0s");
+    expect(rendered).toContain("zero hard cuts");
+    expect(rendered).toContain("idle motion on every non-hold visual segment");
+    expect(rendered).toContain("flag it with `hold: true`");
+  });
+});

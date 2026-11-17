@@ -27,7 +27,7 @@ import { sampleRenderedDraft, MAX_RENDER_SAMPLE_TIMES, type RenderedDraftSamplin
 import { buildDirectorPrompt, buildExpansionPrompt, resolveDirectorVideoId, buildDensityContract, EFFECT_PARAM_BLOCK, DIRECTOR_RANKING_SYSTEM_PROMPT, buildMomentRankingPrompt, parseMomentShortlist, formatMomentShortlist, type MomentShortlist } from "./director/director-prompt";
 import { PRE_BAKED_GENRES } from "./director/genres";
 import { reviewEditPlan, reviewMaterializedDraft, type EditPlanReview } from "./director/plan-review";
-import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES, relayPlanSegmentsSequentially, reviewRenderedDraft, type PlacementRepair } from "@kove-advanced/creation-schema";
+import { normalizeEditPlan, validateEditPlan, canonicalizePlanTransitions, canonicalizeTransitionType, compileCameraMoves, isSupportedEffectType, isSupportedTransitionType, computePlanPlacement, scorePromptCompleteness, generateExpansionQuestions, isColorGradeType, SUPPORTED_CLIP_EFFECT_TYPES, SUPPORTED_EFFECT_TYPES, SUPPORTED_TRANSITION_TYPES, resolveSignatureEffect, buildSignatureEffectParams, SIGNATURE_EFFECT_NAMES, relayPlanSegmentsSequentially, reviewRenderedDraft, applyMographContract, validateMographPlan, isMographRequest, type PlacementRepair } from "@kove-advanced/creation-schema";
 import type { DirectorValidationIssue } from "@kove-advanced/creation-schema";
 import {
   getDirectorPlanState,
@@ -34341,6 +34341,7 @@ const TOOLS: RegisteredTool[] = [
         targetPosition: num,
         speed: num,
         cameraMoves: { type: "array", items: obj({ move: str, intensity: num }) },
+        hold: { type: "boolean" },
         speedRamp: obj({
           keyframes: { type: "array", items: obj({ time: num, speed: num, easing: str }) },
           freezeFrames: { type: "array", items: obj({ sourceTime: num, startTime: num, duration: num }) },
@@ -34674,6 +34675,7 @@ const TOOLS: RegisteredTool[] = [
       }
 
       const genre = genreId ? PRE_BAKED_GENRES.find((g) => g.id === genreId) : undefined;
+      const mographRequest = isMographRequest(prompt, genre, providedReferenceAnalysis);
 
       // ---- Idempotency: repeating an accepted planning turn is a no-op ----
       const idempotencyKey =
@@ -35000,11 +35002,13 @@ The planning message also carries moment-zoom frames beneath the regular preview
         const relayed = relayPlanSegmentsSequentially(resolved, {
           maxEndSeconds: lengthTargetSeconds,
         });
+        const enforced = mographRequest ? applyMographContract(relayed.plan) : relayed.plan;
         placementRepairs = relayed.changes;
-        const issues: DirectorValidationIssue[] = [...validateEditPlan(relayed.plan, resolvedMap)];
-        const lengthIssue = lengthGate(relayed.plan);
+        const issues: DirectorValidationIssue[] = [...validateEditPlan(enforced, resolvedMap)];
+        if (mographRequest) issues.push(...validateMographPlan(enforced));
+        const lengthIssue = lengthGate(enforced);
         if (lengthIssue) issues.unshift(lengthIssue);
-        return { plan: relayed.plan, issues };
+        return { plan: enforced, issues };
       };
 
       const formatIssues = (issues: readonly DirectorValidationIssue[]): string =>

@@ -256,6 +256,9 @@ export const SUPPORTED_TEXT_ANIMATIONS = [
   "swing",
   "zoom-blur",
   "cascade",
+  "stacked-slam",
+  "vertical-headline",
+  "scatter-settle",
 ] as const;
 
 export type SupportedTextAnimation = (typeof SUPPORTED_TEXT_ANIMATIONS)[number];

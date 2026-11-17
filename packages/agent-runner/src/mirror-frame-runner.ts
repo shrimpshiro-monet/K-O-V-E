@@ -9,13 +9,26 @@ import { MirrorCompositor, createMirrorSnapshot } from "./mirror-compositor";
  * intentionally slow on long clips; callers can supply an optimized compositor.
  */
 export async function decodeMirrorFrame(path: string, frame: number, ffmpegPath = "ffmpeg"): Promise<GrayImage> {
+  return decodeMirrorFrameSized(path, frame, 64, 64, ffmpegPath);
+}
+
+export async function decodeMirrorFrameSized(
+  path: string,
+  frame: number,
+  width: number,
+  height: number,
+  ffmpegPath = "ffmpeg",
+): Promise<GrayImage> {
   if (!path || !Number.isSafeInteger(frame) || frame < 0) throw new Error("Invalid mirror frame request");
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1 || width > 512 || height > 512) {
+    throw new Error("Invalid mirror frame size");
+  }
   return new Promise((resolve, reject) => {
     let settled = false;
     const chunks: Buffer[] = [];
     let length = 0, error = "";
     const proc = spawn(ffmpegPath, ["-v", "error", "-i", path,
-      "-vf", `select=eq(n\\,${frame}),scale=64:64,format=gray`, "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "gray", "pipe:1"], { windowsHide: true });
+      "-vf", `select=eq(n\\,${frame}),scale=${width}:${height},format=gray`, "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "gray", "pipe:1"], { windowsHide: true });
     const finish = (value?: GrayImage, cause?: Error) => {
       if (settled) return;
       settled = true; clearTimeout(timer);
@@ -24,15 +37,15 @@ export async function decodeMirrorFrame(path: string, frame: number, ffmpegPath 
     const timer = setTimeout(() => { proc.kill(); finish(undefined, new Error("Mirror frame decode timed out")); }, 60_000);
     proc.stdout.on("data", (chunk: Buffer) => {
       length += chunk.length;
-      if (length > 4096) { proc.kill(); finish(undefined, new Error("Unexpected mirror frame size")); return; }
+      if (length > width * height) { proc.kill(); finish(undefined, new Error("Unexpected mirror frame size")); return; }
       chunks.push(chunk);
     });
     proc.stderr.on("data", (chunk: Buffer) => { error = (error + chunk.toString()).slice(-1000); });
     proc.on("error", (cause: Error) => finish(undefined, cause));
     proc.on("close", (code) => {
       if (settled) return;
-      if (code !== 0 || length !== 4096) { finish(undefined, new Error(`No decoded frame ${frame}: ${error || code}`)); return; }
-      finish({ width: 64, height: 64, data: new Uint8Array(Buffer.concat(chunks)) });
+      if (code !== 0 || length !== width * height) { finish(undefined, new Error(`No decoded frame ${frame}: ${error || code}`)); return; }
+      finish({ width, height, data: new Uint8Array(Buffer.concat(chunks)) });
     });
   });
 }

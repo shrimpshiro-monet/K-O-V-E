@@ -106,6 +106,44 @@ export {
 
 export type { DirectorValidationIssue, PlacementRepair } from "./validate";
 
+export type {
+  MographPhaseId,
+  MographPhase,
+  MographHoldContract,
+  MographContract,
+} from "./mograph-contract";
+
+export {
+  isMographRequest,
+  buildMographContract,
+  applyMographContract,
+  validateMographPlan,
+} from "./mograph-contract";
+
+export type {
+  PageTemplateId,
+  PageTextPresetId,
+  PageLayerRole,
+  PageRect,
+  PageLayerMotion,
+  PageLayerSpec,
+  PagePhotoSlot,
+  PageTemplate,
+  PageScene,
+  PageSceneOptions,
+  PageTemplateIssue,
+  PageTimelineLayer,
+} from "./page-templates";
+
+export {
+  PAGE_TEMPLATES,
+  getPageTemplate,
+  createPageScene,
+  applyMographPageContract,
+  validateMographPageScene,
+  pageSceneTimelineLayers,
+} from "./page-templates";
+
 export type { SignatureEffectDef } from "./shader-effects";
 
 export {

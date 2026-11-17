@@ -1,0 +1,153 @@
+{
+  "version": "kove.mograph.baseline.v1",
+  "generatedAt": "2026-11-17T07:15:15Z",
+  "configVersion": "kove.mograph.metrics.v1",
+  "video": {
+    "id": "magazine-reference",
+    "role": "reference",
+    "path": "magazine edit, motion graphics.MP4",
+    "sha256": "cc9093fecf1fefc234f17ac05f0fc0a313955b2048ac7e002a00f6ac81d248d4",
+    "probe": {
+      "width": 1024,
+      "height": 576,
+      "fps": 18.0,
+      "durationSeconds": 24.278,
+      "codec": "h264",
+      "container": "mov,mp4,m4a,3gp,3g2,mj2"
+    },
+    "effective": {
+      "startSeconds": 0.5,
+      "endSeconds": 19.3,
+      "durationSeconds": 18.8,
+      "sourceDurationSeconds": 24.278,
+      "trimmed": true,
+      "maskedRegions": [
+        {
+          "label": "tiktok-watermark-top-left",
+          "x": 0.0,
+          "y": 0.0,
+          "width": 0.125,
+          "height": 0.13
+        },
+        {
+          "label": "tiktok-watermark-bottom-right",
+          "x": 0.875,
+          "y": 0.86,
+          "width": 0.125,
+          "height": 0.14
+        }
+      ]
+    }
+  },
+  "motion": {
+    "sampleFps": 6.0,
+    "frameWidth": 96,
+    "frameHeight": 54,
+    "mean": 36.92,
+    "minimum": 0.0,
+    "minimumActive": 16.036,
+    "maximum": 162.675,
+    "first3Mean": 28.354,
+    "first4Mean": 27.509,
+    "perSecond": [
+      34.665,
+      24.532,
+      25.864,
+      24.974,
+      17.383,
+      63.74,
+      68.867,
+      48.242,
+      49.136,
+      46.634,
+      56.595,
+      63.222,
+      51.614,
+      39.662,
+      16.036,
+      28.681,
+      28.851,
+      0.469,
+      0.0
+    ],
+    "perSecondSamples": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      4
+    ],
+    "lowMotionFloor": 5.0,
+    "lowMotionRuns": [
+      {
+        "startSeconds": 17.0,
+        "endSeconds": 18.667,
+        "durationSeconds": 1.667,
+        "meanMotion": 0.281
+      }
+    ],
+    "longestLowMotionSeconds": 1.667
+  },
+  "cuts": {
+    "sceneThreshold": 0.25,
+    "dedupeSeconds": 0.1,
+    "ignoreBeforeSeconds": 0.1,
+    "times": [
+      5.889,
+      6.0,
+      6.722,
+      7.333,
+      7.556,
+      7.667,
+      7.833,
+      8.0,
+      8.444,
+      8.611,
+      8.722,
+      8.833,
+      9.222,
+      9.444,
+      9.611,
+      10.222,
+      10.444,
+      10.833,
+      11.222,
+      11.833,
+      11.944,
+      12.222,
+      12.444,
+      12.833,
+      13.444,
+      13.611,
+      13.833,
+      16.222
+    ],
+    "count": 28,
+    "cutsPerSecond": 1.489,
+    "longestShotSeconds": 5.889,
+    "burstWindowSeconds": 1.0,
+    "burstStepSeconds": 0.1,
+    "burstWindows": [
+      {
+        "startSeconds": 5.1,
+        "endSeconds": 14.6,
+        "durationSeconds": 9.5,
+        "cutsPerSecond": 2.842
+      }
+    ]
+  }
+}

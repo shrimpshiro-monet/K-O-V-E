@@ -1,0 +1,250 @@
+{
+  "version": "kove.mograph.comparison.v1",
+  "generatedAt": "2026-11-17T05:51:59Z",
+  "configVersion": "kove.mograph.metrics.v1",
+  "reference": {
+    "id": "magazine-reference",
+    "path": "magazine edit, motion graphics.MP4",
+    "sha256": "cc9093fecf1fefc234f17ac05f0fc0a313955b2048ac7e002a00f6ac81d248d4"
+  },
+  "output": {
+    "id": "curry56-magazine-p1",
+    "path": "evaluation-files/mograph-p1/curry56-magazine-p1.mp4",
+    "sha256": "1458b8954b054db0f05686e9596525b42aa39cc70fb93ec7773e5300db168296"
+  },
+  "rows": [
+    {
+      "metric": "Format",
+      "reference": "1024x576@18fps",
+      "output": "1024x576@30fps",
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Effective duration (s)",
+      "reference": 18.8,
+      "output": 28.0,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Mean motion energy",
+      "reference": 36.92,
+      "output": 45.783,
+      "threshold": "see edit-mean-motion",
+      "passed": null
+    },
+    {
+      "metric": "Lowest per-second motion",
+      "reference": 0.0,
+      "output": 0.0,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Lowest active per-second motion",
+      "reference": 16.036,
+      "output": 29.0,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "First-3 s mean motion",
+      "reference": 28.354,
+      "output": 33.648,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Hard cuts",
+      "reference": 28,
+      "output": 56,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Cut density (cuts/s)",
+      "reference": 1.489,
+      "output": 2.0,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Longest unbroken shot (s)",
+      "reference": 5.889,
+      "output": 7.0,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Burst windows",
+      "reference": [
+        9.5
+      ],
+      "output": [
+        2.6,
+        11.4,
+        5.3
+      ],
+      "threshold": "see cut-burst",
+      "passed": null
+    },
+    {
+      "metric": "Longest static composition (s)",
+      "reference": 1.667,
+      "output": 2.0,
+      "threshold": "see static-outside-hold",
+      "passed": null
+    },
+    {
+      "metric": "Composed scene coverage",
+      "reference": "n/a",
+      "output": "0.0% (0s)",
+      "threshold": "see composed-scene-coverage",
+      "passed": null
+    },
+    {
+      "metric": "Shots under 0.25s",
+      "reference": "15/29 (51.7%)",
+      "output": "29/57 (50.9%)",
+      "threshold": "see short-shots",
+      "passed": null
+    },
+    {
+      "metric": "Freeze-test layer motion",
+      "reference": "n/a",
+      "output": "0/0 layers (0.0%)",
+      "threshold": "see freeze-test-motion",
+      "passed": null
+    }
+  ],
+  "sceneMetrics": {
+    "timelinePresent": true,
+    "composedSceneCoverage": 0.0,
+    "composedSceneSeconds": 0.0,
+    "shortShots": 29,
+    "totalShots": 57,
+    "shortShotRatio": 0.509,
+    "movingLayers": 0,
+    "totalLayers": 0,
+    "freezeTestLayerMotionRatio": 0.0
+  },
+  "referenceThresholds": [
+    {
+      "id": "edit-mean-motion",
+      "label": "Edit-only mean motion energy",
+      "passed": true,
+      "measured": 36.92,
+      "threshold": "31-55"
+    },
+    {
+      "id": "first-4s-motion",
+      "label": "First-4 s mean motion",
+      "passed": true,
+      "measured": 27.509,
+      "threshold": ">= 25"
+    },
+    {
+      "id": "first-4s-hard-cuts",
+      "label": "First-4 s hard cuts",
+      "passed": true,
+      "measured": 0,
+      "threshold": "<= 0"
+    },
+    {
+      "id": "cut-burst",
+      "label": "Cut burst",
+      "passed": true,
+      "measured": 9.5,
+      "threshold": ">= 2 cuts/s for >= 6s within 25-80%"
+    },
+    {
+      "id": "static-outside-hold",
+      "label": "Longest static composition outside the hold",
+      "passed": true,
+      "measured": 0.0,
+      "threshold": "<= 1s"
+    },
+    {
+      "id": "hold",
+      "label": "Deliberate hold",
+      "passed": true,
+      "measured": [
+        1.667
+      ],
+      "threshold": "exactly 1 hold(s) of 1.5-2.5s after 75%"
+    }
+  ],
+  "thresholds": [
+    {
+      "id": "edit-mean-motion",
+      "label": "Edit-only mean motion energy",
+      "passed": true,
+      "measured": 45.783,
+      "threshold": "31-55"
+    },
+    {
+      "id": "first-4s-motion",
+      "label": "First-4 s mean motion",
+      "passed": true,
+      "measured": 35.766,
+      "threshold": ">= 25"
+    },
+    {
+      "id": "first-4s-hard-cuts",
+      "label": "First-4 s hard cuts",
+      "passed": true,
+      "measured": 0,
+      "threshold": "<= 0"
+    },
+    {
+      "id": "cut-burst",
+      "label": "Cut burst",
+      "passed": true,
+      "measured": 11.4,
+      "threshold": ">= 2 cuts/s for >= 6s within 25-80%"
+    },
+    {
+      "id": "static-outside-hold",
+      "label": "Longest static composition outside the hold",
+      "passed": true,
+      "measured": 0.0,
+      "threshold": "<= 1s"
+    },
+    {
+      "id": "hold",
+      "label": "Deliberate hold",
+      "passed": true,
+      "measured": [
+        2.0
+      ],
+      "threshold": "exactly 1 hold(s) of 1.5-2.5s after 75%"
+    },
+    {
+      "id": "composed-scene-coverage",
+      "label": "Composed scene coverage",
+      "passed": false,
+      "measured": 0.0,
+      "threshold": ">= 60%"
+    },
+    {
+      "id": "short-shots",
+      "label": "Shots under 0.25s",
+      "passed": false,
+      "measured": "29/57 (50.9%)",
+      "threshold": "<= 10% of shots under 0.25s"
+    },
+    {
+      "id": "freeze-test-motion",
+      "label": "Freeze-test layer motion",
+      "passed": false,
+      "measured": "0/0 layers (0.0%)",
+      "threshold": ">= 100% of non-hold composed layers move"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 3,
+    "allPassed": false
+  }
+}

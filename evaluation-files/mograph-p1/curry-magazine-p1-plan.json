@@ -1,0 +1,718 @@
+{
+  "contract": {
+    "style": "mograph",
+    "hookNoHardCutSeconds": 4,
+    "idleMotion": "default",
+    "idleMoves": [
+      "slow-push",
+      "drift-left",
+      "breathe",
+      "drift-right"
+    ],
+    "hold": {
+      "count": 1,
+      "minSeconds": 1.5,
+      "maxSeconds": 2.5,
+      "startFraction": 0.75
+    },
+    "phases": [
+      {
+        "id": "hook",
+        "startFraction": 0,
+        "endFraction": 0.14285714285714285,
+        "shotSeconds": [
+          4,
+          4
+        ],
+        "hardCutsAllowed": false,
+        "motion": "continuous"
+      },
+      {
+        "id": "build",
+        "startFraction": 0.14285714285714285,
+        "endFraction": 0.55,
+        "shotSeconds": [
+          0.8,
+          2
+        ],
+        "hardCutsAllowed": true,
+        "motion": "idle"
+      },
+      {
+        "id": "peak",
+        "startFraction": 0.55,
+        "endFraction": 0.75,
+        "shotSeconds": [
+          0.35,
+          0.8
+        ],
+        "hardCutsAllowed": true,
+        "motion": "cut"
+      },
+      {
+        "id": "hold",
+        "startFraction": 0.75,
+        "endFraction": 0.85,
+        "shotSeconds": [
+          1.5,
+          2.5
+        ],
+        "hardCutsAllowed": true,
+        "motion": "still"
+      },
+      {
+        "id": "exit",
+        "startFraction": 0.85,
+        "endFraction": 1,
+        "shotSeconds": [
+          1.2,
+          2.5
+        ],
+        "hardCutsAllowed": true,
+        "motion": "idle"
+      }
+    ]
+  },
+  "plan": {
+    "segments": [
+      {
+        "sourceVideoId": "curry56-source",
+        "sourceStartTime": 396,
+        "sourceEndTime": 403,
+        "targetPosition": 0,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.45
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 5.33,
+        "sourceEndTime": 5.83,
+        "targetPosition": 7,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.28
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 6.33,
+        "sourceEndTime": 6.83,
+        "targetPosition": 7.5,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.25
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 8.17,
+        "sourceEndTime": 8.67,
+        "targetPosition": 8,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.28
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 9.83,
+        "sourceEndTime": 10.33,
+        "targetPosition": 8.5,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.32
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 10.83,
+        "sourceEndTime": 11.33,
+        "targetPosition": 9,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.28
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 12.83,
+        "sourceEndTime": 13.33,
+        "targetPosition": 9.5,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.25
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 0.83,
+        "sourceEndTime": 1.27,
+        "targetPosition": 10,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 5.33,
+        "sourceEndTime": 5.7700000000000005,
+        "targetPosition": 10.44,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 6.33,
+        "sourceEndTime": 6.7700000000000005,
+        "targetPosition": 10.88,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 8.17,
+        "sourceEndTime": 8.61,
+        "targetPosition": 11.32,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 9.83,
+        "sourceEndTime": 10.27,
+        "targetPosition": 11.76,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 10.83,
+        "sourceEndTime": 11.27,
+        "targetPosition": 12.2,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 12.83,
+        "sourceEndTime": 13.27,
+        "targetPosition": 12.64,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 14.67,
+        "sourceEndTime": 15.11,
+        "targetPosition": 13.08,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 15.5,
+        "sourceEndTime": 15.94,
+        "targetPosition": 13.52,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 17,
+        "sourceEndTime": 17.44,
+        "targetPosition": 13.96,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 18,
+        "sourceEndTime": 18.44,
+        "targetPosition": 14.4,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 22.67,
+        "sourceEndTime": 23.110000000000003,
+        "targetPosition": 14.84,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 25.5,
+        "sourceEndTime": 25.94,
+        "targetPosition": 15.280000000000001,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 26.5,
+        "sourceEndTime": 26.94,
+        "targetPosition": 15.719999999999999,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 28.17,
+        "sourceEndTime": 28.610000000000003,
+        "targetPosition": 16.16,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 34.83,
+        "sourceEndTime": 35.269999999999996,
+        "targetPosition": 16.6,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 36.17,
+        "sourceEndTime": 36.61,
+        "targetPosition": 17.04,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 39,
+        "sourceEndTime": 39.44,
+        "targetPosition": 17.48,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 39.83,
+        "sourceEndTime": 40.269999999999996,
+        "targetPosition": 17.92,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 43.17,
+        "sourceEndTime": 43.61,
+        "targetPosition": 18.36,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 44.17,
+        "sourceEndTime": 44.61,
+        "targetPosition": 18.8,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 48.33,
+        "sourceEndTime": 48.769999999999996,
+        "targetPosition": 19.240000000000002,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 49,
+        "sourceEndTime": 49.44,
+        "targetPosition": 19.68,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 49.67,
+        "sourceEndTime": 50.11,
+        "targetPosition": 20.119999999999997,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "punch-in",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 50.67,
+        "sourceEndTime": 51.11,
+        "targetPosition": 20.560000000000002,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "whip-shake",
+            "intensity": 0.8
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "jersey-still",
+        "sourceStartTime": 0,
+        "sourceEndTime": 2.5,
+        "targetPosition": 21,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "hold": true,
+        "cameraMoves": []
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 51.33,
+        "sourceEndTime": 51.83,
+        "targetPosition": 23.5,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.28
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 54.67,
+        "sourceEndTime": 55.17,
+        "targetPosition": 24,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.25
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 55.5,
+        "sourceEndTime": 56,
+        "targetPosition": 24.5,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.28
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 58.67,
+        "sourceEndTime": 59.17,
+        "targetPosition": 25,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.32
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 60.67,
+        "sourceEndTime": 61.17,
+        "targetPosition": 25.5,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.28
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 62.33,
+        "sourceEndTime": 62.83,
+        "targetPosition": 26,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "breathe",
+            "intensity": 0.25
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 63.67,
+        "sourceEndTime": 64.17,
+        "targetPosition": 26.5,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "drift-right",
+            "intensity": 0.28
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 64.33,
+        "sourceEndTime": 64.83,
+        "targetPosition": 27,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "slow-push",
+            "intensity": 0.32
+          }
+        ]
+      },
+      {
+        "sourceVideoId": "curry-source",
+        "sourceStartTime": 66.17,
+        "sourceEndTime": 66.67,
+        "targetPosition": 27.5,
+        "trackIndex": 0,
+        "effects": [],
+        "rationale": "P1 after render: mograph arc, idle motion, hook, hold.",
+        "cameraMoves": [
+          {
+            "move": "drift-left",
+            "intensity": 0.28
+          }
+        ]
+      }
+    ],
+    "textElements": [],
+    "effects": [],
+    "transitions": [],
+    "audioDecisions": [],
+    "metadata": {
+      "targetDuration": 28,
+      "targetPlatform": "tiktok",
+      "genre": "magazine",
+      "pacing": "fast",
+      "rationale": "P1 motion-graphics contract proof render."
+    }
+  },
+  "issues": []
+}

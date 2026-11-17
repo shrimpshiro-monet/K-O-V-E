@@ -596,6 +596,57 @@ const cascadeAnimation: AnimationFn = (ctx) => {
   };
 };
 
+const pseudoRandom = (seed: number): number => {
+  const value = Math.sin(seed * 12.9898) * 43758.5453;
+  return value - Math.floor(value);
+};
+
+const stackedSlamAnimation: AnimationFn = (ctx) => {
+  const { raw, eased } = entranceProgress(ctx, 0.05, "easeOutBack");
+  const distance = ctx.animation.params.slideDistance ?? 90;
+  const angle = ctx.animation.params.rotateAngle ?? 5;
+  const direction = ctx.unit.index % 2 === 0 ? -1 : 1;
+  return {
+    ...DEFAULT_STATE,
+    opacity: raw,
+    offsetY: -distance * (1 - eased),
+    rotation: direction * angle * (1 - eased),
+    scale: { x: 1 + 0.18 * (1 - eased), y: 0.82 + 0.18 * eased },
+    blur: Math.max(0, 6 * (1 - raw)),
+  };
+};
+
+const verticalHeadlineAnimation: AnimationFn = (ctx) => {
+  const { raw, eased } = entranceProgress(ctx, 0.065, "easeOutCubic");
+  const distance = ctx.animation.params.slideDistance ?? 72;
+  return {
+    ...DEFAULT_STATE,
+    opacity: raw,
+    offsetY: distance * (1 - eased),
+    scale: { x: 1.02 - 0.02 * eased, y: 0.55 + 0.45 * eased },
+    blur: Math.max(0, 8 * (1 - raw)),
+  };
+};
+
+const scatterSettleAnimation: AnimationFn = (ctx) => {
+  const { raw, eased } = entranceProgress(ctx, 0.04, "easeOutCubic");
+  const distance = ctx.animation.params.slideDistance ?? 48;
+  const angle = ctx.animation.params.rotateAngle ?? 14;
+  const seed = ctx.unit.index + 1;
+  const offsetX = (pseudoRandom(seed) - 0.5) * distance * 2;
+  const offsetY = (pseudoRandom(seed + 7) - 0.5) * distance * 2;
+  const rotation = (pseudoRandom(seed + 13) - 0.5) * angle * 2;
+  return {
+    ...DEFAULT_STATE,
+    opacity: raw,
+    offsetX: offsetX * (1 - eased),
+    offsetY: offsetY * (1 - eased),
+    rotation: rotation * (1 - eased),
+    scale: { x: 0.82 + 0.18 * eased, y: 0.82 + 0.18 * eased },
+    blur: Math.max(0, 5 * (1 - raw)),
+  };
+};
+
 const ANIMATION_MAP: Record<TextAnimationPreset, AnimationFn> = {
   none: () => DEFAULT_STATE,
   typewriter: typewriterAnimation,
@@ -622,6 +673,9 @@ const ANIMATION_MAP: Record<TextAnimationPreset, AnimationFn> = {
   swing: swingAnimation,
   "zoom-blur": zoomBlurAnimation,
   cascade: cascadeAnimation,
+  "stacked-slam": stackedSlamAnimation,
+  "vertical-headline": verticalHeadlineAnimation,
+  "scatter-settle": scatterSettleAnimation,
 };
 
 export function calculateUnitAnimationState(
@@ -875,6 +929,39 @@ export const TEXT_ANIMATION_PRESETS: TextAnimationPresetInfo[] = [
     defaultStagger: 0.035,
     defaultInDuration: 0.85,
     defaultOutDuration: 0.4,
+  },
+  {
+    id: "stacked-slam",
+    name: "Stacked Slam",
+    description: "Heavy stacked characters slam into place with a hard settle",
+    category: "entrance",
+    defaultParams: { slideDistance: 90, rotateAngle: 5, easing: "easeOutBack" },
+    defaultUnit: "character",
+    defaultStagger: 0.05,
+    defaultInDuration: 0.7,
+    defaultOutDuration: 0.35,
+  },
+  {
+    id: "vertical-headline",
+    name: "Vertical Headline",
+    description: "Compressed type stretches upward into a vertical headline",
+    category: "entrance",
+    defaultParams: { slideDistance: 72, easing: "easeOutCubic" },
+    defaultUnit: "character",
+    defaultStagger: 0.065,
+    defaultInDuration: 0.75,
+    defaultOutDuration: 0.35,
+  },
+  {
+    id: "scatter-settle",
+    name: "Scatter Settle",
+    description: "Characters scatter from offset positions and settle into the line",
+    category: "entrance",
+    defaultParams: { slideDistance: 48, rotateAngle: 14, easing: "easeOutCubic" },
+    defaultUnit: "character",
+    defaultStagger: 0.04,
+    defaultInDuration: 0.7,
+    defaultOutDuration: 0.35,
   },
   {
     id: "wave",

@@ -15,6 +15,12 @@ export interface PlannedSegment {
    * a static composition better serves the footage.
    */
   readonly cameraMoves?: readonly PlannedCameraMove[];
+  /**
+   * Marks the single still beat in a motion-graphics edit. The mograph
+   * contract treats every other visual segment as having default idle motion;
+   * this segment is the deliberate exception and must stay still.
+   */
+  readonly hold?: boolean;
   readonly rationale: string;
 }
 

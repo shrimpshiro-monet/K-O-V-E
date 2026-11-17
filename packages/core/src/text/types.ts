@@ -138,7 +138,10 @@ export type TextAnimationPreset =
   | "elastic"
   | "swing"
   | "zoom-blur"
-  | "cascade";
+  | "cascade"
+  | "stacked-slam"
+  | "vertical-headline"
+  | "scatter-settle";
 
 export interface TextAnimationParams {
   // Fade parameters

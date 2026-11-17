@@ -1,0 +1,94 @@
+{
+  "version": "kove.mograph.metrics.v1",
+  "measurement": {
+    "sampleFps": 6,
+    "frameWidth": 96,
+    "frameHeight": 54,
+    "sceneThreshold": 0.25,
+    "cutDedupeSeconds": 0.1,
+    "ignoreCutsBeforeSeconds": 0.1,
+    "lowMotionFloor": 5.0,
+    "burstWindowSeconds": 1.0,
+    "burstStepSeconds": 0.1
+  },
+  "thresholds": {
+    "editMeanMotion": {
+      "min": 31,
+      "max": 55
+    },
+    "first4sMeanMotion": {
+      "min": 25
+    },
+    "first4sHardCuts": {
+      "max": 0
+    },
+    "burst": {
+      "minCutsPerSecond": 2,
+      "minDurationSeconds": 6,
+      "startFraction": 0.25,
+      "endFraction": 0.8
+    },
+    "maxStaticCompositionSeconds": {
+      "max": 1.0
+    },
+    "hold": {
+      "count": 1,
+      "durationSeconds": {
+        "min": 1.5,
+        "max": 2.5
+      },
+      "startFraction": 0.75
+    },
+    "composedSceneCoverage": {
+      "min": 0.6
+    },
+    "shortShots": {
+      "maxRatio": 0.1,
+      "shotSeconds": 0.25
+    },
+    "freezeTestMotion": {
+      "minLayerMotionRatio": 1.0
+    }
+  },
+  "videos": [
+    {
+      "id": "magazine-reference",
+      "role": "reference",
+      "path": "magazine edit, motion graphics.MP4",
+      "trim": {
+        "startSeconds": 0.5,
+        "endSeconds": 19.3
+      },
+      "maskRegions": [
+        {
+          "label": "tiktok-watermark-top-left",
+          "x": 0.0,
+          "y": 0.0,
+          "width": 0.125,
+          "height": 0.13
+        },
+        {
+          "label": "tiktok-watermark-bottom-right",
+          "x": 0.875,
+          "y": 0.86,
+          "width": 0.125,
+          "height": 0.14
+        }
+      ]
+    },
+    {
+      "id": "curry56-magazine-p1.5",
+      "role": "output",
+      "path": "evaluation-files/mograph-p1.5/curry56-magazine-p1.5.mp4",
+      "trim": {
+        "startSeconds": 0.0,
+        "endSeconds": 28.0
+      },
+      "maskRegions": []
+    }
+  ],
+  "timeline": {
+    "path": "evaluation-files/mograph-p1.5/timeline.json",
+    "composedMinLayers": 3
+  }
+}

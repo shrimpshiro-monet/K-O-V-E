@@ -10,9 +10,12 @@ import {
   SIGNATURE_EFFECT_DEFS,
   SUPPORTED_TEXT_ANIMATIONS,
   SUPPORTED_TRANSITION_TYPES,
+  buildMographContract,
+  isMographRequest,
   planDensityBudget,
   resolveDensityTarget,
   summarizeSegmentMap,
+  type MographContract,
 } from "@kove-advanced/creation-schema";
 import { CAPABILITY_MANIFEST } from "@kove-advanced/core/capabilities/manifest";
 import { parseReferenceProfile, type ReferenceProfile } from "@kove-advanced/core/mirror/reference-profile";
@@ -173,6 +176,7 @@ An effect hit, speed ramp, transition or signature effect must be triggered by o
 
 # Camera moves
 - Camera movement is optional and is not a substitute for editorial craft. Do not add cameraMoves to every shot or use them to satisfy density targets; for most genres, keep moving shots to roughly one third or fewer.
+- When the density contract declares a mograph arc, its motion floor overrides this: every non-hold visual segment defaults to idle motion, and the single hold stays still.
 - Use at most one camera move on a shot unless two moves clearly serve different beats; never exceed three composed moves on one shot. Each move compiles to multiple visible transform keyframes, so prefer one deliberate move over stacked movement.
 - Choose a move only when it improves the composition or underlines a real beat: push-in on emphasis, drift on a deliberate hold, handheld only when the footage's energy supports it. A clean static shot is often the right choice.
 - Moves on talking heads stay subtle (intensity 0.2-0.4).
@@ -226,7 +230,8 @@ segments (each with sourceVideoId, sourceStartTime, sourceEndTime, targetPositio
 6. Do cuts land on the music beat grid, not the footage's?
 7. Are counts at or above the density contract? If short, split long shots and add detail or reaction inserts from the same source ranges. Do not add effects to hit a count.
 8. Add up the main-sequence durations: do they equal the target duration (within 5%), with every targetPosition equal to the previous end and no overlaps outside layout overlays? Does plan.transitions[] contain at least the contract minimum (zero is correct only when the request explicitly forbids transitions)?
-9. Would a human editor call this authored, or clips dropped on a timeline with filters? If the latter, rework the cut list, not the filters.`;
+9. If the density contract declares a mograph arc, is the first 4s one continuous shot, does every non-hold shot carry idle motion, and is there exactly one still hold?
+10. Would a human editor call this authored, or clips dropped on a timeline with filters? If the latter, rework the cut list, not the filters.`;
 
 /**
  * Best-effort read of how long the user wants the edit to be, in seconds.
@@ -278,6 +283,8 @@ export interface DirectorDensityContract {
   readonly hookShots: number;
   /** "reference" when measured reference structure overrides genre defaults. */
   readonly source: "genre" | "reference";
+  /** Present only for magazine/editorial/collage-style requests. */
+  readonly mograph: MographContract | null;
 }
 
 /** Measured density extracted from a reference profile, when one was supplied. */
@@ -354,25 +361,50 @@ export function buildDensityContract(prompt: string, genre?: Genre, reference?: 
     sfxHits: budget.sfxHits,
     hookShots: budget.hookShots,
     source: referenceDensity ? "reference" : "genre",
+    mograph: isMographRequest(prompt, genre, reference)
+      ? buildMographContract(targetDuration)
+      : null,
   };
 }
 
 /** Render the contract as the markdown block injected into the task prompt. */
 export function formatDensityContract(contract: DirectorDensityContract): string {
+  const mograph = contract.mograph;
+  const arc = mograph
+    ? `- **Mograph arc**: ${mograph.phases
+        .map((phase) => {
+          const start = (contract.targetDuration * phase.startFraction).toFixed(1);
+          const end = (contract.targetDuration * phase.endFraction).toFixed(1);
+          const cut = phase.hardCutsAllowed ? "cuts allowed" : "one continuous shot, zero hard cuts";
+          return `${phase.id} ${start}-${end}s (${cut})`;
+        })
+        .join(" → ")}.`
+    : null;
   const lines = [
     contract.source === "reference"
       ? `For this request (${contract.targetDuration.toFixed(0)}s, ${contract.pacing} pacing derived from the measured reference), the floor is:`
       : `For this request (${contract.targetDuration.toFixed(0)}s, ${contract.pacing} pacing), the floor is:`,
     `- **Shots**: ${contract.shots[0]}-${contract.shots[1]} segments (currently nothing is on the timeline; build it up)`,
-    contract.cameraMoves > 0
-      ? `- **Camera moves**: optional; use on ≥${contract.cameraMoves} shots only when motivated by the footage; never add them as a quota`
-      : "- **Camera moves**: optional; use only when the footage benefits; never add them as a quota",
+    mograph
+      ? `- **Camera moves**: default idle motion on every non-hold visual segment (${mograph.idleMoves.join(", ")}); use a subtle intensity and never leave a shot static except the hold`
+      : contract.cameraMoves > 0
+        ? `- **Camera moves**: optional; use on ≥${contract.cameraMoves} shots only when motivated by the footage; never add them as a quota`
+        : "- **Camera moves**: optional; use only when the footage benefits; never add them as a quota",
     `- **Effect hits**: ${contract.effectHits[0]}-${contract.effectHits[1]} hits across ≥${contract.effectTypes} distinct effect types`,
     `- **Treated shots**: ≥${contract.treatedShots} of the shots carry a move, effect, speed ramp, or layout`,
     `- **Text**: ${contract.texts[0]}-${contract.texts[1]} elements with ≥${contract.textAnimations} distinct animations`,
     `- **Speed ramps**: ${contract.speedRamps}${contract.speedRamps > 0 ? " (ramp into the peak, ramp out of it)" : ""}`,
     `- **SFX**: ≥${contract.sfxHits} one-shot hits timed to cuts/impacts`,
-    `- **Hook**: ≥${contract.hookShots} shot(s) inside the first 2 seconds, before any title card`,
+    mograph
+      ? `- **Hook**: one continuous shot for the first ${mograph.hookNoHardCutSeconds.toFixed(1)}s; zero hard cuts and no title card before the hook lands`
+      : `- **Hook**: ≥${contract.hookShots} shot(s) inside the first 2 seconds, before any title card`,
+    ...(mograph
+      ? [
+          arc!,
+          `- **Hold**: exactly one ${mograph.hold.minSeconds}-${mograph.hold.maxSeconds}s hold starting after ${Math.round(mograph.hold.startFraction * 100)}%; flag it with \`hold: true\` and leave it still`,
+          "- **Motion floor**: every other visual segment carries idle motion; the hold is the one deliberate still beat.",
+        ]
+      : []),
     "- **Evolution**: phase 3 (final third) must be visibly denser than phase 1 — more hits, shorter shots, stronger treatment.",
     "Meeting this floor is the minimum bar for submission, not the goal.",
   ];

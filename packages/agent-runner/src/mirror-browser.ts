@@ -49,10 +49,13 @@ async function loadSnapshot(snapshot: BrowserSnapshot): Promise<typeof loaded & 
   return loaded;
 }
 
-async function render(snapshot: BrowserSnapshot, timeSeconds: number): Promise<number[]> {
+async function render(snapshot: BrowserSnapshot, timeSeconds: number, width = 64, height = 64): Promise<number[]> {
   if (!Number.isFinite(timeSeconds) || timeSeconds < 0) throw new Error("Invalid mirror sample time");
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1 || width > 512 || height > 512) {
+    throw new Error("Invalid mirror sample size");
+  }
   const { project, engine } = await loadSnapshot(snapshot);
-  const key = `${snapshot.hash}:${timeSeconds}`;
+  const key = `${snapshot.hash}:${timeSeconds}:${width}x${height}`;
   const cached = frames.get(key);
   if (cached) return cached;
   // VideoEngine's preview path intentionally skips an undecodable clip. A
@@ -63,20 +66,20 @@ async function render(snapshot: BrowserSnapshot, timeSeconds: number): Promise<n
     if (item?.type !== "video" || !item.blob) continue;
     const sourceTime = clip.inPoint + (timeSeconds - clip.startTime) * (clip.speed ?? 1);
     let probe = typeof VideoDecoder === "undefined" ? null :
-      await engine.decodeFrameWithMediaBunny(item.blob, sourceTime, 64, 64, item.id);
-    if (!probe) probe = await engine.decodeFrameWithVideoElement(item.id, item.blob, sourceTime, 64, 64);
+      await engine.decodeFrameWithMediaBunny(item.blob, sourceTime, width, height, item.id);
+    if (!probe) probe = await engine.decodeFrameWithVideoElement(item.id, item.blob, sourceTime, width, height);
     if (!probe) throw new Error(`Cannot decode snapshot video ${item.id}`);
     probe.close();
   }
-  const frame = await engine.renderFrame(project, timeSeconds, 64, 64);
+  const frame = await engine.renderFrame(project, timeSeconds, width, height);
   try {
-    const canvas = new OffscreenCanvas(64, 64);
+    const canvas = new OffscreenCanvas(width, height);
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) throw new Error("No 2D canvas available to read compositor pixels");
-    ctx.drawImage(frame.image, 0, 0, 64, 64);
-    const rgba = ctx.getImageData(0, 0, 64, 64).data;
-    const luma = new Array<number>(4096);
-    for (let i = 0; i < 4096; i++) {
+    ctx.drawImage(frame.image, 0, 0, width, height);
+    const rgba = ctx.getImageData(0, 0, width, height).data;
+    const luma = new Array<number>(width * height);
+    for (let i = 0; i < luma.length; i++) {
       const offset = 4 * i;
       // BT.601 full-range RGB->Y; FFmpeg's raw gray output uses the same luma scale.
       luma[i] = Math.round(0.299 * rgba[offset]! + 0.587 * rgba[offset + 1]! + 0.114 * rgba[offset + 2]!);

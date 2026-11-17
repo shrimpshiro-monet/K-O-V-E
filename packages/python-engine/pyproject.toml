@@ -30,6 +30,7 @@ dev = [
 
 [project.scripts]
 kove-engine = "kove_engine.cli:main"
+kove-mograph-metrics = "kove_engine.mograph_metrics:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/kove_engine"]

@@ -14,6 +14,9 @@ const NEW_ENTRANCES: TextAnimationPreset[] = [
   "swing",
   "zoom-blur",
   "cascade",
+  "stacked-slam",
+  "vertical-headline",
+  "scatter-settle",
 ];
 
 function context(
@@ -40,9 +43,9 @@ function context(
 }
 
 describe("text animation preset library", () => {
-  it("publishes a unique 25-preset catalog with the polished entrance pack", () => {
+  it("publishes a unique 28-preset catalog with the polished entrance pack", () => {
     const ids = TEXT_ANIMATION_PRESETS.map((preset) => preset.id);
-    expect(ids).toHaveLength(25);
+    expect(ids).toHaveLength(28);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toEqual(expect.arrayContaining(NEW_ENTRANCES));
   });
