@@ -1,0 +1,151 @@
+{
+  "version": "kove.mograph.baseline.v1",
+  "generatedAt": "2026-11-17T04:49:32Z",
+  "configVersion": "kove.mograph.metrics.v1",
+  "video": {
+    "id": "curry56-scrapbook",
+    "role": "output",
+    "path": "curry56_scrapbook.mp4",
+    "sha256": "f943e9b9665b122f9bcfb07531579ee50fc921c8940abb51d6a072c8db23ac00",
+    "probe": {
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "durationSeconds": 28.0,
+      "codec": "h264",
+      "container": "mov,mp4,m4a,3gp,3g2,mj2"
+    },
+    "effective": {
+      "startSeconds": 0.0,
+      "endSeconds": 28.0,
+      "durationSeconds": 28.0,
+      "sourceDurationSeconds": 28.0,
+      "trimmed": false,
+      "maskedRegions": []
+    }
+  },
+  "motion": {
+    "sampleFps": 6.0,
+    "frameWidth": 96,
+    "frameHeight": 54,
+    "mean": 7.937,
+    "minimum": 0.505,
+    "minimumActive": 5.625,
+    "maximum": 121.858,
+    "first3Mean": 0.904,
+    "first4Mean": 3.682,
+    "perSecond": [
+      1.366,
+      0.693,
+      0.654,
+      12.017,
+      6.452,
+      2.411,
+      17.29,
+      6.956,
+      4.218,
+      2.978,
+      22.851,
+      4.792,
+      2.395,
+      2.875,
+      19.734,
+      12.586,
+      16.69,
+      14.554,
+      30.196,
+      5.785,
+      6.346,
+      5.625,
+      11.612,
+      1.795,
+      0.529,
+      0.537,
+      0.534,
+      7.726
+    ],
+    "perSecondSamples": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      5
+    ],
+    "lowMotionFloor": 5.0,
+    "lowMotionRuns": [
+      {
+        "startSeconds": 0.0,
+        "endSeconds": 3.0,
+        "durationSeconds": 3.0,
+        "meanMotion": 0.904
+      },
+      {
+        "startSeconds": 5.0,
+        "endSeconds": 6.0,
+        "durationSeconds": 1.0,
+        "meanMotion": 2.411
+      },
+      {
+        "startSeconds": 8.0,
+        "endSeconds": 10.0,
+        "durationSeconds": 2.0,
+        "meanMotion": 3.598
+      },
+      {
+        "startSeconds": 11.0,
+        "endSeconds": 14.0,
+        "durationSeconds": 3.0,
+        "meanMotion": 3.354
+      },
+      {
+        "startSeconds": 23.0,
+        "endSeconds": 27.0,
+        "durationSeconds": 4.0,
+        "meanMotion": 0.849
+      }
+    ],
+    "longestLowMotionSeconds": 4.0
+  },
+  "cuts": {
+    "sceneThreshold": 0.25,
+    "dedupeSeconds": 0.1,
+    "ignoreBeforeSeconds": 0.1,
+    "times": [
+      3.5,
+      7.0,
+      10.5,
+      14.5,
+      19.0,
+      23.0
+    ],
+    "count": 6,
+    "cutsPerSecond": 0.214,
+    "longestShotSeconds": 5.0,
+    "burstWindowSeconds": 1.0,
+    "burstStepSeconds": 0.1,
+    "burstWindows": []
+  }
+}

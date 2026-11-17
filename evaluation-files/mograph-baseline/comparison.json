@@ -1,0 +1,191 @@
+{
+  "version": "kove.mograph.comparison.v1",
+  "generatedAt": "2026-11-17T04:49:32Z",
+  "configVersion": "kove.mograph.metrics.v1",
+  "reference": {
+    "id": "magazine-reference",
+    "path": "magazine edit, motion graphics.MP4",
+    "sha256": "cc9093fecf1fefc234f17ac05f0fc0a313955b2048ac7e002a00f6ac81d248d4"
+  },
+  "output": {
+    "id": "curry56-scrapbook",
+    "path": "curry56_scrapbook.mp4",
+    "sha256": "f943e9b9665b122f9bcfb07531579ee50fc921c8940abb51d6a072c8db23ac00"
+  },
+  "rows": [
+    {
+      "metric": "Format",
+      "reference": "1024x576@18fps",
+      "output": "1080x1920@30fps",
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Effective duration (s)",
+      "reference": 18.8,
+      "output": 28.0,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Mean motion energy",
+      "reference": 36.92,
+      "output": 7.937,
+      "threshold": "see edit-mean-motion",
+      "passed": null
+    },
+    {
+      "metric": "Lowest per-second motion",
+      "reference": 0.0,
+      "output": 0.505,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Lowest active per-second motion",
+      "reference": 16.036,
+      "output": 5.625,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "First-3 s mean motion",
+      "reference": 28.354,
+      "output": 0.904,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Hard cuts",
+      "reference": 28,
+      "output": 6,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Cut density (cuts/s)",
+      "reference": 1.489,
+      "output": 0.214,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Longest unbroken shot (s)",
+      "reference": 5.889,
+      "output": 5.0,
+      "threshold": null,
+      "passed": null
+    },
+    {
+      "metric": "Burst windows",
+      "reference": [
+        9.5
+      ],
+      "output": [],
+      "threshold": "see cut-burst",
+      "passed": null
+    },
+    {
+      "metric": "Longest static composition (s)",
+      "reference": 1.667,
+      "output": 4.0,
+      "threshold": "see static-outside-hold",
+      "passed": null
+    }
+  ],
+  "referenceThresholds": [
+    {
+      "id": "edit-mean-motion",
+      "label": "Edit-only mean motion energy",
+      "passed": true,
+      "measured": 36.92,
+      "threshold": "31-55"
+    },
+    {
+      "id": "first-4s-motion",
+      "label": "First-4 s mean motion",
+      "passed": true,
+      "measured": 27.509,
+      "threshold": ">= 25"
+    },
+    {
+      "id": "first-4s-hard-cuts",
+      "label": "First-4 s hard cuts",
+      "passed": true,
+      "measured": 0,
+      "threshold": "<= 0"
+    },
+    {
+      "id": "cut-burst",
+      "label": "Cut burst",
+      "passed": true,
+      "measured": 9.5,
+      "threshold": ">= 2 cuts/s for >= 6s within 25-80%"
+    },
+    {
+      "id": "static-outside-hold",
+      "label": "Longest static composition outside the hold",
+      "passed": true,
+      "measured": 0.0,
+      "threshold": "<= 1s"
+    },
+    {
+      "id": "hold",
+      "label": "Deliberate hold",
+      "passed": true,
+      "measured": [
+        1.667
+      ],
+      "threshold": "exactly 1 hold(s) of 1.5-2.5s after 75%"
+    }
+  ],
+  "thresholds": [
+    {
+      "id": "edit-mean-motion",
+      "label": "Edit-only mean motion energy",
+      "passed": false,
+      "measured": 7.937,
+      "threshold": "31-55"
+    },
+    {
+      "id": "first-4s-motion",
+      "label": "First-4 s mean motion",
+      "passed": false,
+      "measured": 3.682,
+      "threshold": ">= 25"
+    },
+    {
+      "id": "first-4s-hard-cuts",
+      "label": "First-4 s hard cuts",
+      "passed": false,
+      "measured": 1,
+      "threshold": "<= 0"
+    },
+    {
+      "id": "cut-burst",
+      "label": "Cut burst",
+      "passed": false,
+      "measured": 0.0,
+      "threshold": ">= 2 cuts/s for >= 6s within 25-80%"
+    },
+    {
+      "id": "static-outside-hold",
+      "label": "Longest static composition outside the hold",
+      "passed": false,
+      "measured": 4.0,
+      "threshold": "<= 1s"
+    },
+    {
+      "id": "hold",
+      "label": "Deliberate hold",
+      "passed": false,
+      "measured": [],
+      "threshold": "exactly 1 hold(s) of 1.5-2.5s after 75%"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 6,
+    "allPassed": false
+  }
+}
