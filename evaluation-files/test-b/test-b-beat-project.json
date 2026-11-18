@@ -1,0 +1,1397 @@
+{
+  "version": "1.2.0",
+  "project": {
+    "id": "ab4be645-fa4a-4014-a383-945e3278ff09",
+    "name": "Test B — hand-built beat",
+    "createdAt": 1794927499244,
+    "modifiedAt": 1794927499249,
+    "settings": {
+      "width": 1080,
+      "height": 1920,
+      "frameRate": 30,
+      "sampleRate": 48000,
+      "channels": 2
+    },
+    "mediaLibrary": {
+      "items": [
+        {
+          "id": "paper-bg",
+          "name": "Paper background",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 1080,
+            "height": 1920,
+            "frameRate": 0,
+            "codec": "png",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "photo-1",
+          "name": "Photo 1 still",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 1080,
+            "height": 630,
+            "frameRate": 0,
+            "codec": "jpeg",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "photo-2",
+          "name": "Photo 2 still",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 1080,
+            "height": 630,
+            "frameRate": 0,
+            "codec": "jpeg",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "photo-3",
+          "name": "Photo 3 still",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 1080,
+            "height": 630,
+            "frameRate": 0,
+            "codec": "jpeg",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "photo-1-video",
+          "name": "Photo 1 footage",
+          "type": "video",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 8,
+            "width": 1080,
+            "height": 630,
+            "frameRate": 30,
+            "codec": "h264",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "avatar",
+          "name": "Avatar",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 240,
+            "height": 240,
+            "frameRate": 0,
+            "codec": "jpeg",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        }
+      ]
+    },
+    "timeline": {
+      "tracks": [
+        {
+          "id": "track-body",
+          "type": "text",
+          "name": "Body",
+          "clips": [],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-headline",
+          "type": "text",
+          "name": "Headline",
+          "clips": [],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-avatar",
+          "type": "video",
+          "name": "Avatar",
+          "clips": [
+            {
+              "id": "avatar-hold",
+              "mediaId": "avatar",
+              "trackId": "track-avatar",
+              "startTime": 2.8,
+              "duration": 1.2,
+              "inPoint": 0,
+              "outPoint": 1.2,
+              "effects": [
+                {
+                  "id": "fx-avatar-shadow",
+                  "type": "shadow",
+                  "params": {
+                    "offsetX": 8,
+                    "offsetY": 8,
+                    "blur": 12,
+                    "color": "#000000",
+                    "opacity": 0.5
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 300
+                },
+                "scale": {
+                  "x": 0.3,
+                  "y": 0.3
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 0,
+              "keyframes": []
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-photo",
+          "type": "video",
+          "name": "Photo",
+          "clips": [
+            {
+              "id": "photo-hook",
+              "mediaId": "photo-1-video",
+              "trackId": "track-photo",
+              "startTime": 0,
+              "duration": 1.6,
+              "inPoint": 0.5,
+              "outPoint": 2.1,
+              "effects": [
+                {
+                  "id": "fx-bright",
+                  "type": "brightness",
+                  "params": {
+                    "value": 10,
+                    "amount": 10
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "ph-sx0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "ph-sx1",
+                  "time": 1.6,
+                  "property": "scale.x",
+                  "value": 1.045,
+                  "easing": "linear"
+                },
+                {
+                  "id": "ph-sy0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "ph-sy1",
+                  "time": 1.6,
+                  "property": "scale.y",
+                  "value": 1.045,
+                  "easing": "linear"
+                },
+                {
+                  "id": "ph-py0",
+                  "time": 0,
+                  "property": "position.y",
+                  "value": 0,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "ph-py1",
+                  "time": 1.6,
+                  "property": "position.y",
+                  "value": -10,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "photo-punch",
+              "mediaId": "photo-2",
+              "trackId": "track-photo",
+              "startTime": 1.6,
+              "duration": 0.6,
+              "inPoint": 0,
+              "outPoint": 0.6,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "pu-sx0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutCubic"
+                },
+                {
+                  "id": "pu-sx1",
+                  "time": 0.6,
+                  "property": "scale.x",
+                  "value": 1.09,
+                  "easing": "linear"
+                },
+                {
+                  "id": "pu-sy0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutCubic"
+                },
+                {
+                  "id": "pu-sy1",
+                  "time": 0.6,
+                  "property": "scale.y",
+                  "value": 1.09,
+                  "easing": "linear"
+                },
+                {
+                  "id": "pu-r0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "easeOutCubic"
+                },
+                {
+                  "id": "pu-r1",
+                  "time": 0.6,
+                  "property": "rotation",
+                  "value": -0.6,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "photo-burst-a",
+              "mediaId": "photo-3",
+              "trackId": "track-photo",
+              "startTime": 2.2,
+              "duration": 0.3,
+              "inPoint": 0,
+              "outPoint": 0.3,
+              "effects": [
+                {
+                  "id": "fx-ca",
+                  "type": "chromatic-aberration",
+                  "params": {
+                    "amount": 14
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "ba-r0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "ba-r1",
+                  "time": 0.1,
+                  "property": "rotation",
+                  "value": 1.1,
+                  "easing": "linear"
+                },
+                {
+                  "id": "ba-r2",
+                  "time": 0.2,
+                  "property": "rotation",
+                  "value": -0.8,
+                  "easing": "linear"
+                },
+                {
+                  "id": "ba-r3",
+                  "time": 0.3,
+                  "property": "rotation",
+                  "value": 0.3,
+                  "easing": "linear"
+                },
+                {
+                  "id": "ba-sx0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1.06,
+                  "easing": "linear"
+                },
+                {
+                  "id": "ba-sx1",
+                  "time": 0.3,
+                  "property": "scale.x",
+                  "value": 1.1,
+                  "easing": "linear"
+                },
+                {
+                  "id": "ba-sy0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1.06,
+                  "easing": "linear"
+                },
+                {
+                  "id": "ba-sy1",
+                  "time": 0.3,
+                  "property": "scale.y",
+                  "value": 1.1,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "photo-burst-b",
+              "mediaId": "photo-1",
+              "trackId": "track-photo",
+              "startTime": 2.5,
+              "duration": 0.3,
+              "inPoint": 0,
+              "outPoint": 0.3,
+              "effects": [
+                {
+                  "id": "fx-mb",
+                  "type": "motion-blur",
+                  "params": {
+                    "distance": 8,
+                    "angle": 45,
+                    "amount": 8
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "bb-r0",
+                  "time": 0,
+                  "property": "rotation",
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "bb-r1",
+                  "time": 0.1,
+                  "property": "rotation",
+                  "value": -1.2,
+                  "easing": "linear"
+                },
+                {
+                  "id": "bb-r2",
+                  "time": 0.2,
+                  "property": "rotation",
+                  "value": 0.9,
+                  "easing": "linear"
+                },
+                {
+                  "id": "bb-r3",
+                  "time": 0.3,
+                  "property": "rotation",
+                  "value": -0.3,
+                  "easing": "linear"
+                },
+                {
+                  "id": "bb-sx0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1.09,
+                  "easing": "linear"
+                },
+                {
+                  "id": "bb-sx1",
+                  "time": 0.3,
+                  "property": "scale.x",
+                  "value": 1.02,
+                  "easing": "linear"
+                },
+                {
+                  "id": "bb-sy0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1.09,
+                  "easing": "linear"
+                },
+                {
+                  "id": "bb-sy1",
+                  "time": 0.3,
+                  "property": "scale.y",
+                  "value": 1.02,
+                  "easing": "linear"
+                }
+              ]
+            },
+            {
+              "id": "photo-hold",
+              "mediaId": "photo-2",
+              "trackId": "track-photo",
+              "startTime": 2.75,
+              "duration": 1.25,
+              "inPoint": 0.6,
+              "outPoint": 1.85,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 0,
+              "keyframes": []
+            }
+          ],
+          "transitions": [
+            {
+              "id": "tr-flash-hold",
+              "clipAId": "photo-burst-b",
+              "clipBId": "photo-hold",
+              "type": "flash",
+              "duration": 0.1,
+              "params": {
+                "duration": 0.1,
+                "curve": "linear",
+                "direction": "left",
+                "softness": 0.5,
+                "holdDuration": 0
+              }
+            }
+          ],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-bg",
+          "type": "video",
+          "name": "Paper background",
+          "clips": [
+            {
+              "id": "bg-paper",
+              "mediaId": "paper-bg",
+              "trackId": "track-bg",
+              "startTime": 0,
+              "duration": 4,
+              "inPoint": 0,
+              "outPoint": 4,
+              "effects": [
+                {
+                  "id": "fx-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 60,
+                    "size": 2
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "fx-vignette",
+                  "type": "vignette",
+                  "params": {
+                    "amount": 70
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "cover"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "bg-sx0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "bg-sx1",
+                  "time": 4,
+                  "property": "scale.x",
+                  "value": 1.03,
+                  "easing": "linear"
+                },
+                {
+                  "id": "bg-sy0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeInOutSine"
+                },
+                {
+                  "id": "bg-sy1",
+                  "time": 4,
+                  "property": "scale.y",
+                  "value": 1.03,
+                  "easing": "linear"
+                }
+              ]
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "subtitles": [],
+      "duration": 4,
+      "markers": []
+    },
+    "textClips": [
+      {
+        "id": "h1",
+        "trackId": "track-headline",
+        "startTime": 0,
+        "duration": 1.6,
+        "text": "56\nPOINTS",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 96,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#15110d",
+          "backgroundColor": "rgba(247,240,227,0.92)",
+          "strokeColor": "#f7f0e3",
+          "strokeWidth": 2,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 0.93,
+          "letterSpacing": -1
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.34
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "animation": {
+          "preset": "stacked-slam",
+          "params": {
+            "slideDistance": 90,
+            "rotateAngle": 5,
+            "easing": "easeOutBack"
+          },
+          "inDuration": 0.3,
+          "outDuration": 0.12,
+          "stagger": 0.045,
+          "unit": "character"
+        },
+        "keyframes": [
+          {
+            "id": "h1-sx0",
+            "time": 0,
+            "property": "scale.x",
+            "value": 1.24,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h1-sx1",
+            "time": 0.24,
+            "property": "scale.x",
+            "value": 1,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h1-sx2",
+            "time": 1.6,
+            "property": "scale.x",
+            "value": 1.02,
+            "easing": "linear"
+          },
+          {
+            "id": "h1-sy0",
+            "time": 0,
+            "property": "scale.y",
+            "value": 1.24,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h1-sy1",
+            "time": 0.24,
+            "property": "scale.y",
+            "value": 1,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h1-sy2",
+            "time": 1.6,
+            "property": "scale.y",
+            "value": 1.02,
+            "easing": "linear"
+          },
+          {
+            "id": "h1-py0",
+            "time": 0,
+            "property": "position.y",
+            "value": 0.36000000000000004,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h1-py1",
+            "time": 0.24,
+            "property": "position.y",
+            "value": 0.34,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h1-py2",
+            "time": 1.6,
+            "property": "position.y",
+            "value": 0.335,
+            "easing": "linear"
+          }
+        ]
+      },
+      {
+        "id": "h2",
+        "trackId": "track-headline",
+        "startTime": 1.6,
+        "duration": 0.6,
+        "text": "FEB 27\n2025",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 96,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#15110d",
+          "backgroundColor": "rgba(247,240,227,0.92)",
+          "strokeColor": "#f7f0e3",
+          "strokeWidth": 2,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 0.93,
+          "letterSpacing": -1
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.34
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "animation": {
+          "preset": "stacked-slam",
+          "params": {
+            "slideDistance": 90,
+            "rotateAngle": 5,
+            "easing": "easeOutBack"
+          },
+          "inDuration": 0.3,
+          "outDuration": 0.12,
+          "stagger": 0.045,
+          "unit": "character"
+        },
+        "keyframes": [
+          {
+            "id": "h2-sx0",
+            "time": 0,
+            "property": "scale.x",
+            "value": 1.2,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h2-sx1",
+            "time": 0.16,
+            "property": "scale.x",
+            "value": 1,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h2-sx2",
+            "time": 0.6,
+            "property": "scale.x",
+            "value": 1.02,
+            "easing": "linear"
+          },
+          {
+            "id": "h2-sy0",
+            "time": 0,
+            "property": "scale.y",
+            "value": 1.2,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h2-sy1",
+            "time": 0.16,
+            "property": "scale.y",
+            "value": 1,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h2-sy2",
+            "time": 0.6,
+            "property": "scale.y",
+            "value": 1.02,
+            "easing": "linear"
+          },
+          {
+            "id": "h2-py0",
+            "time": 0,
+            "property": "position.y",
+            "value": 0.36000000000000004,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h2-py1",
+            "time": 0.16,
+            "property": "position.y",
+            "value": 0.34,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h2-py2",
+            "time": 0.6,
+            "property": "position.y",
+            "value": 0.335,
+            "easing": "linear"
+          }
+        ]
+      },
+      {
+        "id": "h3",
+        "trackId": "track-headline",
+        "startTime": 2.2,
+        "duration": 0.3,
+        "text": "56",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 96,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#15110d",
+          "backgroundColor": "rgba(247,240,227,0.92)",
+          "strokeColor": "#f7f0e3",
+          "strokeWidth": 2,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 0.93,
+          "letterSpacing": -1
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.34
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "animation": {
+          "preset": "stacked-slam",
+          "params": {
+            "slideDistance": 90,
+            "rotateAngle": 5,
+            "easing": "easeOutBack"
+          },
+          "inDuration": 0.15,
+          "outDuration": 0.06,
+          "stagger": 0.045,
+          "unit": "character"
+        },
+        "keyframes": [
+          {
+            "id": "h3-sx0",
+            "time": 0,
+            "property": "scale.x",
+            "value": 1.35,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h3-sx1",
+            "time": 0.1,
+            "property": "scale.x",
+            "value": 1,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h3-sx2",
+            "time": 0.3,
+            "property": "scale.x",
+            "value": 1.02,
+            "easing": "linear"
+          },
+          {
+            "id": "h3-sy0",
+            "time": 0,
+            "property": "scale.y",
+            "value": 1.35,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h3-sy1",
+            "time": 0.1,
+            "property": "scale.y",
+            "value": 1,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h3-sy2",
+            "time": 0.3,
+            "property": "scale.y",
+            "value": 1.02,
+            "easing": "linear"
+          },
+          {
+            "id": "h3-py0",
+            "time": 0,
+            "property": "position.y",
+            "value": 0.36000000000000004,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h3-py1",
+            "time": 0.1,
+            "property": "position.y",
+            "value": 0.34,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h3-py2",
+            "time": 0.3,
+            "property": "position.y",
+            "value": 0.335,
+            "easing": "linear"
+          }
+        ]
+      },
+      {
+        "id": "h4",
+        "trackId": "track-headline",
+        "startTime": 2.5,
+        "duration": 0.3,
+        "text": "PTS",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 96,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#15110d",
+          "backgroundColor": "rgba(247,240,227,0.92)",
+          "strokeColor": "#f7f0e3",
+          "strokeWidth": 2,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 0.93,
+          "letterSpacing": -1
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.34
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "animation": {
+          "preset": "stacked-slam",
+          "params": {
+            "slideDistance": 90,
+            "rotateAngle": 5,
+            "easing": "easeOutBack"
+          },
+          "inDuration": 0.15,
+          "outDuration": 0.06,
+          "stagger": 0.045,
+          "unit": "character"
+        },
+        "keyframes": [
+          {
+            "id": "h4-sx0",
+            "time": 0,
+            "property": "scale.x",
+            "value": 1.35,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h4-sx1",
+            "time": 0.1,
+            "property": "scale.x",
+            "value": 1,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h4-sx2",
+            "time": 0.3,
+            "property": "scale.x",
+            "value": 1.02,
+            "easing": "linear"
+          },
+          {
+            "id": "h4-sy0",
+            "time": 0,
+            "property": "scale.y",
+            "value": 1.35,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h4-sy1",
+            "time": 0.1,
+            "property": "scale.y",
+            "value": 1,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h4-sy2",
+            "time": 0.3,
+            "property": "scale.y",
+            "value": 1.02,
+            "easing": "linear"
+          },
+          {
+            "id": "h4-py0",
+            "time": 0,
+            "property": "position.y",
+            "value": 0.36000000000000004,
+            "easing": "easeOutBack"
+          },
+          {
+            "id": "h4-py1",
+            "time": 0.1,
+            "property": "position.y",
+            "value": 0.34,
+            "easing": "easeOutCubic"
+          },
+          {
+            "id": "h4-py2",
+            "time": 0.3,
+            "property": "position.y",
+            "value": 0.335,
+            "easing": "linear"
+          }
+        ]
+      },
+      {
+        "id": "h5",
+        "trackId": "track-headline",
+        "startTime": 2.8,
+        "duration": 1.2,
+        "text": "NIGHT 56",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 96,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#15110d",
+          "backgroundColor": "rgba(247,240,227,0.92)",
+          "strokeColor": "#f7f0e3",
+          "strokeWidth": 2,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 0.93,
+          "letterSpacing": -1
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.34
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "animation": {
+          "preset": "stacked-slam",
+          "params": {
+            "slideDistance": 90,
+            "rotateAngle": 5,
+            "easing": "easeOutBack"
+          },
+          "inDuration": 0.3,
+          "outDuration": 0.12,
+          "stagger": 0.045,
+          "unit": "character"
+        },
+        "keyframes": []
+      },
+      {
+        "id": "b1",
+        "trackId": "track-body",
+        "startTime": 0,
+        "duration": 1.6,
+        "text": "MAGAZINE / TEST B",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 44,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#15110d",
+          "backgroundColor": "rgba(247,240,227,0.85)",
+          "strokeColor": "#f7f0e3",
+          "strokeWidth": 1,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.18,
+          "letterSpacing": 1.5
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.76
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "animation": {
+          "preset": "scatter-settle",
+          "params": {
+            "slideDistance": 48,
+            "rotateAngle": 14,
+            "easing": "easeOutCubic"
+          },
+          "inDuration": 0.3,
+          "outDuration": 0.12,
+          "stagger": 0.04,
+          "unit": "character"
+        },
+        "keyframes": [
+          {
+            "id": "b1-px0",
+            "time": 0,
+            "property": "position.x",
+            "value": 0.5,
+            "easing": "easeInOutSine"
+          },
+          {
+            "id": "b1-px1",
+            "time": 1.6,
+            "property": "position.x",
+            "value": 0.51,
+            "easing": "linear"
+          },
+          {
+            "id": "b1-py0",
+            "time": 0,
+            "property": "position.y",
+            "value": 0.76,
+            "easing": "easeInOutSine"
+          },
+          {
+            "id": "b1-py1",
+            "time": 1.6,
+            "property": "position.y",
+            "value": 0.754,
+            "easing": "linear"
+          },
+          {
+            "id": "b1-sx0",
+            "time": 0,
+            "property": "scale.x",
+            "value": 1,
+            "easing": "easeInOutSine"
+          },
+          {
+            "id": "b1-sx1",
+            "time": 1.6,
+            "property": "scale.x",
+            "value": 1.03,
+            "easing": "linear"
+          },
+          {
+            "id": "b1-sy0",
+            "time": 0,
+            "property": "scale.y",
+            "value": 1,
+            "easing": "easeInOutSine"
+          },
+          {
+            "id": "b1-sy1",
+            "time": 1.6,
+            "property": "scale.y",
+            "value": 1.03,
+            "easing": "linear"
+          }
+        ]
+      },
+      {
+        "id": "b2",
+        "trackId": "track-body",
+        "startTime": 2.8,
+        "duration": 1.2,
+        "text": "ORLANDO / FL",
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 44,
+          "fontWeight": 900,
+          "fontStyle": "normal",
+          "color": "#15110d",
+          "backgroundColor": "rgba(247,240,227,0.85)",
+          "strokeColor": "#f7f0e3",
+          "strokeWidth": 1,
+          "textAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.18,
+          "letterSpacing": 1.5
+        },
+        "transform": {
+          "position": {
+            "x": 0.5,
+            "y": 0.76
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "animation": {
+          "preset": "scatter-settle",
+          "params": {
+            "slideDistance": 48,
+            "rotateAngle": 14,
+            "easing": "easeOutCubic"
+          },
+          "inDuration": 0.3,
+          "outDuration": 0.12,
+          "stagger": 0.04,
+          "unit": "character"
+        },
+        "keyframes": []
+      }
+    ]
+  }
+}

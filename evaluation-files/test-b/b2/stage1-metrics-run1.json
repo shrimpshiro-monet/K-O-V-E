@@ -1,0 +1,298 @@
+{
+  "g1_geometry": {
+    "body": {
+      "ref": [
+        252,
+        51,
+        590,
+        191
+      ],
+      "render": [
+        252,
+        52,
+        587,
+        186
+      ],
+      "dx": 3,
+      "dy": 5,
+      "pass": true
+    },
+    "card1": {
+      "ref": [
+        75,
+        282,
+        261,
+        544
+      ],
+      "render": [
+        81,
+        281,
+        258,
+        536
+      ],
+      "dx": 6,
+      "dy": 8,
+      "pass": true
+    },
+    "card2": {
+      "ref": [
+        280,
+        282,
+        475,
+        541
+      ],
+      "render": [
+        282,
+        280,
+        477,
+        542
+      ],
+      "dx": 2,
+      "dy": 2,
+      "pass": true
+    },
+    "card3": {
+      "ref": [
+        502,
+        282,
+        700,
+        542
+      ],
+      "render": [
+        502,
+        281,
+        701,
+        541
+      ],
+      "dx": 1,
+      "dy": 1,
+      "pass": true
+    },
+    "avatar": {
+      "ref": [
+        72,
+        48,
+        213,
+        199
+      ],
+      "render": [
+        74,
+        48,
+        211,
+        199
+      ],
+      "dx": 2,
+      "dy": 0,
+      "pass": true
+    },
+    "giant_type": {
+      "ref": [
+        731,
+        381,
+        1023,
+        575
+      ],
+      "render": [
+        731,
+        385,
+        1023,
+        575
+      ],
+      "dx": 0,
+      "dy": 4,
+      "pass": true
+    },
+    "panel_edge_y50": {
+      "ref": [
+        731,
+        50,
+        731,
+        50
+      ],
+      "render": [
+        731,
+        50,
+        731,
+        50
+      ],
+      "dx": 0,
+      "pass": true
+    },
+    "panel_edge_y300": {
+      "ref": [
+        736,
+        300,
+        736,
+        300
+      ],
+      "render": [
+        700,
+        300,
+        700,
+        300
+      ],
+      "dx": 36,
+      "pass": false
+    }
+  },
+  "g2_colour": {
+    "page": {
+      "ref": [
+        209.31,
+        188.31,
+        184.31
+      ],
+      "render": [
+        205.56,
+        184.56,
+        180.56
+      ],
+      "delta": [
+        3.76,
+        3.76,
+        3.76
+      ],
+      "pass": true
+    },
+    "letter_fill": {
+      "ref": [
+        211.0,
+        190.0,
+        186.0
+      ],
+      "render": [
+        209.0,
+        188.0,
+        184.0
+      ],
+      "delta": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "pass": true
+    },
+    "slat_top": {
+      "ref": [
+        88.71,
+        36.58,
+        39.92
+      ],
+      "render": [
+        86.06,
+        33.14,
+        34.95
+      ],
+      "delta": [
+        2.65,
+        3.44,
+        4.97
+      ],
+      "pass": true
+    },
+    "slat_bottom": {
+      "ref": [
+        77.81,
+        38.47,
+        42.78
+      ],
+      "render": [
+        58.57,
+        16.72,
+        18.41
+      ],
+      "delta": [
+        19.23,
+        21.74,
+        24.37
+      ],
+      "pass": false
+    },
+    "ink_darkness": {
+      "ref": [
+        35.44,
+        17.99,
+        14.41
+      ],
+      "render": [
+        12.99,
+        0.04,
+        0.0
+      ],
+      "delta": [
+        22.45,
+        17.95,
+        14.41
+      ],
+      "pass": false
+    }
+  },
+  "g3_structure": {
+    "page": {
+      "ssim": 0.9967,
+      "gate": 0.95,
+      "mae": 4.27,
+      "pass": true
+    },
+    "card1": {
+      "ssim": 0.8973,
+      "gate": 0.9,
+      "mae": 5.47,
+      "pass": false
+    },
+    "card2": {
+      "ssim": 0.7848,
+      "gate": 0.9,
+      "mae": 11.86,
+      "pass": false
+    },
+    "card3": {
+      "ssim": 0.875,
+      "gate": 0.9,
+      "mae": 6.25,
+      "pass": false
+    },
+    "avatar": {
+      "ssim": 0.9791,
+      "gate": 0.9,
+      "mae": 2.2,
+      "pass": true
+    },
+    "panel_tiles": {
+      "ssim": 0.961,
+      "gate": 0.9,
+      "mae": 1.92,
+      "pass": true
+    },
+    "body": {
+      "ssim": 0.5341,
+      "gate": 0.85,
+      "mae": 25.75,
+      "pass": false
+    },
+    "giant_type": {
+      "ssim": 0.7208,
+      "gate": 0.85,
+      "mae": 18.58,
+      "pass": false
+    },
+    "full_frame": {
+      "ssim": 0.8654,
+      "gate": 0.88,
+      "pass": false
+    }
+  },
+  "failures": [
+    "G1 panel_edge_y300 dx=36.0",
+    "G2 slat_bottom d=[19.2, 21.7, 24.4]",
+    "G2 ink_darkness d=[22.5, 18.0, 14.4]",
+    "G3 card1 ssim=0.897 < 0.9",
+    "G3 card2 ssim=0.785 < 0.9",
+    "G3 card3 ssim=0.875 < 0.9",
+    "G3 body ssim=0.534 < 0.85",
+    "G3 giant_type ssim=0.721 < 0.85",
+    "G4 full ssim=0.865"
+  ],
+  "pass": false,
+  "encode": "h264 high L3.1 1024x576 yuv420p 843k 18fps keyint36"
+}

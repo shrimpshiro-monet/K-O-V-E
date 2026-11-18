@@ -1,0 +1,536 @@
+{
+  "version": "1.2.0",
+  "project": {
+    "id": "1cf5ade4-49ab-4d5f-96cd-8f90daba3366",
+    "name": "Test B1.5 — reference-mirrored beat",
+    "createdAt": 1794999252443,
+    "modifiedAt": 1794999252444,
+    "settings": {
+      "width": 1080,
+      "height": 1920,
+      "frameRate": 30,
+      "sampleRate": 48000,
+      "channels": 2
+    },
+    "mediaLibrary": {
+      "items": [
+        {
+          "id": "paper-bg",
+          "name": "Paper background",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 1080,
+            "height": 1920,
+            "frameRate": 0,
+            "codec": "png",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "foot-1",
+          "name": "Footage 1",
+          "type": "video",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 8,
+            "width": 1080,
+            "height": 630,
+            "frameRate": 30,
+            "codec": "h264",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "foot-2",
+          "name": "Footage 2",
+          "type": "video",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 8,
+            "width": 1080,
+            "height": 630,
+            "frameRate": 30,
+            "codec": "h264",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "foot-3",
+          "name": "Footage 3",
+          "type": "video",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 8,
+            "width": 1080,
+            "height": 630,
+            "frameRate": 30,
+            "codec": "h264",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "hit",
+          "name": "Cut hit",
+          "type": "audio",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 0.4,
+            "width": 0,
+            "height": 0,
+            "frameRate": 0,
+            "codec": "wav",
+            "sampleRate": 48000,
+            "channels": 2,
+            "fileSize": 1,
+            "hasVideo": false,
+            "hasAudio": true,
+            "audioTrackCount": 1
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        }
+      ]
+    },
+    "timeline": {
+      "tracks": [
+        {
+          "id": "track-audio",
+          "type": "audio",
+          "name": "Hits",
+          "clips": [
+            {
+              "id": "hit-cut",
+              "mediaId": "hit",
+              "trackId": "track-audio",
+              "startTime": 0.5,
+              "duration": 0.4,
+              "inPoint": 0,
+              "outPoint": 0.4,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1
+              },
+              "volume": 1,
+              "keyframes": []
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-photo-3",
+          "type": "video",
+          "name": "Band 3",
+          "clips": [
+            {
+              "id": "band-photo-3",
+              "mediaId": "foot-3",
+              "trackId": "track-photo-3",
+              "startTime": 0.5,
+              "duration": 3.5,
+              "inPoint": 5.4,
+              "outPoint": 8.9,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 645.1200000000001
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "band-photo-3-x0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 340,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "band-photo-3-x1",
+                  "time": 3.5,
+                  "property": "position.x",
+                  "value": -40,
+                  "easing": "linear"
+                },
+                {
+                  "id": "band-photo-3-sx0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "band-photo-3-sx1",
+                  "time": 3.5,
+                  "property": "scale.x",
+                  "value": 1.045,
+                  "easing": "linear"
+                },
+                {
+                  "id": "band-photo-3-sy0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "band-photo-3-sy1",
+                  "time": 3.5,
+                  "property": "scale.y",
+                  "value": 1.045,
+                  "easing": "linear"
+                }
+              ]
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-photo-2",
+          "type": "video",
+          "name": "Band 2",
+          "clips": [
+            {
+              "id": "band-photo-2",
+              "mediaId": "foot-2",
+              "trackId": "track-photo-2",
+              "startTime": 0.5,
+              "duration": 3.5,
+              "inPoint": 3.2,
+              "outPoint": 6.7,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "band-photo-2-x0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 340,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "band-photo-2-x1",
+                  "time": 3.5,
+                  "property": "position.x",
+                  "value": -40,
+                  "easing": "linear"
+                },
+                {
+                  "id": "band-photo-2-sx0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "band-photo-2-sx1",
+                  "time": 3.5,
+                  "property": "scale.x",
+                  "value": 1.045,
+                  "easing": "linear"
+                },
+                {
+                  "id": "band-photo-2-sy0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "band-photo-2-sy1",
+                  "time": 3.5,
+                  "property": "scale.y",
+                  "value": 1.045,
+                  "easing": "linear"
+                }
+              ]
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-photo-1",
+          "type": "video",
+          "name": "Band 1",
+          "clips": [
+            {
+              "id": "band-photo-1",
+              "mediaId": "foot-1",
+              "trackId": "track-photo-1",
+              "startTime": 0.5,
+              "duration": 3.5,
+              "inPoint": 1,
+              "outPoint": 4.5,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": -645.1199999999999
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "band-photo-1-x0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 340,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "band-photo-1-x1",
+                  "time": 3.5,
+                  "property": "position.x",
+                  "value": -40,
+                  "easing": "linear"
+                },
+                {
+                  "id": "band-photo-1-sx0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "band-photo-1-sx1",
+                  "time": 3.5,
+                  "property": "scale.x",
+                  "value": 1.045,
+                  "easing": "linear"
+                },
+                {
+                  "id": "band-photo-1-sy0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "band-photo-1-sy1",
+                  "time": 3.5,
+                  "property": "scale.y",
+                  "value": 1.045,
+                  "easing": "linear"
+                }
+              ]
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "track-bg",
+          "type": "video",
+          "name": "Paper background",
+          "clips": [
+            {
+              "id": "bg-paper",
+              "mediaId": "paper-bg",
+              "trackId": "track-bg",
+              "startTime": 0.5,
+              "duration": 3.5,
+              "inPoint": 0,
+              "outPoint": 3.5,
+              "effects": [
+                {
+                  "id": "fx-grain",
+                  "type": "grain",
+                  "params": {
+                    "amount": 45,
+                    "size": 2
+                  },
+                  "enabled": true
+                },
+                {
+                  "id": "fx-vignette",
+                  "type": "vignette",
+                  "params": {
+                    "amount": 55
+                  },
+                  "enabled": true
+                }
+              ],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": [
+                {
+                  "id": "bg-paper-x0",
+                  "time": 0,
+                  "property": "position.x",
+                  "value": 340,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "bg-paper-x1",
+                  "time": 3.5,
+                  "property": "position.x",
+                  "value": -40,
+                  "easing": "linear"
+                },
+                {
+                  "id": "bg-paper-sx0",
+                  "time": 0,
+                  "property": "scale.x",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "bg-paper-sx1",
+                  "time": 3.5,
+                  "property": "scale.x",
+                  "value": 1.045,
+                  "easing": "linear"
+                },
+                {
+                  "id": "bg-paper-sy0",
+                  "time": 0,
+                  "property": "scale.y",
+                  "value": 1,
+                  "easing": "easeOutQuad"
+                },
+                {
+                  "id": "bg-paper-sy1",
+                  "time": 3.5,
+                  "property": "scale.y",
+                  "value": 1.045,
+                  "easing": "linear"
+                }
+              ]
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "subtitles": [],
+      "duration": 4,
+      "markers": []
+    }
+  }
+}

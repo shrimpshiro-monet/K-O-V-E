@@ -1,0 +1,476 @@
+{
+  "version": "1.2.0",
+  "project": {
+    "id": "143fdf92-23d2-4d0d-b361-d59b615157c6",
+    "name": "B2 stage 1 — magazine spread",
+    "createdAt": 1795002805909,
+    "modifiedAt": 1795002805909,
+    "settings": {
+      "width": 1024,
+      "height": 576,
+      "frameRate": 30,
+      "sampleRate": 48000,
+      "channels": 2
+    },
+    "mediaLibrary": {
+      "items": [
+        {
+          "id": "page-bg",
+          "name": "page-bg",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 1024,
+            "height": 576,
+            "frameRate": 0,
+            "codec": "png",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "panel",
+          "name": "panel",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 293,
+            "height": 576,
+            "frameRate": 0,
+            "codec": "png",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "card1",
+          "name": "card1",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 185,
+            "height": 259,
+            "frameRate": 0,
+            "codec": "png",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "card2",
+          "name": "card2",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 200,
+            "height": 264,
+            "frameRate": 0,
+            "codec": "png",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "card3",
+          "name": "card3",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 203,
+            "height": 265,
+            "frameRate": 0,
+            "codec": "png",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        },
+        {
+          "id": "avatar",
+          "name": "avatar",
+          "type": "image",
+          "fileHandle": null,
+          "blob": null,
+          "metadata": {
+            "duration": 10,
+            "width": 143,
+            "height": 153,
+            "frameRate": 0,
+            "codec": "png",
+            "sampleRate": 0,
+            "channels": 0,
+            "fileSize": 1,
+            "hasVideo": true,
+            "hasAudio": false,
+            "audioTrackCount": 0
+          },
+          "thumbnailUrl": null,
+          "waveformData": null
+        }
+      ]
+    },
+    "timeline": {
+      "tracks": [
+        {
+          "id": "t-type",
+          "type": "text",
+          "name": "Type",
+          "clips": [],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "t-avatar",
+          "type": "video",
+          "name": "Avatar",
+          "clips": [
+            {
+              "id": "avatar",
+              "mediaId": "avatar",
+              "trackId": "t-avatar",
+              "startTime": 0,
+              "duration": 1,
+              "inPoint": 0,
+              "outPoint": 1,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": -368.5,
+                  "y": -164.5
+                },
+                "scale": {
+                  "x": 0.265625,
+                  "y": 0.265625
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": []
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "t-cards",
+          "type": "video",
+          "name": "Cards",
+          "clips": [
+            {
+              "id": "card-1",
+              "mediaId": "card1",
+              "trackId": "t-cards",
+              "startTime": 0,
+              "duration": 1,
+              "inPoint": 0,
+              "outPoint": 1,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": -340.5,
+                  "y": 121.5
+                },
+                "scale": {
+                  "x": 0.4496527777777778,
+                  "y": 0.4496527777777778
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": []
+            },
+            {
+              "id": "card-2",
+              "mediaId": "card2",
+              "trackId": "t-cards",
+              "startTime": 0,
+              "duration": 1,
+              "inPoint": 0,
+              "outPoint": 1,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": -134,
+                  "y": 124
+                },
+                "scale": {
+                  "x": 0.45833333333333337,
+                  "y": 0.45833333333333337
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": []
+            },
+            {
+              "id": "card-3",
+              "mediaId": "card3",
+              "trackId": "t-cards",
+              "startTime": 0,
+              "duration": 1,
+              "inPoint": 0,
+              "outPoint": 1,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 89.5,
+                  "y": 124.5
+                },
+                "scale": {
+                  "x": 0.4600694444444445,
+                  "y": 0.4600694444444445
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": []
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "t-panel",
+          "type": "video",
+          "name": "Panel",
+          "clips": [
+            {
+              "id": "panel",
+              "mediaId": "panel",
+              "trackId": "t-panel",
+              "startTime": 0,
+              "duration": 1,
+              "inPoint": 0,
+              "outPoint": 1,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 365.5,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": []
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        },
+        {
+          "id": "t-page",
+          "type": "video",
+          "name": "Page",
+          "clips": [
+            {
+              "id": "page",
+              "mediaId": "page-bg",
+              "trackId": "t-page",
+              "startTime": 0,
+              "duration": 1,
+              "inPoint": 0,
+              "outPoint": 1,
+              "effects": [],
+              "audioEffects": [],
+              "transform": {
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "scale": {
+                  "x": 1,
+                  "y": 1
+                },
+                "rotation": 0,
+                "anchor": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "opacity": 1,
+                "fitMode": "contain"
+              },
+              "volume": 0,
+              "keyframes": []
+            }
+          ],
+          "transitions": [],
+          "locked": false,
+          "hidden": false,
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "subtitles": [],
+      "duration": 1,
+      "markers": []
+    },
+    "textClips": [
+      {
+        "id": "body-copy",
+        "trackId": "t-type",
+        "startTime": 0,
+        "duration": 1,
+        "text": "Lamine Yamal Nasraoui Ebana is a Spanish\nprofessional football player born on July\n13, 2007, in Esplugues de Llobregat,\nSpain. He plays as a right winger for FC\nBarcelona and the Spain national team,\nand is known worldwide for his incredible\ndribbling, playmaking, and record-\nbre",
+        "style": {
+          "fontFamily": "Courier Prime",
+          "fontSize": 13.7,
+          "fontWeight": 400,
+          "fontStyle": "normal",
+          "color": "#24130f",
+          "backgroundColor": "rgba(0,0,0,0)",
+          "strokeColor": "rgba(0,0,0,0)",
+          "strokeWidth": 0,
+          "textAlign": "left",
+          "verticalAlign": "top",
+          "lineHeight": 1.3139,
+          "letterSpacing": 0
+        },
+        "transform": {
+          "position": {
+            "x": 0.24541015625,
+            "y": 0.10155173611111111
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": []
+      },
+      {
+        "id": "giant-type",
+        "trackId": "t-type",
+        "startTime": 0,
+        "duration": 1,
+        "text": "TEM",
+        "style": {
+          "fontFamily": "Anton",
+          "fontSize": 225,
+          "fontWeight": 400,
+          "fontStyle": "normal",
+          "color": "#d5c0bc",
+          "backgroundColor": "rgba(0,0,0,0)",
+          "strokeColor": "#d5c0bc",
+          "strokeWidth": 14,
+          "textAlign": "left",
+          "verticalAlign": "top",
+          "lineHeight": 1,
+          "letterSpacing": 9
+        },
+        "transform": {
+          "position": {
+            "x": 0.715128173828125,
+            "y": 0.8829210069444444
+          },
+          "scale": {
+            "x": 1.06,
+            "y": 0.895
+          },
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "opacity": 1
+        },
+        "keyframes": []
+      }
+    ]
+  }
+}
