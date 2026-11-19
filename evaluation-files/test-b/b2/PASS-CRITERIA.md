@@ -215,6 +215,69 @@ exercises 2–4, and the reference's composition is a single row.
 
 ---
 
+## Stage 2 — measured motion (B2 Motion, one entrance)
+
+Stage 1/1.5 proved a static spread. Stage 2 starts with **one card entrance**
+that is measured at native frame rate, not authored by eye.
+
+**Scope:** the horizontal band reveal at f274–f282, played by the renderer as a
+card-height curve, with a side-by-side strip. Camera pushes, page wipes, speed
+ramps, audio and the full cut are not judged here.
+
+**What the reference is (measured):** the earlier B2 pass sampled the reference
+at 1fps and authored motion by eye. A native-rate scan of all 437 frames finds
+irregular stop-motion (26 zero-diff transitions; hold fraction 0.328) and **no
+independent eased card landing**. The cards are physical/static; the motion is
+camera pans/pushes, hard cuts, band/line wipes and type reveals. The band reveal
+is the clean card-level entrance. The full band opens from a 9px slit to 352px
+(61.1% of frame height), symmetric about y≈287 (frame center 288), and
+decelerates. Frames 283–286 complete the wipe to full frame and are excluded.
+
+**Measured curve and fit:** 9 direct pixel samples; best BIC fit is cubic bezier
+`(0.7368, 0.2366, 0.0, 0.7419)`, RMSE 0.0215, BIC −60.3, monotonic. Raw samples
+are retained in the DNA. The fitter's synthetic self-test passes for linear,
+easeOutCubic, easeInOutCubic, outBack and bezier, plus a held curve.
+
+### M-gates (fixed before the confirming render)
+
+| Gate | Check | Threshold |
+|---|---|---|
+| M1 native rate | every frame decoded and diffed; cadence and cut candidates written | 437/437 frames @18fps; duplicate/hold runs and cut candidates in `scan.json` |
+| M2 measured curve | DNA samples are direct band measurements; raw samples retained; fit chosen by BIC among shape-valid candidates; self-test passes | 9 samples; self-test pass; fit RMSE reported |
+| M3 playback | rendered card height vs the DNA playback curve at the 9 source instants | RMSE ≤ 0.005, max ≤ 0.01 |
+| M4 end-to-end | rendered card height vs reference band height, normalized, at the 9 source instants | RMSE ≤ 0.03, max ≤ 0.06 |
+| M5 cadence | keyframes on the 18fps grid with `hold` easing; no smoothing across source frames | 9 source steps; exact `i/18` times; 20 keyframes (9 samples × 2 axes + 2 tail) |
+| M6 visual | side-by-side strip shows the same height progression | pass; silhouette difference documented, not judged |
+
+M3/M4 thresholds were derived from the fit's model error (RMSE 0.0215, max
+0.0472) **before** the confirming render: playback may not add meaningful error,
+and end-to-end may not exceed the fit's own residual by more than ~0.01. They
+were not moved after the render. The render was repeated after the gates were
+written; the numbers below are from that confirming run.
+
+### Result: PASS (one entrance)
+
+| Gate | Measured |
+|---|---|
+| M1 | 437 frames; 26 zero-diff transitions; 25 cut candidates; hold fraction 0.328 |
+| M2 | self-test pass; bezier RMSE 0.0215, BIC −60.3; 9 raw samples retained |
+| M3 | RMSE **0.0034**, max **0.0052**, mean 0.0030 |
+| M4 | RMSE **0.0214**, max **0.0431**, mean 0.0153 |
+| M5 | 20 keyframes; times 0…0.4444s at `i/18`; `hold` easing; 9 steps |
+| M6 | `motion-strip.png`: height progression matches at all 9 samples |
+
+**Known limit:** the reference reveals a full-width print through a slit; the
+clip model has no keyframable crop, so the render grows a centered card with
+uniform scale. The centerline is right (band center 287, frame center 288); the
+silhouette is not. The strip is judged on the height curve and cadence, not the
+silhouette. Animated crop / keyframed rectangular mask is the next renderer
+primitive. Full method and commands: `evaluation-files/test-b/motion/README.md`.
+
+**Not yet judged:** camera push (11.72–12.33s is a stable but linear pull-back,
+not an entrance), page wipes, speed ramps, audio, full cut.
+
+---
+
 ## Amendments (all measured before judging; none loosen a threshold)
 
 1. **Card border (item 7):** pixel scans at y=330/420/500 and x=170/375/590 show
@@ -315,6 +378,12 @@ exercises 2–4, and the reference's composition is a single row.
     height-fill (short word) — no stage 1.5 gate was loosened. Each page: 90
     frames, 1024×576@30, video cards muted, 3s outPoint. Concatenated cut:
     9.00s, 270 frames, decode-clean, no audio (music bed still not supplied).
+22. **Native-rate motion capture (stage 2, before the B2 Motion render):** the
+    earlier pass's 1fps sampling could not see cadence or short entrances. The
+    analyzer now decodes all 437 frames, measures the f274–282 band per frame,
+    and fits only shape-valid curves; raw samples and the fit's model error are
+    kept. This corrects the method, not a stage-1 threshold. The measured
+    entrance and the M-gates are in "Stage 2 — measured motion".
 
 ### Run log
 
@@ -325,6 +394,7 @@ exercises 2–4, and the reference's composition is a single row.
 | 3 (16:16) | **PASS all gates** | panel rebuilt as inpainted crop (16), G3a/G3b measurements corrected (14,15,17), slat sample letter-free (18). Zero photo/page SSIM or colour gate moved |
 | 4 (16:53) | **PASS all gates** | Anton metrics measured (19); stage-1 type re-judged at 225px + stretchY 0.895 with the E-bottom gate in place. Cap 185 exact, bottom +2, stem −3, crossbar −5, area +6.2%; photo SSIM 0.957–0.980, page 0.995, whole-frame 0.903 |
 | Curry (19:21) | **PASS (design + assertions)** | Three-page subject swap: 3 × 90 frames, two live video cards, 9.00s concatenated cut, layout/card/type assertions pass, video cards advance in exported frames. No stage-1 gate re-judged; this is a new content test |
+| Motion (stage 2) | **PASS (M1–M6, one entrance)** | Native-rate capture of all 437 frames; band reveal f274–282 fit as bezier RMSE 0.0215; render vs DNA 0.0034/0.0052; end-to-end 0.0214/0.0431. Silhouette deferred (no keyframable crop) |
 
 **Stage 1 verdict: PASS (objective gates, run 4).** Awaiting the reviewer's
 checklist confirmation and blind comparison is not part of this stage.
@@ -338,6 +408,14 @@ curry `prep-subject.py` / `prep-textures.py` and two 3:4 video encodes; no layou
 code changed. The result is a real 9s motion cut with two playing video cards,
 not a still. Rights for the third-party Curry photos/video and an owned music
 bed are still required before any public use.
+
+**Stage 2 motion verdict: PASS for one measured entrance (B2 Motion).** The
+band-reveal curve is extracted at native frame rate and played by the renderer;
+the side-by-side height progression matches at all 9 source samples. The
+silhouette is a growing card, not a full-width slit, because the clip model has
+no keyframable crop — documented as the next primitive, not a gate change. The
+full cut's motion is not yet captured or judged. Public release still requires
+confirmed Curry rights and an owned music bed.
 
 
 

@@ -1,0 +1,167 @@
+{
+  "role": "card",
+  "channel": "visibleHeight",
+  "source": {
+    "file": "reference_videos_to_select/magazine edit, motion graphics.MP4",
+    "startFrame": 274,
+    "endFrame": 282,
+    "fps": 18.0
+  },
+  "from": 0.0255,
+  "to": 1.0,
+  "measured": {
+    "fromFraction": 0.0156,
+    "toFraction": 0.6111,
+    "frameHeightPx": 576
+  },
+  "durationFrames": 8,
+  "durationSeconds": 0.4444,
+  "fps": 18.0,
+  "profile": "smooth",
+  "fit": {
+    "family": "bezier",
+    "params": {
+      "x1": 0.7368,
+      "y1": 0.2366,
+      "x2": 0.0,
+      "y2": 0.7419
+    },
+    "rmse": 0.02152909761962323,
+    "bic": -60.30139955192586,
+    "samples": 9
+  },
+  "candidates": [
+    {
+      "family": "bezier",
+      "params": {
+        "x1": 0.7368,
+        "y1": 0.2366,
+        "x2": 0.0,
+        "y2": 0.7419
+      },
+      "rmse": 0.02152909761962323,
+      "bic": -60.30139955192586,
+      "monotonic": true
+    },
+    {
+      "family": "easeInOutCubic",
+      "params": {},
+      "rmse": 0.10569012290728848,
+      "bic": -40.450389031042036,
+      "monotonic": true
+    },
+    {
+      "family": "linear",
+      "params": {},
+      "rmse": 0.13683347918636896,
+      "bic": -35.80183031113615,
+      "monotonic": true
+    },
+    {
+      "family": "easeOutQuad",
+      "params": {},
+      "rmse": 0.15179596126852019,
+      "bic": -33.93392435970776,
+      "monotonic": true
+    },
+    {
+      "family": "easeOutCubic",
+      "params": {},
+      "rmse": 0.23278176263005584,
+      "bic": -26.237770297407078,
+      "monotonic": true
+    },
+    {
+      "family": "easeInQuad",
+      "params": {},
+      "rmse": 0.27138456083890533,
+      "bic": -23.475931565533926,
+      "monotonic": true
+    },
+    {
+      "family": "easeOutQuart",
+      "params": {},
+      "rmse": 0.29030437400996156,
+      "bic": -22.262856135459415,
+      "monotonic": true
+    },
+    {
+      "family": "easeOutQuint",
+      "params": {},
+      "rmse": 0.33105837164808644,
+      "bic": -19.898290255730593,
+      "monotonic": true
+    },
+    {
+      "family": "easeInCubic",
+      "params": {},
+      "rmse": 0.360691971104976,
+      "bic": -18.35515710944595,
+      "monotonic": true
+    },
+    {
+      "family": "easeOutExpo",
+      "params": {},
+      "rmse": 0.3609749081384401,
+      "bic": -18.341042932919972,
+      "monotonic": true
+    },
+    {
+      "family": "outBack",
+      "params": {
+        "s": 1.70158
+      },
+      "rmse": 0.382186816894326,
+      "bic": -15.115998750938184,
+      "monotonic": false
+    },
+    {
+      "family": "spring",
+      "params": {
+        "zeta": 0.55,
+        "omega": 9.0
+      },
+      "rmse": 0.4078769809283351,
+      "bic": -11.747764858095156,
+      "monotonic": false
+    }
+  ],
+  "samples": [
+    {
+      "t": 0.0,
+      "value": 0.0
+    },
+    {
+      "t": 0.125,
+      "value": 0.0962
+    },
+    {
+      "t": 0.25,
+      "value": 0.0962
+    },
+    {
+      "t": 0.375,
+      "value": 0.3469
+    },
+    {
+      "t": 0.5,
+      "value": 0.758
+    },
+    {
+      "t": 0.625,
+      "value": 0.8455
+    },
+    {
+      "t": 0.75,
+      "value": 0.9009
+    },
+    {
+      "t": 0.875,
+      "value": 0.9476
+    },
+    {
+      "t": 1.0,
+      "value": 1.0
+    }
+  ]
+}
